@@ -25,11 +25,11 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className={cn('flex items-center h-[72px] border-b border-border', collapsed ? 'justify-center px-3' : 'px-5')}>
+      <div className={cn('flex items-center border-b border-border', collapsed ? 'justify-center px-3 h-[72px]' : 'px-5 py-5')}>
         {collapsed ? (
           <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-7 w-auto object-contain" />
         ) : (
-          <img src="/outbili/logo-white.png" alt="V4 Bilinski&Co" className="h-8 w-auto object-contain" />
+          <img src="/outbili/logo-white.png" alt="V4 Bilinski&Co" className="h-12 w-auto object-contain" />
         )}
       </div>
 

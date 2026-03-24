@@ -225,13 +225,9 @@ export function DashboardPage() {
   if (allLeads.length === 0) {
     return (
       <div className="animate-[fade-in_0.4s_ease-out]">
-        <div className="flex items-center gap-4 mb-8">
-          <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-8" />
-          <div className="h-6 w-px bg-border" />
-          <div>
-            <h1 className="text-lg font-bold font-heading gradient-text">OUTBILI</h1>
-            <p className="text-[11px] text-text-muted">Sistema de prospecção outbound</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-xl font-bold font-heading gradient-text">OUTBILI</h1>
+          <p className="text-xs text-text-muted mt-0.5">Sistema de prospecção outbound</p>
         </div>
         <EmptyState
           icon={Rocket}
