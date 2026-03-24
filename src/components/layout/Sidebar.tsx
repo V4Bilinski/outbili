@@ -32,7 +32,7 @@ export function Sidebar() {
         )}>
           {collapsed ? (
             <img
-              src="/outbili/logo-icon-white.png"
+              src="/outbili/v4-icon.png"
               alt="V4"
               className="h-9 w-9 object-contain transition-all duration-300"
             />
