@@ -2,13 +2,20 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { Toaster } from 'sonner'
+import { SidebarProvider, useSidebar } from '../../lib/sidebar-context'
+import { cn } from '../../lib/cn'
 
-export function MainLayout() {
+function LayoutInner() {
+  const { collapsed } = useSidebar()
+
   return (
     <div className="min-h-screen bg-bg">
       <Sidebar />
       <BottomNav />
-      <main className="md:ml-[260px] pb-24 md:pb-0 min-h-screen">
+      <main className={cn(
+        'pb-24 md:pb-0 min-h-screen transition-all duration-300 ease-in-out',
+        collapsed ? 'md:ml-[72px]' : 'md:ml-[260px]',
+      )}>
         <div className="p-5 md:p-8 max-w-[1400px] mx-auto">
           <Outlet />
         </div>
@@ -26,5 +33,13 @@ export function MainLayout() {
         }}
       />
     </div>
+  )
+}
+
+export function MainLayout() {
+  return (
+    <SidebarProvider>
+      <LayoutInner />
+    </SidebarProvider>
   )
 }
