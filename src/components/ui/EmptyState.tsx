@@ -6,30 +6,22 @@ interface EmptyStateProps {
   icon: LucideIcon
   title: string
   description: string
-  action?: {
-    label: string
-    onClick: () => void
-  }
-  secondaryAction?: {
-    label: string
-    onClick: () => void
-  }
+  action?: { label: string; onClick: () => void }
+  secondaryAction?: { label: string; onClick: () => void }
   className?: string
 }
 
 export function EmptyState({ icon: Icon, title, description, action, secondaryAction, className }: EmptyStateProps) {
   return (
-    <div className={cn('flex flex-col items-center justify-center py-16 px-4 text-center', className)}>
-      <Icon className="h-16 w-16 text-stone-600 mb-4" strokeWidth={1} />
+    <div className={cn('flex flex-col items-center justify-center py-20 px-4 text-center', className)}>
+      <div className="p-5 rounded-2xl bg-white/[0.03] border border-border mb-6">
+        <Icon className="h-10 w-10 text-text-muted" strokeWidth={1.2} />
+      </div>
       <h3 className="text-lg font-semibold text-text-primary font-heading mb-2">{title}</h3>
-      <p className="text-sm text-text-secondary max-w-sm mb-6">{description}</p>
-      {action && (
-        <Button onClick={action.onClick} size="lg">
-          {action.label}
-        </Button>
-      )}
+      <p className="text-sm text-text-muted max-w-sm mb-8 leading-relaxed">{description}</p>
+      {action && <Button onClick={action.onClick} size="lg">{action.label}</Button>}
       {secondaryAction && (
-        <Button variant="ghost" onClick={secondaryAction.onClick} className="mt-2">
+        <Button variant="ghost" onClick={secondaryAction.onClick} className="mt-3">
           {secondaryAction.label}
         </Button>
       )}

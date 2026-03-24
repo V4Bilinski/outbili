@@ -5,25 +5,29 @@ interface CardProps {
   className?: string
   accent?: 'red' | 'hot' | 'warm' | 'cold' | 'success' | 'none'
   hover?: boolean
+  glass?: boolean
   onClick?: () => void
 }
 
 const accentStyles: Record<string, string> = {
-  red: 'border-l-3 border-l-red',
-  hot: 'border-l-3 border-l-hot',
-  warm: 'border-l-3 border-l-warm',
-  cold: 'border-l-3 border-l-cold',
-  success: 'border-l-3 border-l-success',
+  red: 'border-l-[3px] border-l-red',
+  hot: 'border-l-[3px] border-l-hot',
+  warm: 'border-l-[3px] border-l-warm',
+  cold: 'border-l-[3px] border-l-cold',
+  success: 'border-l-[3px] border-l-success',
   none: '',
 }
 
-export function Card({ children, className, accent = 'none', hover = false, onClick }: CardProps) {
+export function Card({ children, className, accent = 'none', hover = false, glass = true, onClick }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl bg-surface border border-stone-800/50 p-4',
+        'rounded-2xl p-5',
+        glass
+          ? 'bg-gradient-to-br from-surface/80 to-surface-md/60 backdrop-blur-xl border border-border'
+          : 'bg-surface border border-border',
         accentStyles[accent],
-        hover && 'transition-transform hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20 cursor-pointer',
+        hover && 'transition-all duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-xl hover:shadow-black/20 cursor-pointer',
         onClick && 'cursor-pointer',
         className,
       )}
@@ -35,17 +39,17 @@ export function Card({ children, className, accent = 'none', hover = false, onCl
 }
 
 export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('mb-3', className)}>{children}</div>
+  return <div className={cn('mb-4', className)}>{children}</div>
 }
 
 export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h3 className={cn('text-sm font-semibold text-text-primary font-heading', className)}>{children}</h3>
+  return <h3 className={cn('text-sm font-semibold text-text-secondary uppercase tracking-[0.1em] font-heading', className)}>{children}</h3>
 }
 
 export function CardValue({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn('text-2xl font-bold font-mono text-text-primary', className)}>{children}</p>
+  return <p className={cn('text-3xl font-bold font-mono text-text-primary tracking-tight', className)}>{children}</p>
 }
 
 export function CardDescription({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn('text-xs text-text-secondary mt-1', className)}>{children}</p>
+  return <p className={cn('text-xs text-text-muted mt-1', className)}>{children}</p>
 }

@@ -14,51 +14,26 @@ import type { Lead } from '../types'
 type ViewMode = 'table' | 'kanban'
 
 function LeadFilters({
-  segment,
-  setSegment,
-  temperature,
-  setTemperature,
-  status,
-  setStatus,
+  segment, setSegment, temperature, setTemperature, status, setStatus,
 }: {
-  segment: string
-  setSegment: (v: string) => void
-  temperature: string
-  setTemperature: (v: string) => void
-  status: string
-  setStatus: (v: string) => void
+  segment: string; setSegment: (v: string) => void
+  temperature: string; setTemperature: (v: string) => void
+  status: string; setStatus: (v: string) => void
 }) {
+  const selectClass = 'h-9 rounded-xl bg-white/[0.03] border border-border text-xs text-text-secondary px-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors appearance-none cursor-pointer'
   return (
     <div className="flex flex-wrap gap-2">
-      <select
-        value={segment}
-        onChange={(e) => setSegment(e.target.value)}
-        className="h-8 rounded-lg bg-surface-md border border-stone-700 text-xs text-text-secondary px-2 focus:border-red/50 focus:outline-none"
-      >
+      <select value={segment} onChange={(e) => setSegment(e.target.value)} className={selectClass}>
         <option value="">Todos segmentos</option>
-        {SEGMENTS.map((s) => (
-          <option key={s.slug} value={s.name}>{s.name}</option>
-        ))}
+        {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
       </select>
-      <select
-        value={temperature}
-        onChange={(e) => setTemperature(e.target.value)}
-        className="h-8 rounded-lg bg-surface-md border border-stone-700 text-xs text-text-secondary px-2 focus:border-red/50 focus:outline-none"
-      >
+      <select value={temperature} onChange={(e) => setTemperature(e.target.value)} className={selectClass}>
         <option value="">Temperatura</option>
-        {TEMPERATURES.map((t) => (
-          <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>
-        ))}
+        {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
       </select>
-      <select
-        value={status}
-        onChange={(e) => setStatus(e.target.value)}
-        className="h-8 rounded-lg bg-surface-md border border-stone-700 text-xs text-text-secondary px-2 focus:border-red/50 focus:outline-none"
-      >
+      <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
         <option value="">Status</option>
-        {LEAD_STATUSES.map((s) => (
-          <option key={s.value} value={s.value}>{s.label}</option>
-        ))}
+        {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
       </select>
     </div>
   )
@@ -66,19 +41,16 @@ function LeadFilters({
 
 function LeadTable({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
-
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-stone-800/50">
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider">Empresa</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider">Temp.</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Score</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider">Status</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider hidden lg:table-cell">Segmento</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider hidden lg:table-cell">Tier</th>
-            <th className="text-left py-3 px-3 text-xs font-medium text-text-muted uppercase tracking-wider hidden xl:table-cell">Faturamento</th>
+          <tr className="border-b border-border">
+            {['Empresa', 'Temp.', 'Score', 'Status', 'Segmento', 'Tier', 'Faturamento'].map((h, i) => (
+              <th key={h} className={`text-left py-3.5 px-4 text-[11px] font-medium text-text-muted uppercase tracking-[0.1em] ${i > 1 && i < 5 ? 'hidden md:table-cell' : ''} ${i >= 5 ? 'hidden lg:table-cell' : ''}`}>
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -89,36 +61,43 @@ function LeadTable({ leads }: { leads: Lead[] }) {
               <tr
                 key={lead.id}
                 onClick={() => navigate(`/leads/${lead.id}`)}
-                className="border-b border-stone-800/30 hover:bg-surface-hover transition-colors cursor-pointer"
+                className="border-b border-border/50 hover:bg-white/[0.015] transition-colors cursor-pointer group"
               >
-                <td className="py-3 px-3">
-                  <p className="font-semibold text-text-primary">{lead.companyName}</p>
-                  <p className="text-xs text-text-muted">{lead.city}, {lead.state}</p>
-                </td>
-                <td className="py-3 px-3">
-                  <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'}>
-                    {lead.temperature}
-                  </Badge>
-                </td>
-                <td className="py-3 px-3 hidden md:table-cell">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-surface-lt overflow-hidden">
-                      <div className="h-full rounded-full bg-red" style={{ width: `${(score / 5) * 100}%` }} />
+                <td className="py-3.5 px-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono shrink-0 ${
+                      lead.temperature === 'HOT' ? 'bg-hot/10 text-hot' : lead.temperature === 'WARM' ? 'bg-warm/10 text-warm' : 'bg-white/5 text-text-muted'
+                    }`}>
+                      {score}
                     </div>
-                    <span className="text-xs font-mono text-text-secondary">{score}</span>
+                    <div>
+                      <p className="font-semibold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</p>
+                      <p className="text-[11px] text-text-muted">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>
+                    </div>
                   </div>
                 </td>
-                <td className="py-3 px-3">
-                  <Badge variant="outline">{lead.status}</Badge>
+                <td className="py-3.5 px-4">
+                  <Badge variant={tempVariant} size="sm">{lead.temperature}</Badge>
                 </td>
-                <td className="py-3 px-3 hidden lg:table-cell">
+                <td className="py-3.5 px-4 hidden md:table-cell">
+                  <div className="flex items-center gap-2">
+                    <div className="w-14 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red" style={{ width: `${(score / 5) * 100}%` }} />
+                    </div>
+                    <span className="text-[11px] font-mono text-text-muted">{score}</span>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 hidden md:table-cell">
+                  <Badge variant="outline" size="sm">{lead.status}</Badge>
+                </td>
+                <td className="py-3.5 px-4 hidden lg:table-cell">
                   <span className="text-xs text-text-secondary">{lead.segment}</span>
                 </td>
-                <td className="py-3 px-3 hidden lg:table-cell">
-                  <span className="text-xs text-text-secondary">{lead.tier}</span>
+                <td className="py-3.5 px-4 hidden lg:table-cell">
+                  <span className="text-xs text-text-muted">{lead.tier}</span>
                 </td>
-                <td className="py-3 px-3 hidden xl:table-cell">
-                  <span className="text-xs font-mono text-text-secondary">
+                <td className="py-3.5 px-4 hidden lg:table-cell">
+                  <span className="text-xs font-mono text-text-muted">
                     {lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue) + '/mês' : '-'}
                   </span>
                 </td>
@@ -136,38 +115,43 @@ function KanbanView({ leads }: { leads: Lead[] }) {
   const columns = LEAD_STATUSES.filter((s) => s.value !== 'Perdido')
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+    <div className="flex gap-4 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 snap-x">
       {columns.map((col) => {
         const colLeads = leads.filter((l) => l.status === col.value)
         return (
-          <div key={col.value} className="min-w-[260px] flex-shrink-0">
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
-              <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">{col.label}</span>
-              <span className="text-xs text-text-muted font-mono">{colLeads.length}</span>
+          <div key={col.value} className="min-w-[280px] flex-shrink-0 snap-start">
+            <div className="flex items-center gap-2.5 mb-3 px-1">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+              <span className="text-xs font-semibold text-text-secondary">{col.label}</span>
+              <span className="text-[11px] text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5">{colLeads.length}</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {colLeads.map((lead) => {
-                const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
+                const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
                 return (
                   <Card
                     key={lead.id}
                     accent={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'}
                     hover
                     onClick={() => navigate(`/leads/${lead.id}`)}
-                    className="p-3"
+                    className="p-4"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge variant={tempVariant} className="text-[10px]">
-                        {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'}
+                    <div className="flex items-start justify-between mb-2.5">
+                      <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
+                        {lead.temperature}
                       </Badge>
-                      <span className="text-xs font-mono text-text-muted">{lead.score || '-'}</span>
+                      <span className="text-xs font-mono font-bold text-text-muted">{score}</span>
                     </div>
                     <p className="text-sm font-semibold text-text-primary mb-1">{lead.companyName}</p>
-                    <p className="text-xs text-text-secondary">{lead.segment} · {lead.tier}</p>
+                    <p className="text-[11px] text-text-muted">{lead.segment} · {lead.tier}</p>
                   </Card>
                 )
               })}
+              {colLeads.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-center">
+                  <p className="text-xs text-text-muted">Vazio</p>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -201,20 +185,23 @@ export function LeadsPage() {
   }
 
   return (
-    <div className="space-y-4 animate-[fade-in_0.3s_ease-out]">
+    <div className="space-y-5 animate-[fade-in_0.4s_ease-out]">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold font-heading">Leads</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-surface-md rounded-lg p-0.5 border border-stone-700">
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
+          <p className="text-xs text-text-muted mt-0.5">{filteredLeads.length} leads encontrados</p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <div className="flex rounded-xl p-0.5 bg-white/[0.03] border border-border">
             <button
               onClick={() => setView('table')}
-              className={`p-1.5 rounded-md transition-colors cursor-pointer ${view === 'table' ? 'bg-red text-white' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`p-2 rounded-lg transition-all cursor-pointer ${view === 'table' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary'}`}
             >
               <List className="h-4 w-4" />
             </button>
             <button
               onClick={() => setView('kanban')}
-              className={`p-1.5 rounded-md transition-colors cursor-pointer ${view === 'kanban' ? 'bg-red text-white' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`p-2 rounded-lg transition-all cursor-pointer ${view === 'kanban' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary'}`}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
@@ -225,14 +212,7 @@ export function LeadsPage() {
         </div>
       </div>
 
-      <LeadFilters
-        segment={segment}
-        setSegment={setSegment}
-        temperature={temperature}
-        setTemperature={setTemperature}
-        status={status}
-        setStatus={setStatus}
-      />
+      <LeadFilters segment={segment} setSegment={setSegment} temperature={temperature} setTemperature={setTemperature} status={status} setStatus={setStatus} />
 
       {filteredLeads.length === 0 ? (
         <EmptyState
@@ -248,8 +228,6 @@ export function LeadsPage() {
       ) : (
         <KanbanView leads={filteredLeads} />
       )}
-
-      <p className="text-xs text-text-muted text-center">{filteredLeads.length} leads</p>
     </div>
   )
 }

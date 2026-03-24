@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Search, Users, Smartphone, BarChart3, Settings, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Search, Users, Smartphone, BarChart3, Settings, PanelLeftClose, PanelLeft } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '../../lib/cn'
 import { getDaySegment } from '../../lib/constants'
@@ -12,10 +12,6 @@ const navItems = [
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]
 
-const bottomItems = [
-  { to: '/settings', icon: Settings, label: 'Configurações' },
-]
-
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const segment = getDaySegment()
@@ -23,46 +19,36 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col h-screen bg-surface border-r border-stone-800/50 transition-all duration-300 fixed left-0 top-0 z-40',
-        collapsed ? 'w-[72px]' : 'w-[256px]',
+        'hidden md:flex flex-col h-screen fixed left-0 top-0 z-40 transition-all duration-300',
+        'bg-surface/80 backdrop-blur-xl border-r border-border',
+        collapsed ? 'w-[72px]' : 'w-[260px]',
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 h-16 border-b border-stone-800/50">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red flex items-center justify-center text-white font-bold font-heading text-sm">
-              O
-            </div>
-            <div>
-              <span className="text-sm font-bold font-heading text-text-primary">OUTBILI</span>
-              <p className="text-[10px] text-text-muted leading-none">V4 Bilinski &amp;Co</p>
-            </div>
-          </div>
+      {/* Logo */}
+      <div className={cn('flex items-center h-[72px] border-b border-border', collapsed ? 'justify-center px-3' : 'px-5')}>
+        {collapsed ? (
+          <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-7 w-auto object-contain" />
+        ) : (
+          <img src="/outbili/logo-white.png" alt="V4 Bilinski&Co" className="h-8 w-auto object-contain" />
         )}
-        {collapsed && (
-          <div className="w-8 h-8 rounded-lg bg-red flex items-center justify-center text-white font-bold font-heading text-sm mx-auto">
-            O
-          </div>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-md hover:bg-surface-hover text-text-secondary cursor-pointer"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
       </div>
 
-      {/* Segment badge */}
+      {/* Segment of the day */}
       {!collapsed && (
-        <div className="px-4 py-3 border-b border-stone-800/50">
-          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Segmento do dia</div>
-          <div className="text-xs font-semibold text-red">{segment}</div>
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-red animate-pulse" />
+            <span className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium">Segmento do dia</span>
+          </div>
+          <p className="text-sm font-semibold text-red mt-1 font-heading">{segment}</p>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-1">
+      <nav className="flex-1 py-4 px-3 space-y-1">
+        {!collapsed && (
+          <p className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3">Menu</p>
+        )}
         {navItems.map((item) => (
           <NavLink
             key={item.to}
@@ -70,40 +56,49 @@ export function Sidebar() {
             end={item.to === '/'}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-red/8 text-red border-l-3 border-l-red'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover',
-                collapsed && 'justify-center px-0',
+                  ? 'bg-red/10 text-red shadow-[inset_0_0_0_1px_rgba(230,51,41,0.15)]'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+                collapsed && 'justify-center px-2',
               )
             }
           >
-            <item.icon className="h-5 w-5 shrink-0" />
+            <item.icon className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* Bottom */}
-      <div className="py-3 px-2 border-t border-stone-800/50">
-        {bottomItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-red/8 text-red'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover',
-                collapsed && 'justify-center px-0',
-              )
-            }
-          >
-            <item.icon className="h-5 w-5 shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
-        ))}
+      <div className="py-3 px-3 border-t border-border space-y-1">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+              isActive
+                ? 'bg-red/10 text-red'
+                : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+              collapsed && 'justify-center px-2',
+            )
+          }
+        >
+          <Settings className="h-[18px] w-[18px] shrink-0" />
+          {!collapsed && <span>Configurações</span>}
+        </NavLink>
+
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full',
+            'text-text-muted hover:text-text-secondary hover:bg-white/[0.03] cursor-pointer',
+            collapsed && 'justify-center px-2',
+          )}
+        >
+          {collapsed ? <PanelLeft className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
+          {!collapsed && <span>Recolher</span>}
+        </button>
       </div>
     </aside>
   )

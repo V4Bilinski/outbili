@@ -8,8 +8,8 @@ export function MainLayout() {
     <div className="min-h-screen bg-bg">
       <Sidebar />
       <BottomNav />
-      <main className="md:ml-[256px] pb-20 md:pb-0">
-        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+      <main className="md:ml-[260px] pb-24 md:pb-0 min-h-screen">
+        <div className="p-5 md:p-8 max-w-[1400px] mx-auto">
           <Outlet />
         </div>
       </main>
@@ -17,9 +17,11 @@ export function MainLayout() {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#111111',
-            border: '1px solid rgba(120, 113, 108, 0.3)',
-            color: '#FFFFFF',
+            background: 'rgba(15, 15, 18, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            color: '#F4F4F5',
+            borderRadius: '12px',
           },
         }}
       />

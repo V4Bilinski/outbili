@@ -12,8 +12,8 @@ const items = [
 
 export function BottomNav() {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-stone-800/50 safe-area-pb">
-      <div className="flex items-center justify-around h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl border-t border-border">
+      <div className="flex items-center justify-around h-16 px-2">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -21,8 +21,10 @@ export function BottomNav() {
             end={item.to === '/'}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center gap-0.5 py-1.5 px-3 text-[10px] font-medium transition-colors min-w-[44px] min-h-[44px] justify-center',
-                isActive ? 'text-red' : 'text-text-secondary',
+                'flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-[10px] font-medium transition-all min-w-[48px] min-h-[44px] justify-center',
+                isActive
+                  ? 'text-red bg-red/8'
+                  : 'text-text-muted active:text-text-secondary',
               )
             }
           >
@@ -31,6 +33,8 @@ export function BottomNav() {
           </NavLink>
         ))}
       </div>
+      {/* Safe area spacer for notch devices */}
+      <div className="h-[env(safe-area-inset-bottom,0px)]" />
     </nav>
   )
 }
