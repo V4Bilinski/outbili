@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primárias V4 Bilinski */
+  --color-red: #CC0000;
+  --color-red-vivid: #FF2020;
+  --color-red-dark: #990000;
+  --color-red-glow: rgba(204, 0, 0, 0.3);
+
+  /* Superfícies (dark theme) */
+  --color-bg: #0A0A0A;
+  --color-surface: #111111;
+  --color-surface-md: #1A1A1A;
+  --color-surface-lt: #222222;
+  --color-surface-hover: #1E1E1E;
+
+  /* Texto */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #B0B0B0;
+  --color-text-muted: #666666;
+
+  /* Funcionais — NUNCA azul */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #FF453A;
+  --color-info: #FF6B1A;
+
+  /* Temperatura */
+  --color-hot: #FF2020;
+  --color-warm: #F59E0B;
+  --color-cold: #8E8E93;
+
+  /* Impacto */
+  --color-impact-high: #FF453A;
+  --color-impact-medium: #FF9F0A;
+  --color-impact-low: #22C55E;
+
+  /* WhatsApp */
+  --color-whatsapp: #25D366;
+
+  /* Tipografia */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Animações */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-shake: shake 0.5s ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--color-red-glow); }
+  50% { box-shadow: 0 0 20px var(--color-red-glow), 0 0 40px rgba(204, 0, 0, 0.15); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-surface-lt) transparent;
+  }
+
+  ::selection {
+    background-color: rgba(204, 0, 0, 0.3);
+    color: white;
+  }
+
+  input, textarea, select {
+    font-size: 16px; /* Previne zoom iOS */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
