@@ -32,6 +32,7 @@ export function CompanyPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: lead, isLoading } = useLead(id)
+  const { data: contacts } = useContacts(id)
   const [activeTab, setActiveTab] = useState('resumo')
 
   if (isLoading) {
@@ -51,7 +52,6 @@ export function CompanyPage() {
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
 
-  const { data: contacts } = useContacts(lead?.id)
   const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
   const whatsappLink = mainContact?.whatsapp ? `https://wa.me/${mainContact.whatsapp.replace(/\D/g, '')}` : null
 
