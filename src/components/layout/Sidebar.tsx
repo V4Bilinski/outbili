@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Search, Users, Smartphone, BarChart3, Settings, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../../lib/cn'
-import { getDaySegment } from '../../lib/constants'
 import { useSidebar } from '../../lib/sidebar-context'
 
 const navItems = [
@@ -14,7 +13,6 @@ const navItems = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const segment = getDaySegment()
 
   return (
     <>
@@ -31,30 +29,11 @@ export function Sidebar() {
           collapsed ? 'justify-center px-3 py-5' : 'px-5 py-5',
         )}>
           {collapsed ? (
-            <img
-              src="/outbili/v4-icon.png"
-              alt="V4"
-              className="h-9 w-9 object-contain transition-all duration-300"
-            />
+            <img src="/outbili/v4-icon.png" alt="V4" className="h-9 w-9 object-contain transition-all duration-300" />
           ) : (
-            <img
-              src="/outbili/logo-white.png"
-              alt="V4 Bilinski&Co"
-              className="h-12 w-auto object-contain transition-all duration-300"
-            />
+            <img src="/outbili/logo-white.png" alt="V4 Bilinski&Co" className="h-12 w-auto object-contain transition-all duration-300" />
           )}
         </div>
-
-        {/* Segment of the day */}
-        {!collapsed && (
-          <div className="px-5 py-4 border-b border-border animate-[fade-in_0.2s_ease-out]">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-red animate-pulse" />
-              <span className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium">Segmento do dia</span>
-            </div>
-            <p className="text-sm font-semibold text-red mt-1 font-heading">{segment}</p>
-          </div>
-        )}
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-hidden">
@@ -104,7 +83,7 @@ export function Sidebar() {
         </div>
       </aside>
 
-      {/* Collapse toggle — floating button on the edge between sidebar and content */}
+      {/* Collapse toggle */}
       <button
         onClick={toggle}
         className={cn(

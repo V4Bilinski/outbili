@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Users, Flame, Calendar, Search, FileDown, Plus, MessageCircle, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { getDaySegment, LEAD_STATUSES } from '../lib/constants'
+import { LEAD_STATUSES } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Lead } from '../types'
@@ -105,20 +105,20 @@ function NextActions({ leads }: { leads: Lead[] }) {
                   <p className="text-xs text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2 shrink-0">
                 {action.type === 'whatsapp' && (
                   <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-3.5 w-3.5" />}>
                     WhatsApp
                   </Button>
                 )}
                 {action.type === 'view' && (
-                  <Button variant="ghost" size="sm" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>
-                    Ver
+                  <Button variant="primary" size="sm" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>
+                    Ver ficha
                   </Button>
                 )}
                 {action.type === 'meeting' && (
                   <Button variant="secondary" size="sm" icon={<Eye className="h-3.5 w-3.5" />}>
-                    Prep
+                    Preparar
                   </Button>
                 )}
               </div>
@@ -205,7 +205,6 @@ function QuickActions() {
 export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
   const navigate = useNavigate()
-  const segment = getDaySegment()
   const [showImport, setShowImport] = useState(false)
 
   if (isLoading) {
@@ -335,20 +334,6 @@ export function DashboardPage() {
           ))}
         </div>
 
-        {/* Segment of the day */}
-        <div className="p-4 rounded-2xl bg-white/[0.02] border border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-red animate-pulse" />
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted">Segmento recomendado para hoje</p>
-              <p className="text-sm font-semibold text-red font-heading">{segment}</p>
-            </div>
-          </div>
-          <Button size="sm" variant="ghost" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
-            Pesquisar {segment}
-          </Button>
-        </div>
-
         <ImportModal open={showImport} onClose={() => setShowImport(false)} />
       </div>
     )
@@ -358,17 +343,15 @@ export function DashboardPage() {
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-xl font-bold font-heading gradient-text">Dashboard</h1>
-            <p className="text-xs text-text-muted mt-0.5">
-              Segmento: <span className="text-red font-medium">{segment}</span>
-            </p>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Dashboard</h1>
+          <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads no pipeline</p>
         </div>
-        <Button size="sm" icon={<Search className="h-3.5 w-3.5" />} onClick={() => {}}>
-          Nova pesquisa
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
+            Nova pesquisa
+          </Button>
+        </div>
       </div>
 
       <KPICards leads={allLeads} />

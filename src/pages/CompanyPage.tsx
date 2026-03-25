@@ -4,7 +4,9 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin } from 'lucide-react'
+import { ArrowLeft, MapPin, MessageCircle, Phone } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { useContacts } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { useState } from 'react'
 import { cn } from '../lib/cn'
@@ -17,13 +19,13 @@ import { TabContatos } from '../components/company/TabContatos'
 
 const TABS = [
   { id: 'resumo', label: 'Resumo' },
+  { id: 'contatos', label: 'Contatos' },
   { id: 'spiced', label: 'SPICED' },
+  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
   { id: 'reuniao', label: 'Reunião' },
   { id: 'projecao', label: 'Projeção' },
-  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
   { id: 'competitiva', label: 'Competitiva' },
   { id: 'argumentos', label: 'Argumentos' },
-  { id: 'contatos', label: 'Contatos' },
 ] as const
 
 export function CompanyPage() {
@@ -48,6 +50,10 @@ export function CompanyPage() {
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
+
+  const { data: contacts } = useContacts(lead?.id)
+  const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
+  const whatsappLink = mainContact?.whatsapp ? `https://wa.me/${mainContact.whatsapp.replace(/\D/g, '')}` : null
 
   const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, [])
   const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, [])
@@ -99,6 +105,36 @@ export function CompanyPage() {
             </div>
           ))}
         </div>
+
+        {/* Quick action: WhatsApp decisor — VISÍVEL NO HEADER */}
+        {mainContact && (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/8 border border-whatsapp/20">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-text-muted">Decisor</p>
+              <p className="text-sm font-semibold text-text-primary">{mainContact.name}</p>
+              {mainContact.role && <p className="text-[11px] text-text-muted">{mainContact.role}</p>}
+            </div>
+            {whatsappLink ? (
+              <a href={whatsappLink} target="_blank" rel="noopener">
+                <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-4 w-4" />}>
+                  WhatsApp
+                </Button>
+              </a>
+            ) : (
+              <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setActiveTab('contatos')}>
+                Adicionar contato
+              </Button>
+            )}
+          </div>
+        )}
+        {!mainContact && (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-warning/8 border border-warning/20">
+            <p className="text-xs text-warning">Nenhum contato cadastrado — adicione o decisor</p>
+            <Button variant="secondary" size="sm" onClick={() => setActiveTab('contatos')}>
+              Adicionar
+            </Button>
+          </div>
+        )}
 
         {/* Links — formato pills clicáveis com destaque */}
         <div className="flex gap-2 flex-wrap">
