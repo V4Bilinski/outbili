@@ -31,13 +31,21 @@ const ALL_STATES = [
   { uf: 'TO', name: 'Tocantins' },
 ]
 
-const REVENUE_OPTIONS = [
-  { value: '', label: 'Sem limite' },
-  { value: '30000', label: 'R$ 30k' }, { value: '50000', label: 'R$ 50k' },
-  { value: '70000', label: 'R$ 70k' }, { value: '100000', label: 'R$ 100k' },
-  { value: '200000', label: 'R$ 200k' }, { value: '500000', label: 'R$ 500k' },
-  { value: '830000', label: 'R$ 830k' }, { value: '1000000', label: 'R$ 1M' },
-  { value: '2000000', label: 'R$ 2M' }, { value: '5000000', label: 'R$ 5M' },
+const REVENUE_MIN_OPTIONS = [
+  { value: '70000', label: 'R$ 70k' },
+  { value: '100000', label: 'R$ 100k' },
+  { value: '200000', label: 'R$ 200k' },
+  { value: '500000', label: 'R$ 500k' },
+  { value: '830000', label: 'R$ 830k' },
+  { value: '1000000', label: 'R$ 1M' },
+]
+
+const REVENUE_MAX_OPTIONS = [
+  { value: '200000', label: 'R$ 200k' },
+  { value: '500000', label: 'R$ 500k' },
+  { value: '830000', label: 'R$ 830k' },
+  { value: '1000000', label: 'R$ 1M' },
+  { value: '2000000', label: 'R$ 2M' },
 ]
 
 const SEARCH_PHASES = [
@@ -264,8 +272,8 @@ export function SearchPage() {
   const [states, setStates] = useState<string[]>([])
   const [city, setCity] = useState('')
   const [keywords, setKeywords] = useState<string[]>([])
-  const [revenueMin, setRevenueMin] = useState('')
-  const [revenueMax, setRevenueMax] = useState('')
+  const [revenueMin, setRevenueMin] = useState('70000')
+  const [revenueMax, setRevenueMax] = useState('2000000')
   const [_importingId, setImportingId] = useState<string | null>(null)
   const [autoImported, setAutoImported] = useState(false)
   const [autoImportCount, setAutoImportCount] = useState(0)
@@ -393,13 +401,13 @@ export function SearchPage() {
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mínimo</label>
             <select value={revenueMin} onChange={(e) => setRevenueMin(e.target.value)} className={selectClass}>
-              {REVENUE_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.value ? r.label : 'Sem mínimo'}</option>)}
+              {REVENUE_MIN_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento máximo</label>
             <select value={revenueMax} onChange={(e) => setRevenueMax(e.target.value)} className={selectClass}>
-              {REVENUE_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.value ? r.label : 'Sem máximo'}</option>)}
+              {REVENUE_MAX_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
         </div>
