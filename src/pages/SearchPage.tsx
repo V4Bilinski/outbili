@@ -267,12 +267,21 @@ function ResultCard({ item, onImport, importing }: { item: any; onImport: () => 
             </Badge>
           </div>
           <p className="text-xs text-text-muted mb-1">{item.category} · {item.address}</p>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {item.whatsapp ? (
+              <span className="text-[11px] text-whatsapp bg-whatsapp/10 px-2 py-0.5 rounded-md font-medium">WhatsApp: +{item.whatsapp}</span>
+            ) : (
+              <span className="text-[11px] text-error/70 bg-error/8 px-2 py-0.5 rounded-md">Sem WhatsApp decisor</span>
+            )}
             {item.phone && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.phone}</span>}
-            {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[200px]">{item.website}</span>}
-            {item.instagramFollowers && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.instagramFollowers} seguidores IG</span>}
+            {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[180px]">{item.website}</span>}
+            {item.instagramFollowers && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">IG: {item.instagramFollowers}</span>}
+            {item.linkedinUrl && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">LinkedIn</span>}
             {item.reviewsCount > 0 && <span className="text-[11px] text-text-muted">{item.reviewsCount} avaliações</span>}
           </div>
+          {!item.whatsapp && (
+            <p className="text-[10px] text-warning mt-1.5">O WhatsApp do decisor (CEO/dono) deve ser adicionado manualmente na ficha do lead após importação</p>
+          )}
           {item.marketingVulnerabilities.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {item.marketingVulnerabilities.slice(0, 3).map((v: string, i: number) => (
@@ -385,8 +394,11 @@ export function SearchPage() {
         city: item.city || city,
         state: item.state || states[0] || '',
         instagram: item.instagramUrl || '',
+        linkedin: item.linkedinUrl || '',
+        facebook: item.facebookUrl || '',
         businessSummary: `${item.category} · ${item.reviewsCount} avaliações Google (${item.googleRating}★) · ${item.instagramFollowers ? item.instagramFollowers + ' seguidores IG' : 'Sem IG'} · Presença digital: ${item.digitalPresenceScore}/10`,
         techStack: item.websiteTech || '',
+        productPortfolio: item.landingPages?.length > 0 ? `Landing pages: ${item.landingPages.join(', ')}` : '',
         marketContext: item.competitiveInsights || '',
         vulnerabilities: JSON.stringify(vulns),
         meetingPrep: JSON.stringify({

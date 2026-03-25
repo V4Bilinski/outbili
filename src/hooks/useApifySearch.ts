@@ -26,18 +26,22 @@ interface EnrichedLead {
   googleUrl: string
   imageUrl?: string
   emails: string[]
-  // Instagram data
+  // Social & contact data
+  whatsapp?: string
+  linkedinUrl?: string
   instagramHandle?: string
   instagramUrl?: string
   instagramFollowers?: number
   instagramPosts?: number
   instagramBio?: string
   instagramEngagement?: string
+  facebookUrl?: string
   // Website data
   websiteTitle?: string
   websiteDescription?: string
   websiteServices?: string
   websiteTech?: string
+  landingPages: string[]
   // Analysis
   digitalPresenceScore: number
   marketingVulnerabilities: string[]
@@ -184,10 +188,29 @@ export function useApifySearch() {
           const webDomain = item.website ? new URL(item.website).hostname.replace('www.', '') : null
           const webInfo = webDomain ? webData[webDomain] : null
 
+          // Extract phone as WhatsApp (Brazilian phones)
+          const rawPhone = item.phone || ''
+          const whatsapp = rawPhone.replace(/\D/g, '').replace(/^0+/, '')
+          const whatsappFull = whatsapp.length >= 10 ? (whatsapp.startsWith('55') ? whatsapp : `55${whatsapp}`) : ''
+
+          // Extract social profiles
+          const linkedinUrl = item.socialProfiles?.linkedin || ''
+          const facebookUrl = item.socialProfiles?.facebook || ''
+
+          // Extract landing pages from website crawl
+          const landingPages: string[] = []
+          if (item.website) landingPages.push(item.website)
+          if (webInfo?.links) {
+            const links = (webInfo.links as string[]).filter((l: string) =>
+              l.includes(item.website?.replace(/https?:\/\/(www\.)?/, '').split('/')[0] || '---')
+            ).slice(0, 5)
+            landingPages.push(...links)
+          }
+
           const lead: EnrichedLead = {
             companyName: item.title,
             address: item.address || '',
-            phone: item.phone || '',
+            phone: rawPhone,
             website: item.website || '',
             googleRating: item.totalScore || 0,
             reviewsCount: item.reviewsCount || 0,
@@ -197,6 +220,9 @@ export function useApifySearch() {
             googleUrl: item.url || '',
             imageUrl: item.imageUrl,
             emails: item.emails || [],
+            whatsapp: whatsappFull,
+            linkedinUrl,
+            facebookUrl,
             instagramHandle: igHandle,
             instagramUrl: item.socialProfiles?.instagram,
             instagramFollowers: igInfo?.followersCount,
@@ -207,6 +233,7 @@ export function useApifySearch() {
             websiteDescription: webInfo?.text?.substring(0, 500),
             websiteServices: webInfo?.text?.substring(0, 300),
             websiteTech: undefined,
+            landingPages: [...new Set(landingPages)],
             digitalPresenceScore: 0,
             marketingVulnerabilities: [],
             competitiveInsights: '',
