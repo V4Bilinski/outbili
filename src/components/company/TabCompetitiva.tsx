@@ -41,7 +41,7 @@ export function TabCompetitiva({ lead }: { lead: Lead }) {
                 {lead.companyName}
               </th>
               {data.competitors.map((c) => (
-                <th key={c.nome} className="text-center py-3 px-3 text-[11px] font-medium text-text-muted uppercase tracking-wider">{c.nome}</th>
+                <th key={(c as any).name || c.nome} className="text-center py-3 px-3 text-[11px] font-medium text-text-muted uppercase tracking-wider">{(c as any).name || c.nome}</th>
               ))}
             </tr>
           </thead>
@@ -53,10 +53,11 @@ export function TabCompetitiva({ lead }: { lead: Lead }) {
                   <span className="text-xs font-medium text-text-muted bg-white/[0.04] px-2 py-1 rounded-md">A definir</span>
                 </td>
                 {data.competitors.map((c) => {
-                  const level = c.dimensoes[dim] || 'Média'
+                  const dims = (c as any).dimensions || c.dimensoes || {}
+                  const level = dims[dim] || 'Média'
                   const style = levelStyles[level] || levelStyles.Média
                   return (
-                    <td key={c.nome} className="py-2.5 px-3 text-center">
+                    <td key={(c as any).name || c.nome} className="py-2.5 px-3 text-center">
                       <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-md', style.bg, style.text)}>
                         {level}
                       </span>
