@@ -4,24 +4,19 @@ import type { Contact } from '../types'
 const TABLE = 'Contacts'
 
 export async function getContacts(leadId?: string): Promise<Contact[]> {
-  const filter = leadId ? `FIND("${leadId}", ARRAYJOIN({Lead}))` : undefined
+  const filter = leadId ? `{leadId} = "${leadId}"` : undefined
   const records = await listAllRecords(TABLE, { filterByFormula: filter })
   return mapRecords<Contact>(records)
 }
 
 export async function createContact(data: Partial<Contact>): Promise<Contact> {
   const { id, createdAt, ...fields } = data as any
-  // Map leadId to Airtable linked record format
-  if (fields.leadId) {
-    fields.Lead = [fields.leadId]
-    delete fields.leadId
-  }
   const records = await createRecords(TABLE, [{ fields }])
   return mapRecord<Contact>(records[0])
 }
 
 export async function updateContact(id: string, data: Partial<Contact>): Promise<Contact> {
-  const { id: _id, createdAt, leadId, ...fields } = data as any
+  const { id: _id, createdAt, ...fields } = data as any
   const records = await updateRecords(TABLE, [{ id, fields }])
   return mapRecord<Contact>(records[0])
 }
