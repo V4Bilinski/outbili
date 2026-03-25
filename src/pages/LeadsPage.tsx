@@ -61,7 +61,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
               <tr
                 key={lead.id}
                 onClick={() => navigate(`/leads/${lead.id}`)}
-                className="border-b border-border/50 hover:bg-white/[0.015] transition-colors cursor-pointer group"
+                className="border-b border-border/50 hover:bg-white/[0.04] transition-colors cursor-pointer group"
               >
                 <td className="py-3.5 px-4">
                   <div className="flex items-center gap-3">
