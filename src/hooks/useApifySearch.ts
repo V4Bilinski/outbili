@@ -5,6 +5,8 @@ import {
   startWebsiteCrawl,
   startFacebookAdsScrape,
   startSeoAudit,
+  startSemrushScrape,
+  startSimilarWebScrape,
   startCompetitorSearch,
   pollRunUntilDone,
   getDatasetItems,
@@ -173,9 +175,36 @@ export function useApifySearch() {
         return { url, seo: seo?.[0] || null }
       })
 
-      const [adsResults, seoResults] = await Promise.all([
+      // SemRush + SimilarWeb (parallel with ads/seo, for websites only)
+      const domains = websiteUrls
+        .filter((u) => !u.includes('instagram.com'))
+        .map((u) => { try { return new URL(u).hostname.replace('www.', '') } catch { return '' } })
+        .filter(Boolean)
+        .slice(0, 3) // limit to 3 for speed
+
+      const semrushPromises = domains.map(async (domain) => {
+        const data = await safeRunActor(
+          () => startSemrushScrape(domain),
+          'radeance~semrush-scraper',
+          90_000,
+        )
+        return { domain, data: data?.[0] || null }
+      })
+
+      const similarwebPromises = domains.map(async (domain) => {
+        const data = await safeRunActor(
+          () => startSimilarWebScrape(domain),
+          'ecomdate~similarweb-scraper',
+          90_000,
+        )
+        return { domain, data: data?.[0] || null }
+      })
+
+      const [adsResults, seoResults, semrushResults, similarwebResults] = await Promise.all([
         Promise.all(adsPromises),
         Promise.all(seoPromises),
+        Promise.all(semrushPromises),
+        Promise.all(similarwebPromises),
       ])
 
       const adsMap: Record<string, any[]> = {}
@@ -188,6 +217,12 @@ export function useApifySearch() {
           seoMap[domain] = r.seo
         }
       })
+
+      const semrushMap: Record<string, any> = {}
+      semrushResults.forEach((r) => { if (r.domain && r.data) semrushMap[r.domain] = r.data })
+
+      const similarwebMap: Record<string, any> = {}
+      similarwebResults.forEach((r) => { if (r.domain && r.data) similarwebMap[r.domain] = r.data })
 
       setStep('facebookAds', 'done')
       setStep('seo', 'done')
@@ -257,15 +292,62 @@ export function useApifySearch() {
             seoInsight: seo
               ? `Score SEO: ${seo.score || 'N/A'}/100. ${seo.issues?.length || 0} problemas técnicos identificados.`
               : 'Sem dados de SEO — website pode não existir ou não está indexado.',
-            monthlyVisits: 0,
-            bounceRate: 0,
-            trafficSources: {},
-            trafficInsight: 'Dados de tráfego via SimilarWeb disponíveis sob demanda.',
-            domainRating: 0,
-            backlinks: 0,
-            referringDomains: 0,
-            organicKeywords: 0,
-            authorityInsight: 'Análise de autoridade via Ahrefs disponível sob demanda.',
+            monthlyVisits: (() => {
+              if (!webDomain) return 0
+              const sw = similarwebMap[webDomain]
+              return sw?.visits || sw?.monthlyVisits || sw?.totalVisits || 0
+            })(),
+            bounceRate: (() => {
+              if (!webDomain) return 0
+              const sw = similarwebMap[webDomain]
+              return sw?.bounceRate || 0
+            })(),
+            trafficSources: (() => {
+              if (!webDomain) return {}
+              const sw = similarwebMap[webDomain]
+              return sw?.trafficSources || sw?.sources || {}
+            })(),
+            trafficInsight: (() => {
+              if (!webDomain) return 'Sem website — sem dados de tráfego.'
+              const sw = similarwebMap[webDomain]
+              if (sw) {
+                const visits = sw.visits || sw.monthlyVisits || 0
+                const bounce = sw.bounceRate || 0
+                return `SimilarWeb: ${visits > 0 ? visits.toLocaleString() + ' visitas/mês' : 'tráfego não detectado'}${bounce ? `, bounce rate ${(bounce * 100).toFixed(0)}%` : ''}. ${visits < 1000 ? 'Tráfego muito baixo — empresa praticamente invisível online.' : visits < 5000 ? 'Tráfego baixo — oportunidade de crescimento significativa.' : 'Tráfego moderado.'}`
+              }
+              return 'Dados SimilarWeb não disponíveis para este domínio.'
+            })(),
+            domainRating: (() => {
+              if (!webDomain) return 0
+              const sr = semrushMap[webDomain]
+              return sr?.domainRating || sr?.authorityScore || sr?.domainScore || 0
+            })(),
+            backlinks: (() => {
+              if (!webDomain) return 0
+              const sr = semrushMap[webDomain]
+              return sr?.backlinks || sr?.totalBacklinks || 0
+            })(),
+            referringDomains: (() => {
+              if (!webDomain) return 0
+              const sr = semrushMap[webDomain]
+              return sr?.referringDomains || 0
+            })(),
+            organicKeywords: (() => {
+              if (!webDomain) return 0
+              const sr = semrushMap[webDomain]
+              return sr?.organicKeywords || sr?.organicSearchKeywords || 0
+            })(),
+            authorityInsight: (() => {
+              if (!webDomain) return 'Sem website — sem autoridade de domínio.'
+              const sr = semrushMap[webDomain]
+              if (sr) {
+                const dr = sr.domainRating || sr.authorityScore || 0
+                const bk = sr.backlinks || 0
+                const kw = sr.organicKeywords || 0
+                return `SemRush: Authority ${dr}/100, ${bk} backlinks, ${kw} keywords orgânicas. ${dr < 20 ? 'Autoridade muito baixa — domínio novo ou sem estratégia de link building.' : dr < 40 ? 'Autoridade baixa — espaço para crescimento.' : 'Autoridade moderada.'}`
+              }
+              return 'Dados SemRush não disponíveis para este domínio.'
+            })(),
             googleRating: item.totalScore || 0,
             googleReviews: item.reviewsCount || 0,
             googlePhotos: 0,

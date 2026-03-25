@@ -4,7 +4,7 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, Globe, MapPin, ExternalLink } from 'lucide-react'
+import { ArrowLeft, MapPin } from 'lucide-react'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { useState } from 'react'
 import { cn } from '../lib/cn'
@@ -100,26 +100,26 @@ export function CompanyPage() {
           ))}
         </div>
 
-        {/* Links */}
+        {/* Links — formato pills clicáveis com destaque */}
         <div className="flex gap-2 flex-wrap">
-          {lead.website && (
-            <a href={lead.website} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
-              <Globe className="h-3.5 w-3.5" /> Website
+          {lead.website && !lead.website.includes('instagram.com') && (
+            <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+              site
             </a>
           )}
           {lead.instagram && (
-            <a href={lead.instagram} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
-              <ExternalLink className="h-3 w-3" /> Instagram
+            <a href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram}`} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+              @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?#].*/,'')}
             </a>
           )}
           {lead.linkedin && (
-            <a href={lead.linkedin} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
-              <ExternalLink className="h-3 w-3" /> LinkedIn
+            <a href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/in/${lead.linkedin}`} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+              LinkedIn
             </a>
           )}
           {lead.facebook && (
-            <a href={lead.facebook} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
-              <ExternalLink className="h-3 w-3" /> Facebook
+            <a href={lead.facebook} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+              Facebook
             </a>
           )}
         </div>

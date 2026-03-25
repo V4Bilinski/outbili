@@ -134,6 +134,19 @@ export async function startSimilarWebScrape(domain: string): Promise<string> {
   return result.data.id
 }
 
+export async function startSemrushScrape(domain: string): Promise<string> {
+  const result = await apifyFetch(
+    `/acts/radeance~semrush-scraper/runs?token=${TOKEN}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        urls: [`https://www.semrush.com/analytics/overview/?q=${domain}&searchType=domain`],
+      }),
+    },
+  )
+  return result.data.id
+}
+
 // Start Google Maps competitor search (same segment, same city)
 export async function startCompetitorSearch(segment: string, city: string, maxResults = 10): Promise<string> {
   return startGoogleMapsSearch(segment, city, maxResults)
