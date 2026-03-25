@@ -1,6 +1,6 @@
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, Star, Download, Sparkles, Brain, Target, Shield, Zap, History } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, Star, Sparkles, Brain, Target, Shield, Zap, History } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
@@ -220,7 +220,7 @@ function SearchAnimation({ stepStatuses, elapsed }: { stepStatuses: Record<strin
 }
 
 // --- Result card ---
-function ResultCard({ item, onImport, importing }: { item: any; onImport: () => void; importing: boolean }) {
+function ResultCard({ item, saved }: { item: any; saved: boolean }) {
   return (
     <div className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-200 hover:-translate-y-0.5 group">
       <div className="flex items-start justify-between gap-3">
@@ -247,7 +247,11 @@ function ResultCard({ item, onImport, importing }: { item: any; onImport: () => 
             </div>
           )}
         </div>
-        <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={onImport} loading={importing}>Importar</Button>
+        {saved ? (
+          <span className="text-[10px] text-success font-medium bg-success/10 px-2 py-1 rounded-lg shrink-0">Salvo</span>
+        ) : (
+          <span className="text-[10px] text-text-muted animate-pulse shrink-0">Salvando...</span>
+        )}
       </div>
     </div>
   )
@@ -261,11 +265,31 @@ export function SearchPage() {
   const [keywords, setKeywords] = useState<string[]>([])
   const [revenueMin, setRevenueMin] = useState('')
   const [revenueMax, setRevenueMax] = useState('')
-  const [importingId, setImportingId] = useState<string | null>(null)
+  const [_importingId, setImportingId] = useState<string | null>(null)
+  const [autoImported, setAutoImported] = useState(false)
+  const [autoImportCount, setAutoImportCount] = useState(0)
   const [history, setHistory] = useState<SearchHistory[]>(loadHistory)
 
   const apify = useApifySearch()
   const createLead = useCreateLead()
+
+  // Auto-import when search completes
+  useEffect(() => {
+    if (apify.phase === 'done' && apify.results.length > 0 && !autoImported) {
+      setAutoImported(true)
+      ;(async () => {
+        let count = 0
+        for (const item of apify.results) {
+          try {
+            await handleImportSingle(item)
+            count++
+            setAutoImportCount(count)
+          } catch { /* skip failed */ }
+        }
+        toast.success(`${count} leads salvos automaticamente no pipeline`)
+      })()
+    }
+  }, [apify.phase, apify.results.length, autoImported])
 
   const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
   const selectClass = cn(inputClass, 'appearance-none cursor-pointer')
@@ -277,6 +301,8 @@ export function SearchPage() {
     const entry: SearchHistory = { id: Date.now().toString(), segments, states, city, keywords, revenueMin, revenueMax, date: new Date().toISOString() }
     saveToHistory(entry)
     setHistory(loadHistory())
+    setAutoImported(false)
+    setAutoImportCount(0)
     apify.search({ segments, states, city, keywords, revenueMin, revenueMax })
   }
 
@@ -284,13 +310,10 @@ export function SearchPage() {
     setSegments(entry.segments); setStates(entry.states); setCity(entry.city); setKeywords(entry.keywords); setRevenueMin(entry.revenueMin); setRevenueMax(entry.revenueMax)
   }
 
-  const handleImport = async (item: any) => {
-    setImportingId(item.companyName)
-    try {
-      const spicedTotal = item.spicedTotal || 0
-      const temp = spicedTotal >= 4 ? 'HOT' : spicedTotal >= 3 ? 'WARM' : 'COLD'
-
-      await createLead.mutateAsync({
+  const handleImportSingle = async (item: any) => {
+    const spicedTotal = item.spicedTotal || 0
+    const temp = spicedTotal >= 4 ? 'HOT' : spicedTotal >= 3 ? 'WARM' : 'COLD'
+    await createLead.mutateAsync({
         companyName: item.companyName, segment: segments[0] || item.category || '', tier: 'Small', status: 'Novo',
         score: spicedTotal, temperature: temp,
         spicedS: item.spicedS || 0, spicedP: item.spicedP || 0, spicedI: item.spicedI || 0, spicedC: item.spicedC || 0, spicedD: item.spicedD || 0,
@@ -305,10 +328,9 @@ export function SearchPage() {
         meetingPrep: JSON.stringify({ agenda: [], objecoes: [], checklist: item.meetingTalkingPoints || [] }),
         enrichmentStatus: 'pending',
       })
-    } finally { setImportingId(null) }
   }
 
-  const handleImportAll = async () => { for (const item of apify.results) await handleImport(item); toast.success(`${apify.results.length} leads importados com análise completa`) }
+  void setImportingId // available for future manual import
 
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
@@ -418,11 +440,15 @@ export function SearchPage() {
               <CardTitle>{apify.results.length} empresas analisadas</CardTitle>
               <Badge variant="success" size="sm">{apify.elapsed}s</Badge>
             </div>
-            <Button size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleImportAll}>Importar todos ({apify.results.length})</Button>
+            {autoImported ? (
+              <Badge variant="success" size="sm">{autoImportCount} salvos no pipeline</Badge>
+            ) : (
+              <Badge variant="warning" size="sm">Salvando...</Badge>
+            )}
           </div>
           <div className="space-y-2">
             {apify.results.map((item, i) => (
-              <ResultCard key={i} item={item} onImport={() => handleImport(item)} importing={importingId === item.companyName} />
+              <ResultCard key={i} item={item} saved={autoImportCount > i} />
             ))}
           </div>
         </Card>
