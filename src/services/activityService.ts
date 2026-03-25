@@ -6,9 +6,10 @@ const TABLE = 'Activities'
 export async function getActivities(leadId: string): Promise<Activity[]> {
   const records = await listAllRecords(TABLE, {
     filterByFormula: `{leadId} = "${leadId}"`,
-    sort: [{ field: 'createdAt', direction: 'desc' }],
   })
-  return mapRecords<Activity>(records)
+  // Sort by createdTime descending (use record metadata, not field)
+  const mapped = mapRecords<Activity>(records)
+  return mapped.reverse()
 }
 
 export async function createActivity(data: Partial<Activity>): Promise<Activity> {
