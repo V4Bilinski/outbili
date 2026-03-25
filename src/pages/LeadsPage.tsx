@@ -41,75 +41,85 @@ function LeadFilters({
 
 function LeadTable({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
+
+  // Score bar color
+  const barColor = (score: number) => {
+    if (score >= 4) return 'bg-red'
+    if (score >= 3) return 'bg-warning'
+    return 'bg-cold'
+  }
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            {['Empresa', 'Temp.', 'Score', 'Status', 'Segmento', 'Tier', 'Faturamento'].map((h, i) => (
-              <th key={h} className={`text-left py-3.5 px-4 text-[11px] font-medium text-text-muted uppercase tracking-[0.1em] ${i > 1 && i < 5 ? 'hidden md:table-cell' : ''} ${i >= 5 ? 'hidden lg:table-cell' : ''}`}>
-                {h}
-              </th>
-            ))}
+            <th className="text-left py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10">#</th>
+            <th className="text-left py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Nome</th>
+            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
+            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Score</th>
+            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Trava</th>
+            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Veredicto</th>
           </tr>
         </thead>
         <tbody>
-          {leads.map((lead) => {
-            const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
+          {leads.map((lead, index) => {
             const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
+            const tempColors = { HOT: 'bg-red text-white', WARM: 'bg-warning text-black', COLD: 'bg-cold text-white' }
+            const trap = lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || ''
+            const trapCode = lead.hypotheticalTrap?.match(/^(T\d+)/)?.[1] || ''
+
             return (
               <tr
                 key={lead.id}
                 onClick={() => navigate(`/leads/${lead.id}`)}
-                className="border-b border-border/50 hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                className="border-b border-border/30 hover:bg-white/[0.04] transition-colors cursor-pointer group"
               >
-                <td className="py-3.5 px-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono shrink-0 ${
-                      lead.temperature === 'HOT' ? 'bg-hot/10 text-hot' : lead.temperature === 'WARM' ? 'bg-warm/10 text-warm' : 'bg-white/5 text-text-muted'
-                    }`}>
-                      {score}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</p>
-                        {lead.sourceHtmlReport === 'importado_manual' && (
-                          <span className="text-[9px] font-medium text-info bg-info/10 px-1.5 py-0.5 rounded">Importado</span>
-                        )}
-                        {lead.enrichmentStatus === 'pending' && (
-                          <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
-                        )}
-                        {lead.enrichmentStatus === 'complete' && (
-                          <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">IA</span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-text-muted">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3.5 px-4">
-                  <Badge variant={tempVariant} size="sm">{lead.temperature}</Badge>
-                </td>
-                <td className="py-3.5 px-4 hidden md:table-cell">
+                {/* # */}
+                <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
+
+                {/* Nome + CEO + cidade */}
+                <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-14 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red" style={{ width: `${(score / 5) * 100}%` }} />
+                    <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
+                    {lead.enrichmentStatus === 'complete' && (
+                      <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">IA</span>
+                    )}
+                    {lead.enrichmentStatus === 'pending' && (
+                      <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">...</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}{lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}</p>
+                </td>
+
+                {/* Tier */}
+                <td className="py-4 px-4 text-center hidden md:table-cell">
+                  <span className="text-xs text-text-secondary">{lead.tier}</span>
+                </td>
+
+                {/* Score + barra */}
+                <td className="py-4 px-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-16 h-2 rounded-full bg-white/5 overflow-hidden">
+                      <div className={`h-full rounded-full ${barColor(score)} transition-all`} style={{ width: `${(score / 5) * 100}%` }} />
                     </div>
-                    <span className="text-[11px] font-mono text-text-muted">{score}</span>
+                    <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
                   </div>
                 </td>
-                <td className="py-3.5 px-4 hidden md:table-cell">
-                  <Badge variant="outline" size="sm">{lead.status}</Badge>
+
+                {/* Trava */}
+                <td className="py-4 px-4 text-center hidden md:table-cell">
+                  {lead.hypotheticalTrap && (
+                    <span className="text-[11px] font-medium text-text-secondary bg-white/[0.05] border border-border px-2.5 py-1 rounded-md whitespace-nowrap">
+                      {trapCode} {trap.length > 15 ? trap.slice(0, 15) + '…' : trap}
+                    </span>
+                  )}
                 </td>
-                <td className="py-3.5 px-4 hidden lg:table-cell">
-                  <span className="text-xs text-text-secondary">{lead.segment}</span>
-                </td>
-                <td className="py-3.5 px-4 hidden lg:table-cell">
-                  <span className="text-xs text-text-muted">{lead.tier}</span>
-                </td>
-                <td className="py-3.5 px-4 hidden lg:table-cell">
-                  <span className="text-xs font-mono text-text-muted">
-                    {lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue) + '/mês' : '-'}
+
+                {/* Veredicto (HOT/WARM/COLD) */}
+                <td className="py-4 px-4 text-center">
+                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.COLD}`}>
+                    {lead.temperature}
                   </span>
                 </td>
               </tr>
