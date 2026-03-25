@@ -9,6 +9,8 @@ import { getDaySegment, LEAD_STATUSES } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Lead } from '../types'
+import { ImportModal } from '../components/ImportModal'
+import { useState } from 'react'
 
 function KPICards({ leads }: { leads: Lead[] }) {
   const hotCount = leads.filter((l) => l.temperature === 'HOT').length
@@ -204,6 +206,7 @@ export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
   const navigate = useNavigate()
   const segment = getDaySegment()
+  const [showImport, setShowImport] = useState(false)
 
   if (isLoading) {
     return (
@@ -244,7 +247,7 @@ export function DashboardPage() {
               <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={() => navigate('/search')}>
                 Iniciar pesquisa de leads
               </Button>
-              <Button size="lg" variant="secondary" icon={<FileDown className="h-4 w-4" />} onClick={() => navigate('/search')}>
+              <Button size="lg" variant="secondary" icon={<FileDown className="h-4 w-4" />} onClick={() => setShowImport(true)}>
                 Importar relatório
               </Button>
             </div>
@@ -297,7 +300,7 @@ export function DashboardPage() {
           </button>
 
           <button
-            onClick={() => navigate('/search')}
+            onClick={() => setShowImport(true)}
             className="group p-6 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 text-left cursor-pointer"
           >
             <div className="flex items-start justify-between">
@@ -305,10 +308,10 @@ export function DashboardPage() {
                 <div className="p-2.5 rounded-xl bg-white/[0.04] inline-flex mb-3">
                   <FileDown className="h-5 w-5 text-text-secondary" />
                 </div>
-                <h3 className="text-base font-semibold text-text-primary mb-1">Importar relatório existente</h3>
+                <h3 className="text-base font-semibold text-text-primary mb-1">Importar lista de empresas</h3>
                 <p className="text-xs text-text-muted leading-relaxed">
-                  Importe pesquisas HTML do sistema de prospecção anterior.
-                  Os dados serão mapeados automaticamente para o OUTBILI.
+                  Importe planilhas, listas, PDFs ou arquivos HTML.
+                  O sistema reconhece automaticamente os dados das empresas.
                 </p>
               </div>
               <ArrowRight className="h-5 w-5 text-text-muted group-hover:text-text-primary group-hover:translate-x-1 transition-all mt-2 shrink-0" />
@@ -345,6 +348,8 @@ export function DashboardPage() {
             Pesquisar {segment}
           </Button>
         </div>
+
+        <ImportModal open={showImport} onClose={() => setShowImport(false)} />
       </div>
     )
   }
@@ -373,6 +378,8 @@ export function DashboardPage() {
         <PipelineFunnel leads={allLeads} />
         <QuickActions />
       </div>
+
+      <ImportModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   )
 }
