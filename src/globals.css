@@ -117,6 +117,13 @@
   }
 }
 
+/* Scan line animation */
+@keyframes scan {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(200px); opacity: 0.5; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
 /* Hide scrollbar for tabs */
 .scrollbar-hide {
   -ms-overflow-style: none;

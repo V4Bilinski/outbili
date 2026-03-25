@@ -71,7 +71,12 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                       {score}
                     </div>
                     <div>
-                      <p className="font-semibold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</p>
+                        {lead.sourceHtmlReport === 'importado_manual' && (
+                          <span className="text-[9px] font-medium text-info bg-info/10 px-1.5 py-0.5 rounded">Importado</span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-text-muted">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>
                     </div>
                   </div>

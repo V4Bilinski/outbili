@@ -1,16 +1,156 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { parseFile, ACCEPTED_FORMATS, FORMAT_LABELS, type ParseResult } from '../lib/file-parser'
 import { useCreateLead } from '../hooks/useLeads'
 import { Button } from './ui/Button'
 import { cn } from '../lib/cn'
-import { Upload, FileText, X, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react'
+import { Upload, X, CheckCircle, AlertTriangle, ArrowRight, Scan, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
-type Step = 'upload' | 'preview' | 'importing' | 'done'
+type Step = 'upload' | 'reading' | 'preview' | 'importing' | 'done'
+
+// Fields that can be detected
+const DETECTABLE_FIELDS = [
+  { key: 'companyName', label: 'Empresa', icon: '🏢' },
+  { key: 'cnpj', label: 'CNPJ', icon: '📋' },
+  { key: 'phone', label: 'Telefone', icon: '📞' },
+  { key: 'email', label: 'E-mail', icon: '📧' },
+  { key: 'website', label: 'Website', icon: '🌐' },
+  { key: 'city', label: 'Cidade', icon: '📍' },
+  { key: 'state', label: 'Estado', icon: '🗺' },
+  { key: 'segment', label: 'Segmento', icon: '🏷' },
+  { key: 'contactName', label: 'Contato', icon: '👤' },
+  { key: 'contactRole', label: 'Cargo', icon: '💼' },
+  { key: 'instagram', label: 'Instagram', icon: '📸' },
+  { key: 'linkedin', label: 'LinkedIn', icon: '💡' },
+  { key: 'address', label: 'Endereço', icon: '🏠' },
+  { key: 'notes', label: 'Observações', icon: '📝' },
+]
+
+const READING_MESSAGES = [
+  'Analisando estrutura do arquivo...',
+  'Identificando colunas e dados...',
+  'Mapeando campos de empresas...',
+  'Extraindo informações de contato...',
+  'Validando dados encontrados...',
+]
 
 interface ImportModalProps {
   open: boolean
   onClose: () => void
+}
+
+// Animated reading step
+function ReadingAnimation({ fileName, onComplete, parseResult }: {
+  fileName: string
+  onComplete: () => void
+  parseResult: ParseResult | null
+}) {
+  const [msgIndex, setMsgIndex] = useState(0)
+  const [detectedFields, setDetectedFields] = useState<string[]>([])
+  const [showComplete, setShowComplete] = useState(false)
+
+  useEffect(() => {
+    // Cycle messages
+    const msgTimer = setInterval(() => {
+      setMsgIndex((n) => Math.min(n + 1, READING_MESSAGES.length - 1))
+    }, 800)
+
+    // Progressively reveal detected fields
+    if (parseResult) {
+      const foundFields = DETECTABLE_FIELDS
+        .filter((f) => parseResult.companies.some((c: any) => c[f.key]))
+        .map((f) => f.key)
+
+      let i = 0
+      const fieldTimer = setInterval(() => {
+        if (i < foundFields.length) {
+          setDetectedFields((prev) => [...prev, foundFields[i]])
+          i++
+        } else {
+          clearInterval(fieldTimer)
+          setTimeout(() => {
+            setShowComplete(true)
+            setTimeout(onComplete, 800)
+          }, 500)
+        }
+      }, 300)
+
+      return () => { clearInterval(msgTimer); clearInterval(fieldTimer) }
+    }
+
+    // Fallback if no parseResult yet
+    const fallbackTimer = setTimeout(() => {
+      setShowComplete(true)
+      setTimeout(onComplete, 500)
+    }, 3000)
+
+    return () => { clearInterval(msgTimer); clearTimeout(fallbackTimer) }
+  }, [parseResult, onComplete])
+
+  return (
+    <div className="py-8 space-y-6">
+      {/* File being read */}
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-border mx-auto max-w-sm">
+        <div className="p-2.5 rounded-xl bg-red/10 animate-pulse">
+          <Scan className="h-5 w-5 text-red" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-text-primary truncate">{fileName}</p>
+          <p className="text-[11px] text-text-muted animate-[fade-in_0.3s_ease-out]" key={msgIndex}>
+            {READING_MESSAGES[msgIndex]}
+          </p>
+        </div>
+      </div>
+
+      {/* Scanning animation */}
+      <div className="relative max-w-md mx-auto">
+        {/* Scan line */}
+        {!showComplete && (
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-red to-transparent animate-[scan_1.5s_ease-in-out_infinite] z-10" />
+        )}
+
+        {/* Fields grid — light up when detected */}
+        <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-white/[0.01] border border-border">
+          {DETECTABLE_FIELDS.map((field) => {
+            const isDetected = detectedFields.includes(field.key)
+            return (
+              <div
+                key={field.key}
+                className={cn(
+                  'flex items-center gap-2.5 p-2.5 rounded-xl border transition-all duration-500',
+                  isDetected
+                    ? 'bg-success/8 border-success/20 shadow-[0_0_12px_rgba(34,197,94,0.1)]'
+                    : 'bg-white/[0.01] border-border/50 opacity-30',
+                )}
+              >
+                <span className="text-sm">{field.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-xs font-medium transition-colors', isDetected ? 'text-success' : 'text-text-muted')}>
+                    {field.label}
+                  </p>
+                </div>
+                {isDetected && (
+                  <CheckCircle className="h-3.5 w-3.5 text-success animate-[fade-in_0.3s_ease-out] shrink-0" />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Summary */}
+      {showComplete && parseResult && (
+        <div className="text-center animate-[slide-up_0.4s_ease-out]">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20">
+            <Sparkles className="h-4 w-4 text-success" />
+            <span className="text-sm font-semibold text-success">
+              {parseResult.companies.length} empresas identificadas · {detectedFields.length} campos mapeados
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ImportModal({ open, onClose }: ImportModalProps) {
@@ -24,7 +164,7 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
   const createLead = useCreateLead()
 
   const handleFile = useCallback(async (file: File) => {
-    setStep('preview')
+    setStep('reading')
     const result = await parseFile(file)
     setParseResult(result)
     setSelected(new Set(result.companies.map((_, i) => i)))
@@ -60,9 +200,10 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
           address: company.address || '',
           city: company.city || '',
           state: company.state || '',
-          businessSummary: company.notes || '',
+          businessSummary: [company.notes, company.contactName ? `Contato: ${company.contactName}${company.contactRole ? ` (${company.contactRole})` : ''}` : ''].filter(Boolean).join(' · '),
+          sourceHtmlReport: 'importado_manual',
         })
-      } catch { /* toast already handled by mutation */ }
+      } catch { /* error handled by mutation */ }
       done++
       setImportProgress(Math.round((done / companies.length) * 100))
     }
@@ -112,7 +253,7 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                     : 'border-border hover:border-border-strong hover:bg-white/[0.02]',
                 )}
               >
-                <div className={cn('p-4 rounded-2xl mb-4 transition-all', isDragging ? 'bg-red/10' : 'bg-white/[0.04]')}>
+                <div className={cn('p-4 rounded-2xl mb-4 transition-all', isDragging ? 'bg-red/10 scale-110' : 'bg-white/[0.04]')}>
                   <Upload className={cn('h-8 w-8 transition-colors', isDragging ? 'text-red' : 'text-text-muted')} />
                 </div>
                 <p className="text-sm font-semibold text-text-primary mb-1">
@@ -120,9 +261,6 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                 </p>
                 <p className="text-xs text-text-muted text-center">
                   Planilhas (Excel, CSV), documentos (PDF, TXT), páginas HTML
-                </p>
-                <p className="text-[10px] text-text-muted mt-2">
-                  O sistema identifica automaticamente colunas como: empresa, CNPJ, telefone, email, cidade, segmento
                 </p>
                 <input
                   ref={fileInputRef}
@@ -150,21 +288,44 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
             </div>
           )}
 
+          {/* Step: Reading with animation */}
+          {step === 'reading' && (
+            <ReadingAnimation
+              fileName={parseResult?.fileName || 'Processando...'}
+              parseResult={parseResult}
+              onComplete={() => setStep('preview')}
+            />
+          )}
+
           {/* Step: Preview */}
           {step === 'preview' && parseResult && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-[fade-in_0.3s_ease-out]">
               {/* File info */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-success/5 border border-success/15">
                 <div className="p-2 rounded-lg bg-success/10">
-                  <FileText className="h-4 w-4 text-success" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{parseResult.fileName}</p>
-                  <p className="text-[11px] text-text-muted">
-                    {parseResult.fileType} · {parseResult.totalRows} linhas · {parseResult.companies.length} empresas identificadas
+                  <p className="text-[11px] text-success">
+                    {parseResult.fileType} · {parseResult.companies.length} empresas · {parseResult.columns.length} colunas
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={reset}>Trocar arquivo</Button>
+                <Button variant="ghost" size="sm" onClick={reset}>Trocar</Button>
+              </div>
+
+              {/* Detected fields summary */}
+              <div className="flex flex-wrap gap-1.5">
+                {DETECTABLE_FIELDS.filter((f) => parseResult.companies.some((c: any) => c[f.key])).map((field) => (
+                  <span key={field.key} className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/8 border border-success/15 px-2 py-1 rounded-lg">
+                    {field.icon} {field.label}
+                  </span>
+                ))}
+                {DETECTABLE_FIELDS.filter((f) => !parseResult.companies.some((c: any) => c[f.key])).slice(0, 4).map((field) => (
+                  <span key={field.key} className="inline-flex items-center gap-1 text-[10px] text-text-muted bg-white/[0.03] border border-border px-2 py-1 rounded-lg opacity-40">
+                    {field.icon} {field.label}
+                  </span>
+                ))}
               </div>
 
               {/* Errors */}
@@ -178,7 +339,7 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                 </div>
               )}
 
-              {/* Segment selector */}
+              {/* Segment */}
               {parseResult.companies.length > 0 && (
                 <div>
                   <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento (aplicar a todos)</label>
@@ -192,43 +353,38 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                 </div>
               )}
 
-              {/* Companies list */}
+              {/* Companies */}
               {parseResult.companies.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-text-muted">{selected.size} de {parseResult.companies.length} selecionadas</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setSelected(new Set(parseResult.companies.map((_, i) => i)))} className="text-[11px] text-red cursor-pointer hover:underline">Selecionar todas</button>
-                      <button onClick={() => setSelected(new Set())} className="text-[11px] text-text-muted cursor-pointer hover:underline">Limpar</button>
+                      <button onClick={() => setSelected(new Set(parseResult.companies.map((_, i) => i)))} className="text-[11px] text-red cursor-pointer hover:underline">Todas</button>
+                      <button onClick={() => setSelected(new Set())} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhuma</button>
                     </div>
                   </div>
-                  <div className="max-h-[300px] overflow-y-auto space-y-1.5 rounded-xl border border-border p-2">
+                  <div className="max-h-[280px] overflow-y-auto space-y-1.5 rounded-xl border border-border p-2">
                     {parseResult.companies.map((company, i) => (
                       <label
                         key={i}
                         className={cn(
-                          'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors',
+                          'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200',
                           selected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-white/[0.02] border border-transparent',
                         )}
                       >
                         <input
                           type="checkbox"
                           checked={selected.has(i)}
-                          onChange={() => {
-                            const next = new Set(selected)
-                            next.has(i) ? next.delete(i) : next.add(i)
-                            setSelected(next)
-                          }}
+                          onChange={() => { const next = new Set(selected); next.has(i) ? next.delete(i) : next.add(i); setSelected(next) }}
                           className="accent-red w-4 h-4 cursor-pointer"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-text-primary">{company.companyName}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-0.5">
+                          <div className="flex flex-wrap gap-1 mt-0.5">
                             {company.phone && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
                             {company.email && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.email}</span>}
                             {company.city && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}{company.state ? `, ${company.state}` : ''}</span>}
-                            {company.website && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[150px]">{company.website}</span>}
-                            {company.segment && <span className="text-[10px] text-red bg-red/10 px-1.5 py-0.5 rounded">{company.segment}</span>}
+                            {company.website && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.website}</span>}
                           </div>
                         </div>
                       </label>
@@ -237,24 +393,9 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                 </div>
               )}
 
-              {/* Detected columns */}
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
-                <p className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-2">Colunas detectadas</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {parseResult.columns.map((col) => (
-                    <span key={col} className="text-[10px] text-text-secondary bg-white/5 border border-border px-2 py-0.5 rounded-md">{col}</span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Import button */}
               <div className="flex gap-3 pt-2">
                 <Button variant="ghost" onClick={reset}>Cancelar</Button>
-                <Button
-                  icon={<ArrowRight className="h-4 w-4" />}
-                  onClick={handleImport}
-                  disabled={selected.size === 0}
-                >
+                <Button icon={<ArrowRight className="h-4 w-4" />} onClick={handleImport} disabled={selected.size === 0}>
                   Importar {selected.size} empresa{selected.size !== 1 ? 's' : ''}
                 </Button>
               </div>
@@ -272,7 +413,7 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
                 </div>
               </div>
               <p className="text-sm font-medium text-text-primary">Importando empresas...</p>
-              <p className="text-xs text-text-muted">{Math.round(importProgress / 100 * (selected.size || 1))} de {selected.size} processadas</p>
+              <p className="text-xs text-text-muted">{Math.round(importProgress / 100 * (selected.size || 1))} de {selected.size}</p>
               <div className="h-2 rounded-full bg-white/5 overflow-hidden max-w-xs mx-auto">
                 <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-300" style={{ width: `${importProgress}%` }} />
               </div>
@@ -281,13 +422,16 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
 
           {/* Step: Done */}
           {step === 'done' && (
-            <div className="py-12 text-center space-y-4">
+            <div className="py-12 text-center space-y-4 animate-[slide-up_0.4s_ease-out]">
               <div className="p-4 rounded-2xl bg-success/10 inline-flex mx-auto">
                 <CheckCircle className="h-10 w-10 text-success" />
               </div>
               <h3 className="text-lg font-bold text-text-primary">Importação concluída!</h3>
               <p className="text-sm text-text-muted">
-                {selected.size} empresa{selected.size !== 1 ? 's' : ''} importada{selected.size !== 1 ? 's' : ''} com sucesso para o pipeline.
+                {selected.size} empresa{selected.size !== 1 ? 's' : ''} adicionada{selected.size !== 1 ? 's' : ''} ao pipeline.
+              </p>
+              <p className="text-[11px] text-text-muted">
+                Identificadas com a tag <span className="text-info font-medium bg-info/10 px-1.5 py-0.5 rounded">Importado manual</span> na lista de leads.
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <Button variant="ghost" onClick={() => { reset(); onClose() }}>Fechar</Button>
