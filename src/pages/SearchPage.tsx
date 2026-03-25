@@ -1,8 +1,13 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, MapPin, Globe, TrendingUp, X, ChevronDown } from 'lucide-react'
+import { Badge } from '../components/ui/Badge'
+import { Search, MapPin, Globe, TrendingUp, X, ChevronDown, CheckCircle, Loader2, AlertCircle, Star, Download } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
+import { useApifySearch, type SearchPhase } from '../hooks/useApifySearch'
+import { useCreateLead } from '../hooks/useLeads'
+import type { GoogleMapsResult } from '../lib/apify'
+import { toast } from 'sonner'
 
 // --- Segmentos recomendados (podem ser digitados livremente) ---
 const RECOMMENDED_SEGMENTS = [
@@ -245,6 +250,78 @@ function StateMultiSelect({
   )
 }
 
+// --- Search result card ---
+function ResultCard({ item, onImport, importing }: { item: GoogleMapsResult; onImport: () => void; importing: boolean }) {
+  return (
+    <div className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="text-sm font-semibold text-text-primary truncate">{item.title}</h4>
+            {item.totalScore > 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-warning">
+                <Star className="h-3 w-3 fill-current" /> {item.totalScore}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-text-muted mb-1">{item.categoryName}</p>
+          <p className="text-xs text-text-muted">{item.address}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {item.phone && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.phone}</span>}
+            {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[200px]">{item.website}</span>}
+            {item.reviewsCount > 0 && <span className="text-[11px] text-text-muted">{item.reviewsCount} avaliações</span>}
+          </div>
+        </div>
+        <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={onImport} loading={importing}>
+          Importar
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// --- Progress display ---
+function SearchProgress({ phase, mapsStatus, elapsed }: { phase: SearchPhase; mapsStatus: string; elapsed: number }) {
+  const steps = [
+    { label: 'Google Maps', status: mapsStatus, desc: 'Buscando empresas, endereços, telefones' },
+    { label: 'Enriquecimento', status: phase === 'enriching' ? 'running' : phase === 'done' ? 'done' : 'pending', desc: 'Classificando e pontuando leads' },
+  ]
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <CardTitle>Pesquisando leads...</CardTitle>
+        <span className="text-xs font-mono text-text-muted">{elapsed}s</span>
+      </div>
+      <div className="space-y-3">
+        {steps.map((step) => (
+          <div key={step.label} className="flex items-center gap-3">
+            {step.status === 'done' ? (
+              <CheckCircle className="h-5 w-5 text-success shrink-0" />
+            ) : step.status === 'running' ? (
+              <Loader2 className="h-5 w-5 text-red animate-spin shrink-0" />
+            ) : (
+              <div className="h-5 w-5 rounded-full border border-border shrink-0" />
+            )}
+            <div>
+              <p className={cn('text-sm font-medium', step.status === 'done' ? 'text-success' : step.status === 'running' ? 'text-text-primary' : 'text-text-muted')}>
+                {step.label}
+              </p>
+              <p className="text-[11px] text-text-muted">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 h-1.5 rounded-full bg-white/5 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
+          style={{ width: phase === 'done' ? '100%' : phase === 'enriching' ? '75%' : `${Math.min(60, elapsed * 2)}%` }}
+        />
+      </div>
+    </Card>
+  )
+}
+
 // --- Main page ---
 export function SearchPage() {
   const [segments, setSegments] = useState<string[]>([])
@@ -253,11 +330,54 @@ export function SearchPage() {
   const [keywords, setKeywords] = useState<string[]>([])
   const [revenueMin, setRevenueMin] = useState('')
   const [revenueMax, setRevenueMax] = useState('')
+  const [importingId, setImportingId] = useState<string | null>(null)
+
+  const apify = useApifySearch()
+  const createLead = useCreateLead()
 
   const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
   const selectClass = cn(inputClass, 'appearance-none cursor-pointer')
 
   const activeFilters = segments.length + states.length + (city ? 1 : 0) + keywords.length + (revenueMin ? 1 : 0) + (revenueMax ? 1 : 0)
+
+  const handleSearch = () => {
+    if (segments.length === 0 && keywords.length === 0) {
+      toast.error('Selecione pelo menos um segmento ou palavra-chave')
+      return
+    }
+    apify.search({ segments, states, city, keywords, revenueMin, revenueMax })
+  }
+
+  const handleImport = async (item: GoogleMapsResult) => {
+    setImportingId(item.title)
+    try {
+      await createLead.mutateAsync({
+        companyName: item.title,
+        segment: segments[0] || '',
+        tier: 'Small',
+        status: 'Novo',
+        score: 0,
+        temperature: 'WARM',
+        spicedS: 0, spicedP: 0, spicedI: 0, spicedC: 0, spicedD: 0,
+        website: item.website || '',
+        address: item.address || '',
+        city: item.city || city,
+        state: item.state || states[0] || '',
+        instagram: item.socialProfiles?.instagram || '',
+        facebook: item.socialProfiles?.facebook || '',
+        businessSummary: `${item.categoryName} · ${item.reviewsCount} avaliações · Nota ${item.totalScore}`,
+      })
+    } finally {
+      setImportingId(null)
+    }
+  }
+
+  const handleImportAll = async () => {
+    for (const item of apify.results) {
+      await handleImport(item)
+    }
+    toast.success(`${apify.results.length} leads importados`)
+  }
 
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
@@ -379,31 +499,92 @@ export function SearchPage() {
         )}
 
         <div className="mt-6 flex items-center gap-3">
-          <Button size="lg" icon={<Search className="h-4 w-4" />}>
+          <Button
+            size="lg"
+            icon={<Search className="h-4 w-4" />}
+            onClick={handleSearch}
+            loading={apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error'}
+            disabled={apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error'}
+          >
             Pesquisar via Apify
           </Button>
-          <span className="text-[11px] text-text-muted">Estimativa: 30-120 segundos</span>
+          {apify.phase === 'idle' && <span className="text-[11px] text-text-muted">Estimativa: 30-120 segundos</span>}
+          {apify.phase === 'done' && (
+            <Button variant="ghost" size="sm" onClick={apify.reset}>Nova pesquisa</Button>
+          )}
         </div>
       </Card>
 
-      {/* Data sources */}
-      <div className="grid md:grid-cols-3 gap-4">
-        {[
-          { icon: MapPin, label: 'Google Maps', desc: 'Endereço, telefone, avaliações, fotos' },
-          { icon: Globe, label: 'Website Crawler', desc: 'Serviços, equipe, tecnologias, about' },
-          { icon: TrendingUp, label: 'Instagram', desc: 'Seguidores, engajamento, bio, posts' },
-        ].map((source) => (
-          <Card key={source.label} className="flex items-center gap-3 p-4">
-            <div className="p-2.5 rounded-xl bg-red-subtle">
-              <source.icon className="h-4 w-4 text-red" />
-            </div>
+      {/* Progress */}
+      {(apify.phase === 'maps' || apify.phase === 'enriching') && (
+        <SearchProgress phase={apify.phase} mapsStatus={apify.mapsStatus} elapsed={apify.elapsed} />
+      )}
+
+      {/* Error */}
+      {apify.phase === 'error' && (
+        <Card className="p-4">
+          <div className="flex items-center gap-3 text-error">
+            <AlertCircle className="h-5 w-5" />
             <div>
-              <p className="text-sm font-semibold text-text-primary">{source.label}</p>
-              <p className="text-[11px] text-text-muted">{source.desc}</p>
+              <p className="text-sm font-semibold">Erro na pesquisa</p>
+              <p className="text-xs text-text-muted">{apify.error}</p>
             </div>
-          </Card>
-        ))}
-      </div>
+            <Button variant="ghost" size="sm" onClick={apify.reset} className="ml-auto">Tentar novamente</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Results */}
+      {apify.phase === 'done' && apify.results.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <CardTitle>{apify.results.length} empresas encontradas</CardTitle>
+              <Badge variant="success" size="sm">em {apify.elapsed}s</Badge>
+            </div>
+            <Button size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleImportAll}>
+              Importar todos ({apify.results.length})
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {apify.results.map((item, i) => (
+              <ResultCard
+                key={i}
+                item={item}
+                onImport={() => handleImport(item)}
+                importing={importingId === item.title}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {apify.phase === 'done' && apify.results.length === 0 && (
+        <Card className="p-8 text-center">
+          <p className="text-sm text-text-muted">Nenhum resultado encontrado. Tente ajustar os filtros.</p>
+        </Card>
+      )}
+
+      {/* Data sources (only when idle) */}
+      {apify.phase === 'idle' && (
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            { icon: MapPin, label: 'Google Maps', desc: 'Endereço, telefone, avaliações, fotos' },
+            { icon: Globe, label: 'Website Crawler', desc: 'Serviços, equipe, tecnologias, about' },
+            { icon: TrendingUp, label: 'Instagram', desc: 'Seguidores, engajamento, bio, posts' },
+          ].map((source) => (
+            <Card key={source.label} className="flex items-center gap-3 p-4">
+              <div className="p-2.5 rounded-xl bg-red-subtle">
+                <source.icon className="h-4 w-4 text-red" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-text-primary">{source.label}</p>
+                <p className="text-[11px] text-text-muted">{source.desc}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -3,10 +3,17 @@ import { useLead } from '../hooks/useLeads'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
+import { CopyButton } from '../components/ui/CopyButton'
 import { ArrowLeft, Globe, MapPin, ExternalLink } from 'lucide-react'
-import { formatCurrencyShort, calculateSpicedScore } from '../lib/utils'
+import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { useState } from 'react'
 import { cn } from '../lib/cn'
+import { TabReuniao } from '../components/company/TabReuniao'
+import { TabProjecao } from '../components/company/TabProjecao'
+import { TabVulnerabilidades } from '../components/company/TabVulnerabilidades'
+import { TabCompetitiva } from '../components/company/TabCompetitiva'
+import { TabArgumentos } from '../components/company/TabArgumentos'
+import { TabContatos } from '../components/company/TabContatos'
 
 const TABS = [
   { id: 'resumo', label: 'Resumo' },
@@ -28,9 +35,9 @@ export function CompanyPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-40" />
-        <Skeleton className="h-10" />
-        <Skeleton className="h-64" />
+        <Skeleton className="h-48" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-72" />
       </div>
     )
   }
@@ -42,93 +49,94 @@ export function CompanyPage() {
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
 
+  const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, [])
+  const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, [])
+  const spicedNotes = parseJsonField<Record<string, string>>(lead.spicedNotes, {})
+
   return (
-    <div className="space-y-4 animate-[fade-in_0.3s_ease-out]">
-      {/* Back button */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary cursor-pointer">
+    <div className="space-y-4 animate-[fade-in_0.4s_ease-out]">
+      {/* Back */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
         <ArrowLeft className="h-4 w-4" /> Voltar
       </button>
 
       {/* Header */}
       <Card className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'}>
                 {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
               </Badge>
               <Badge variant="outline">{lead.tier}</Badge>
               <Badge variant="outline">{lead.segment}</Badge>
             </div>
-            <h1 className="text-2xl font-bold font-heading">{lead.companyName}</h1>
+            <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
-            <div className="flex items-center gap-2 mt-1 text-xs text-text-muted">
-              {lead.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.city}, {lead.state}</span>}
-            </div>
+            {lead.city && (
+              <p className="flex items-center gap-1 mt-1 text-xs text-text-muted">
+                <MapPin className="h-3 w-3" />{lead.city}{lead.state ? `, ${lead.state}` : ''}
+              </p>
+            )}
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <p className="text-3xl font-bold font-mono text-red">{score}</p>
             <p className="text-[10px] uppercase tracking-wider text-text-muted">SPICED</p>
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg bg-surface-md border-l-3 border-l-red">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">Faturamento/ano</p>
-            <p className="text-lg font-bold font-mono">{lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : '-'}</p>
-          </div>
-          <div className="p-3 rounded-lg bg-surface-md border-l-3 border-l-red">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">Funcionários</p>
-            <p className="text-lg font-bold font-mono">{lead.employees || '-'}</p>
-          </div>
-          <div className="p-3 rounded-lg bg-surface-md border-l-3 border-l-red">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">Anos no mercado</p>
-            <p className="text-lg font-bold font-mono">{lead.yearsInMarket || '-'}</p>
-          </div>
-          <div className="p-3 rounded-lg bg-surface-md border-l-3 border-l-red">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">Status</p>
-            <p className="text-lg font-bold font-mono">{lead.status}</p>
-          </div>
+          {[
+            { label: 'Faturamento/ano', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : '-' },
+            { label: 'Funcionários', value: lead.employees || '-' },
+            { label: 'Anos no mercado', value: lead.yearsInMarket || '-' },
+            { label: 'Status', value: lead.status },
+          ].map((stat) => (
+            <div key={stat.label} className="p-3 rounded-xl bg-white/[0.02] border-l-[3px] border-l-red">
+              <p className="text-[10px] uppercase tracking-wider text-text-muted">{stat.label}</p>
+              <p className="text-lg font-bold font-mono mt-0.5">{stat.value}</p>
+            </div>
+          ))}
         </div>
 
         {/* Links */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {lead.website && (
-            <a href={lead.website} target="_blank" rel="noopener" className="p-2 rounded-lg bg-surface-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors">
-              <Globe className="h-4 w-4" />
+            <a href={lead.website} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
+              <Globe className="h-3.5 w-3.5" /> Website
             </a>
           )}
           {lead.instagram && (
-            <a href={lead.instagram} target="_blank" rel="noopener" className="flex items-center gap-1 p-2 rounded-lg bg-surface-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors text-xs">
-              <ExternalLink className="h-3 w-3" /> IG
+            <a href={lead.instagram} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
+              <ExternalLink className="h-3 w-3" /> Instagram
             </a>
           )}
           {lead.linkedin && (
-            <a href={lead.linkedin} target="_blank" rel="noopener" className="flex items-center gap-1 p-2 rounded-lg bg-surface-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors text-xs">
-              <ExternalLink className="h-3 w-3" /> IN
+            <a href={lead.linkedin} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
+              <ExternalLink className="h-3 w-3" /> LinkedIn
             </a>
           )}
           {lead.facebook && (
-            <a href={lead.facebook} target="_blank" rel="noopener" className="flex items-center gap-1 p-2 rounded-lg bg-surface-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors text-xs">
-              <ExternalLink className="h-3 w-3" /> FB
+            <a href={lead.facebook} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-xs transition-colors">
+              <ExternalLink className="h-3 w-3" /> Facebook
             </a>
           )}
         </div>
       </Card>
 
-      {/* Tabs */}
-      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-1 min-w-max bg-surface rounded-lg p-1 border border-stone-800/50">
+      {/* Tabs navigation */}
+      <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0">
+        <div className="flex gap-1 min-w-max bg-surface/80 backdrop-blur-xl rounded-xl p-1 border border-border">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'px-3 py-2 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer',
+                'px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer',
                 activeTab === tab.id
-                  ? 'bg-red text-white'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover',
+                  ? 'bg-red text-white shadow-lg shadow-red/20'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
               )}
             >
               {tab.label}
@@ -139,70 +147,133 @@ export function CompanyPage() {
 
       {/* Tab content */}
       <Card className="min-h-[300px]">
+        {/* Tab: Resumo */}
         {activeTab === 'resumo' && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold font-heading">Snapshot executivo</h3>
-            {lead.businessSummary && <p className="text-sm text-text-secondary">{lead.businessSummary}</p>}
+          <div className="space-y-5">
+            <h3 className="text-sm font-semibold font-heading uppercase tracking-wider text-text-muted">Snapshot executivo</h3>
+            {lead.businessSummary && (
+              <p className="text-sm text-text-secondary leading-relaxed">{lead.businessSummary}</p>
+            )}
             {lead.hypotheticalTrap && (
-              <div className="p-3 rounded-lg bg-error/10 border border-error/20">
-                <p className="text-xs font-semibold text-error mb-1">Trava dominante</p>
-                <p className="text-sm text-text-primary">{lead.hypotheticalTrap}</p>
+              <div className="p-4 rounded-xl bg-error/8 border border-error/20">
+                <p className="text-[11px] font-semibold text-error uppercase tracking-wider mb-1">Trava dominante</p>
+                <p className="text-sm text-text-primary font-medium">{lead.hypotheticalTrap}</p>
               </div>
             )}
             {lead.productPortfolio && (
               <div>
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Portfólio</p>
-                <p className="text-sm text-text-secondary">{lead.productPortfolio}</p>
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Portfólio de produtos/serviços</p>
+                <p className="text-sm text-text-secondary leading-relaxed">{lead.productPortfolio}</p>
               </div>
             )}
             {lead.marketContext && (
               <div>
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Contexto de mercado</p>
-                <p className="text-sm text-text-secondary">{lead.marketContext}</p>
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Contexto de mercado</p>
+                <p className="text-sm text-text-secondary leading-relaxed">{lead.marketContext}</p>
+              </div>
+            )}
+            {lead.techStack && (
+              <div>
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Tecnologias observadas</p>
+                <p className="text-sm text-text-secondary">{lead.techStack}</p>
+              </div>
+            )}
+            {lead.cnpj && (
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <span>CNPJ: <span className="font-mono text-text-secondary">{lead.cnpj}</span></span>
+                <CopyButton text={lead.cnpj} />
               </div>
             )}
           </div>
         )}
 
+        {/* Tab: SPICED */}
         {activeTab === 'spiced' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="text-center mb-6">
               <p className="text-4xl font-bold font-mono text-red">{score}/5</p>
               <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="mt-2">
                 {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
               </Badge>
             </div>
+
             {[
-              { key: 'S', label: 'Situação', value: lead.spicedS, weight: '25%' },
-              { key: 'P', label: 'Dor (Pain)', value: lead.spicedP, weight: '25%' },
-              { key: 'I', label: 'Impacto', value: lead.spicedI, weight: '20%' },
-              { key: 'CE', label: 'Evento Crítico', value: lead.spicedC, weight: '15%' },
-              { key: 'D', label: 'Decisão', value: lead.spicedD, weight: '15%' },
+              { key: 'S', label: 'Situação', value: lead.spicedS, weight: '25%', noteKey: 'S' },
+              { key: 'P', label: 'Dor (Pain)', value: lead.spicedP, weight: '25%', noteKey: 'P' },
+              { key: 'I', label: 'Impacto', value: lead.spicedI, weight: '20%', noteKey: 'I' },
+              { key: 'CE', label: 'Evento Crítico', value: lead.spicedC, weight: '15%', noteKey: 'C' },
+              { key: 'D', label: 'Decisão', value: lead.spicedD, weight: '15%', noteKey: 'D' },
             ].map((dim) => (
-              <div key={dim.key} className="p-3 rounded-lg bg-surface-md">
+              <div key={dim.key} className="p-4 rounded-xl bg-white/[0.02] border border-border">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold">{dim.key} — {dim.label}</span>
-                  <span className="text-xs text-text-muted">{dim.weight}</span>
+                  <span className="text-xs text-text-muted font-mono">{dim.weight}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 rounded-full bg-surface-lt overflow-hidden">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-red transition-all"
+                      className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
                       style={{ width: `${((dim.value || 0) / 5) * 100}%` }}
                     />
                   </div>
-                  <span className="text-sm font-mono font-bold w-6 text-right">{dim.value || 0}</span>
+                  <span className="text-sm font-mono font-bold w-8 text-right">{dim.value || 0}/5</span>
                 </div>
+                {spicedNotes[dim.noteKey] && (
+                  <p className="text-xs text-text-muted leading-relaxed mt-1">{spicedNotes[dim.noteKey]}</p>
+                )}
               </div>
             ))}
+
+            {/* Eligibility checklist */}
+            {eligibility.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Checklist de elegibilidade</p>
+                <div className="space-y-1.5">
+                  {eligibility.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className={item.value ? 'text-success' : 'text-error'}>{item.value ? '✅' : '❌'}</span>
+                      <span className="text-text-secondary">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Discovery questions */}
+            {discoveryQuestions.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Perguntas de discovery</p>
+                <div className="space-y-2">
+                  {discoveryQuestions.map((q, i) => (
+                    <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.02]">
+                      <span className="text-xs font-mono text-red shrink-0">{i + 1}.</span>
+                      <p className="text-sm text-text-secondary flex-1">{q}</p>
+                      <CopyButton text={q} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab !== 'resumo' && activeTab !== 'spiced' && (
-          <div className="flex items-center justify-center h-64 text-text-muted text-sm">
-            Conteúdo da tab "{activeTab}" — implementação Dia 2
-          </div>
-        )}
+        {/* Tab: Reunião */}
+        {activeTab === 'reuniao' && <TabReuniao lead={lead} />}
+
+        {/* Tab: Projeção */}
+        {activeTab === 'projecao' && <TabProjecao lead={lead} />}
+
+        {/* Tab: Vulnerabilidades */}
+        {activeTab === 'vulnerabilidades' && <TabVulnerabilidades lead={lead} />}
+
+        {/* Tab: Competitiva */}
+        {activeTab === 'competitiva' && <TabCompetitiva lead={lead} />}
+
+        {/* Tab: Argumentos */}
+        {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
+
+        {/* Tab: Contatos */}
+        {activeTab === 'contatos' && <TabContatos lead={lead} />}
       </Card>
     </div>
   )
