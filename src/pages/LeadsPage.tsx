@@ -76,6 +76,12 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                         {lead.sourceHtmlReport === 'importado_manual' && (
                           <span className="text-[9px] font-medium text-info bg-info/10 px-1.5 py-0.5 rounded">Importado</span>
                         )}
+                        {lead.enrichmentStatus === 'pending' && (
+                          <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
+                        )}
+                        {lead.enrichmentStatus === 'complete' && (
+                          <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">IA</span>
+                        )}
                       </div>
                       <p className="text-[11px] text-text-muted">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>
                     </div>

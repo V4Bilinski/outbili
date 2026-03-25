@@ -287,10 +287,13 @@ export function SearchPage() {
   const handleImport = async (item: any) => {
     setImportingId(item.companyName)
     try {
+      const spicedTotal = item.spicedTotal || 0
+      const temp = spicedTotal >= 4 ? 'HOT' : spicedTotal >= 3 ? 'WARM' : 'COLD'
+
       await createLead.mutateAsync({
         companyName: item.companyName, segment: segments[0] || item.category || '', tier: 'Small', status: 'Novo',
-        score: Math.round(item.digitalPresenceScore / 2), temperature: item.digitalPresenceScore >= 5 ? 'WARM' : 'COLD',
-        spicedS: 0, spicedP: 0, spicedI: 0, spicedC: 0, spicedD: 0,
+        score: spicedTotal, temperature: temp,
+        spicedS: item.spicedS || 0, spicedP: item.spicedP || 0, spicedI: item.spicedI || 0, spicedC: item.spicedC || 0, spicedD: item.spicedD || 0,
         website: item.website || '', address: item.address || '', city: item.city || city, state: item.state || states[0] || '',
         instagram: item.instagramUrl || '', linkedin: item.linkedinUrl || '', facebook: item.facebookUrl || '',
         businessSummary: `${item.category} · ${item.reviewsCount} avaliações (${item.googleRating}★) · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta`,
@@ -300,6 +303,7 @@ export function SearchPage() {
         salesArguments: JSON.stringify(item.salesArguments || []),
         projectionData: JSON.stringify({ narrative: item.projectionNarrative || '', inactionCost: item.inactionCost || '' }),
         meetingPrep: JSON.stringify({ agenda: [], objecoes: [], checklist: item.meetingTalkingPoints || [] }),
+        enrichmentStatus: 'pending',
       })
     } finally { setImportingId(null) }
   }

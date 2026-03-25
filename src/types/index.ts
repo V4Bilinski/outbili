@@ -37,6 +37,7 @@ export interface Lead {
   discoveryQuestions?: string
   eligibilityChecklist?: string
   sourceHtmlReport?: string
+  enrichmentStatus?: 'none' | 'basic' | 'pending' | 'complete'
   createdAt?: string
   updatedAt?: string
 }

@@ -41,6 +41,13 @@ export interface EnrichedLead {
   landingPages: string[]
   // Marketing intelligence
   marketing: MarketingIntelligence
+  // SPICED scores (data-driven)
+  spicedS: number
+  spicedP: number
+  spicedI: number
+  spicedC: number
+  spicedD: number
+  spicedTotal: number
   // Computed scores
   digitalPresenceScore: number
   marketingVulnerabilities: Array<{ titulo: string; descricao: string; impacto: 'ALTO' | 'MEDIO' | 'BAIXO'; impactoFinanceiro: string; insightProvocativo: string }>
@@ -255,6 +262,13 @@ export function useApifySearch() {
           if (item.emails?.length) dpScore += 1
           dpScore = Math.min(dpScore, 10)
 
+          // SPICED data-driven scoring
+          const spicedS = calculateSpicedS(item, seo, igInfo)
+          const spicedP = calculateSpicedP(item, ads, igInfo, marketing)
+          const spicedI = calculateSpicedI(item, marketing, dpScore)
+          const spicedC = calculateSpicedC(marketing)
+          const spicedD = calculateSpicedD(item)
+
           // Vulnerabilities with real data + provocative insights
           const vulns = buildVulnerabilities(item, marketing, igInfo, seo, ads)
 
@@ -291,6 +305,8 @@ export function useApifySearch() {
             instagramBio: igInfo?.biography,
             landingPages: item.website ? [item.website] : [],
             marketing,
+            spicedS, spicedP, spicedI, spicedC, spicedD,
+            spicedTotal: Math.round((spicedS * 0.25 + spicedP * 0.25 + spicedI * 0.20 + spicedC * 0.15 + spicedD * 0.15) * 10) / 10,
             digitalPresenceScore: dpScore,
             marketingVulnerabilities: vulns,
             competitiveAnalysis: marketing.competitors,
@@ -513,4 +529,57 @@ function buildMeetingPoints(_item: GoogleMapsResult, mkt: MarketingIntelligence,
   points.push('Mapear processo comercial atual e identificar gargalos de conversão')
   points.push('Apresentar case similar do segmento com resultados mensuráveis')
   return points.slice(0, 6)
+}
+
+// --- SPICED Data-Driven Scoring ---
+
+// S (Situação): website + reviews + presença digital geral
+function calculateSpicedS(item: GoogleMapsResult, seo: any, igInfo: any): number {
+  let score = 1
+  if (item.website) score += 1
+  if (seo?.score > 50) score += 1
+  if (item.totalScore >= 4.0 && item.reviewsCount >= 20) score += 1
+  if (igInfo?.followersCount > 500) score += 1
+  return Math.min(score, 5)
+}
+
+// P (Dor/Pain): quanto mais gaps, mais dor = score ALTO (bom pra nós)
+function calculateSpicedP(item: GoogleMapsResult, ads: any[], igInfo: any, mkt: MarketingIntelligence): number {
+  let score = 5 // começa alto (muita dor)
+  if (ads.length > 0 && ads.some((a: any) => a.isActive)) score -= 1
+  if (igInfo?.followersCount > 1000) score -= 1
+  if (item.website) score -= 1
+  if (mkt.seoScore > 60) score -= 1
+  if (item.reviewsCount > 50) score -= 1
+  return Math.max(score, 1)
+}
+
+// I (Impacto): potencial de crescimento baseado no gap
+function calculateSpicedI(_item: GoogleMapsResult, _mkt: MarketingIntelligence, dpScore: number): number {
+  // Quanto menor o dpScore, maior o potencial de impacto
+  if (dpScore <= 2) return 5
+  if (dpScore <= 4) return 4
+  if (dpScore <= 6) return 3
+  if (dpScore <= 8) return 2
+  return 1
+}
+
+// C (Evento Crítico): concorrentes fortes = urgência
+function calculateSpicedC(mkt: MarketingIntelligence): number {
+  const strongCompetitors = mkt.competitors.filter((c) => c.rating >= 4.5 || c.reviews > 100).length
+  if (strongCompetitors >= 3) return 5
+  if (strongCompetitors >= 2) return 4
+  if (strongCompetitors >= 1) return 3
+  if (mkt.competitors.length > 0) return 2
+  return 1
+}
+
+// D (Decisão): acessibilidade do decisor
+function calculateSpicedD(item: GoogleMapsResult): number {
+  let score = 1
+  if (item.phone) score += 1
+  if (item.emails?.length) score += 1
+  if (item.socialProfiles?.linkedin) score += 1
+  if (item.socialProfiles?.instagram) score += 1
+  return Math.min(score, 5)
 }
