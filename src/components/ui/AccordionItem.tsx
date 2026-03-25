@@ -16,15 +16,15 @@ export function AccordionItem({ title, children, defaultOpen = false, className,
   return (
     <div
       className={cn(
-        'rounded-lg bg-surface border border-stone-800/50 overflow-hidden',
-        accentColor && `border-l-3`,
+        'rounded-xl bg-white/[0.02] border border-border overflow-hidden',
+        accentColor && 'border-l-[3px]',
         className,
       )}
       style={accentColor ? { borderLeftColor: accentColor } : undefined}
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between p-4 text-left cursor-pointer hover:bg-surface-hover transition-colors"
+        className="flex w-full items-center justify-between p-4 text-left cursor-pointer hover:bg-white/[0.03] transition-colors"
       >
         <div className="flex-1">{title}</div>
         <ChevronDown
