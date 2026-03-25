@@ -268,15 +268,23 @@ export function useApifySearch() {
           const isMobile = fullPhone.length >= 12 && fullPhone.charAt(4) === '9'
           const whatsappFull = isMobile ? fullPhone : ''
 
-          // Estimate monthly revenue based on reviews (proxy for business size)
+          // Estimate monthly revenue based on reviews + location (proxy for business size)
+          // São Paulo capital and large cities have higher ticket = higher revenue
           const reviewCount = item.reviewsCount || 0
-          let estimatedRevenue = 40000
-          if (reviewCount >= 100) estimatedRevenue = 150000
-          else if (reviewCount >= 50) estimatedRevenue = 120000
-          else if (reviewCount >= 30) estimatedRevenue = 90000
-          else if (reviewCount >= 15) estimatedRevenue = 70000
-          else if (reviewCount >= 5) estimatedRevenue = 50000
-          if (item.website && !item.website.includes('instagram.com')) estimatedRevenue = Math.round(estimatedRevenue * 1.15)
+          let estimatedRevenue = 70000 // base higher for business with Google presence
+          if (reviewCount >= 200) estimatedRevenue = 500000
+          else if (reviewCount >= 100) estimatedRevenue = 300000
+          else if (reviewCount >= 50) estimatedRevenue = 200000
+          else if (reviewCount >= 30) estimatedRevenue = 150000
+          else if (reviewCount >= 15) estimatedRevenue = 100000
+          else if (reviewCount >= 5) estimatedRevenue = 80000
+          // Boost for website presence (more established business)
+          if (item.website && !item.website.includes('instagram.com')) estimatedRevenue = Math.round(estimatedRevenue * 1.2)
+          // Boost for capital cities
+          const cityLower = (item.city || config.city || '').toLowerCase()
+          if (['são paulo', 'rio de janeiro', 'belo horizonte', 'curitiba', 'porto alegre', 'brasília'].some(c => cityLower.includes(c))) {
+            estimatedRevenue = Math.round(estimatedRevenue * 1.3)
+          }
 
           // Build marketing intelligence
           const marketing: MarketingIntelligence = {
@@ -438,10 +446,10 @@ export function useApifySearch() {
         })
         // FILTER 1: WhatsApp obrigatório — sem celular = excluído
         .filter((lead) => lead.hasWhatsApp)
-        // FILTER 2: Faturamento estimado dentro da faixa configurada
+        // FILTER 2: Faturamento estimado dentro da faixa (com 30% margem de tolerância)
         .filter((lead) => {
-          if (revenueMin && lead.estimatedRevenue < revenueMin) return false
-          if (revenueMax < Infinity && lead.estimatedRevenue > revenueMax) return false
+          if (revenueMin && lead.estimatedRevenue < revenueMin * 0.7) return false
+          if (revenueMax < Infinity && lead.estimatedRevenue > revenueMax * 1.3) return false
           return true
         })
 
