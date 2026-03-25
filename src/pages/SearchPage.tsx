@@ -1,14 +1,14 @@
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
-import { Search, MapPin, Globe, TrendingUp, X, ChevronDown, CheckCircle, Loader2, AlertCircle, Star, Download } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, Star, Download, Sparkles, Brain, Target, Shield, Zap, History } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
-import { useApifySearch, type SearchPhase } from '../hooks/useApifySearch'
+import { useApifySearch } from '../hooks/useApifySearch'
 import { useCreateLead } from '../hooks/useLeads'
 import { toast } from 'sonner'
 
-// --- Segmentos recomendados (podem ser digitados livremente) ---
+// --- Constants ---
 const RECOMMENDED_SEGMENTS = [
   'Estética', 'Odontologia', 'Varejo', 'Farmácia', 'Movelaria',
   'Serviços', 'Alimentação', 'Saúde', 'Educação', 'Tecnologia',
@@ -16,7 +16,6 @@ const RECOMMENDED_SEGMENTS = [
   'Construção', 'Moda', 'Decoração', 'Agronegócio', 'Logística',
 ]
 
-// --- Todos os estados BR, recomendados primeiro ---
 const RECOMMENDED_STATES = ['SP', 'RJ', 'MG', 'RS', 'SC', 'PR']
 const ALL_STATES = [
   { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapá' },
@@ -33,112 +32,87 @@ const ALL_STATES = [
 
 const REVENUE_OPTIONS = [
   { value: '', label: 'Sem limite' },
-  { value: '30000', label: 'R$ 30k' },
-  { value: '50000', label: 'R$ 50k' },
-  { value: '70000', label: 'R$ 70k' },
-  { value: '100000', label: 'R$ 100k' },
-  { value: '200000', label: 'R$ 200k' },
-  { value: '500000', label: 'R$ 500k' },
-  { value: '830000', label: 'R$ 830k' },
-  { value: '1000000', label: 'R$ 1M' },
-  { value: '2000000', label: 'R$ 2M' },
-  { value: '5000000', label: 'R$ 5M' },
-  { value: '10000000', label: 'R$ 10M' },
+  { value: '30000', label: 'R$ 30k' }, { value: '50000', label: 'R$ 50k' },
+  { value: '70000', label: 'R$ 70k' }, { value: '100000', label: 'R$ 100k' },
+  { value: '200000', label: 'R$ 200k' }, { value: '500000', label: 'R$ 500k' },
+  { value: '830000', label: 'R$ 830k' }, { value: '1000000', label: 'R$ 1M' },
+  { value: '2000000', label: 'R$ 2M' }, { value: '5000000', label: 'R$ 5M' },
 ]
 
-// --- Tag input with dropdown suggestions ---
-function TagInput({
-  label,
-  placeholder,
-  tags,
-  setTags,
-  suggestions,
-  suggestionsLabel,
-}: {
-  label: string
-  placeholder: string
-  tags: string[]
-  setTags: (t: string[]) => void
-  suggestions: string[]
-  suggestionsLabel: string
+const SEARCH_PHASES = [
+  { key: 'maps', icon: Target, label: 'Mapeando empresas', desc: 'Coletando dados de contato, localização e avaliações' },
+  { key: 'instagram', icon: Sparkles, label: 'Analisando presença social', desc: 'Seguidores, engajamento e posicionamento digital' },
+  { key: 'website', icon: Brain, label: 'Rastreando websites', desc: 'Serviços, tecnologias e conteúdo publicado' },
+  { key: 'facebookAds', icon: Zap, label: 'Auditando anúncios', desc: 'Biblioteca de anúncios Meta e investimento em mídia' },
+  { key: 'seo', icon: Search, label: 'Auditoria SEO', desc: 'Score técnico, palavras-chave e posicionamento orgânico' },
+  { key: 'competitors', icon: Shield, label: 'Mapeando concorrentes', desc: 'Identificando 3+ concorrentes diretos no segmento' },
+  { key: 'analysis', icon: Brain, label: 'Gerando inteligência', desc: 'Vulnerabilidades, projeções e argumentos de venda' },
+]
+
+const CURIOSITY_MESSAGES = [
+  'Descobrindo oportunidades escondidas...',
+  'Analisando o mercado em tempo real...',
+  'Identificando gaps competitivos...',
+  'Calculando potencial de receita...',
+  'Mapeando vulnerabilidades de marketing...',
+  'Preparando arsenal de argumentos...',
+  'Criando projeção de cenários...',
+  'Montando diagnóstico estratégico...',
+  'Quase lá... finalizando análise...',
+]
+
+// --- Saved search history ---
+interface SearchHistory {
+  id: string
+  segments: string[]
+  states: string[]
+  city: string
+  keywords: string[]
+  revenueMin: string
+  revenueMax: string
+  date: string
+  resultsCount?: number
+}
+
+function loadHistory(): SearchHistory[] {
+  try { return JSON.parse(localStorage.getItem('outbili_search_history') || '[]') } catch { return [] }
+}
+function saveToHistory(entry: SearchHistory) {
+  const history = loadHistory().slice(0, 9)
+  history.unshift(entry)
+  localStorage.setItem('outbili_search_history', JSON.stringify(history))
+}
+
+// --- Tag Input ---
+function TagInput({ label, placeholder, tags, setTags, suggestions, suggestionsLabel }: {
+  label: string; placeholder: string; tags: string[]; setTags: (t: string[]) => void; suggestions: string[]; suggestionsLabel: string
 }) {
   const [input, setInput] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-
-  const filtered = suggestions.filter(
-    (s) => !tags.includes(s) && s.toLowerCase().includes(input.toLowerCase()),
-  )
-
-  const addTag = (tag: string) => {
-    const trimmed = tag.trim()
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed])
-    }
-    setInput('')
-  }
-
+  const filtered = suggestions.filter((s) => !tags.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
+  const addTag = (tag: string) => { const t = tag.trim(); if (t && !tags.includes(t)) setTags([...tags, t]); setInput('') }
   const removeTag = (tag: string) => setTags(tags.filter((t) => t !== tag))
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
-      e.preventDefault()
-      addTag(input)
-    }
-    if (e.key === 'Backspace' && !input && tags.length > 0) {
-      removeTag(tags[tags.length - 1])
-    }
-  }
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  const handleKeyDown = (e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ',') && input.trim()) { e.preventDefault(); addTag(input) }; if (e.key === 'Backspace' && !input && tags.length) removeTag(tags[tags.length - 1]) }
+  useEffect(() => { const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [])
 
   return (
     <div ref={ref} className="relative">
       <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">{label}</label>
-      <div
-        className={cn(
-          'min-h-[44px] w-full rounded-xl bg-white/[0.03] border text-sm text-text-primary px-3 py-2 flex flex-wrap gap-1.5 items-center cursor-text transition-colors',
-          open ? 'border-red/30 ring-1 ring-red/20' : 'border-border',
-        )}
-        onClick={() => setOpen(true)}
-      >
+      <div className={cn('min-h-[44px] w-full rounded-xl bg-white/[0.03] border text-sm text-text-primary px-3 py-2 flex flex-wrap gap-1.5 items-center cursor-text transition-colors', open ? 'border-red/30 ring-1 ring-red/20' : 'border-border')} onClick={() => setOpen(true)}>
         {tags.map((tag) => (
           <span key={tag} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-xs font-medium">
             {tag}
-            <button onClick={(e) => { e.stopPropagation(); removeTag(tag) }} className="hover:text-red-vivid cursor-pointer">
-              <X className="h-3 w-3" />
-            </button>
+            <button onClick={(e) => { e.stopPropagation(); removeTag(tag) }} className="hover:text-red-vivid cursor-pointer"><X className="h-3 w-3" /></button>
           </span>
         ))}
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => { setInput(e.target.value); setOpen(true) }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder={tags.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-text-muted"
-        />
+        <input type="text" value={input} onChange={(e) => { setInput(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} onKeyDown={handleKeyDown} placeholder={tags.length === 0 ? placeholder : ''} className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-text-muted" />
       </div>
-
-      {/* Dropdown */}
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[240px] overflow-y-auto">
           <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-2">{suggestionsLabel}</p>
           {filtered.map((item) => (
-            <button
-              key={item}
-              onClick={() => { addTag(item); setOpen(false) }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer transition-colors"
-            >
-              {item}
-            </button>
+            <button key={item} onClick={() => { addTag(item); setOpen(false) }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer transition-colors">{item}</button>
           ))}
         </div>
       )}
@@ -146,100 +120,40 @@ function TagInput({
   )
 }
 
-// --- Multi-select dropdown for states ---
-function StateMultiSelect({
-  selected,
-  setSelected,
-}: {
-  selected: string[]
-  setSelected: (s: string[]) => void
-}) {
+// --- State Multi-Select ---
+function StateMultiSelect({ selected, setSelected }: { selected: string[]; setSelected: (s: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-
-  const toggle = (uf: string) => {
-    setSelected(selected.includes(uf) ? selected.filter((s) => s !== uf) : [...selected, uf])
-  }
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
+  const toggle = (uf: string) => setSelected(selected.includes(uf) ? selected.filter((s) => s !== uf) : [...selected, uf])
+  useEffect(() => { const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [])
   const recommended = ALL_STATES.filter((s) => RECOMMENDED_STATES.includes(s.uf))
   const others = ALL_STATES.filter((s) => !RECOMMENDED_STATES.includes(s.uf))
 
   return (
     <div ref={ref} className="relative">
       <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado / Região</label>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className={cn(
-          'min-h-[44px] w-full rounded-xl bg-white/[0.03] border text-sm px-3 py-2 flex flex-wrap gap-1.5 items-center text-left cursor-pointer transition-colors',
-          open ? 'border-red/30 ring-1 ring-red/20' : 'border-border',
-        )}
-      >
-        {selected.length === 0 ? (
-          <span className="text-text-muted">Todo Brasil</span>
-        ) : (
-          selected.map((uf) => (
-            <span key={uf} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-xs font-medium">
-              {uf}
-              <span onClick={(e) => { e.stopPropagation(); toggle(uf) }} className="hover:text-red-vivid cursor-pointer">
-                <X className="h-3 w-3" />
-              </span>
-            </span>
-          ))
-        )}
+      <button type="button" onClick={() => setOpen(!open)} className={cn('min-h-[44px] w-full rounded-xl bg-white/[0.03] border text-sm px-3 py-2 flex flex-wrap gap-1.5 items-center text-left cursor-pointer transition-colors', open ? 'border-red/30 ring-1 ring-red/20' : 'border-border')}>
+        {selected.length === 0 ? <span className="text-text-muted">Todo Brasil</span> : selected.map((uf) => (
+          <span key={uf} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-xs font-medium">
+            {uf} <span onClick={(e) => { e.stopPropagation(); toggle(uf) }} className="hover:text-red-vivid cursor-pointer"><X className="h-3 w-3" /></span>
+          </span>
+        ))}
         <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
-
       {open && (
         <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[300px] overflow-y-auto">
-          {/* Recomendados */}
           <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Recomendados</p>
           {recommended.map((state) => (
-            <button
-              key={state.uf}
-              onClick={() => toggle(state.uf)}
-              className={cn(
-                'flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors',
-                selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
-              )}
-            >
-              <div className={cn(
-                'w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors',
-                selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border',
-              )}>
-                {selected.includes(state.uf) && '✓'}
-              </div>
+            <button key={state.uf} onClick={() => toggle(state.uf)} className={cn('flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors', selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
+              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
               {state.name} <span className="text-text-muted text-xs">({state.uf})</span>
             </button>
           ))}
-
           <div className="border-t border-border my-2" />
-
-          {/* Demais */}
           <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Demais estados</p>
           {others.map((state) => (
-            <button
-              key={state.uf}
-              onClick={() => toggle(state.uf)}
-              className={cn(
-                'flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors',
-                selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
-              )}
-            >
-              <div className={cn(
-                'w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors',
-                selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border',
-              )}>
-                {selected.includes(state.uf) && '✓'}
-              </div>
+            <button key={state.uf} onClick={() => toggle(state.uf)} className={cn('flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors', selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
+              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
               {state.name} <span className="text-text-muted text-xs">({state.uf})</span>
             </button>
           ))}
@@ -249,112 +163,97 @@ function StateMultiSelect({
   )
 }
 
-// --- Search result card (enriched) ---
-function ResultCard({ item, onImport, importing }: { item: any; onImport: () => void; importing: boolean }) {
+// --- Animated search progress ---
+function SearchAnimation({ stepStatuses, elapsed }: { stepStatuses: Record<string, string>; elapsed: number }) {
+  const [msgIndex, setMsgIndex] = useState(0)
+  useEffect(() => { const i = setInterval(() => setMsgIndex((n) => (n + 1) % CURIOSITY_MESSAGES.length), 4000); return () => clearInterval(i) }, [])
+  const doneCount = Object.values(stepStatuses).filter((s) => s === 'done' || s === 'skipped').length
+  const pct = Math.round((doneCount / 7) * 100)
+
   return (
-    <div className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h4 className="text-sm font-semibold text-text-primary truncate">{item.companyName}</h4>
-            {item.googleRating > 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-warning">
-                <Star className="h-3 w-3 fill-current" /> {item.googleRating}
-              </span>
-            )}
-            <Badge variant={item.digitalPresenceScore >= 6 ? 'success' : item.digitalPresenceScore >= 3 ? 'warning' : 'error'} size="sm">
-              Digital: {item.digitalPresenceScore}/10
-            </Badge>
+    <Card className="overflow-hidden">
+      {/* Animated gradient border */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red via-warning to-red bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite] opacity-20 pointer-events-none" style={{ margin: -1 }} />
+
+      <div className="text-center py-6">
+        {/* Spinning radar animation */}
+        <div className="relative w-24 h-24 mx-auto mb-6">
+          <div className="absolute inset-0 rounded-full border-2 border-border" />
+          <div className="absolute inset-2 rounded-full border border-border/50" />
+          <div className="absolute inset-4 rounded-full border border-border/30" />
+          <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(from ${elapsed * 30}deg, transparent 0deg, rgba(230,51,41,0.3) 60deg, transparent 120deg)` }} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-lg font-bold font-mono text-red">{pct}%</span>
           </div>
-          <p className="text-xs text-text-muted mb-1">{item.category} · {item.address}</p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {item.whatsapp ? (
-              <span className="text-[11px] text-whatsapp bg-whatsapp/10 px-2 py-0.5 rounded-md font-medium">WhatsApp: +{item.whatsapp}</span>
-            ) : (
-              <span className="text-[11px] text-error/70 bg-error/8 px-2 py-0.5 rounded-md">Sem WhatsApp decisor</span>
-            )}
-            {item.phone && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.phone}</span>}
-            {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[180px]">{item.website}</span>}
-            {item.instagramFollowers && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">IG: {item.instagramFollowers}</span>}
-            {item.linkedinUrl && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">LinkedIn</span>}
-            {item.reviewsCount > 0 && <span className="text-[11px] text-text-muted">{item.reviewsCount} avaliações</span>}
-          </div>
-          {!item.whatsapp && (
-            <p className="text-[10px] text-warning mt-1.5">O WhatsApp do decisor (CEO/dono) deve ser adicionado manualmente na ficha do lead após importação</p>
-          )}
-          {item.marketingVulnerabilities.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {item.marketingVulnerabilities.slice(0, 3).map((v: string, i: number) => (
-                <span key={i} className="text-[10px] text-error/80 bg-error/8 px-2 py-0.5 rounded-md">{v.split('—')[0].trim()}</span>
-              ))}
-              {item.marketingVulnerabilities.length > 3 && (
-                <span className="text-[10px] text-text-muted">+{item.marketingVulnerabilities.length - 3} mais</span>
-              )}
-            </div>
-          )}
         </div>
-        <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={onImport} loading={importing}>
-          Importar
-        </Button>
-      </div>
-    </div>
-  )
-}
 
-// --- Progress display (7 phases) ---
-function SearchProgress({ phase: _phase, stepStatuses, elapsed }: { phase: SearchPhase; stepStatuses: Record<string, string>; elapsed: number }) {
-  const steps = [
-    { key: 'maps', label: 'Google Maps + Google Meu Negócio', desc: 'Empresas, endereços, telefones, avaliações, fotos' },
-    { key: 'instagram', label: 'Instagram Profiling', desc: 'Seguidores, engajamento, bio, posicionamento' },
-    { key: 'website', label: 'Website Crawler', desc: 'Serviços, tecnologias, conteúdo, landing pages' },
-    { key: 'facebookAds', label: 'Biblioteca de Anúncios Meta', desc: 'Facebook Ads, Instagram Ads, campanhas ativas' },
-    { key: 'seo', label: 'Auditoria SEO', desc: 'Score técnico, palavras-chave, backlinks, ranking' },
-    { key: 'competitors', label: 'Análise de Concorrentes', desc: 'Mapeamento de 3+ concorrentes diretos do segmento' },
-    { key: 'analysis', label: 'Inteligência de Marketing', desc: 'Vulnerabilidades, projeção de riscos, argumentos de venda' },
-  ].map((s) => ({ ...s, status: stepStatuses[s.key] || 'pending' }))
+        {/* Curiosity message */}
+        <p className="text-sm font-medium text-text-primary animate-[fade-in_0.5s_ease-out] mb-1" key={msgIndex}>
+          {CURIOSITY_MESSAGES[msgIndex]}
+        </p>
+        <p className="text-xs text-text-muted font-mono">{elapsed}s decorridos</p>
+      </div>
 
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <CardTitle>Pesquisando leads...</CardTitle>
-        <span className="text-xs font-mono text-text-muted">{elapsed}s</span>
-      </div>
-      <div className="space-y-3">
-        {steps.map((step) => (
-          <div key={step.label} className="flex items-center gap-3">
-            {step.status === 'done' ? (
-              <CheckCircle className="h-5 w-5 text-success shrink-0" />
-            ) : step.status === 'running' ? (
-              <Loader2 className="h-5 w-5 text-red animate-spin shrink-0" />
-            ) : (
-              <div className="h-5 w-5 rounded-full border border-border shrink-0" />
-            )}
-            <div>
-              <p className={cn('text-sm font-medium', step.status === 'done' ? 'text-success' : step.status === 'running' ? 'text-text-primary' : 'text-text-muted')}>
-                {step.label}
-              </p>
-              <p className="text-[11px] text-text-muted">{step.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 h-1.5 rounded-full bg-white/5 overflow-hidden">
-        {(() => {
-          const doneCount = Object.values(stepStatuses).filter((s) => s === 'done' || s === 'skipped').length
-          const pct = Math.round((doneCount / 7) * 100)
+      {/* Steps */}
+      <div className="space-y-2 mt-4">
+        {SEARCH_PHASES.map((phase) => {
+          const status = stepStatuses[phase.key] || 'pending'
           return (
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
+            <div key={phase.key} className={cn('flex items-center gap-3 p-3 rounded-xl transition-all duration-500', status === 'running' ? 'bg-red/5 border border-red/10' : status === 'done' ? 'bg-success/5' : 'opacity-40')}>
+              {status === 'done' ? <CheckCircle className="h-4 w-4 text-success shrink-0" /> : status === 'running' ? <Loader2 className="h-4 w-4 text-red animate-spin shrink-0" /> : status === 'skipped' ? <CheckCircle className="h-4 w-4 text-text-muted shrink-0" /> : <div className="h-4 w-4 rounded-full border border-border shrink-0" />}
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-xs font-medium', status === 'done' ? 'text-success' : status === 'running' ? 'text-red' : 'text-text-muted')}>{phase.label}</p>
+                <p className="text-[10px] text-text-muted truncate">{phase.desc}</p>
+              </div>
+              {status === 'running' && <span className="text-[10px] text-red font-mono animate-pulse">processando</span>}
+            </div>
           )
-        })()}
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-4 h-2 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-full rounded-full bg-gradient-to-r from-red-dark via-red to-warning transition-all duration-700 ease-out" style={{ width: `${pct}%` }} />
       </div>
     </Card>
   )
 }
 
-// --- Main page ---
+// --- Result card ---
+function ResultCard({ item, onImport, importing }: { item: any; onImport: () => void; importing: boolean }) {
+  return (
+    <div className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-200 hover:-translate-y-0.5 group">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h4 className="text-sm font-semibold text-text-primary">{item.companyName}</h4>
+            {item.googleRating > 0 && <span className="flex items-center gap-0.5 text-xs text-warning"><Star className="h-3 w-3 fill-current" /> {item.googleRating}</span>}
+            <Badge variant={item.digitalPresenceScore >= 6 ? 'success' : item.digitalPresenceScore >= 3 ? 'warning' : 'error'} size="sm">Presença: {item.digitalPresenceScore}/10</Badge>
+          </div>
+          <p className="text-xs text-text-muted mb-2">{item.category} · {item.address}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {item.whatsapp ? <span className="text-[11px] text-whatsapp bg-whatsapp/10 px-2 py-0.5 rounded-md font-medium">WhatsApp: +{item.whatsapp}</span> : <span className="text-[11px] text-error/70 bg-error/8 px-2 py-0.5 rounded-md">WhatsApp decisor pendente</span>}
+            {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[180px]">{item.website}</span>}
+            {item.instagramFollowers && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">IG: {item.instagramFollowers}</span>}
+            {item.marketing?.facebookAdsCount > 0 && <span className="text-[11px] text-info bg-info/10 px-2 py-0.5 rounded-md">{item.marketing.facebookAdsCount} anúncios</span>}
+            {item.reviewsCount > 0 && <span className="text-[11px] text-text-muted">{item.reviewsCount} avaliações</span>}
+          </div>
+          {item.marketingVulnerabilities?.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {item.marketingVulnerabilities.slice(0, 3).map((v: any, i: number) => (
+                <span key={i} className="text-[10px] text-error/80 bg-error/8 px-2 py-0.5 rounded-md">{v.titulo}</span>
+              ))}
+              {item.marketingVulnerabilities.length > 3 && <span className="text-[10px] text-text-muted">+{item.marketingVulnerabilities.length - 3}</span>}
+            </div>
+          )}
+        </div>
+        <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={onImport} loading={importing}>Importar</Button>
+      </div>
+    </div>
+  )
+}
+
+// === MAIN PAGE ===
 export function SearchPage() {
   const [segments, setSegments] = useState<string[]>([])
   const [states, setStates] = useState<string[]>([])
@@ -363,207 +262,135 @@ export function SearchPage() {
   const [revenueMin, setRevenueMin] = useState('')
   const [revenueMax, setRevenueMax] = useState('')
   const [importingId, setImportingId] = useState<string | null>(null)
+  const [history, setHistory] = useState<SearchHistory[]>(loadHistory)
 
   const apify = useApifySearch()
   const createLead = useCreateLead()
 
   const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
   const selectClass = cn(inputClass, 'appearance-none cursor-pointer')
-
   const activeFilters = segments.length + states.length + (city ? 1 : 0) + keywords.length + (revenueMin ? 1 : 0) + (revenueMax ? 1 : 0)
+  const isSearching = apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error'
 
   const handleSearch = () => {
-    if (segments.length === 0 && keywords.length === 0) {
-      toast.error('Selecione pelo menos um segmento ou palavra-chave')
-      return
-    }
+    if (segments.length === 0 && keywords.length === 0) { toast.error('Selecione pelo menos um segmento ou palavra-chave'); return }
+    const entry: SearchHistory = { id: Date.now().toString(), segments, states, city, keywords, revenueMin, revenueMax, date: new Date().toISOString() }
+    saveToHistory(entry)
+    setHistory(loadHistory())
     apify.search({ segments, states, city, keywords, revenueMin, revenueMax })
+  }
+
+  const loadFromHistory = (entry: SearchHistory) => {
+    setSegments(entry.segments); setStates(entry.states); setCity(entry.city); setKeywords(entry.keywords); setRevenueMin(entry.revenueMin); setRevenueMax(entry.revenueMax)
   }
 
   const handleImport = async (item: any) => {
     setImportingId(item.companyName)
     try {
       await createLead.mutateAsync({
-        companyName: item.companyName,
-        segment: segments[0] || item.category || '',
-        tier: 'Small',
-        status: 'Novo',
-        score: Math.round(item.digitalPresenceScore / 2),
-        temperature: item.digitalPresenceScore >= 5 ? 'WARM' : 'COLD',
+        companyName: item.companyName, segment: segments[0] || item.category || '', tier: 'Small', status: 'Novo',
+        score: Math.round(item.digitalPresenceScore / 2), temperature: item.digitalPresenceScore >= 5 ? 'WARM' : 'COLD',
         spicedS: 0, spicedP: 0, spicedI: 0, spicedC: 0, spicedD: 0,
-        website: item.website || '',
-        address: item.address || '',
-        city: item.city || city,
-        state: item.state || states[0] || '',
-        instagram: item.instagramUrl || '',
-        linkedin: item.linkedinUrl || '',
-        facebook: item.facebookUrl || '',
-        businessSummary: `${item.category} · ${item.reviewsCount} avaliações Google (${item.googleRating}★) · ${item.instagramFollowers ? item.instagramFollowers + ' seguidores IG' : 'Sem IG'} · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta · SEO: ${item.marketing?.seoScore || 'N/A'}/100`,
-        techStack: '',
-        productPortfolio: item.landingPages?.length > 0 ? `Landing pages: ${item.landingPages.join(', ')}` : '',
+        website: item.website || '', address: item.address || '', city: item.city || city, state: item.state || states[0] || '',
+        instagram: item.instagramUrl || '', linkedin: item.linkedinUrl || '', facebook: item.facebookUrl || '',
+        businessSummary: `${item.category} · ${item.reviewsCount} avaliações (${item.googleRating}★) · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta`,
         marketContext: `${item.marketing?.googleInsight || ''} ${item.marketing?.facebookAdsInsight || ''} ${item.marketing?.seoInsight || ''}`.trim(),
         vulnerabilities: JSON.stringify(item.marketingVulnerabilities || []),
         competitiveAnalysis: JSON.stringify({ competitors: item.competitiveAnalysis || [] }),
         salesArguments: JSON.stringify(item.salesArguments || []),
         projectionData: JSON.stringify({ narrative: item.projectionNarrative || '', inactionCost: item.inactionCost || '' }),
-        meetingPrep: JSON.stringify({
-          agenda: [],
-          objecoes: [],
-          checklist: item.meetingTalkingPoints || [],
-        }),
+        meetingPrep: JSON.stringify({ agenda: [], objecoes: [], checklist: item.meetingTalkingPoints || [] }),
       })
-    } finally {
-      setImportingId(null)
-    }
+    } finally { setImportingId(null) }
   }
 
-  const handleImportAll = async () => {
-    for (const item of apify.results) {
-      await handleImport(item)
-    }
-    toast.success(`${apify.results.length} leads importados com análise completa`)
-  }
+  const handleImportAll = async () => { for (const item of apify.results) await handleImport(item); toast.success(`${apify.results.length} leads importados com análise completa`) }
 
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
       <div>
         <h1 className="text-xl font-bold font-heading gradient-text">Pesquisa de leads</h1>
-        <p className="text-xs text-text-muted mt-0.5">Encontre empresas qualificadas via Google Maps, Instagram e Website</p>
+        <p className="text-xs text-text-muted mt-0.5">Encontre e analise empresas qualificadas com inteligência de marketing completa</p>
       </div>
 
+      {/* Search form */}
       <Card>
         <div className="flex items-center justify-between mb-5">
-          <CardTitle>Configurar busca</CardTitle>
-          {activeFilters > 0 && (
-            <span className="text-[11px] text-red font-medium bg-red/10 px-2.5 py-1 rounded-full">
-              {activeFilters} filtro{activeFilters > 1 ? 's' : ''} ativo{activeFilters > 1 ? 's' : ''}
-            </span>
-          )}
+          <CardTitle>Configurar pesquisa</CardTitle>
+          {activeFilters > 0 && <span className="text-[11px] text-red font-medium bg-red/10 px-2.5 py-1 rounded-full">{activeFilters} filtro{activeFilters > 1 ? 's' : ''}</span>}
         </div>
-
         <div className="grid md:grid-cols-2 gap-5">
-          {/* Segmento — tag input com sugestões */}
-          <TagInput
-            label="Setor / Segmento"
-            placeholder="Digite ou selecione segmentos..."
-            tags={segments}
-            setTags={setSegments}
-            suggestions={RECOMMENDED_SEGMENTS}
-            suggestionsLabel="Segmentos recomendados"
-          />
-
-          {/* Estado — multi-select com todos os 27 */}
+          <TagInput label="Setor / Segmento" placeholder="Digite ou selecione segmentos..." tags={segments} setTags={setSegments} suggestions={RECOMMENDED_SEGMENTS} suggestionsLabel="Segmentos recomendados" />
           <StateMultiSelect selected={states} setSelected={setStates} />
-
-          {/* Cidade */}
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Ex: São Paulo, Campinas, Curitiba"
-              className={inputClass}
-            />
+            <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: São Paulo, Campinas, Curitiba" className={inputClass} />
           </div>
-
-          {/* Palavras-chave — tag input */}
-          <TagInput
-            label="Palavras-chave"
-            placeholder="Ex: implantes, ortodontia, clínica..."
-            tags={keywords}
-            setTags={setKeywords}
-            suggestions={['implantes', 'ortodontia', 'harmonização facial', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']}
-            suggestionsLabel="Sugestões"
-          />
-
-          {/* Faturamento mínimo */}
+          <TagInput label="Palavras-chave" placeholder="Ex: implantes, ortodontia, clínica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonização', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']} suggestionsLabel="Sugestões" />
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mínimo</label>
             <select value={revenueMin} onChange={(e) => setRevenueMin(e.target.value)} className={selectClass}>
-              {REVENUE_OPTIONS.map((r) => (
-                <option key={'min-' + r.value} value={r.value}>{r.value ? r.label : 'Sem mínimo'}</option>
-              ))}
+              {REVENUE_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.value ? r.label : 'Sem mínimo'}</option>)}
             </select>
           </div>
-
-          {/* Faturamento máximo */}
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento máximo</label>
             <select value={revenueMax} onChange={(e) => setRevenueMax(e.target.value)} className={selectClass}>
-              {REVENUE_OPTIONS.map((r) => (
-                <option key={'max-' + r.value} value={r.value}>{r.value ? r.label : 'Sem máximo'}</option>
-              ))}
+              {REVENUE_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.value ? r.label : 'Sem máximo'}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Active filters summary */}
+        {/* Active filters */}
         {activeFilters > 0 && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-1.5 items-center">
             <span className="text-[11px] text-text-muted mr-1">Filtros:</span>
-            {segments.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                {s} <button onClick={() => setSegments(segments.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            ))}
-            {states.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                {s} <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            ))}
-            {city && (
-              <span className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                {city} <button onClick={() => setCity('')} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            )}
-            {keywords.map((k) => (
-              <span key={k} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                {k} <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            ))}
-            {revenueMin && (
-              <span className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                Min: {REVENUE_OPTIONS.find((r) => r.value === revenueMin)?.label}
-                <button onClick={() => setRevenueMin('')} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            )}
-            {revenueMax && (
-              <span className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">
-                Max: {REVENUE_OPTIONS.find((r) => r.value === revenueMax)?.label}
-                <button onClick={() => setRevenueMax('')} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button>
-              </span>
-            )}
-            <button
-              onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin(''); setRevenueMax('') }}
-              className="text-[11px] text-text-muted hover:text-red ml-2 cursor-pointer transition-colors"
-            >
-              Limpar tudo
-            </button>
+            {segments.map((s) => <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{s} <button onClick={() => setSegments(segments.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
+            {states.map((s) => <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{s} <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
+            {city && <span className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{city} <button onClick={() => setCity('')} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>}
+            {keywords.map((k) => <span key={k} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{k} <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
+            <button onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin(''); setRevenueMax('') }} className="text-[11px] text-text-muted hover:text-red ml-2 cursor-pointer">Limpar</button>
           </div>
         )}
 
         <div className="mt-6 flex items-center gap-3">
-          <Button
-            size="lg"
-            icon={<Search className="h-4 w-4" />}
-            onClick={handleSearch}
-            loading={apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error'}
-            disabled={apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error'}
-          >
-            Pesquisar via Apify
+          <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={handleSearch} loading={isSearching} disabled={isSearching}>
+            Pesquisar leads
           </Button>
-          {apify.phase === 'idle' && <span className="text-[11px] text-text-muted">Estimativa: 30-120 segundos</span>}
-          {apify.phase === 'done' && (
-            <Button variant="ghost" size="sm" onClick={apify.reset}>Nova pesquisa</Button>
-          )}
+          {apify.phase === 'done' && <Button variant="ghost" size="sm" onClick={apify.reset}>Nova pesquisa</Button>}
         </div>
       </Card>
 
-      {/* Progress */}
-      {apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error' && (
-        <SearchProgress phase={apify.phase} stepStatuses={apify.stepStatuses} elapsed={apify.elapsed} />
+      {/* Search history */}
+      {history.length > 0 && apify.phase === 'idle' && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <History className="h-4 w-4 text-text-muted" />
+            <span className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">Pesquisas recentes</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {history.slice(0, 5).map((entry) => (
+              <button
+                key={entry.id}
+                onClick={() => loadFromHistory(entry)}
+                className="flex-shrink-0 p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-pointer text-left group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {entry.segments.map((s) => <span key={s} className="text-[10px] text-red bg-red/10 px-1.5 py-0.5 rounded">{s}</span>)}
+                  {entry.states.map((s) => <span key={s} className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{s}</span>)}
+                </div>
+                <p className="text-[10px] text-text-muted">
+                  {entry.city && `${entry.city} · `}{new Date(entry.date).toLocaleDateString('pt-BR')}
+                  {entry.resultsCount && ` · ${entry.resultsCount} resultados`}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
+
+      {/* Animated search progress */}
+      {isSearching && <SearchAnimation stepStatuses={apify.stepStatuses} elapsed={apify.elapsed} />}
 
       {/* Error */}
       {apify.phase === 'error' && (
@@ -584,21 +411,14 @@ export function SearchPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <CardTitle>{apify.results.length} empresas encontradas</CardTitle>
-              <Badge variant="success" size="sm">em {apify.elapsed}s</Badge>
+              <CardTitle>{apify.results.length} empresas analisadas</CardTitle>
+              <Badge variant="success" size="sm">{apify.elapsed}s</Badge>
             </div>
-            <Button size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleImportAll}>
-              Importar todos ({apify.results.length})
-            </Button>
+            <Button size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleImportAll}>Importar todos ({apify.results.length})</Button>
           </div>
           <div className="space-y-2">
             {apify.results.map((item, i) => (
-              <ResultCard
-                key={i}
-                item={item}
-                onImport={() => handleImport(item)}
-                importing={importingId === item.companyName}
-              />
+              <ResultCard key={i} item={item} onImport={() => handleImport(item)} importing={importingId === item.companyName} />
             ))}
           </div>
         </Card>
@@ -606,29 +426,8 @@ export function SearchPage() {
 
       {apify.phase === 'done' && apify.results.length === 0 && (
         <Card className="p-8 text-center">
-          <p className="text-sm text-text-muted">Nenhum resultado encontrado. Tente ajustar os filtros.</p>
+          <p className="text-sm text-text-muted">Nenhum resultado encontrado. Ajuste os filtros e tente novamente.</p>
         </Card>
-      )}
-
-      {/* Data sources (only when idle) */}
-      {apify.phase === 'idle' && (
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { icon: MapPin, label: 'Google Maps', desc: 'Endereço, telefone, avaliações, fotos' },
-            { icon: Globe, label: 'Website Crawler', desc: 'Serviços, equipe, tecnologias, about' },
-            { icon: TrendingUp, label: 'Instagram', desc: 'Seguidores, engajamento, bio, posts' },
-          ].map((source) => (
-            <Card key={source.label} className="flex items-center gap-3 p-4">
-              <div className="p-2.5 rounded-xl bg-red-subtle">
-                <source.icon className="h-4 w-4 text-red" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-text-primary">{source.label}</p>
-                <p className="text-[11px] text-text-muted">{source.desc}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   )
