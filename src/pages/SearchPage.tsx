@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
 import { useApifySearch } from '../hooks/useApifySearch'
 import { useCreateLead } from '../hooks/useLeads'
+import { useCreateContact } from '../hooks/useContacts'
 import { toast } from 'sonner'
 
 // --- Constants ---
@@ -272,6 +273,7 @@ export function SearchPage() {
 
   const apify = useApifySearch()
   const createLead = useCreateLead()
+  const createContact = useCreateContact()
 
   // Auto-import when search completes
   useEffect(() => {
@@ -313,21 +315,56 @@ export function SearchPage() {
   const handleImportSingle = async (item: any) => {
     const spicedTotal = item.spicedTotal || 0
     const temp = spicedTotal >= 4 ? 'HOT' : spicedTotal >= 3 ? 'WARM' : 'COLD'
-    await createLead.mutateAsync({
-        companyName: item.companyName, segment: segments[0] || item.category || '', tier: 'Small', status: 'Novo',
-        score: spicedTotal, temperature: temp,
-        spicedS: item.spicedS || 0, spicedP: item.spicedP || 0, spicedI: item.spicedI || 0, spicedC: item.spicedC || 0, spicedD: item.spicedD || 0,
-        website: item.website || '', address: item.address || '', city: item.city || city, state: item.state || states[0] || '',
-        instagram: item.instagramUrl || '', linkedin: item.linkedinUrl || '', facebook: item.facebookUrl || '',
-        businessSummary: `${item.category} · ${item.reviewsCount} avaliações (${item.googleRating}★) · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta`,
-        marketContext: `${item.marketing?.googleInsight || ''} ${item.marketing?.facebookAdsInsight || ''} ${item.marketing?.seoInsight || ''}`.trim(),
-        vulnerabilities: JSON.stringify(item.marketingVulnerabilities || []),
-        competitiveAnalysis: JSON.stringify({ competitors: item.competitiveAnalysis || [] }),
-        salesArguments: JSON.stringify(item.salesArguments || []),
-        projectionData: JSON.stringify({ narrative: item.projectionNarrative || '', inactionCost: item.inactionCost || '' }),
-        meetingPrep: JSON.stringify({ agenda: [], objecoes: [], checklist: item.meetingTalkingPoints || [] }),
-        enrichmentStatus: 'pending',
-      })
+    const revenue = item.estimatedRevenue || 80000
+
+    // Estimate employees and years from revenue
+    const employees = revenue >= 120000 ? 8 : revenue >= 70000 ? 5 : 3
+    const yearsInMarket = revenue >= 120000 ? 7 : revenue >= 70000 ? 5 : 3
+
+    // Determine tier from revenue
+    const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
+
+    const lead = await createLead.mutateAsync({
+      companyName: item.companyName,
+      segment: segments[0] || item.category || '',
+      tier,
+      status: 'Novo',
+      score: spicedTotal,
+      temperature: temp,
+      monthlyRevenue: revenue,
+      employees,
+      yearsInMarket,
+      spicedS: item.spicedS || 0, spicedP: item.spicedP || 0, spicedI: item.spicedI || 0, spicedC: item.spicedC || 0, spicedD: item.spicedD || 0,
+      website: item.website || '',
+      address: item.address || '',
+      city: item.city || city,
+      state: item.state || states[0] || '',
+      instagram: item.instagramUrl || '',
+      linkedin: item.linkedinUrl || '',
+      facebook: item.facebookUrl || '',
+      businessSummary: `${item.category} · ${item.reviewsCount} avaliações (${item.googleRating}★) · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta · Faturamento est.: R$ ${(revenue/1000).toFixed(0)}k/mês`,
+      marketContext: `${item.marketing?.googleInsight || ''} ${item.marketing?.facebookAdsInsight || ''} ${item.marketing?.seoInsight || ''}`.trim(),
+      vulnerabilities: JSON.stringify(item.marketingVulnerabilities || []),
+      competitiveAnalysis: JSON.stringify({ competitors: item.competitiveAnalysis || [] }),
+      salesArguments: JSON.stringify(item.salesArguments || []),
+      projectionData: JSON.stringify({ narrative: item.projectionNarrative || '', inactionCost: item.inactionCost || '' }),
+      meetingPrep: JSON.stringify({ agenda: [], objecoes: [], checklist: item.meetingTalkingPoints || [] }),
+      enrichmentStatus: 'pending',
+    })
+
+    // Auto-create contact with WhatsApp in Airtable
+    if (lead?.id && item.whatsapp) {
+      try {
+        await createContact.mutateAsync({
+          leadId: lead.id,
+          name: item.ownerName || `Proprietário(a) ${item.companyName}`,
+          role: 'Proprietário(a) / Decisor',
+          contactType: 'decisor',
+          whatsapp: item.whatsapp,
+          email: item.emails?.[0] || '',
+        })
+      } catch { /* contact creation failure is non-blocking */ }
+    }
   }
 
   void setImportingId // available for future manual import

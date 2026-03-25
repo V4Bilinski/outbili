@@ -56,6 +56,9 @@ export interface EnrichedLead {
   projectionNarrative: string
   inactionCost: string
   meetingTalkingPoints: string[]
+  estimatedRevenue: number
+  hasWhatsApp: boolean
+  ownerName: string
 }
 
 interface SearchState {
@@ -190,9 +193,13 @@ export function useApifySearch() {
         setStep('competitors', 'done')
       } catch { setStep('competitors', 'skipped') }
 
-      // --- Phase 6: Analysis ---
+      // --- Phase 6: Analysis + Filtering ---
       setState((s) => ({ ...s, phase: 'analyzing' }))
       setStep('analysis', 'running')
+
+      // Revenue estimation based on reviews (proxy) and filtering
+      const revenueMin = config.revenueMin ? parseInt(config.revenueMin) : 0
+      const revenueMax = config.revenueMax ? parseInt(config.revenueMax) : Infinity
 
       const enriched: EnrichedLead[] = mapsItems
         .filter((item) => item.title)
@@ -200,13 +207,27 @@ export function useApifySearch() {
           const igHandle = item.socialProfiles?.instagram?.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace('/', '')
           const igInfo = igHandle ? igData[igHandle.toLowerCase()] : null
           const webDomain = item.website ? new URL(item.website).hostname.replace('www.', '') : null
-          void (webDomain ? webData[webDomain] : null) // webInfo available for future enrichment
+          void (webDomain ? webData[webDomain] : null)
           const ads = adsMap[item.title] || []
           const seo = webDomain ? seoMap[webDomain] : null
 
+          // Phone validation: extract and check if it's a mobile (WhatsApp)
           const rawPhone = item.phone || ''
-          const whatsapp = rawPhone.replace(/\D/g, '').replace(/^0+/, '')
-          const whatsappFull = whatsapp.length >= 10 ? (whatsapp.startsWith('55') ? whatsapp : `55${whatsapp}`) : ''
+          const phoneDigits = rawPhone.replace(/\D/g, '').replace(/^0+/, '')
+          const fullPhone = phoneDigits.length >= 10 ? (phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`) : ''
+          // Brazilian mobile: 55 + DDD(2) + 9(1) + XXXX(4) + XXXX(4) = 13 digits, 5th char is '9'
+          const isMobile = fullPhone.length >= 12 && fullPhone.charAt(4) === '9'
+          const whatsappFull = isMobile ? fullPhone : ''
+
+          // Estimate monthly revenue based on reviews (proxy for business size)
+          const reviewCount = item.reviewsCount || 0
+          let estimatedRevenue = 40000
+          if (reviewCount >= 100) estimatedRevenue = 150000
+          else if (reviewCount >= 50) estimatedRevenue = 120000
+          else if (reviewCount >= 30) estimatedRevenue = 90000
+          else if (reviewCount >= 15) estimatedRevenue = 70000
+          else if (reviewCount >= 5) estimatedRevenue = 50000
+          if (item.website && !item.website.includes('instagram.com')) estimatedRevenue = Math.round(estimatedRevenue * 1.15)
 
           // Build marketing intelligence
           const marketing: MarketingIntelligence = {
@@ -314,7 +335,18 @@ export function useApifySearch() {
             projectionNarrative,
             inactionCost,
             meetingTalkingPoints,
+            estimatedRevenue,
+            hasWhatsApp: isMobile,
+            ownerName: extractOwnerName(item.title),
           }
+        })
+        // FILTER 1: WhatsApp obrigatório — sem celular = excluído
+        .filter((lead) => lead.hasWhatsApp)
+        // FILTER 2: Faturamento estimado dentro da faixa configurada
+        .filter((lead) => {
+          if (revenueMin && lead.estimatedRevenue < revenueMin) return false
+          if (revenueMax < Infinity && lead.estimatedRevenue > revenueMax) return false
+          return true
         })
 
       setStep('analysis', 'done')
@@ -582,4 +614,20 @@ function calculateSpicedD(item: GoogleMapsResult): number {
   if (item.socialProfiles?.linkedin) score += 1
   if (item.socialProfiles?.instagram) score += 1
   return Math.min(score, 5)
+}
+
+// Extract owner name from business name (for estética clinics, name IS usually the owner)
+function extractOwnerName(businessName: string): string {
+  const patterns = [
+    /^(Dra?\.?\s+\w+\s+\w+)/i,         // Dra. Nome Sobrenome
+    /^(\w+\s+\w+)\s+Estética/i,         // Nome Sobrenome Estética
+    /^Espaço\s+(\w+\s+\w+)/i,           // Espaço Nome
+    /(\w+\s+\w+)\s*[-–]\s*Clínica/i,    // Nome - Clínica
+    /Clínica\s+(\w+\s+\w+)/i,           // Clínica Nome Sobrenome
+  ]
+  for (const p of patterns) {
+    const m = businessName.match(p)
+    if (m) return m[1].trim()
+  }
+  return `Proprietário(a) ${businessName.split(/[-|–]/)[0].trim()}`
 }
