@@ -20,9 +20,9 @@ const TABS = [
   { id: 'spiced', label: 'SPICED' },
   { id: 'reuniao', label: 'Reunião' },
   { id: 'projecao', label: 'Projeção' },
-  { id: 'vulnerabilidades', label: 'Vulnerab.' },
-  { id: 'competitiva', label: 'Compet.' },
-  { id: 'argumentos', label: 'Argum.' },
+  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
+  { id: 'competitiva', label: 'Competitiva' },
+  { id: 'argumentos', label: 'Argumentos' },
   { id: 'contatos', label: 'Contatos' },
 ] as const
 
@@ -126,27 +126,45 @@ export function CompanyPage() {
       </Card>
 
       {/* Tabs navigation */}
-      <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0">
-        <div className="flex gap-1 min-w-max bg-surface/80 backdrop-blur-xl rounded-xl p-1 border border-border">
+      <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
+        <div className="flex gap-0.5 min-w-max border-b border-border pb-0">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer',
+                'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
+                'hover:text-text-primary',
                 activeTab === tab.id
-                  ? 'bg-red text-white shadow-lg shadow-red/20'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
+                  ? 'text-red'
+                  : 'text-text-muted hover:bg-white/[0.02]',
               )}
             >
               {tab.label}
+              {/* Active indicator — animated underline */}
+              <span
+                className={cn(
+                  'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
+                  activeTab === tab.id
+                    ? 'bg-red scale-x-100 opacity-100'
+                    : 'bg-transparent scale-x-0 opacity-0',
+                )}
+              />
+              {/* Hover glow */}
+              <span
+                className={cn(
+                  'absolute inset-0 rounded-lg transition-all duration-200',
+                  activeTab !== tab.id && 'group-hover:bg-white/[0.02]',
+                )}
+              />
             </button>
           ))}
         </div>
       </div>
 
       {/* Tab content */}
-      <Card className="min-h-[300px]">
+      <Card className="min-h-[300px]" key={activeTab}>
+        <div className="animate-[fade-in_0.3s_ease-out]">
         {/* Tab: Resumo */}
         {activeTab === 'resumo' && (
           <div className="space-y-5">
@@ -274,6 +292,7 @@ export function CompanyPage() {
 
         {/* Tab: Contatos */}
         {activeTab === 'contatos' && <TabContatos lead={lead} />}
+        </div>
       </Card>
     </div>
   )

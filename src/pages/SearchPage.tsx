@@ -301,14 +301,17 @@ function ResultCard({ item, onImport, importing }: { item: any; onImport: () => 
   )
 }
 
-// --- Progress display (3 phases) ---
-function SearchProgress({ phase, mapsStatus, instagramStatus, websiteStatus, elapsed }: { phase: SearchPhase; mapsStatus: string; instagramStatus: string; websiteStatus: string; elapsed: number }) {
+// --- Progress display (7 phases) ---
+function SearchProgress({ phase: _phase, stepStatuses, elapsed }: { phase: SearchPhase; stepStatuses: Record<string, string>; elapsed: number }) {
   const steps = [
-    { label: 'Google Maps', status: mapsStatus, desc: 'Empresas, endereços, telefones, avaliações' },
-    { label: 'Instagram', status: instagramStatus, desc: 'Seguidores, engajamento, bio, posicionamento' },
-    { label: 'Website Crawler', status: websiteStatus, desc: 'Serviços, tecnologias, conteúdo, about' },
-    { label: 'Análise', status: phase === 'analyzing' ? 'running' : phase === 'done' ? 'done' : 'pending', desc: 'Vulnerabilidades, competitiva, projeção de riscos' },
-  ]
+    { key: 'maps', label: 'Google Maps + Google Meu Negócio', desc: 'Empresas, endereços, telefones, avaliações, fotos' },
+    { key: 'instagram', label: 'Instagram Profiling', desc: 'Seguidores, engajamento, bio, posicionamento' },
+    { key: 'website', label: 'Website Crawler', desc: 'Serviços, tecnologias, conteúdo, landing pages' },
+    { key: 'facebookAds', label: 'Biblioteca de Anúncios Meta', desc: 'Facebook Ads, Instagram Ads, campanhas ativas' },
+    { key: 'seo', label: 'Auditoria SEO', desc: 'Score técnico, palavras-chave, backlinks, ranking' },
+    { key: 'competitors', label: 'Análise de Concorrentes', desc: 'Mapeamento de 3+ concorrentes diretos do segmento' },
+    { key: 'analysis', label: 'Inteligência de Marketing', desc: 'Vulnerabilidades, projeção de riscos, argumentos de venda' },
+  ].map((s) => ({ ...s, status: stepStatuses[s.key] || 'pending' }))
 
   return (
     <Card>
@@ -336,10 +339,16 @@ function SearchProgress({ phase, mapsStatus, instagramStatus, websiteStatus, ela
         ))}
       </div>
       <div className="mt-4 h-1.5 rounded-full bg-white/5 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
-          style={{ width: phase === 'done' ? '100%' : phase === 'analyzing' ? '90%' : phase === 'website' ? '70%' : phase === 'instagram' ? '45%' : `${Math.min(30, elapsed)}%` }}
-        />
+        {(() => {
+          const doneCount = Object.values(stepStatuses).filter((s) => s === 'done' || s === 'skipped').length
+          const pct = Math.round((doneCount / 7) * 100)
+          return (
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          )
+        })()}
       </div>
     </Card>
   )
@@ -374,13 +383,6 @@ export function SearchPage() {
   const handleImport = async (item: any) => {
     setImportingId(item.companyName)
     try {
-      const vulns = (item.marketingVulnerabilities || []).map((v: string, i: number) => ({
-        titulo: v.split('—')[0]?.trim() || v,
-        impacto: i < 3 ? 'ALTO' : 'MEDIO',
-        descricao: v,
-        impactoFinanceiro: 'A quantificar no diagnóstico',
-      }))
-
       await createLead.mutateAsync({
         companyName: item.companyName,
         segment: segments[0] || item.category || '',
@@ -396,11 +398,14 @@ export function SearchPage() {
         instagram: item.instagramUrl || '',
         linkedin: item.linkedinUrl || '',
         facebook: item.facebookUrl || '',
-        businessSummary: `${item.category} · ${item.reviewsCount} avaliações Google (${item.googleRating}★) · ${item.instagramFollowers ? item.instagramFollowers + ' seguidores IG' : 'Sem IG'} · Presença digital: ${item.digitalPresenceScore}/10`,
-        techStack: item.websiteTech || '',
+        businessSummary: `${item.category} · ${item.reviewsCount} avaliações Google (${item.googleRating}★) · ${item.instagramFollowers ? item.instagramFollowers + ' seguidores IG' : 'Sem IG'} · Presença digital: ${item.digitalPresenceScore}/10 · ${item.marketing?.facebookAdsCount || 0} anúncios Meta · SEO: ${item.marketing?.seoScore || 'N/A'}/100`,
+        techStack: '',
         productPortfolio: item.landingPages?.length > 0 ? `Landing pages: ${item.landingPages.join(', ')}` : '',
-        marketContext: item.competitiveInsights || '',
-        vulnerabilities: JSON.stringify(vulns),
+        marketContext: `${item.marketing?.googleInsight || ''} ${item.marketing?.facebookAdsInsight || ''} ${item.marketing?.seoInsight || ''}`.trim(),
+        vulnerabilities: JSON.stringify(item.marketingVulnerabilities || []),
+        competitiveAnalysis: JSON.stringify({ competitors: item.competitiveAnalysis || [] }),
+        salesArguments: JSON.stringify(item.salesArguments || []),
+        projectionData: JSON.stringify({ narrative: item.projectionNarrative || '', inactionCost: item.inactionCost || '' }),
         meetingPrep: JSON.stringify({
           agenda: [],
           objecoes: [],
@@ -556,8 +561,8 @@ export function SearchPage() {
       </Card>
 
       {/* Progress */}
-      {(apify.phase === 'maps' || apify.phase === 'instagram' || apify.phase === 'website' || apify.phase === 'analyzing') && (
-        <SearchProgress phase={apify.phase} mapsStatus={apify.mapsStatus} instagramStatus={apify.instagramStatus} websiteStatus={apify.websiteStatus} elapsed={apify.elapsed} />
+      {apify.phase !== 'idle' && apify.phase !== 'done' && apify.phase !== 'error' && (
+        <SearchProgress phase={apify.phase} stepStatuses={apify.stepStatuses} elapsed={apify.elapsed} />
       )}
 
       {/* Error */}

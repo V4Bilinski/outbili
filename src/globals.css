@@ -117,6 +117,15 @@
   }
 }
 
+/* Hide scrollbar for tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Glass card utility */
 .glass-card {
   background: linear-gradient(135deg, rgba(15, 15, 18, 0.8), rgba(22, 22, 26, 0.6));

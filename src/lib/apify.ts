@@ -22,7 +22,8 @@ async function apifyFetch(path: string, options: RequestInit = {}): Promise<any>
   return res.json()
 }
 
-// Start a Google Maps Places scraper run
+// --- Core actors ---
+
 export async function startGoogleMapsSearch(query: string, location: string, maxResults = 20): Promise<string> {
   const result = await apifyFetch(
     `/acts/compass~crawler-google-places/runs?token=${TOKEN}`,
@@ -40,10 +41,9 @@ export async function startGoogleMapsSearch(query: string, location: string, max
       }),
     },
   )
-  return result.data.id // runId
+  return result.data.id
 }
 
-// Start Instagram scraper for a list of profiles
 export async function startInstagramScrape(profiles: string[]): Promise<string> {
   const result = await apifyFetch(
     `/acts/apify~instagram-scraper/runs?token=${TOKEN}`,
@@ -60,7 +60,6 @@ export async function startInstagramScrape(profiles: string[]): Promise<string> 
   return result.data.id
 }
 
-// Start website content crawler
 export async function startWebsiteCrawl(urls: string[]): Promise<string> {
   const result = await apifyFetch(
     `/acts/apify~website-content-crawler/runs?token=${TOKEN}`,
@@ -76,24 +75,87 @@ export async function startWebsiteCrawl(urls: string[]): Promise<string> {
   return result.data.id
 }
 
-// Poll run status
+// --- Marketing intelligence actors ---
+
+export async function startFacebookAdsScrape(companyName: string, country = 'BR'): Promise<string> {
+  const result = await apifyFetch(
+    `/acts/apify~facebook-ads-scraper/runs?token=${TOKEN}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        searchQuery: companyName,
+        countryCode: country,
+        adType: 'all',
+        adActiveStatus: 'all',
+        maxItems: 20,
+      }),
+    },
+  )
+  return result.data.id
+}
+
+export async function startSeoAudit(url: string): Promise<string> {
+  const result = await apifyFetch(
+    `/acts/misceres~seo-audit-tool/runs?token=${TOKEN}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        startUrls: [{ url }],
+        maxRequestsPerCrawl: 10,
+      }),
+    },
+  )
+  return result.data.id
+}
+
+export async function startAhrefsScrape(domain: string): Promise<string> {
+  const result = await apifyFetch(
+    `/acts/radeance~ahrefs-scraper/runs?token=${TOKEN}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        urls: [`https://ahrefs.com/site-explorer/overview?target=${domain}&mode=subdomains`],
+      }),
+    },
+  )
+  return result.data.id
+}
+
+export async function startSimilarWebScrape(domain: string): Promise<string> {
+  const result = await apifyFetch(
+    `/acts/ecomdate~similarweb-scraper/runs?token=${TOKEN}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        urls: [`https://www.similarweb.com/website/${domain}/`],
+      }),
+    },
+  )
+  return result.data.id
+}
+
+// Start Google Maps competitor search (same segment, same city)
+export async function startCompetitorSearch(segment: string, city: string, maxResults = 10): Promise<string> {
+  return startGoogleMapsSearch(segment, city, maxResults)
+}
+
+// --- Utilities ---
+
 export async function getRunStatus(runId: string, actorId: string): Promise<ApifyRunResult> {
   const result = await apifyFetch(`/acts/${actorId}/runs/${runId}?token=${TOKEN}`)
   return result.data
 }
 
-// Get dataset items from a completed run
 export async function getDatasetItems<T = any>(datasetId: string, limit = 100): Promise<T[]> {
   const result = await apifyFetch(`/datasets/${datasetId}/items?token=${TOKEN}&limit=${limit}`)
   return result
 }
 
-// Poll until run completes (with callback for progress updates)
 export async function pollRunUntilDone(
   runId: string,
   actorId: string,
   onProgress?: (status: string) => void,
-  maxWaitMs = 180_000,
+  maxWaitMs = 300_000,
 ): Promise<string> {
   const start = Date.now()
   while (Date.now() - start < maxWaitMs) {
@@ -106,7 +168,23 @@ export async function pollRunUntilDone(
   throw new Error('Apify run timeout')
 }
 
-// Combined search: Google Maps + optional Instagram + Website
+// Safe run — returns null instead of throwing on failure
+export async function safeRunActor(
+  startFn: () => Promise<string>,
+  actorId: string,
+  maxWaitMs = 120_000,
+): Promise<any[] | null> {
+  try {
+    const runId = await startFn()
+    const datasetId = await pollRunUntilDone(runId, actorId, undefined, maxWaitMs)
+    return await getDatasetItems(datasetId)
+  } catch {
+    return null
+  }
+}
+
+// --- Types ---
+
 export interface SearchConfig {
   segments: string[]
   states: string[]
@@ -130,6 +208,44 @@ export interface GoogleMapsResult {
   imageUrl?: string
   emails?: string[]
   socialProfiles?: Record<string, string>
+}
+
+export interface MarketingIntelligence {
+  // Facebook Ads
+  facebookAdsCount: number
+  facebookAdsActive: boolean
+  facebookAdsPlatforms: string[]
+  facebookAdsInsight: string
+  // SEO
+  seoScore: number
+  seoIssues: string[]
+  seoKeywords: string[]
+  seoInsight: string
+  // Traffic (SimilarWeb)
+  monthlyVisits: number
+  bounceRate: number
+  trafficSources: Record<string, number>
+  trafficInsight: string
+  // Authority (Ahrefs)
+  domainRating: number
+  backlinks: number
+  referringDomains: number
+  organicKeywords: number
+  authorityInsight: string
+  // Google Meu Negócio
+  googleRating: number
+  googleReviews: number
+  googlePhotos: number
+  googleInsight: string
+  // Competitors
+  competitors: Array<{
+    name: string
+    website?: string
+    rating: number
+    reviews: number
+    category: string
+    dimensions: Record<string, string>
+  }>
 }
 
 export function buildSearchQuery(config: SearchConfig): { query: string; location: string } {
