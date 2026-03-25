@@ -205,52 +205,96 @@ export function CompanyPage() {
           </div>
         )}
 
-        {/* Tab: SPICED */}
+        {/* Tab: SPICED — Design system replicado do HTML de referência */}
         {activeTab === 'spiced' && (
-          <div className="space-y-5">
-            <div className="text-center mb-6">
-              <p className="text-4xl font-bold font-mono text-red">{score}/5</p>
-              <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="mt-2">
+          <div>
+            {/* Header: Análise SPICED */}
+            <h2 className="text-xl font-bold font-heading mb-6">Análise SPICED</h2>
+
+            {/* Score ponderado final */}
+            <div className="flex items-center gap-4 pb-6 mb-8 border-b-2 border-red/20">
+              <span className="text-sm text-text-secondary">Score ponderado final:</span>
+              <span className="text-[clamp(2.5rem,6vw,3rem)] font-extrabold font-mono text-red px-5 py-2 bg-red/10 rounded-lg shadow-[0_0_20px_rgba(204,0,0,0.3)] animate-[scale-in_0.4s_ease-out]">
+                {score}/5
+              </span>
+              <span className="text-lg text-text-muted">—</span>
+              <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="text-sm px-4 py-1.5">
                 {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
               </Badge>
             </div>
 
-            {[
-              { key: 'S', label: 'Situação', value: lead.spicedS, weight: '25%', noteKey: 'S' },
-              { key: 'P', label: 'Dor (Pain)', value: lead.spicedP, weight: '25%', noteKey: 'P' },
-              { key: 'I', label: 'Impacto', value: lead.spicedI, weight: '20%', noteKey: 'I' },
-              { key: 'CE', label: 'Evento Crítico', value: lead.spicedC, weight: '15%', noteKey: 'C' },
-              { key: 'D', label: 'Decisão', value: lead.spicedD, weight: '15%', noteKey: 'D' },
-            ].map((dim) => (
-              <div key={dim.key} className="p-4 rounded-xl bg-white/[0.02] border border-border">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold">{dim.key} — {dim.label}</span>
-                  <span className="text-xs text-text-muted font-mono">{dim.weight}</span>
-                </div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
-                      style={{ width: `${((dim.value || 0) / 5) * 100}%` }}
-                    />
+            {/* Dimensões */}
+            <div className="space-y-8">
+              {[
+                { key: 'S', label: 'Situação', value: lead.spicedS, weight: '25%', noteKey: 'S', delay: '0.1s' },
+                { key: 'P', label: 'Dor', value: lead.spicedP, weight: '25%', noteKey: 'P', delay: '0.15s' },
+                { key: 'I', label: 'Impacto', value: lead.spicedI, weight: '20%', noteKey: 'I', delay: '0.2s' },
+                { key: 'CE', label: 'Evento crítico', value: lead.spicedC, weight: '15%', noteKey: 'C', delay: '0.25s' },
+                { key: 'D', label: 'Decisão', value: lead.spicedD, weight: '15%', noteKey: 'D', delay: '0.3s' },
+              ].map((dim) => (
+                <div
+                  key={dim.key}
+                  className="animate-[slide-up_0.6s_ease-out_both]"
+                  style={{ animationDelay: dim.delay }}
+                >
+                  {/* Dimension header */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="text-base font-bold font-heading text-text-primary">
+                        {dim.key} — {dim.label}
+                      </h3>
+                      <p className="text-xs text-text-muted">Peso {dim.weight}</p>
+                    </div>
+                    <span className="bg-red text-white px-3 py-1 rounded-md font-extrabold font-mono text-sm shadow-[0_0_12px_rgba(204,0,0,0.3)] animate-[scale-in_0.4s_ease-out_both]" style={{ animationDelay: dim.delay }}>
+                      {dim.value || 0}/5
+                    </span>
                   </div>
-                  <span className="text-sm font-mono font-bold w-8 text-right">{dim.value || 0}/5</span>
+
+                  {/* Progress bar — 24px height like reference */}
+                  <div className="relative h-6 bg-surface-md rounded-md overflow-hidden mb-3 group">
+                    <div
+                      className="h-full rounded-md bg-gradient-to-r from-red-vivid to-red transition-all duration-700"
+                      style={{
+                        width: `${((dim.value || 0) / 5) * 100}%`,
+                        animation: `bar-grow 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${dim.delay} both`,
+                      }}
+                    />
+                    {/* Hover tooltip */}
+                    <span className="absolute -top-8 right-0 bg-surface-md px-2.5 py-1 rounded text-[11px] text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      Peso: {dim.weight}
+                    </span>
+                  </div>
+
+                  {/* Justification text */}
+                  {spicedNotes[dim.noteKey] && (
+                    <p className="text-[15px] text-text-secondary leading-[1.8]">
+                      {spicedNotes[dim.noteKey]}
+                    </p>
+                  )}
                 </div>
-                {spicedNotes[dim.noteKey] && (
-                  <p className="text-xs text-text-muted leading-relaxed mt-1">{spicedNotes[dim.noteKey]}</p>
+              ))}
+            </div>
+
+            {/* Trava dominante hipotética */}
+            {lead.hypotheticalTrap && (
+              <div className="mt-10 p-6 rounded-xl border border-red/30 bg-red/5">
+                <h3 className="text-lg font-bold text-red mb-3">Trava dominante hipotética</h3>
+                <p className="text-base font-bold text-text-primary mb-2">{lead.hypotheticalTrap}</p>
+                {spicedNotes['trap'] && (
+                  <p className="text-[15px] text-text-secondary leading-[1.8]">{spicedNotes['trap']}</p>
                 )}
               </div>
-            ))}
+            )}
 
             {/* Eligibility checklist */}
             {eligibility.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Checklist de elegibilidade</p>
-                <div className="space-y-1.5">
+              <div className="mt-8">
+                <h3 className="text-base font-bold font-heading mb-4">Checklist de elegibilidade DR-X</h3>
+                <div className="space-y-2">
                   {eligibility.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <span className={item.value ? 'text-success' : 'text-error'}>{item.value ? '✅' : '❌'}</span>
-                      <span className="text-text-secondary">{item.label}</span>
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02]">
+                      <span className={cn('text-lg', item.value ? 'text-success' : 'text-error')}>{item.value ? '✅' : '❌'}</span>
+                      <span className="text-sm text-text-secondary">{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -259,14 +303,13 @@ export function CompanyPage() {
 
             {/* Discovery questions */}
             {discoveryQuestions.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Perguntas de discovery</p>
-                <div className="space-y-2">
+              <div className="mt-8">
+                <h3 className="text-base font-bold font-heading mb-4">Perguntas de discovery</h3>
+                <div className="space-y-3">
                   {discoveryQuestions.map((q, i) => (
-                    <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.02]">
-                      <span className="text-xs font-mono text-red shrink-0">{i + 1}.</span>
-                      <p className="text-sm text-text-secondary flex-1">{q}</p>
-                      <CopyButton text={q} />
+                    <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border-l-[3px] border-l-red/40">
+                      <span className="text-sm font-mono font-bold text-red shrink-0">{i + 1}.</span>
+                      <p className="text-[15px] text-text-secondary leading-[1.8] flex-1">{q}</p>
                     </div>
                   ))}
                 </div>
