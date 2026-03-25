@@ -6,7 +6,6 @@ import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
 import { useApifySearch, type SearchPhase } from '../hooks/useApifySearch'
 import { useCreateLead } from '../hooks/useLeads'
-import type { GoogleMapsResult } from '../lib/apify'
 import { toast } from 'sonner'
 
 // --- Segmentos recomendados (podem ser digitados livremente) ---
@@ -250,27 +249,40 @@ function StateMultiSelect({
   )
 }
 
-// --- Search result card ---
-function ResultCard({ item, onImport, importing }: { item: GoogleMapsResult; onImport: () => void; importing: boolean }) {
+// --- Search result card (enriched) ---
+function ResultCard({ item, onImport, importing }: { item: any; onImport: () => void; importing: boolean }) {
   return (
     <div className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="text-sm font-semibold text-text-primary truncate">{item.title}</h4>
-            {item.totalScore > 0 && (
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h4 className="text-sm font-semibold text-text-primary truncate">{item.companyName}</h4>
+            {item.googleRating > 0 && (
               <span className="flex items-center gap-0.5 text-xs text-warning">
-                <Star className="h-3 w-3 fill-current" /> {item.totalScore}
+                <Star className="h-3 w-3 fill-current" /> {item.googleRating}
               </span>
             )}
+            <Badge variant={item.digitalPresenceScore >= 6 ? 'success' : item.digitalPresenceScore >= 3 ? 'warning' : 'error'} size="sm">
+              Digital: {item.digitalPresenceScore}/10
+            </Badge>
           </div>
-          <p className="text-xs text-text-muted mb-1">{item.categoryName}</p>
-          <p className="text-xs text-text-muted">{item.address}</p>
+          <p className="text-xs text-text-muted mb-1">{item.category} · {item.address}</p>
           <div className="flex flex-wrap gap-2 mt-2">
             {item.phone && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.phone}</span>}
             {item.website && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-[200px]">{item.website}</span>}
+            {item.instagramFollowers && <span className="text-[11px] text-text-secondary bg-white/[0.04] px-2 py-0.5 rounded-md">{item.instagramFollowers} seguidores IG</span>}
             {item.reviewsCount > 0 && <span className="text-[11px] text-text-muted">{item.reviewsCount} avaliações</span>}
           </div>
+          {item.marketingVulnerabilities.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {item.marketingVulnerabilities.slice(0, 3).map((v: string, i: number) => (
+                <span key={i} className="text-[10px] text-error/80 bg-error/8 px-2 py-0.5 rounded-md">{v.split('—')[0].trim()}</span>
+              ))}
+              {item.marketingVulnerabilities.length > 3 && (
+                <span className="text-[10px] text-text-muted">+{item.marketingVulnerabilities.length - 3} mais</span>
+              )}
+            </div>
+          )}
         </div>
         <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={onImport} loading={importing}>
           Importar
@@ -280,11 +292,13 @@ function ResultCard({ item, onImport, importing }: { item: GoogleMapsResult; onI
   )
 }
 
-// --- Progress display ---
-function SearchProgress({ phase, mapsStatus, elapsed }: { phase: SearchPhase; mapsStatus: string; elapsed: number }) {
+// --- Progress display (3 phases) ---
+function SearchProgress({ phase, mapsStatus, instagramStatus, websiteStatus, elapsed }: { phase: SearchPhase; mapsStatus: string; instagramStatus: string; websiteStatus: string; elapsed: number }) {
   const steps = [
-    { label: 'Google Maps', status: mapsStatus, desc: 'Buscando empresas, endereços, telefones' },
-    { label: 'Enriquecimento', status: phase === 'enriching' ? 'running' : phase === 'done' ? 'done' : 'pending', desc: 'Classificando e pontuando leads' },
+    { label: 'Google Maps', status: mapsStatus, desc: 'Empresas, endereços, telefones, avaliações' },
+    { label: 'Instagram', status: instagramStatus, desc: 'Seguidores, engajamento, bio, posicionamento' },
+    { label: 'Website Crawler', status: websiteStatus, desc: 'Serviços, tecnologias, conteúdo, about' },
+    { label: 'Análise', status: phase === 'analyzing' ? 'running' : phase === 'done' ? 'done' : 'pending', desc: 'Vulnerabilidades, competitiva, projeção de riscos' },
   ]
 
   return (
@@ -315,7 +329,7 @@ function SearchProgress({ phase, mapsStatus, elapsed }: { phase: SearchPhase; ma
       <div className="mt-4 h-1.5 rounded-full bg-white/5 overflow-hidden">
         <div
           className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-500"
-          style={{ width: phase === 'done' ? '100%' : phase === 'enriching' ? '75%' : `${Math.min(60, elapsed * 2)}%` }}
+          style={{ width: phase === 'done' ? '100%' : phase === 'analyzing' ? '90%' : phase === 'website' ? '70%' : phase === 'instagram' ? '45%' : `${Math.min(30, elapsed)}%` }}
         />
       </div>
     </Card>
@@ -348,24 +362,38 @@ export function SearchPage() {
     apify.search({ segments, states, city, keywords, revenueMin, revenueMax })
   }
 
-  const handleImport = async (item: GoogleMapsResult) => {
-    setImportingId(item.title)
+  const handleImport = async (item: any) => {
+    setImportingId(item.companyName)
     try {
+      const vulns = (item.marketingVulnerabilities || []).map((v: string, i: number) => ({
+        titulo: v.split('—')[0]?.trim() || v,
+        impacto: i < 3 ? 'ALTO' : 'MEDIO',
+        descricao: v,
+        impactoFinanceiro: 'A quantificar no diagnóstico',
+      }))
+
       await createLead.mutateAsync({
-        companyName: item.title,
-        segment: segments[0] || '',
+        companyName: item.companyName,
+        segment: segments[0] || item.category || '',
         tier: 'Small',
         status: 'Novo',
-        score: 0,
-        temperature: 'WARM',
+        score: Math.round(item.digitalPresenceScore / 2),
+        temperature: item.digitalPresenceScore >= 5 ? 'WARM' : 'COLD',
         spicedS: 0, spicedP: 0, spicedI: 0, spicedC: 0, spicedD: 0,
         website: item.website || '',
         address: item.address || '',
         city: item.city || city,
         state: item.state || states[0] || '',
-        instagram: item.socialProfiles?.instagram || '',
-        facebook: item.socialProfiles?.facebook || '',
-        businessSummary: `${item.categoryName} · ${item.reviewsCount} avaliações · Nota ${item.totalScore}`,
+        instagram: item.instagramUrl || '',
+        businessSummary: `${item.category} · ${item.reviewsCount} avaliações Google (${item.googleRating}★) · ${item.instagramFollowers ? item.instagramFollowers + ' seguidores IG' : 'Sem IG'} · Presença digital: ${item.digitalPresenceScore}/10`,
+        techStack: item.websiteTech || '',
+        marketContext: item.competitiveInsights || '',
+        vulnerabilities: JSON.stringify(vulns),
+        meetingPrep: JSON.stringify({
+          agenda: [],
+          objecoes: [],
+          checklist: item.meetingTalkingPoints || [],
+        }),
       })
     } finally {
       setImportingId(null)
@@ -376,7 +404,7 @@ export function SearchPage() {
     for (const item of apify.results) {
       await handleImport(item)
     }
-    toast.success(`${apify.results.length} leads importados`)
+    toast.success(`${apify.results.length} leads importados com análise completa`)
   }
 
   return (
@@ -516,8 +544,8 @@ export function SearchPage() {
       </Card>
 
       {/* Progress */}
-      {(apify.phase === 'maps' || apify.phase === 'enriching') && (
-        <SearchProgress phase={apify.phase} mapsStatus={apify.mapsStatus} elapsed={apify.elapsed} />
+      {(apify.phase === 'maps' || apify.phase === 'instagram' || apify.phase === 'website' || apify.phase === 'analyzing') && (
+        <SearchProgress phase={apify.phase} mapsStatus={apify.mapsStatus} instagramStatus={apify.instagramStatus} websiteStatus={apify.websiteStatus} elapsed={apify.elapsed} />
       )}
 
       {/* Error */}
@@ -552,7 +580,7 @@ export function SearchPage() {
                 key={i}
                 item={item}
                 onImport={() => handleImport(item)}
-                importing={importingId === item.title}
+                importing={importingId === item.companyName}
               />
             ))}
           </div>
