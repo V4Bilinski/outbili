@@ -3,8 +3,7 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { EmptyState } from '../components/ui/EmptyState'
-import { Users, Flame, Calendar, Search, FileDown, Plus, Rocket, MessageCircle, Eye, TrendingUp, ArrowUpRight } from 'lucide-react'
+import { Users, Flame, Calendar, Search, FileDown, Plus, MessageCircle, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getDaySegment, LEAD_STATUSES } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
@@ -203,6 +202,7 @@ function QuickActions() {
 
 export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
+  const navigate = useNavigate()
   const segment = getDaySegment()
 
   if (isLoading) {
@@ -224,18 +224,127 @@ export function DashboardPage() {
 
   if (allLeads.length === 0) {
     return (
-      <div className="animate-[fade-in_0.4s_ease-out]">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold font-heading gradient-text">OUTBILI</h1>
-          <p className="text-xs text-text-muted mt-0.5">Sistema de prospecção outbound</p>
+      <div className="animate-[fade-in_0.4s_ease-out] space-y-8">
+        {/* Hero */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red/10 via-surface to-surface border border-red/10 p-8 md:p-12">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red/5 to-transparent rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-red" />
+              <span className="text-[11px] uppercase tracking-[0.15em] text-red font-semibold">Sistema de prospecção outbound</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold font-heading gradient-text mb-3">
+              Bem-vindo ao OUTBILI
+            </h1>
+            <p className="text-sm text-text-secondary max-w-lg leading-relaxed mb-8">
+              Pesquise, analise e prospecte empresas com inteligência de marketing completa.
+              Encontre vulnerabilidades, mapeie concorrentes e prepare reuniões com dados reais.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={() => navigate('/search')}>
+                Iniciar pesquisa de leads
+              </Button>
+              <Button size="lg" variant="secondary" icon={<FileDown className="h-4 w-4" />} onClick={() => navigate('/search')}>
+                Importar relatório
+              </Button>
+            </div>
+          </div>
         </div>
-        <EmptyState
-          icon={Rocket}
-          title="Bem-vindo ao OUTBILI!"
-          description="Seu sistema de prospecção V4 Bilinski &Co. Comece pesquisando leads ou importando um relatório existente."
-          action={{ label: 'Fazer primeira pesquisa', onClick: () => {} }}
-          secondaryAction={{ label: 'Importar relatório HTML', onClick: () => {} }}
-        />
+
+        {/* How it works */}
+        <div>
+          <h2 className="text-sm font-semibold font-heading text-text-secondary uppercase tracking-[0.1em] mb-4">Como funciona</h2>
+          <div className="grid md:grid-cols-4 gap-4">
+            {[
+              { step: '01', icon: Search, title: 'Pesquisar', desc: 'Selecione segmento, região e palavras-chave. O sistema analisa presença digital, anúncios, SEO e concorrentes automaticamente.', color: 'text-red' },
+              { step: '02', icon: Target, title: 'Qualificar', desc: 'Cada lead recebe um score SPICED, vulnerabilidades mapeadas e projeção de cenários com dados reais.', color: 'text-warning' },
+              { step: '03', icon: Smartphone, title: 'Prospectar', desc: 'Crie cadências WhatsApp personalizadas via BilinskiZap com templates aprovados e merge tags.', color: 'text-whatsapp' },
+              { step: '04', icon: BarChart3, title: 'Converter', desc: 'Acompanhe funil de conversão, métricas de entrega e relatórios estratégicos em tempo real.', color: 'text-success' },
+            ].map((item) => (
+              <div key={item.step} className="group p-5 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl font-bold font-mono text-text-muted/30">{item.step}</span>
+                  <div className={`p-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors`}>
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                  </div>
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary mb-1.5">{item.title}</h3>
+                <p className="text-xs text-text-muted leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick start actions */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <button
+            onClick={() => navigate('/search')}
+            className="group p-6 rounded-2xl bg-gradient-to-br from-red/8 to-transparent border border-red/15 hover:border-red/30 transition-all duration-300 text-left cursor-pointer"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="p-2.5 rounded-xl bg-red/10 inline-flex mb-3">
+                  <Zap className="h-5 w-5 text-red" />
+                </div>
+                <h3 className="text-base font-semibold text-text-primary mb-1">Pesquisa rápida</h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Configure segmento, região e faturamento.
+                  Em minutos receba análise completa de presença digital, vulnerabilidades e concorrentes.
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-text-muted group-hover:text-red group-hover:translate-x-1 transition-all mt-2 shrink-0" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/search')}
+            className="group p-6 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 text-left cursor-pointer"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="p-2.5 rounded-xl bg-white/[0.04] inline-flex mb-3">
+                  <FileDown className="h-5 w-5 text-text-secondary" />
+                </div>
+                <h3 className="text-base font-semibold text-text-primary mb-1">Importar relatório existente</h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Importe pesquisas HTML do sistema de prospecção anterior.
+                  Os dados serão mapeados automaticamente para o OUTBILI.
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-text-muted group-hover:text-text-primary group-hover:translate-x-1 transition-all mt-2 shrink-0" />
+            </div>
+          </button>
+        </div>
+
+        {/* Stats preview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Leads no pipeline', value: '0', sub: 'Comece pesquisando' },
+            { label: 'Pesquisas realizadas', value: '0', sub: 'Nenhuma ainda' },
+            { label: 'Campanhas WhatsApp', value: '0', sub: 'Crie após importar' },
+            { label: 'Taxa de conversão', value: '—', sub: 'Dados em breve' },
+          ].map((stat) => (
+            <div key={stat.label} className="p-4 rounded-2xl bg-white/[0.015] border border-border">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>
+              <p className="text-2xl font-bold font-mono text-text-muted/40 mt-1">{stat.value}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">{stat.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Segment of the day */}
+        <div className="p-4 rounded-2xl bg-white/[0.02] border border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-red animate-pulse" />
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted">Segmento recomendado para hoje</p>
+              <p className="text-sm font-semibold text-red font-heading">{segment}</p>
+            </div>
+          </div>
+          <Button size="sm" variant="ghost" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
+            Pesquisar {segment}
+          </Button>
+        </div>
       </div>
     )
   }
