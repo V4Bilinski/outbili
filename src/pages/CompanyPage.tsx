@@ -165,41 +165,118 @@ export function CompanyPage() {
       {/* Tab content */}
       <Card className="min-h-[300px]" key={activeTab}>
         <div className="animate-[fade-in_0.3s_ease-out]">
-        {/* Tab: Resumo */}
+        {/* Tab: Resumo — Ficha técnica completa (formato referência HTML) */}
         {activeTab === 'resumo' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-semibold font-heading uppercase tracking-wider text-text-muted">Snapshot executivo</h3>
+            {/* Tags/Pills */}
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.tier}</span>
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.segment}</span>
+              {lead.yearsInMarket && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.yearsInMarket}+ anos</span>}
+              {lead.employees && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.employees} func.</span>}
+              {lead.hypotheticalTrap && <span className="text-[11px] px-2.5 py-1 rounded-full bg-red/10 border border-red/20 text-red font-medium">{lead.hypotheticalTrap}</span>}
+            </div>
+
+            {/* Business summary */}
             {lead.businessSummary && (
-              <p className="text-sm text-text-secondary leading-relaxed">{lead.businessSummary}</p>
+              <p className="text-[13px] text-text-secondary leading-relaxed">{lead.businessSummary}</p>
             )}
-            {lead.hypotheticalTrap && (
-              <div className="p-4 rounded-xl bg-error/8 border border-error/20">
-                <p className="text-[11px] font-semibold text-error uppercase tracking-wider mb-1">Trava dominante</p>
-                <p className="text-sm text-text-primary font-medium">{lead.hypotheticalTrap}</p>
+
+            {/* WTP anual */}
+            {lead.monthlyRevenue && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted">WTP anual:</span>
+                <span className="font-mono text-sm font-bold text-red">
+                  R${formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
+                </span>
               </div>
             )}
+
+            {/* Decisor contact card */}
+            <div>
+              <p className="text-[11px] text-text-muted mb-2">decisor:</p>
+              <div className="p-3 rounded-lg bg-surface-md border border-border">
+                {/* Name will come from Contacts, fallback to extracted */}
+                <p className="text-sm font-bold text-text-primary uppercase tracking-wide">
+                  {lead.companyName.includes('Dra') || lead.companyName.includes('Dr.') ? lead.companyName.split('-')[0].split('|')[0].trim() : `Proprietário(a) ${lead.companyName.split('-')[0].split('|')[0].trim()}`}
+                </p>
+                <p className="text-[11px] text-text-muted mt-0.5">proprietário(a) / decisor</p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-text-secondary flex items-center gap-1.5">
+                    <span className="text-[10px]">📱</span> WhatsApp no contato
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CNPJ + Receita + Localização */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              {lead.cnpj && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-text-muted">CNPJ:</span>
+                  <span className="font-mono text-text-primary font-medium">{lead.cnpj}</span>
+                  <CopyButton text={lead.cnpj} />
+                </div>
+              )}
+              {lead.monthlyRevenue && (
+                <div className="text-xs">
+                  <span className="text-text-muted">Receita mensal estimada: </span>
+                  <span className="font-mono text-text-primary font-bold">{formatCurrencyShort(lead.monthlyRevenue)}</span>
+                </div>
+              )}
+              {(lead.address || lead.city) && (
+                <div className="text-xs">
+                  <span className="text-text-muted">Localização: </span>
+                  <span className="text-text-primary">{lead.address || `${lead.city}, ${lead.state}`}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Social links (red bordered pills) */}
+            <div className="flex flex-wrap gap-2">
+              {lead.website && !lead.website.includes('instagram.com') && (
+                <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                  site
+                </a>
+              )}
+              {lead.instagram && (
+                <a href={lead.instagram} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                  @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?].*/,'')}
+                </a>
+              )}
+              {lead.linkedin && (
+                <a href={lead.linkedin} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                  LinkedIn
+                </a>
+              )}
+              {lead.facebook && (
+                <a href={lead.facebook} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                  Facebook
+                </a>
+              )}
+            </div>
+
+            {/* Market context */}
+            {lead.marketContext && (
+              <div className="pt-4 border-t border-border">
+                <h4 className="text-base font-bold font-heading mb-3">Contexto de mercado</h4>
+                <p className="text-[13px] text-text-secondary leading-[1.8]">{lead.marketContext}</p>
+              </div>
+            )}
+
+            {/* Product portfolio */}
             {lead.productPortfolio && (
               <div>
-                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Portfólio de produtos/serviços</p>
-                <p className="text-sm text-text-secondary leading-relaxed">{lead.productPortfolio}</p>
+                <h4 className="text-base font-bold font-heading mb-3">Portfólio de produtos</h4>
+                <p className="text-[13px] text-text-secondary leading-[1.8]">{lead.productPortfolio}</p>
               </div>
             )}
-            {lead.marketContext && (
-              <div>
-                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Contexto de mercado</p>
-                <p className="text-sm text-text-secondary leading-relaxed">{lead.marketContext}</p>
-              </div>
-            )}
+
+            {/* Tech stack */}
             {lead.techStack && (
               <div>
-                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Tecnologias observadas</p>
-                <p className="text-sm text-text-secondary">{lead.techStack}</p>
-              </div>
-            )}
-            {lead.cnpj && (
-              <div className="flex items-center gap-2 text-xs text-text-muted">
-                <span>CNPJ: <span className="font-mono text-text-secondary">{lead.cnpj}</span></span>
-                <CopyButton text={lead.cnpj} />
+                <h4 className="text-base font-bold font-heading mb-3">Tecnologias observadas</h4>
+                <p className="text-[13px] text-text-secondary">{lead.techStack}</p>
               </div>
             )}
           </div>
