@@ -9,7 +9,7 @@ import {
   pollRunUntilDone,
   getDatasetItems,
   safeRunActor,
-  buildSearchQuery,
+  buildSearchQueries,
   type SearchConfig,
   type GoogleMapsResult,
   type MarketingIntelligence,
@@ -97,11 +97,25 @@ export function useApifySearch() {
         elapsed: 0,
       })
 
-      // --- Phase 1: Google Maps ---
-      const { query, location } = buildSearchQuery(config)
-      const mapsRunId = await startGoogleMapsSearch(query, location, 15)
-      const mapsDatasetId = await pollRunUntilDone(mapsRunId, 'compass~crawler-google-places')
-      const mapsItems = await getDatasetItems<GoogleMapsResult>(mapsDatasetId)
+      // --- Phase 1: Google Maps (one search per segment for precision) ---
+      const queries = buildSearchQueries(config)
+      let mapsItems: GoogleMapsResult[] = []
+
+      for (const { query, location } of queries) {
+        const perQuery = Math.ceil(15 / queries.length)
+        const runId = await startGoogleMapsSearch(query, location, perQuery)
+        const datasetId = await pollRunUntilDone(runId, 'compass~crawler-google-places')
+        const items = await getDatasetItems<GoogleMapsResult>(datasetId)
+        mapsItems.push(...items)
+      }
+
+      // Deduplicate by title
+      const seen = new Set<string>()
+      mapsItems = mapsItems.filter((item) => {
+        if (!item.title || seen.has(item.title)) return false
+        seen.add(item.title)
+        return true
+      })
       setStep('maps', 'done')
 
       // --- Phase 2: Instagram (parallel-safe) ---
@@ -183,11 +197,11 @@ export function useApifySearch() {
       setStep('competitors', 'running')
       let competitorData: GoogleMapsResult[] = []
       try {
-        const compRunId = await startCompetitorSearch(
-          config.segments[0] || query,
-          config.city || location,
-          10,
-        )
+        const compQuery = config.segments[0] || config.keywords[0] || 'empresas'
+        const compLocation = config.city
+          ? `${config.city}, ${config.states[0] || ''}`
+          : config.states[0] || 'Brasil'
+        const compRunId = await startCompetitorSearch(compQuery, compLocation, 10)
         const compDatasetId = await pollRunUntilDone(compRunId, 'compass~crawler-google-places')
         competitorData = await getDatasetItems<GoogleMapsResult>(compDatasetId)
         setStep('competitors', 'done')

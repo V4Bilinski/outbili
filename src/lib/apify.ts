@@ -248,10 +248,58 @@ export interface MarketingIntelligence {
   }>
 }
 
+// State abbreviation to full name mapping for Google Maps
+const STATE_NAMES: Record<string, string> = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia',
+  CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás',
+  MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
+  PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí',
+  RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul',
+  RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo',
+  SE: 'Sergipe', TO: 'Tocantins',
+}
+
+/**
+ * Build search queries for Google Maps.
+ * Returns MULTIPLE queries when multiple segments are selected
+ * (one query per segment for better results).
+ */
+export function buildSearchQueries(config: SearchConfig): Array<{ query: string; location: string }> {
+  const segments = config.segments.filter(Boolean)
+  const keywords = config.keywords.filter(Boolean)
+
+  // Location: city takes priority, then state full name
+  let location = 'Brasil'
+  if (config.city) {
+    const stateAbbr = config.states[0] || ''
+    const stateName = STATE_NAMES[stateAbbr] || stateAbbr
+    location = stateName ? `${config.city}, ${stateName}` : config.city
+  } else if (config.states.length > 0) {
+    // Use first state as primary location
+    location = STATE_NAMES[config.states[0]] || config.states[0]
+  }
+
+  // Build queries: one per segment for precision
+  const queries: Array<{ query: string; location: string }> = []
+
+  if (segments.length > 0) {
+    for (const segment of segments) {
+      // Combine segment with keywords for richer search
+      const queryParts = [segment, ...keywords].filter(Boolean)
+      queries.push({ query: queryParts.join(' '), location })
+    }
+  } else if (keywords.length > 0) {
+    // No segments, use keywords only
+    queries.push({ query: keywords.join(' '), location })
+  } else {
+    queries.push({ query: 'empresas', location })
+  }
+
+  return queries
+}
+
+// Legacy function for backward compatibility
 export function buildSearchQuery(config: SearchConfig): { query: string; location: string } {
-  const parts = [...config.segments, ...config.keywords].filter(Boolean)
-  const query = parts.join(' ') || 'empresas'
-  const locationParts = [config.city, ...config.states].filter(Boolean)
-  const location = locationParts.join(', ') || 'Brasil'
-  return { query, location }
+  const queries = buildSearchQueries(config)
+  return queries[0] || { query: 'empresas', location: 'Brasil' }
 }
