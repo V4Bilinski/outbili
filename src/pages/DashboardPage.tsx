@@ -3,7 +3,8 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Users, Flame, Calendar, Search, FileDown, Plus, MessageCircle, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap } from 'lucide-react'
+import { Users, Flame, Calendar, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap } from 'lucide-react'
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
 import { LEAD_STATUSES } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
@@ -121,7 +122,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {action.type === 'whatsapp' && (
-                  <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-3.5 w-3.5" />}>
+                  <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="h-4 w-4" />}>
                     WhatsApp
                   </Button>
                 )}

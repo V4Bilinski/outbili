@@ -4,7 +4,8 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, MessageCircle, Phone, UserPlus } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus } from 'lucide-react'
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
@@ -111,7 +112,7 @@ export function CompanyPage() {
           <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/6 border border-whatsapp/15">
             <div className="flex-1 min-w-0 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-whatsapp/15 flex items-center justify-center shrink-0">
-                <MessageCircle className="h-4 w-4 text-whatsapp" />
+                <WhatsAppIcon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
@@ -123,7 +124,7 @@ export function CompanyPage() {
             </div>
             {whatsappLink ? (
               <a href={whatsappLink} target="_blank" rel="noopener" className="shrink-0">
-                <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-4 w-4" />}>
+                <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="h-4 w-4" />}>
                   WhatsApp
                 </Button>
               </a>

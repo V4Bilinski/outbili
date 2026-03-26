@@ -4,7 +4,8 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import type { Lead, Contact } from '../../types'
-import { Phone, Mail, Plus, Trash2, UserPlus, MessageCircle } from 'lucide-react'
+import { Phone, Mail, Plus, Trash2, UserPlus } from 'lucide-react'
+import { WhatsAppIcon } from '../ui/WhatsAppIcon'
 import { cn } from '../../lib/cn'
 
 function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete: () => void; index: number }) {
@@ -55,7 +56,7 @@ function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete:
             rel="noopener"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-whatsapp/10 text-whatsapp text-xs font-medium hover:bg-whatsapp/20 transition-colors min-h-[36px]"
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <WhatsAppIcon className="h-4 w-4" />
             {contact.whatsapp}
           </a>
         )}
