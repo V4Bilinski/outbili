@@ -86,8 +86,8 @@ export function CompanyPage() {
             )}
           </div>
           <div className="text-right shrink-0">
-            <p className="text-3xl font-bold font-mono text-red">{score}</p>
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">SPICED</p>
+            <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
+            <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">SPICED</p>
           </div>
         </div>
 
@@ -348,13 +348,13 @@ export function CompanyPage() {
             <h2 className="text-xl font-bold font-heading mb-6">Análise SPICED</h2>
 
             {/* Score ponderado final */}
-            <div className="flex items-center gap-4 pb-6 mb-8 border-b-2 border-red/20">
+            <div className="flex items-center gap-3 md:gap-4 pb-6 mb-8 border-b-2 border-red/20 flex-wrap">
               <span className="text-sm text-text-secondary">Score ponderado final:</span>
-              <span className="text-[clamp(2.5rem,6vw,3rem)] font-extrabold font-mono text-red px-5 py-2 bg-red/10 rounded-lg shadow-[0_0_20px_rgba(204,0,0,0.3)] animate-[scale-in_0.4s_ease-out]">
+              <span className="text-2xl md:text-3xl font-extrabold font-mono text-red px-4 py-1.5 bg-red/10 rounded-lg shadow-[0_0_16px_rgba(204,0,0,0.2)] animate-[scale-in_0.4s_ease-out]">
                 {score}/5
               </span>
-              <span className="text-lg text-text-muted">—</span>
-              <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="text-sm px-4 py-1.5">
+              <span className="text-base text-text-muted">—</span>
+              <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="text-xs px-3 py-1">
                 {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
               </Badge>
             </div>
