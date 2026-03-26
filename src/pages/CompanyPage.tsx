@@ -241,33 +241,18 @@ export function CompanyPage() {
               </div>
             )}
 
-            {/* Decisor contact card — dados reais do Airtable */}
-            {mainContact ? (
-              <div>
-                <p className="text-[11px] text-text-muted mb-2 uppercase tracking-wider">
-                  {mainContact.contactType === 'decisor' ? 'decisor:' : 'stakeholder:'}
-                </p>
-                <div className="p-4 rounded-xl bg-surface-md border border-border">
-                  <p className="text-base font-bold text-text-primary uppercase tracking-wide">{mainContact.name}</p>
-                  {mainContact.role && <p className="text-xs text-text-secondary mt-1">{mainContact.role}</p>}
-                  <div className="mt-3 space-y-1.5">
-                    {mainContact.whatsapp && (
-                      <a href={`https://wa.me/${mainContact.whatsapp}`} target="_blank" rel="noopener" className="flex items-center gap-2 text-xs text-whatsapp hover:underline">
-                        <span>📱</span> +{mainContact.whatsapp}
-                      </a>
-                    )}
-                    {mainContact.email && (
-                      <p className="flex items-center gap-2 text-xs text-text-secondary">
-                        <span>✉️</span> {mainContact.email}
-                      </p>
-                    )}
-                  </div>
+            {/* Decisor: info já está no header — aqui só alerta se não existe */}
+            {!mainContact && (
+              <button
+                onClick={() => setActiveTab('contatos')}
+                className="flex items-center gap-2.5 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
+              >
+                <span className="text-warning">⚠</span>
+                <div>
+                  <p className="text-xs font-semibold text-warning">Decisor não cadastrado</p>
+                  <p className="text-[11px] text-text-muted">Toque para adicionar na aba Contatos</p>
                 </div>
-              </div>
-            ) : (
-              <div className="p-3 rounded-xl bg-warning/5 border border-warning/15">
-                <p className="text-xs text-warning">Decisor não cadastrado — adicione na aba Contatos</p>
-              </div>
+              </button>
             )}
 
             {/* CNPJ + Receita + Localização */}
