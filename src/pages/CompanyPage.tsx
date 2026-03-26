@@ -6,7 +6,7 @@ import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
 import { ArrowLeft, MapPin, MessageCircle, Phone, UserPlus } from 'lucide-react'
 import { Button } from '../components/ui/Button'
-import { useContacts } from '../hooks/useContacts'
+import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { useState } from 'react'
 import { cn } from '../lib/cn'
@@ -15,11 +15,9 @@ import { TabProjecao } from '../components/company/TabProjecao'
 import { TabVulnerabilidades } from '../components/company/TabVulnerabilidades'
 import { TabCompetitiva } from '../components/company/TabCompetitiva'
 import { TabArgumentos } from '../components/company/TabArgumentos'
-import { TabContatos } from '../components/company/TabContatos'
 
 const TABS = [
   { id: 'resumo', label: 'Resumo' },
-  { id: 'contatos', label: 'Contatos' },
   { id: 'spiced', label: 'SPICED' },
   { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
   { id: 'reuniao', label: 'Reunião' },
@@ -34,6 +32,8 @@ export function CompanyPage() {
   const { data: lead, isLoading } = useLead(id)
   const { data: contacts } = useContacts(id)
   const [activeTab, setActiveTab] = useState('resumo')
+  const [showAddContact, setShowAddContact] = useState(false)
+  const createContact = useCreateContact()
 
   if (isLoading) {
     return (
@@ -128,7 +128,7 @@ export function CompanyPage() {
                 </Button>
               </a>
             ) : (
-              <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setActiveTab('contatos')}>
+              <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setShowAddContact(true)}>
                 Add WhatsApp
               </Button>
             )}
@@ -136,7 +136,7 @@ export function CompanyPage() {
         )}
         {!mainContact && (
           <button
-            onClick={() => setActiveTab('contatos')}
+            onClick={() => setShowAddContact(true)}
             className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
           >
             <div className="w-9 h-9 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
@@ -173,6 +173,41 @@ export function CompanyPage() {
           )}
         </div>
       </Card>
+
+      {/* Inline add contact form */}
+      {showAddContact && (
+        <Card className="animate-[slide-up_0.3s_ease-out] border-red/20">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              const form = e.target as HTMLFormElement
+              const data = new FormData(form)
+              createContact.mutate({
+                leadId: lead.id,
+                name: data.get('name') as string,
+                role: data.get('role') as string,
+                contactType: 'decisor',
+                whatsapp: data.get('whatsapp') as string,
+                email: '',
+              }, { onSuccess: () => setShowAddContact(false) })
+            }}
+            className="space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-red uppercase tracking-wider">Adicionar decisor</p>
+              <button type="button" onClick={() => setShowAddContact(false)} className="text-xs text-text-muted hover:text-text-primary cursor-pointer">Cancelar</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input name="name" type="text" placeholder="Nome completo *" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+              <input name="role" type="text" placeholder="Cargo (CEO, Proprietário...)" className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+              <input name="whatsapp" type="tel" placeholder="WhatsApp * (11999998888)" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+            </div>
+            <Button type="submit" size="sm" loading={createContact.isPending} icon={<UserPlus className="h-3.5 w-3.5" />}>
+              Salvar contato
+            </Button>
+          </form>
+        </Card>
+      )}
 
       {/* Tabs navigation */}
       <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
@@ -244,7 +279,7 @@ export function CompanyPage() {
             {/* Decisor: info já está no header — aqui só alerta se não existe */}
             {!mainContact && (
               <button
-                onClick={() => setActiveTab('contatos')}
+                onClick={() => setShowAddContact(true)}
                 className="flex items-center gap-2.5 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
               >
                 <span className="text-warning">⚠</span>
@@ -456,8 +491,6 @@ export function CompanyPage() {
         {/* Tab: Argumentos */}
         {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
 
-        {/* Tab: Contatos */}
-        {activeTab === 'contatos' && <TabContatos lead={lead} />}
         </div>
       </Card>
     </div>
