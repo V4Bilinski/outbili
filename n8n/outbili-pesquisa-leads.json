@@ -1,0 +1,120 @@
+{
+  "name": "OUTBILI - Pesquisa de Leads Outbound",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outbili-search",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook OUTBILI",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract search params from webhook\nconst body = $input.first().json.body || $input.first().json;\nconst segments = body.segments || [];\nconst states = body.states || [];\nconst city = body.city || '';\nconst keywords = body.keywords || [];\nconst revenueMin = parseInt(body.revenueMin) || 70000;\nconst revenueMax = parseInt(body.revenueMax) || 2000000;\n\n// Build Google Maps query\nconst query = [...segments, ...keywords].filter(Boolean).join(' ') || 'empresas';\nconst stateNames = { SP: 'São Paulo', RJ: 'Rio de Janeiro', MG: 'Minas Gerais', RS: 'Rio Grande do Sul', SC: 'Santa Catarina', PR: 'Paraná' };\nconst stateName = stateNames[states[0]] || states[0] || '';\nconst location = city ? `${city}, ${stateName}` : stateName || 'Brasil';\n\nreturn [{\n  json: {\n    query,\n    location,\n    segments,\n    states,\n    city,\n    keywords,\n    revenueMin,\n    revenueMax,\n    searchId: Date.now().toString()\n  }\n}];"
+      },
+      "id": "parse-params",
+      "name": "Parse Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/compass~crawler-google-places/runs?token={{$env.APIFY_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"searchStringsArray\": [\"{{ $json.query }}\"],\n  \"locationQuery\": \"{{ $json.location }}\",\n  \"maxCrawledPlacesPerSearch\": 20,\n  \"language\": \"pt-BR\",\n  \"scrapeContacts\": true,\n  \"scrapeEmails\": true\n}",
+        "options": {}
+      },
+      "id": "apify-maps",
+      "name": "Google Maps Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Wait for Apify run to complete\nconst runId = $input.first().json.data.id;\nconst token = $env.APIFY_TOKEN;\nlet status = 'RUNNING';\nlet datasetId = '';\n\nwhile (status === 'RUNNING' || status === 'READY') {\n  await new Promise(r => setTimeout(r, 5000));\n  const resp = await fetch(`https://api.apify.com/v2/acts/compass~crawler-google-places/runs/${runId}?token=${token}`);\n  const data = await resp.json();\n  status = data.data.status;\n  datasetId = data.data.defaultDatasetId;\n}\n\nif (status !== 'SUCCEEDED') throw new Error(`Apify run failed: ${status}`);\n\n// Get results\nconst itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=50`);\nconst items = await itemsResp.json();\n\nreturn [{ json: { items, count: items.length, datasetId } }];"
+      },
+      "id": "poll-maps",
+      "name": "Poll & Get Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Google Maps results: filter, score, enrich\nconst items = $input.first().json.items;\nconst params = $('Parse Params').first().json;\nconst revenueMin = params.revenueMin;\nconst revenueMax = params.revenueMax;\n\nconst leads = items\n  .filter(item => item.title)\n  .map((item, index) => {\n    // Phone validation\n    const rawPhone = item.phone || '';\n    const digits = rawPhone.replace(/\\D/g, '').replace(/^0+/, '');\n    const fullPhone = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : '';\n    const isMobile = fullPhone.length >= 12 && fullPhone.charAt(4) === '9';\n    \n    // Revenue estimation\n    const reviews = item.reviewsCount || 0;\n    let revenue = 70000;\n    if (reviews >= 200) revenue = 500000;\n    else if (reviews >= 100) revenue = 300000;\n    else if (reviews >= 50) revenue = 200000;\n    else if (reviews >= 30) revenue = 150000;\n    else if (reviews >= 15) revenue = 100000;\n    else if (reviews >= 5) revenue = 80000;\n    if (item.website && !item.website.includes('instagram.com')) revenue = Math.round(revenue * 1.2);\n    const cityLower = (item.city || params.city || '').toLowerCase();\n    if (['são paulo', 'rio de janeiro', 'belo horizonte'].some(c => cityLower.includes(c))) revenue = Math.round(revenue * 1.3);\n    \n    // SPICED\n    const hasWebsite = item.website && !item.website.includes('instagram.com');\n    const hasIG = item.socialProfiles?.instagram;\n    const rating = item.totalScore || 0;\n    const presence = (hasWebsite ? 3 : 0) + (hasIG ? 2 : 0) + (rating >= 4 ? 1 : 0) + (reviews >= 30 ? 1 : 0);\n    \n    const spicedS = Math.min(1 + (hasWebsite ? 1 : 0) + (rating >= 4 ? 1 : 0) + (reviews >= 20 ? 1 : 0) + (presence >= 5 ? 1 : 0), 5);\n    const spicedP = Math.max(5 - (hasWebsite ? 1 : 0) - (presence >= 5 ? 1 : 0) - (reviews >= 50 ? 1 : 0), 1);\n    const spicedI = presence <= 2 ? 5 : presence <= 4 ? 4 : 3;\n    const spicedC = presence <= 3 ? 4 : 3;\n    const spicedD = Math.min(2 + (item.website || hasIG ? 1 : 0), 5);\n    const score = Math.round((spicedS*0.25 + spicedP*0.25 + spicedI*0.20 + spicedC*0.15 + spicedD*0.15) * 10) / 10;\n    const temperature = score >= 4 ? 'HOT' : score >= 3 ? 'WARM' : 'COLD';\n    \n    // Employees & years estimate\n    const employees = revenue >= 120000 ? 8 : revenue >= 70000 ? 5 : 3;\n    const yearsInMarket = revenue >= 120000 ? 7 : revenue >= 70000 ? 5 : 3;\n    const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+';\n    \n    // Trap\n    let trap = 'T1 - Aquisição de clientes';\n    if (hasWebsite && presence <= 5) trap = 'T6 - Posicionamento de marca';\n    else if (reviews < 15) trap = 'T2 - Conversão de vendas';\n    \n    return {\n      companyName: item.title,\n      segment: params.segments[0] || item.categoryName || '',\n      tier,\n      monthlyRevenue: revenue,\n      employees,\n      yearsInMarket,\n      status: 'Novo',\n      score,\n      temperature,\n      spicedS, spicedP, spicedI, spicedC, spicedD,\n      hypotheticalTrap: trap,\n      website: item.website || '',\n      instagram: item.socialProfiles?.instagram || '',\n      linkedin: item.socialProfiles?.linkedin || '',\n      facebook: item.socialProfiles?.facebook || '',\n      address: item.address || '',\n      city: item.city || params.city || '',\n      state: item.state || params.states[0] || '',\n      businessSummary: `${item.categoryName || ''} · ${reviews} avaliações (${rating}★) · Presença digital: ${presence}/10`,\n      enrichmentStatus: 'pending',\n      whatsapp: isMobile ? fullPhone : '',\n      phone: rawPhone,\n      email: (item.emails || [])[0] || '',\n      ownerName: item.title,\n      isMobile,\n      estimatedRevenue: revenue\n    };\n  })\n  // FILTER: WhatsApp obrigatório\n  .filter(lead => lead.isMobile)\n  // FILTER: Faturamento na faixa\n  .filter(lead => lead.estimatedRevenue >= revenueMin * 0.7 && lead.estimatedRevenue <= revenueMax * 1.3);\n\nreturn leads.map(lead => ({ json: lead }));"
+      },
+      "id": "process-filter",
+      "name": "Process & Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.airtable.com/v0/{{$env.AIRTABLE_BASE_ID}}/Leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"companyName\": \"{{ $json.companyName }}\",\n      \"segment\": \"{{ $json.segment }}\",\n      \"tier\": \"{{ $json.tier }}\",\n      \"monthlyRevenue\": {{ $json.monthlyRevenue }},\n      \"employees\": {{ $json.employees }},\n      \"yearsInMarket\": {{ $json.yearsInMarket }},\n      \"status\": \"Novo\",\n      \"score\": {{ $json.score }},\n      \"temperature\": \"{{ $json.temperature }}\",\n      \"spicedS\": {{ $json.spicedS }},\n      \"spicedP\": {{ $json.spicedP }},\n      \"spicedI\": {{ $json.spicedI }},\n      \"spicedC\": {{ $json.spicedC }},\n      \"spicedD\": {{ $json.spicedD }},\n      \"hypotheticalTrap\": \"{{ $json.hypotheticalTrap }}\",\n      \"website\": \"{{ $json.website }}\",\n      \"instagram\": \"{{ $json.instagram }}\",\n      \"linkedin\": \"{{ $json.linkedin }}\",\n      \"facebook\": \"{{ $json.facebook }}\",\n      \"address\": \"{{ $json.address }}\",\n      \"city\": \"{{ $json.city }}\",\n      \"state\": \"{{ $json.state }}\",\n      \"businessSummary\": \"{{ $json.businessSummary }}\",\n      \"enrichmentStatus\": \"pending\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "save-lead",
+      "name": "Save Lead to Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.airtable.com/v0/{{$env.AIRTABLE_BASE_ID}}/Contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"name\": \"{{ $json.ownerName }}\",\n      \"role\": \"Proprietário(a) / Decisor\",\n      \"contactType\": \"decisor\",\n      \"whatsapp\": \"{{ $json.whatsapp }}\",\n      \"email\": \"{{ $json.email }}\",\n      \"leadId\": \"{{ $('Save Lead to Airtable').first().json.records[0].id }}\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "save-contact",
+      "name": "Save Contact to Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"leadsCreated\": {{ $('Process & Filter').all().length }},\n  \"searchId\": \"{{ $('Parse Params').first().json.searchId }}\"\n}"
+      },
+      "id": "respond",
+      "name": "Respond to OUTBILI",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1540, 0]
+    }
+  ],
+  "connections": {
+    "Webhook OUTBILI": { "main": [[{ "node": "Parse Params", "type": "main", "index": 0 }]] },
+    "Parse Params": { "main": [[{ "node": "Google Maps Search", "type": "main", "index": 0 }]] },
+    "Google Maps Search": { "main": [[{ "node": "Poll & Get Results", "type": "main", "index": 0 }]] },
+    "Poll & Get Results": { "main": [[{ "node": "Process & Filter", "type": "main", "index": 0 }]] },
+    "Process & Filter": { "main": [[{ "node": "Save Lead to Airtable", "type": "main", "index": 0 }]] },
+    "Save Lead to Airtable": { "main": [[{ "node": "Save Contact to Airtable", "type": "main", "index": 0 }]] },
+    "Save Contact to Airtable": { "main": [[{ "node": "Respond to OUTBILI", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
