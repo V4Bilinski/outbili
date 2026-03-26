@@ -97,41 +97,52 @@ export function CompanyPage() {
             { label: 'Faturamento/ano', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : '-' },
             { label: 'Funcionários', value: lead.employees || '-' },
             { label: 'Anos no mercado', value: lead.yearsInMarket || '-' },
-            { label: 'Status', value: lead.status },
-          ].map((stat) => (
-            <div key={stat.label} className="p-3 rounded-xl bg-white/[0.02] border-l-[3px] border-l-red">
+            { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true },
+          ].map((stat: any) => (
+            <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`}>
               <p className="text-[10px] uppercase tracking-wider text-text-muted">{stat.label}</p>
-              <p className="text-lg font-bold font-mono mt-0.5">{stat.value}</p>
+              <p className={`text-lg font-bold font-mono mt-0.5 ${stat.isHighlight ? 'text-red text-sm' : ''}`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Quick action: WhatsApp decisor — VISÍVEL NO HEADER */}
         {mainContact && (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/8 border border-whatsapp/20">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-whatsapp/8 border border-whatsapp/20">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-text-muted">Decisor</p>
-              <p className="text-sm font-semibold text-text-primary">{mainContact.name}</p>
-              {mainContact.role && <p className="text-[11px] text-text-muted">{mainContact.role}</p>}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-whatsapp font-semibold">Decisor</span>
+                <Badge variant={mainContact.contactType === 'decisor' ? 'error' : 'warning'} size="sm">
+                  {mainContact.contactType === 'decisor' ? 'DECISOR' : 'STAKEHOLDER'}
+                </Badge>
+              </div>
+              <p className="text-base font-bold text-text-primary uppercase tracking-wide">{mainContact.name}</p>
+              {mainContact.role && <p className="text-xs text-text-secondary mt-0.5">{mainContact.role}</p>}
+              {mainContact.whatsapp && (
+                <p className="text-xs text-whatsapp font-mono mt-1">+{mainContact.whatsapp}</p>
+              )}
             </div>
             {whatsappLink ? (
               <a href={whatsappLink} target="_blank" rel="noopener">
-                <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-4 w-4" />}>
+                <Button variant="whatsapp" size="lg" icon={<MessageCircle className="h-5 w-5" />}>
                   WhatsApp
                 </Button>
               </a>
             ) : (
               <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setActiveTab('contatos')}>
-                Adicionar contato
+                Adicionar WhatsApp
               </Button>
             )}
           </div>
         )}
         {!mainContact && (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-warning/8 border border-warning/20">
-            <p className="text-xs text-warning">Nenhum contato cadastrado — adicione o decisor</p>
-            <Button variant="secondary" size="sm" onClick={() => setActiveTab('contatos')}>
-              Adicionar
+          <div className="flex items-center justify-between p-4 rounded-xl bg-warning/8 border border-warning/20">
+            <div>
+              <p className="text-sm font-semibold text-warning">Nenhum contato cadastrado</p>
+              <p className="text-xs text-text-muted mt-0.5">Adicione o decisor (CEO/proprietário) para iniciar a prospecção</p>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => setActiveTab('contatos')}>
+              Adicionar decisor
             </Button>
           </div>
         )}
@@ -215,35 +226,47 @@ export function CompanyPage() {
 
             {/* Business summary */}
             {lead.businessSummary && (
-              <p className="text-[13px] text-text-secondary leading-relaxed">{lead.businessSummary}</p>
+              <p className="text-sm text-text-primary leading-relaxed">{lead.businessSummary}</p>
             )}
 
-            {/* WTP anual */}
+            {/* WTP anual — destaque */}
             {lead.monthlyRevenue && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-text-muted">WTP anual:</span>
-                <span className="font-mono text-sm font-bold text-red">
-                  R${formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
+              <div className="p-3 rounded-xl bg-red/5 border border-red/15">
+                <span className="text-xs text-text-muted">WTP anual: </span>
+                <span className="font-mono text-base font-bold text-red">
+                  {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
                 </span>
               </div>
             )}
 
-            {/* Decisor contact card */}
-            <div>
-              <p className="text-[11px] text-text-muted mb-2">decisor:</p>
-              <div className="p-3 rounded-lg bg-surface-md border border-border">
-                {/* Name will come from Contacts, fallback to extracted */}
-                <p className="text-sm font-bold text-text-primary uppercase tracking-wide">
-                  {lead.companyName.includes('Dra') || lead.companyName.includes('Dr.') ? lead.companyName.split('-')[0].split('|')[0].trim() : `Proprietário(a) ${lead.companyName.split('-')[0].split('|')[0].trim()}`}
+            {/* Decisor contact card — dados reais do Airtable */}
+            {mainContact ? (
+              <div>
+                <p className="text-[11px] text-text-muted mb-2 uppercase tracking-wider">
+                  {mainContact.contactType === 'decisor' ? 'decisor:' : 'stakeholder:'}
                 </p>
-                <p className="text-[11px] text-text-muted mt-0.5">proprietário(a) / decisor</p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-xs text-text-secondary flex items-center gap-1.5">
-                    <span className="text-[10px]">📱</span> WhatsApp no contato
-                  </p>
+                <div className="p-4 rounded-xl bg-surface-md border border-border">
+                  <p className="text-base font-bold text-text-primary uppercase tracking-wide">{mainContact.name}</p>
+                  {mainContact.role && <p className="text-xs text-text-secondary mt-1">{mainContact.role}</p>}
+                  <div className="mt-3 space-y-1.5">
+                    {mainContact.whatsapp && (
+                      <a href={`https://wa.me/${mainContact.whatsapp}`} target="_blank" rel="noopener" className="flex items-center gap-2 text-xs text-whatsapp hover:underline">
+                        <span>📱</span> +{mainContact.whatsapp}
+                      </a>
+                    )}
+                    {mainContact.email && (
+                      <p className="flex items-center gap-2 text-xs text-text-secondary">
+                        <span>✉️</span> {mainContact.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-warning/5 border border-warning/15">
+                <p className="text-xs text-warning">Decisor não cadastrado — adicione na aba Contatos</p>
+              </div>
+            )}
 
             {/* CNPJ + Receita + Localização */}
             <div className="space-y-2 pt-2 border-t border-border">
