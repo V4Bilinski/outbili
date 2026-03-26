@@ -73,7 +73,8 @@ function LeadTable({ leads }: { leads: Lead[] }) {
               <tr
                 key={lead.id}
                 onClick={() => navigate(`/leads/${lead.id}`)}
-                className="border-b border-border/30 hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* # */}
                 <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
@@ -101,7 +102,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-16 h-2 rounded-full bg-white/5 overflow-hidden">
-                      <div className={`h-full rounded-full ${barColor(score)} transition-all`} style={{ width: `${(score / 5) * 100}%` }} />
+                      <div className={`h-full rounded-full ${barColor(score)} animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]`} style={{ width: `${(score / 5) * 100}%`, animationDelay: `${index * 50 + 200}ms` }} />
                     </div>
                     <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
                   </div>

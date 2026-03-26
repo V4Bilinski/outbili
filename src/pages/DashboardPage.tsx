@@ -11,30 +11,44 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
 import { useState } from 'react'
+import { useCountUp } from '../hooks/useCountUp'
+import { useInView } from '../hooks/useInView'
+import { AnimateIn } from '../components/ui/AnimateIn'
+
+function CountUpValue({ end, color, isInView }: { end: number; color: string; isInView: boolean }) {
+  const value = useCountUp({ end, duration: 1200, enabled: isInView })
+  return <p className={`text-4xl font-bold font-mono mt-2 tracking-tight ${color}`}>{value}</p>
+}
 
 function KPICards({ leads }: { leads: Lead[] }) {
   const hotCount = leads.filter((l) => l.temperature === 'HOT').length
   const warmCount = leads.filter((l) => l.temperature === 'WARM').length
   const meetingsToday = leads.filter((l) => l.status === 'Reunião').length
+  const { ref, isInView } = useInView({ threshold: 0.2 })
 
   const cards = [
-    { label: 'Total leads', value: leads.length, icon: Users, color: 'text-text-primary', accent: 'from-white/5 to-transparent' },
-    { label: 'HOT ativos', value: hotCount, icon: Flame, color: 'text-hot', accent: 'from-hot/8 to-transparent' },
-    { label: 'WARM ativos', value: warmCount, icon: TrendingUp, color: 'text-warm', accent: 'from-warm/8 to-transparent' },
-    { label: 'Reuniões', value: meetingsToday, icon: Calendar, color: 'text-success', accent: 'from-success/8 to-transparent' },
+    { label: 'Total leads', value: leads.length, icon: Users, color: 'text-text-primary', accent: 'from-white/5 to-transparent', pulse: false },
+    { label: 'HOT ativos', value: hotCount, icon: Flame, color: 'text-hot', accent: 'from-hot/8 to-transparent', pulse: true },
+    { label: 'WARM ativos', value: warmCount, icon: TrendingUp, color: 'text-warm', accent: 'from-warm/8 to-transparent', pulse: false },
+    { label: 'Reuniões', value: meetingsToday, icon: Calendar, color: 'text-success', accent: 'from-success/8 to-transparent', pulse: false },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
+    <div ref={ref} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map((card, i) => (
         <div
           key={card.label}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.accent} backdrop-blur-xl border border-border p-5`}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.accent} backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 ${card.pulse ? 'animate-[pulse-glow_2.5s_ease-in-out_1.5s_infinite]' : ''}`}
+          style={{
+            opacity: isInView ? 1 : 0,
+            transform: isInView ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)',
+            transition: `all 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${i * 100 + 200}ms`,
+          }}
         >
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{card.label}</p>
-              <p className={`text-4xl font-bold font-mono mt-2 tracking-tight ${card.color}`}>{card.value}</p>
+              <CountUpValue end={card.value} color={card.color} isInView={isInView} />
             </div>
             <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
               <card.icon className={`h-5 w-5 ${card.color} opacity-60`} />
@@ -340,26 +354,35 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold font-heading gradient-text">Dashboard</h1>
-          <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads no pipeline</p>
+      <AnimateIn delay={0}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold font-heading gradient-text">Dashboard</h1>
+            <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads no pipeline</p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
+              Nova pesquisa
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
-            Nova pesquisa
-          </Button>
-        </div>
-      </div>
+      </AnimateIn>
 
       <KPICards leads={allLeads} />
-      <NextActions leads={allLeads} />
+
+      <AnimateIn delay={100}>
+        <NextActions leads={allLeads} />
+      </AnimateIn>
 
       <div className="grid md:grid-cols-2 gap-5">
-        <PipelineFunnel leads={allLeads} />
-        <QuickActions />
+        <AnimateIn delay={0}>
+          <PipelineFunnel leads={allLeads} />
+        </AnimateIn>
+        <AnimateIn delay={80}>
+          <QuickActions />
+        </AnimateIn>
       </div>
 
       <ImportModal open={showImport} onClose={() => setShowImport(false)} />
