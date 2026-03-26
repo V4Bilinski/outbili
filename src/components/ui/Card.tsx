@@ -7,6 +7,7 @@ interface CardProps {
   hover?: boolean
   glass?: boolean
   onClick?: () => void
+  style?: React.CSSProperties
 }
 
 const accentStyles: Record<string, string> = {
@@ -18,9 +19,10 @@ const accentStyles: Record<string, string> = {
   none: '',
 }
 
-export function Card({ children, className, accent = 'none', hover = false, glass = true, onClick }: CardProps) {
+export function Card({ children, className, accent = 'none', hover = false, glass = true, onClick, style }: CardProps) {
   return (
     <div
+      style={style}
       className={cn(
         'rounded-2xl p-5',
         glass

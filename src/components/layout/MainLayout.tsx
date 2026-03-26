@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
-import { ScrollProgress } from '../ui/ScrollProgress'
+import { MobileHeader } from './MobileHeader'
 import { Toaster } from 'sonner'
 import { SidebarProvider, useSidebar } from '../../lib/sidebar-context'
 import { cn } from '../../lib/cn'
@@ -11,11 +11,11 @@ function LayoutInner() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <ScrollProgress />
       <Sidebar />
       <BottomNav />
+      <MobileHeader />
       <main className={cn(
-        'pb-24 md:pb-0 min-h-screen transition-all duration-300 ease-in-out',
+        'pb-24 md:pb-0 pt-14 md:pt-0 min-h-screen transition-all duration-300 ease-in-out',
         collapsed ? 'md:ml-[72px]' : 'md:ml-[260px]',
       )}>
         <div className="p-5 md:p-8 max-w-[1400px] mx-auto">

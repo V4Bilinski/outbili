@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeads } from '../hooks/useLeads'
+import { AnimateIn } from '../components/ui/AnimateIn'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -156,7 +157,8 @@ function KanbanView({ leads }: { leads: Lead[] }) {
                     accent={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'}
                     hover
                     onClick={() => navigate(`/leads/${lead.id}`)}
-                    className="p-4"
+                    className="p-4 animate-[slide-up_0.4s_cubic-bezier(0.16,1,0.3,1)_both]"
+                    style={{ animationDelay: `${colLeads.indexOf(lead) * 60}ms` } as React.CSSProperties}
                   >
                     <div className="flex items-start justify-between mb-2.5">
                       <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
@@ -207,12 +209,13 @@ export function LeadsPage() {
   }
 
   return (
-    <div className="space-y-5 animate-[fade-in_0.4s_ease-out]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
-          <p className="text-xs text-text-muted mt-0.5">{filteredLeads.length} leads encontrados</p>
-        </div>
+    <div className="space-y-5">
+      <AnimateIn>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
+            <p className="text-xs text-text-muted mt-0.5">{filteredLeads.length} leads encontrados</p>
+          </div>
         <div className="flex items-center gap-2.5">
           <div className="flex rounded-xl p-0.5 bg-white/[0.03] border border-border">
             <button
@@ -234,21 +237,31 @@ export function LeadsPage() {
         </div>
       </div>
 
-      <LeadFilters segment={segment} setSegment={setSegment} temperature={temperature} setTemperature={setTemperature} status={status} setStatus={setStatus} />
+      </AnimateIn>
+
+      <AnimateIn delay={80}>
+        <LeadFilters segment={segment} setSegment={setSegment} temperature={temperature} setTemperature={setTemperature} status={status} setStatus={setStatus} />
+      </AnimateIn>
 
       {filteredLeads.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="Nenhum lead encontrado"
-          description="Faça sua primeira pesquisa ou ajuste os filtros."
-          action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
-        />
+        <AnimateIn delay={120}>
+          <EmptyState
+            icon={Users}
+            title="Nenhum lead encontrado"
+            description="Faça sua primeira pesquisa ou ajuste os filtros."
+            action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
+          />
+        </AnimateIn>
       ) : view === 'table' ? (
-        <Card className="p-0 overflow-hidden">
-          <LeadTable leads={filteredLeads} />
-        </Card>
+        <AnimateIn delay={120}>
+          <Card className="p-0 overflow-hidden">
+            <LeadTable leads={filteredLeads} />
+          </Card>
+        </AnimateIn>
       ) : (
-        <KanbanView leads={filteredLeads} />
+        <AnimateIn delay={120}>
+          <KanbanView leads={filteredLeads} />
+        </AnimateIn>
       )}
     </div>
   )
