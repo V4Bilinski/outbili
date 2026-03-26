@@ -4,7 +4,7 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, MessageCircle, Phone } from 'lucide-react'
+import { ArrowLeft, MapPin, MessageCircle, Phone, UserPlus } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useContacts } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
@@ -106,45 +106,47 @@ export function CompanyPage() {
           ))}
         </div>
 
-        {/* Quick action: WhatsApp decisor — VISÍVEL NO HEADER */}
+        {/* Quick action: WhatsApp decisor — compact */}
         {mainContact && (
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-whatsapp/8 border border-whatsapp/20">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wider text-whatsapp font-semibold">Decisor</span>
-                <Badge variant={mainContact.contactType === 'decisor' ? 'error' : 'warning'} size="sm">
-                  {mainContact.contactType === 'decisor' ? 'DECISOR' : 'STAKEHOLDER'}
-                </Badge>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/6 border border-whatsapp/15">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-whatsapp/15 flex items-center justify-center shrink-0">
+                <MessageCircle className="h-4 w-4 text-whatsapp" />
               </div>
-              <p className="text-base font-bold text-text-primary uppercase tracking-wide">{mainContact.name}</p>
-              {mainContact.role && <p className="text-xs text-text-secondary mt-0.5">{mainContact.role}</p>}
-              {mainContact.whatsapp && (
-                <p className="text-xs text-whatsapp font-mono mt-1">+{mainContact.whatsapp}</p>
-              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
+                <p className="text-[11px] text-text-muted truncate">
+                  {mainContact.role || (mainContact.contactType === 'decisor' ? 'Decisor' : 'Stakeholder')}
+                  {mainContact.whatsapp && <span className="text-whatsapp font-mono ml-1.5">· {mainContact.whatsapp}</span>}
+                </p>
+              </div>
             </div>
             {whatsappLink ? (
-              <a href={whatsappLink} target="_blank" rel="noopener">
-                <Button variant="whatsapp" size="lg" icon={<MessageCircle className="h-5 w-5" />}>
+              <a href={whatsappLink} target="_blank" rel="noopener" className="shrink-0">
+                <Button variant="whatsapp" size="sm" icon={<MessageCircle className="h-4 w-4" />}>
                   WhatsApp
                 </Button>
               </a>
             ) : (
               <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setActiveTab('contatos')}>
-                Adicionar WhatsApp
+                Add WhatsApp
               </Button>
             )}
           </div>
         )}
         {!mainContact && (
-          <div className="flex items-center justify-between p-4 rounded-xl bg-warning/8 border border-warning/20">
-            <div>
-              <p className="text-sm font-semibold text-warning">Nenhum contato cadastrado</p>
-              <p className="text-xs text-text-muted mt-0.5">Adicione o decisor (CEO/proprietário) para iniciar a prospecção</p>
+          <button
+            onClick={() => setActiveTab('contatos')}
+            className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
+              <UserPlus className="h-4 w-4 text-warning" />
             </div>
-            <Button variant="primary" size="sm" onClick={() => setActiveTab('contatos')}>
-              Adicionar decisor
-            </Button>
-          </div>
+            <div>
+              <p className="text-sm font-semibold text-warning">Adicionar decisor</p>
+              <p className="text-[11px] text-text-muted">CEO/proprietário com WhatsApp para iniciar prospecção</p>
+            </div>
+          </button>
         )}
 
         {/* Links — formato pills clicáveis com destaque */}

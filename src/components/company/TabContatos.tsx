@@ -7,53 +7,71 @@ import type { Lead, Contact } from '../../types'
 import { Phone, Mail, Plus, Trash2, UserPlus, MessageCircle } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
-function ContactCard({ contact, onDelete }: { contact: Contact; onDelete: () => void }) {
+function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete: () => void; index: number }) {
   const typeLabel: Record<string, string> = { decisor: 'Decisor', stakeholder: 'Stakeholder', influenciador: 'Influenciador' }
   const typeVariant: Record<string, 'error' | 'warning' | 'info'> = { decisor: 'error', stakeholder: 'warning', influenciador: 'info' }
+  const typeIcon: Record<string, string> = { decisor: '👤', stakeholder: '🤝', influenciador: '📣' }
 
   const whatsappLink = contact.whatsapp
     ? `https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`
     : null
 
   return (
-    <div className="p-4 rounded-xl bg-white/[0.02] border border-border flex items-start justify-between gap-3">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-semibold text-text-primary">{contact.name}</span>
-          <Badge variant={typeVariant[contact.contactType] || 'info'} size="sm">
-            {typeLabel[contact.contactType] || contact.contactType}
-          </Badge>
+    <div
+      className="group rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 overflow-hidden animate-[fade-in_0.4s_ease-out_both]"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      {/* Contact header */}
+      <div className="flex items-center gap-3 p-4 pb-3">
+        <div className={cn(
+          'w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0',
+          contact.contactType === 'decisor' ? 'bg-red/10' : contact.contactType === 'stakeholder' ? 'bg-warning/10' : 'bg-info/10',
+        )}>
+          {typeIcon[contact.contactType] || '👤'}
         </div>
-        {contact.role && <p className="text-xs text-text-muted mb-2">{contact.role}</p>}
-        <div className="flex flex-wrap gap-2">
-          {contact.whatsapp && (
-            <a
-              href={whatsappLink!}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-whatsapp/15 text-whatsapp text-xs font-medium hover:bg-whatsapp/25 transition-colors"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              {contact.whatsapp}
-            </a>
-          )}
-          {contact.email && (
-            <a
-              href={`mailto:${contact.email}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] text-text-secondary text-xs font-medium hover:bg-white/[0.08] transition-colors"
-            >
-              <Mail className="h-3.5 w-3.5" />
-              {contact.email}
-            </a>
-          )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-text-primary truncate">{contact.name}</span>
+            <Badge variant={typeVariant[contact.contactType] || 'info'} size="sm">
+              {typeLabel[contact.contactType] || contact.contactType}
+            </Badge>
+          </div>
+          {contact.role && <p className="text-xs text-text-muted mt-0.5">{contact.role}</p>}
         </div>
+        <button
+          onClick={onDelete}
+          className="p-2 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 md:opacity-0 max-md:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <button
-        onClick={onDelete}
-        className="p-2 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+
+      {/* Action buttons */}
+      <div className="flex gap-2 px-4 pb-4">
+        {contact.whatsapp && (
+          <a
+            href={whatsappLink!}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-whatsapp/10 text-whatsapp text-xs font-medium hover:bg-whatsapp/20 transition-colors min-h-[36px]"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            {contact.whatsapp}
+          </a>
+        )}
+        {contact.email && (
+          <a
+            href={`mailto:${contact.email}`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] text-text-secondary text-xs font-medium hover:bg-white/[0.08] transition-colors min-h-[36px]"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            {contact.email}
+          </a>
+        )}
+        {!contact.whatsapp && !contact.email && (
+          <p className="text-xs text-text-muted italic">Sem canais de contato cadastrados</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -105,23 +123,43 @@ export function TabContatos({ lead }: { lead: Lead }) {
   const deleteContact = useDeleteContact()
   const [showForm, setShowForm] = useState(false)
 
+  const contactCount = contacts?.length || 0
+  const hasDecisor = contacts?.some((c) => c.contactType === 'decisor')
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Header with count */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-whatsapp" />
-          <h3 className="text-sm font-semibold font-heading">Contatos & Histórico</h3>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-whatsapp/10 flex items-center justify-center">
+            <Phone className="h-4 w-4 text-whatsapp" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold font-heading">Contatos</h3>
+            <p className="text-[11px] text-text-muted">
+              {contactCount === 0 ? 'Nenhum cadastrado' : `${contactCount} contato${contactCount > 1 ? 's' : ''}`}
+              {contactCount > 0 && !hasDecisor && ' · sem decisor'}
+            </p>
+          </div>
         </div>
         <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => setShowForm(true)}>
           Adicionar
         </Button>
       </div>
 
+      {/* Alert: no decisor */}
+      {contactCount > 0 && !hasDecisor && (
+        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-warning/6 border border-warning/15 text-xs text-warning">
+          <span>⚠</span>
+          <span>Nenhum contato marcado como <strong>decisor</strong>. Identifique quem aprova a compra.</span>
+        </div>
+      )}
+
       {showForm && <AddContactForm leadId={lead.id} onClose={() => setShowForm(false)} />}
 
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-20 rounded-xl skeleton-shimmer" />)}
+        <div className="space-y-3">
+          {[1, 2].map((i) => <div key={i} className="h-24 rounded-xl skeleton-shimmer" />)}
         </div>
       ) : !contacts || contacts.length === 0 ? (
         <EmptyState
@@ -131,11 +169,12 @@ export function TabContatos({ lead }: { lead: Lead }) {
           action={{ label: 'Adicionar contato', onClick: () => setShowForm(true) }}
         />
       ) : (
-        <div className="space-y-2">
-          {contacts.map((contact) => (
+        <div className="space-y-3">
+          {contacts.map((contact, i) => (
             <ContactCard
               key={contact.id}
               contact={contact}
+              index={i}
               onDelete={() => deleteContact.mutate(contact.id)}
             />
           ))}
