@@ -1,9 +1,11 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Upload } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '../lib/cn'
 import { useN8nSearch } from '../hooks/useN8nSearch'
+import { createLead } from '../services/leadService'
+import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
 
 // --- Constants ---
@@ -169,6 +171,22 @@ export function SearchPage() {
   const [revenueMin, setRevenueMin] = useState('70000')
   const [revenueMax, setRevenueMax] = useState('2000000')
   const [history, setHistory] = useState<SearchHistory[]>(loadHistory)
+  const [searchMode, setSearchMode] = useState<'mass' | 'specific'>('mass')
+
+  // Specific lead fields
+  const [specificName, setSpecificName] = useState('')
+  const [specificCnpj, setSpecificCnpj] = useState('')
+  const [specificPhone, setSpecificPhone] = useState('')
+  const [specificEmail, setSpecificEmail] = useState('')
+  const [specificWebsite, setSpecificWebsite] = useState('')
+  const [specificInstagram, setSpecificInstagram] = useState('')
+  const [specificSegment, setSpecificSegment] = useState('')
+  const [specificCity, setSpecificCity] = useState('')
+  const [specificState, setSpecificState] = useState('')
+  const [specificRevenue, setSpecificRevenue] = useState('')
+  const [specificContact, setSpecificContact] = useState('')
+  const [specificContactRole, setSpecificContactRole] = useState('')
+  const [isCreatingSpecific, setIsCreatingSpecific] = useState(false)
 
   const n8n = useN8nSearch()
 
@@ -185,18 +203,190 @@ export function SearchPage() {
     n8n.search({ segments, states, city, keywords, revenueMin, revenueMax })
   }
 
+  const handleSpecificSearch = async () => {
+    if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
+    setIsCreatingSpecific(true)
+    try {
+      // Format WhatsApp number
+      let whatsapp = ''
+      if (specificPhone) {
+        const digits = specificPhone.replace(/\D/g, '').replace(/^0+/, '')
+        whatsapp = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : ''
+      }
+
+      // Estimate revenue
+      const revenue = parseInt(specificRevenue) || 100000
+      const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
+
+      // 1. Save lead to Airtable
+      const lead = await createLead({
+        companyName: specificName,
+        segment: specificSegment || 'Varejo',
+        tier,
+        monthlyRevenue: revenue,
+        employees: revenue >= 120000 ? 8 : 5,
+        yearsInMarket: revenue >= 120000 ? 7 : 5,
+        status: 'Novo',
+        score: 0,
+        temperature: 'WARM',
+        website: specificWebsite || '',
+        instagram: specificInstagram || '',
+        city: specificCity || '',
+        state: specificState || '',
+        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente · R$ ${Math.round(revenue / 1000)}k/mês`,
+        enrichmentStatus: 'pending',
+      } as any)
+
+      // 2. Save contact if we have data
+      if (lead.id && (whatsapp || specificEmail || specificContact)) {
+        await createContact({
+          name: specificContact || specificName,
+          role: specificContactRole || 'Proprietário(a) / Decisor',
+          contactType: 'decisor',
+          whatsapp: whatsapp,
+          email: specificEmail || '',
+          leadId: lead.id,
+        } as any)
+      }
+
+      toast.success(`${specificName} salvo com sucesso!`)
+
+      // 3. Trigger n8n enrichment with company name as keyword
+      n8n.search({
+        segments: specificSegment ? [specificSegment] : ['Varejo'],
+        states: specificState ? [specificState] : [],
+        city: specificCity || '',
+        keywords: [specificName],
+        revenueMin: specificRevenue || '70000',
+        revenueMax: '2000000',
+      })
+
+      // Reset form
+      setSpecificName(''); setSpecificCnpj(''); setSpecificPhone(''); setSpecificEmail('')
+      setSpecificWebsite(''); setSpecificInstagram(''); setSpecificSegment('')
+      setSpecificCity(''); setSpecificState(''); setSpecificRevenue('')
+      setSpecificContact(''); setSpecificContactRole('')
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao salvar lead')
+    } finally {
+      setIsCreatingSpecific(false)
+    }
+  }
+
   const loadFromHistory = (entry: SearchHistory) => {
     setSegments(entry.segments); setStates(entry.states); setCity(entry.city); setKeywords(entry.keywords); setRevenueMin(entry.revenueMin); setRevenueMax(entry.revenueMax)
   }
 
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
-      <div>
-        <h1 className="text-xl font-bold font-heading gradient-text">Pesquisa de leads</h1>
-        <p className="text-xs text-text-muted mt-0.5">Encontre e analise empresas qualificadas com inteligência de marketing completa</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Pesquisa de leads</h1>
+          <p className="text-xs text-text-muted mt-0.5">Encontre e analise empresas com inteligência de marketing completa</p>
+        </div>
+        {/* Mode toggle */}
+        <div className="flex rounded-xl p-0.5 bg-white/[0.03] border border-border">
+          <button
+            onClick={() => setSearchMode('mass')}
+            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer', searchMode === 'mass' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary')}
+          >
+            Em massa
+          </button>
+          <button
+            onClick={() => setSearchMode('specific')}
+            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer', searchMode === 'specific' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary')}
+          >
+            Lead específico
+          </button>
+        </div>
       </div>
 
-      {/* Search form */}
+      {/* Specific lead form */}
+      {searchMode === 'specific' && (
+        <Card>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 rounded-xl bg-red/10">
+              <UserPlus className="h-5 w-5 text-red" />
+            </div>
+            <div>
+              <CardTitle>Cadastrar lead manualmente</CardTitle>
+              <p className="text-xs text-text-muted mt-0.5">Preencha os dados que você tem. O lead é salvo e enriquecido com IA automaticamente.</p>
+            </div>
+          </div>
+
+          {/* Company data */}
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-border mb-4">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-red font-semibold mb-3">Dados da empresa</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da empresa *</label>
+                <input type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clínica Odonto Premium" className={cn(inputClass, 'bg-white/[0.05]')} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">CNPJ</label>
+                <input type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(e.target.value)} placeholder="00.000.000/0000-00" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento</label>
+                <input type="text" value={specificSegment} onChange={(e) => setSpecificSegment(e.target.value)} placeholder="Ex: Odontologia, Pet Shop, Estética" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
+                <input type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: São Paulo" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado</label>
+                <input type="text" value={specificState} onChange={(e) => setSpecificState(e.target.value)} placeholder="Ex: SP" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mensal estimado</label>
+                <input type="text" value={specificRevenue} onChange={(e) => setSpecificRevenue(e.target.value)} placeholder="Ex: 200000" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Website</label>
+                <input type="text" value={specificWebsite} onChange={(e) => setSpecificWebsite(e.target.value)} placeholder="Ex: https://empresa.com.br" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Instagram</label>
+                <input type="text" value={specificInstagram} onChange={(e) => setSpecificInstagram(e.target.value)} placeholder="Ex: @empresa" className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          {/* Decisor contact */}
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-red font-semibold mb-3">Contato do decisor</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome do decisor</label>
+                <input type="text" value={specificContact} onChange={(e) => setSpecificContact(e.target.value)} placeholder="Ex: Dr. João Silva" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
+                <input type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietário, Sócio" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">WhatsApp do decisor</label>
+                <input type="text" value={specificPhone} onChange={(e) => setSpecificPhone(e.target.value)} placeholder="Ex: 11999998888" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">E-mail</label>
+                <input type="text" value={specificEmail} onChange={(e) => setSpecificEmail(e.target.value)} placeholder="Ex: joao@empresa.com" className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3">
+            <Button size="lg" icon={<Upload className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || isCreatingSpecific}>
+              Salvar e enriquecer com IA
+            </Button>
+            <p className="text-[11px] text-text-muted">O lead será salvo no Airtable e enriquecido automaticamente</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Mass search form */}
+      {searchMode === 'mass' && (<>
       <Card>
         <div className="flex items-center justify-between mb-5">
           <CardTitle>Configurar pesquisa</CardTitle>
@@ -270,6 +460,7 @@ export function SearchPage() {
           </div>
         </div>
       )}
+      </>)}
 
       {/* Processing animation */}
       {isSearching && (
