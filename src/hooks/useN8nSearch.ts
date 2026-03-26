@@ -28,31 +28,74 @@ export function useN8nSearch() {
       setState((s) => ({ ...s, elapsed: Math.round((Date.now() - startTime) / 1000) }))
     }, 1000)
 
+    // Count leads before search to detect new ones
+    let initialCount = 0
     try {
-      // Phase 1: Send to n8n
+      const existing = await getLeads()
+      initialCount = existing.length
+    } catch { /* ignore */ }
+
+    try {
+      // Phase 1: Send to n8n (fire-and-forget — don't wait for response)
       setState({ phase: 'sending', leads: [], error: null, elapsed: 0, leadsCreated: 0 })
 
-      // Phase 2: n8n is processing (webhook call — may take 1-5 min)
-      setState((s) => ({ ...s, phase: 'processing' }))
-      const result = await triggerN8nSearch(params)
+      // Trigger n8n webhook — don't await response (it times out)
+      triggerN8nSearch(params).catch(() => {}) // fire and forget
 
-      if (!result.success) {
-        throw new Error(result.error || 'Erro no n8n')
+      // Phase 2: Poll Airtable for new leads (every 10s for up to 5 min)
+      setState((s) => ({ ...s, phase: 'processing' }))
+
+      let newLeadsFound = 0
+      const maxWait = 300_000 // 5 min
+      while (Date.now() - startTime < maxWait) {
+        await new Promise((r) => setTimeout(r, 10_000)) // poll every 10s
+
+        try {
+          const currentLeads = await getLeads()
+          newLeadsFound = currentLeads.length - initialCount
+
+          if (newLeadsFound > 0) {
+            // New leads appeared — n8n is saving them
+            setState((s) => ({ ...s, phase: 'polling', leadsCreated: newLeadsFound }))
+
+            // Wait a bit more for remaining leads
+            await new Promise((r) => setTimeout(r, 15_000))
+
+            // Final count
+            const finalLeads = await getLeads()
+            newLeadsFound = finalLeads.length - initialCount
+
+            setState({
+              phase: 'done',
+              leads: finalLeads,
+              error: null,
+              elapsed: Math.round((Date.now() - startTime) / 1000),
+              leadsCreated: newLeadsFound,
+            })
+            return
+          }
+        } catch { /* airtable error — retry */ }
       }
 
-      setState((s) => ({ ...s, phase: 'polling', leadsCreated: result.leadsCreated }))
+      // Timeout — check one more time
+      const finalCheck = await getLeads()
+      newLeadsFound = finalCheck.length - initialCount
 
-      // Phase 3: Poll Airtable for the new leads
-      await new Promise((r) => setTimeout(r, 2000)) // Wait 2s for Airtable consistency
-      const leads = await getLeads()
-
-      setState({
-        phase: 'done',
-        leads,
-        error: null,
-        elapsed: Math.round((Date.now() - startTime) / 1000),
-        leadsCreated: result.leadsCreated,
-      })
+      if (newLeadsFound > 0) {
+        setState({
+          phase: 'done',
+          leads: finalCheck,
+          error: null,
+          elapsed: Math.round((Date.now() - startTime) / 1000),
+          leadsCreated: newLeadsFound,
+        })
+      } else {
+        setState((s) => ({
+          ...s,
+          phase: 'error',
+          error: 'Pesquisa demorou mais que o esperado. Verifique o n8n ou tente novamente.',
+        }))
+      }
     } catch (err: any) {
       setState((s) => ({
         ...s,
