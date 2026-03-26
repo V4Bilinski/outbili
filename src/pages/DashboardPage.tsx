@@ -122,7 +122,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {action.type === 'whatsapp' && (
-                  <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="h-4 w-4" />}>
+                  <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="text-sm" />}>
                     WhatsApp
                   </Button>
                 )}

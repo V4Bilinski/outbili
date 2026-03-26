@@ -112,7 +112,7 @@ export function CompanyPage() {
           <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/6 border border-whatsapp/15">
             <div className="flex-1 min-w-0 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-whatsapp/15 flex items-center justify-center shrink-0">
-                <WhatsAppIcon className="h-5 w-5" />
+                <WhatsAppIcon className="text-lg text-whatsapp" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
@@ -124,7 +124,7 @@ export function CompanyPage() {
             </div>
             {whatsappLink ? (
               <a href={whatsappLink} target="_blank" rel="noopener" className="shrink-0">
-                <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="h-4 w-4" />}>
+                <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="text-sm" />}>
                   WhatsApp
                 </Button>
               </a>

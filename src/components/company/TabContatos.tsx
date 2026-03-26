@@ -56,7 +56,7 @@ function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete:
             rel="noopener"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-whatsapp/10 text-whatsapp text-xs font-medium hover:bg-whatsapp/20 transition-colors min-h-[36px]"
           >
-            <WhatsAppIcon className="h-4 w-4" />
+            <WhatsAppIcon className="text-sm" />
             {contact.whatsapp}
           </a>
         )}
