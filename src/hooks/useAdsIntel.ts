@@ -118,7 +118,6 @@ export function useAdsIntel() {
       // Phase 1: Meta Ads Library (run with startUrls for better results)
       let metaAds: MetaAd[] = []
       try {
-        const facebookPage = `https://www.facebook.com/${companyName.toLowerCase().replace(/\s+/g, '')}`
         const runId = await startFacebookAdsScrape(companyName)
         const datasetId = await pollRunUntilDone(runId, 'apify~facebook-ads-scraper', undefined, 180_000)
         const items = await getDatasetItems(datasetId, 30)

@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import type { Lead } from '../../types'
 import { useAdsIntel, type MetaAd, type AdsIntelPhase } from '../../hooks/useAdsIntel'
 import { cn } from '../../lib/cn'
-import { Radar, Loader2, AlertTriangle, ExternalLink, Play, Image, Zap, Eye } from 'lucide-react'
+import { Radar, Loader2, AlertTriangle, Play, Image, Zap, Eye } from 'lucide-react'
 
 const PLATFORM_LABELS: Record<string, string> = {
   FACEBOOK: 'Facebook',
@@ -236,8 +235,8 @@ export function TabAdsIntel({ lead }: { lead: Lead }) {
               <span className={cn('w-2 h-2 rounded-full', phase === 'meta-ads' ? 'bg-red animate-pulse' : 'bg-success')} />
               Meta Ads
             </div>
-            <div className={cn('flex items-center gap-1.5', phase === 'semrush' ? 'text-red' : phase === 'analyzing' || phase === 'done' ? 'text-success' : 'text-text-muted')}>
-              <span className={cn('w-2 h-2 rounded-full', phase === 'semrush' ? 'bg-red animate-pulse' : phase === 'analyzing' || phase === 'done' ? 'bg-success' : 'bg-surface-lt')} />
+            <div className={cn('flex items-center gap-1.5', phase === 'semrush' ? 'text-red' : phase === 'analyzing' ? 'text-success' : 'text-text-muted')}>
+              <span className={cn('w-2 h-2 rounded-full', phase === 'semrush' ? 'bg-red animate-pulse' : phase === 'analyzing' ? 'bg-success' : 'bg-surface-lt')} />
               SEMrush
             </div>
             <div className={cn('flex items-center gap-1.5', phase === 'analyzing' ? 'text-red' : 'text-text-muted')}>
