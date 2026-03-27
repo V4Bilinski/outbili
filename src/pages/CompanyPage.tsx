@@ -16,6 +16,7 @@ import { TabProjecao } from '../components/company/TabProjecao'
 import { TabVulnerabilidades } from '../components/company/TabVulnerabilidades'
 import { TabCompetitiva } from '../components/company/TabCompetitiva'
 import { TabArgumentos } from '../components/company/TabArgumentos'
+import { TabAdsIntel } from '../components/company/TabAdsIntel'
 
 const TABS = [
   { id: 'resumo', label: 'Resumo' },
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'projecao', label: 'Projeção' },
   { id: 'competitiva', label: 'Competitiva' },
   { id: 'argumentos', label: 'Argumentos' },
+  { id: 'ads-intel', label: 'SpyBili' },
 ] as const
 
 export function CompanyPage() {
@@ -491,6 +493,8 @@ export function CompanyPage() {
 
         {/* Tab: Argumentos */}
         {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
+
+        {activeTab === 'ads-intel' && <TabAdsIntel lead={lead} />}
 
         </div>
       </Card>
