@@ -275,10 +275,10 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary">{lead.companyName}</p>
-                  <p className="text-[11px] text-text-muted">{lead.segment} · {lead.temperature} · Score {lead.score}</p>
+                  <p className="text-[11px] text-text-muted">{lead.segment} · {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'} · Score {lead.score}</p>
                 </div>
                 <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
-                  {lead.temperature}
+                  {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
                 </Badge>
               </label>
             ))}

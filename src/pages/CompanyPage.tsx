@@ -75,7 +75,7 @@ export function CompanyPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'}>
-                {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
+                {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
               </Badge>
               <Badge variant="outline">{lead.tier}</Badge>
               <Badge variant="outline">{lead.segment}</Badge>
@@ -380,7 +380,7 @@ export function CompanyPage() {
               </span>
               <span className="text-base text-text-muted">—</span>
               <Badge variant={tempVariant} pulse={lead.temperature === 'HOT'} className="text-xs px-3 py-1">
-                {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature}
+                {lead.temperature === 'HOT' ? '🔥' : lead.temperature === 'WARM' ? '🟡' : '⚪'} {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
               </Badge>
             </div>
 

@@ -58,7 +58,7 @@ export function ReportsPage() {
   // --- Funnel data ---
   const funnelData = [
     { name: 'Pesquisados', value: totalLeads, color: '#71717A' },
-    { name: 'HOT + WARM', value: hotLeads + warmLeads, color: '#FF9F0A' },
+    { name: 'Quente + Morno', value: hotLeads + warmLeads, color: '#FF9F0A' },
     { name: 'Contactados', value: contactados, color: '#F59E0B' },
     { name: 'Responderam', value: responderam, color: '#22C55E' },
     { name: 'Reuniões', value: reunioes, color: '#E63329' },
@@ -82,9 +82,9 @@ export function ReportsPage() {
 
   // --- Temperature distribution ---
   const tempData = [
-    { name: 'HOT', value: hotLeads, color: '#FF3B30' },
-    { name: 'WARM', value: warmLeads, color: '#FF9F0A' },
-    { name: 'COLD', value: allLeads.filter((l) => l.temperature === 'COLD').length, color: '#71717A' },
+    { name: 'Quente', value: hotLeads, color: '#FF3B30' },
+    { name: 'Morno', value: warmLeads, color: '#FF9F0A' },
+    { name: 'Frio', value: allLeads.filter((l) => l.temperature === 'COLD').length, color: '#71717A' },
   ].filter((d) => d.value > 0)
 
   // --- Predictive metrics ---
@@ -104,7 +104,7 @@ export function ReportsPage() {
       {/* Strategic KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Pipeline total', value: totalLeads, sub: `${hotLeads} HOT · ${warmLeads} WARM`, icon: Target, color: 'text-text-primary', accent: 'from-white/5 to-transparent' },
+          { label: 'Pipeline total', value: totalLeads, sub: `${hotLeads} Quentes · ${warmLeads} Mornos`, icon: Target, color: 'text-text-primary', accent: 'from-white/5 to-transparent' },
           { label: 'Taxa de contato', value: `${contactRate}%`, sub: `${contactados} de ${totalLeads} leads`, icon: Zap, color: 'text-warning', accent: 'from-warning/8 to-transparent' },
           { label: 'Taxa de resposta', value: `${responseRate}%`, sub: `${responderam} responderam`, icon: Activity, color: 'text-success', accent: 'from-success/8 to-transparent' },
           { label: 'Conversão final', value: `${closeRate}%`, sub: `${fechados} fechados · ${perdidos} perdidos`, icon: Trophy, color: 'text-red', accent: 'from-red/8 to-transparent' },
@@ -179,7 +179,7 @@ export function ReportsPage() {
                   <div className="flex-1 h-5 rounded-lg bg-white/5 overflow-hidden relative">
                     <div className="h-full rounded-lg bg-red/60" style={{ width: `${(seg.total / Math.max(...segmentData.map((s) => s.total), 1)) * 100}%` }} />
                     <span className="absolute inset-0 flex items-center px-2 text-[10px] font-mono text-white">
-                      {seg.total} leads · {seg.hot} HOT · {seg.conversionRate}% conv.
+                      {seg.total} leads · {seg.hot} Quentes · {seg.conversionRate}% conv.
                     </span>
                   </div>
                 </div>
@@ -236,9 +236,9 @@ export function ReportsPage() {
           </div>
 
           <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Score médio leads HOT</p>
+            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Score medio leads Quentes</p>
             <p className="text-xl font-bold font-mono text-hot">{avgScoreHot}/5</p>
-            <p className="text-[10px] text-text-muted mt-1">{hotLeads} leads HOT ativos no pipeline</p>
+            <p className="text-[10px] text-text-muted mt-1">{hotLeads} leads Quentes ativos no pipeline</p>
           </div>
         </div>
 
@@ -247,7 +247,7 @@ export function ReportsPage() {
           <p className="text-xs font-semibold text-red uppercase tracking-wider mb-2">Recomendações estratégicas</p>
           <ul className="space-y-1.5 text-xs text-text-secondary">
             {hotLeads > 0 && contactRate < 50 && (
-              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads HOT não contactados — priorizar cadência imediata</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads Quentes nao contactados — priorizar cadencia imediata</li>
             )}
             {responseRate < 30 && contactados > 5 && (
               <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> Taxa de resposta {responseRate}% abaixo do benchmark (30%) — revisar scripts de abordagem</li>

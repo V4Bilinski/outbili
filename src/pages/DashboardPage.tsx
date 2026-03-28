@@ -29,8 +29,8 @@ function KPICards({ leads }: { leads: Lead[] }) {
 
   const cards = [
     { label: 'Total leads', value: leads.length, icon: Users, color: 'text-text-primary', accent: 'from-white/5 to-transparent', pulse: false },
-    { label: 'HOT ativos', value: hotCount, icon: Flame, color: 'text-hot', accent: 'from-hot/8 to-transparent', pulse: true },
-    { label: 'WARM ativos', value: warmCount, icon: TrendingUp, color: 'text-warm', accent: 'from-warm/8 to-transparent', pulse: false },
+    { label: 'Quentes', value: hotCount, icon: Flame, color: 'text-hot', accent: 'from-hot/8 to-transparent', pulse: true },
+    { label: 'Mornos', value: warmCount, icon: TrendingUp, color: 'text-warm', accent: 'from-warm/8 to-transparent', pulse: false },
     { label: 'Reuniões', value: meetingsToday, icon: Calendar, color: 'text-success', accent: 'from-success/8 to-transparent', pulse: false },
   ]
 
@@ -114,7 +114,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-text-primary truncate">{lead.companyName}</p>
                     <Badge variant={tempVariant} size="sm">
-                      {lead.temperature}
+                      {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
                     </Badge>
                   </div>
                   <p className="text-xs text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
@@ -190,7 +190,7 @@ function QuickActions() {
     { label: 'Nova pesquisa', desc: 'Buscar leads via Apify', icon: Search, onClick: () => navigate('/search') },
     { label: 'Importar relatório', desc: 'Upload HTML existente', icon: FileDown, onClick: () => navigate('/search') },
     { label: 'Nova cadência', desc: 'Criar sequência WhatsApp', icon: Plus, onClick: () => navigate('/campaigns/new') },
-    { label: 'Agendar reunião', desc: 'Marcar com lead HOT', icon: Calendar, onClick: () => {} },
+    { label: 'Agendar reuniao', desc: 'Marcar com lead Quente', icon: Calendar, onClick: () => {} },
   ]
 
   return (

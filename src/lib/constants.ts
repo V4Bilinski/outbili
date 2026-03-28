@@ -25,9 +25,9 @@ export const LEAD_STATUSES = [
 ] as const
 
 export const TEMPERATURES = [
-  { value: 'HOT', label: 'HOT', color: '#FF2020', emoji: '🔥' },
-  { value: 'WARM', label: 'WARM', color: '#F59E0B', emoji: '🟡' },
-  { value: 'COLD', label: 'COLD', color: '#8E8E93', emoji: '⚪' },
+  { value: 'HOT', label: 'Quente', color: '#FF2020', emoji: '🔥' },
+  { value: 'WARM', label: 'Morno', color: '#F59E0B', emoji: '🟡' },
+  { value: 'COLD', label: 'Frio', color: '#8E8E93', emoji: '⚪' },
 ] as const
 
 export const SPICED_WEIGHTS = {

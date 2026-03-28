@@ -1,18 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-} from '@dnd-kit/core'
-import { useDroppable, useDraggable } from '@dnd-kit/core'
-// @dnd-kit/utilities removed — using DragOverlay instead of CSS transform
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
 import { createActivity } from '../services/activityService'
 import { AnimateIn } from '../components/ui/AnimateIn'
@@ -191,80 +178,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
   )
 }
 
-// --- Draggable card ---
-function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: lead.id,
-    data: { lead },
-  })
-
-  const style = {
-    opacity: isDragging ? 0.3 : 1,
-    transition: 'opacity 0.15s ease',
-  }
-
-  const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card
-        accent={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'}
-        hover
-        onClick={onClick}
-        className={cn(
-          'p-4 cursor-grab active:cursor-grabbing transition-shadow duration-200',
-          isDragging && 'shadow-2xl shadow-red/20 ring-2 ring-red/30',
-        )}
-      >
-        <div className="flex items-start justify-between mb-2.5">
-          <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
-            {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
-          </Badge>
-          <span className="text-xs font-mono font-bold text-text-muted">{score}</span>
-        </div>
-        <p className="text-sm font-semibold text-text-primary mb-1 truncate">{lead.companyName}</p>
-        <p className="text-[11px] text-text-muted">{lead.segment} · {lead.tier}</p>
-        {lead.city && <p className="text-[10px] text-text-muted mt-1">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
-      </Card>
-    </div>
-  )
-}
-
-// --- Droppable column ---
-function DroppableColumn({ id, label, color, leads, isOver, onCardClick }: {
-  id: string; label: string; color: string; leads: Lead[]; isOver: boolean; onCardClick: (id: string) => void
-}) {
-  const { setNodeRef } = useDroppable({ id })
-
-  return (
-    <div ref={setNodeRef} className="min-w-[260px] md:min-w-0 md:flex-1 flex-shrink-0 snap-start">
-      <div className="flex items-center gap-2.5 mb-3 px-1">
-        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-        <span className="text-xs font-semibold text-text-secondary">{label}</span>
-        <span className="text-[11px] text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5">{leads.length}</span>
-      </div>
-      <div className={cn(
-        'space-y-2.5 min-h-[120px] rounded-2xl p-2 transition-all duration-200',
-        isOver && 'bg-red/5 border-2 border-dashed border-red/30 scale-[1.02]',
-        !isOver && 'border-2 border-transparent',
-      )}>
-        {leads.map((lead) => (
-          <DraggableLeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead.id)} />
-        ))}
-        {leads.length === 0 && !isOver && (
-          <div className="rounded-2xl border border-dashed border-border p-6 text-center">
-            <p className="text-xs text-text-muted">Arraste leads aqui</p>
-          </div>
-        )}
-        {leads.length === 0 && isOver && (
-          <div className="rounded-2xl border-2 border-dashed border-red/40 bg-red/5 p-6 text-center animate-pulse">
-            <p className="text-xs text-red font-medium">Solte aqui</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+// (DnD uses native HTML5 — no @dnd-kit components needed)
 
 // --- Stage gate modal (gamification) ---
 function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {

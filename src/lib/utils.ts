@@ -39,6 +39,13 @@ export function getTemperatureFromScore(score: number): 'HOT' | 'WARM' | 'COLD' 
   return 'COLD'
 }
 
+export function temperatureLabel(temp: string): string {
+  if (temp === 'HOT') return 'Quente'
+  if (temp === 'WARM') return 'Morno'
+  if (temp === 'COLD') return 'Frio'
+  return temp
+}
+
 export function parseJsonField<T>(value: string | undefined | null, fallback: T): T {
   if (!value) return fallback
   try {
