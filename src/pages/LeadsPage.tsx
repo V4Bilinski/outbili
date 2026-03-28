@@ -291,10 +291,10 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   const isCelebration = toStatus === 'Fechado'
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 animate-[fade-in_0.2s_ease-out]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className={cn(
-        'relative w-full max-w-md rounded-t-2xl md:rounded-2xl border border-t md:border p-5 md:p-6 max-h-[85vh] overflow-y-auto animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]',
+        'relative w-full max-w-sm rounded-2xl border p-5 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]',
         isCelebration
           ? 'bg-gradient-to-br from-amber-900/80 to-surface-md/90 border-amber-400/30'
           : 'bg-gradient-to-br from-surface/95 to-surface-md/90 border-border',
@@ -305,16 +305,11 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className={cn(
-            'p-3 rounded-xl text-2xl',
-            isCelebration ? 'bg-amber-400/20' : 'bg-white/[0.05]',
-          )}>
-            {gate?.emoji || '📋'}
-          </div>
-          <div>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-xl">{gate?.emoji || '📋'}</span>
+          <div className="flex-1">
             <p className="text-sm font-bold text-text-primary">{gate?.title || `Mover para ${toLabel}`}</p>
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-[11px] text-text-muted">{fromLabel}</span>
               <ArrowRight className="h-3 w-3 text-text-muted" />
               <span className="text-[11px] font-semibold" style={{ color: toColor }}>{toLabel}</span>
@@ -323,69 +318,63 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
         </div>
 
         {/* Lead info */}
-        <div className="p-3 rounded-xl bg-white/[0.03] border border-border mb-4">
-          <p className="text-sm font-semibold text-text-primary">{lead.companyName}</p>
-          <p className="text-[11px] text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
+        <div className="p-2.5 rounded-xl bg-white/[0.03] border border-border mb-3">
+          <p className="text-xs font-semibold text-text-primary">{lead.companyName}</p>
+          <p className="text-[10px] text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
         </div>
 
         {/* Checklist (gamification) */}
         {gate && (
-          <div className="space-y-2 mb-5">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold mb-2">
+          <div className="mb-3">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold mb-1.5">
               {isCelebration ? '🎉 Checklist final' : 'Validar antes de mover'}
             </p>
-            {gate.checks.map((check, idx) => (
-              <button
-                key={idx}
-                onClick={() => toggle(idx)}
-                className={cn(
-                  'flex items-center gap-3 w-full p-3 rounded-xl border text-left cursor-pointer transition-all duration-200',
-                  checked.has(idx)
-                    ? 'bg-success/10 border-success/30'
-                    : 'bg-white/[0.02] border-border hover:border-border-strong',
-                )}
-              >
-                <div className={cn(
-                  'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
-                  checked.has(idx)
-                    ? 'bg-success border-success scale-110'
-                    : 'border-border',
-                )}>
-                  {checked.has(idx) && <CheckCircle className="h-3 w-3 text-white" />}
-                </div>
-                <span className={cn(
-                  'text-xs transition-colors',
-                  checked.has(idx) ? 'text-text-primary' : 'text-text-secondary',
-                )}>
-                  {check}
-                </span>
-              </button>
-            ))}
-
-            {/* Progress bar */}
-            <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mt-3">
+            <div className="space-y-1.5">
+              {gate.checks.map((check, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => toggle(idx)}
+                  className={cn(
+                    'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border text-left cursor-pointer transition-all duration-200',
+                    checked.has(idx)
+                      ? 'bg-success/10 border-success/30'
+                      : 'bg-white/[0.02] border-border hover:border-border-strong',
+                  )}
+                >
+                  <div className={cn(
+                    'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
+                    checked.has(idx)
+                      ? 'bg-success border-success'
+                      : 'border-border',
+                  )}>
+                    {checked.has(idx) && <CheckCircle className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                  <span className={cn(
+                    'text-[11px] transition-colors',
+                    checked.has(idx) ? 'text-text-primary' : 'text-text-secondary',
+                  )}>
+                    {check}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="h-1 w-full rounded-full bg-white/[0.05] overflow-hidden mt-2">
               <div
                 className="h-full bg-gradient-to-r from-red to-success rounded-full transition-all duration-500"
                 style={{ width: `${(checked.size / gate.checks.length) * 100}%` }}
               />
             </div>
-            <p className="text-[10px] text-text-muted text-center">
-              {checked.size}/{gate.checks.length} validados
-            </p>
           </div>
         )}
 
         {/* Observacoes */}
-        <div className="mb-4">
-          <label className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold mb-2 block">
-            Observacoes (opcional)
-          </label>
+        <div className="mb-3">
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ex: Falei com a secretaria, decisor viaja dia 15..."
+            placeholder="Observacoes (opcional)..."
             rows={2}
-            className="w-full rounded-xl bg-white/[0.03] border border-border text-xs text-text-primary placeholder:text-text-muted p-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none"
+            className="w-full rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none"
           />
         </div>
 
