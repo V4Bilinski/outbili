@@ -30,6 +30,7 @@ n8n/*.json
 .env.*.local
 *.key
 *.pem
+.mcp.json
 
 # Dependencies (AIOX)
 node_modules/
@@ -48,3 +49,4 @@ Thumbs.db
 .aiox-core/local/
 .claude/settings.local.json
 .aiox/install-log.txt
+.vercel
