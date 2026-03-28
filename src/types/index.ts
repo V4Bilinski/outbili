@@ -38,6 +38,35 @@ export interface Lead {
   eligibilityChecklist?: string
   sourceHtmlReport?: string
   enrichmentStatus?: 'none' | 'basic' | 'pending' | 'complete'
+  // --- Presença Digital (estruturado) ---
+  googleRating?: number
+  googleReviewsCount?: number
+  instagramFollowers?: number
+  instagramIsVerified?: boolean
+  instagramIsBusiness?: boolean
+  instagramCategory?: string
+  instagramBio?: string
+  linkedinEmployeeCount?: number
+  // --- Dados Receita Federal (estruturado) ---
+  taxRegime?: string              // 'simples' | 'mei' | 'lucro_presumido' | 'lucro_real' | 'nao_optante'
+  capitalSocial?: number
+  legalNature?: string
+  registrationStatus?: string     // 'Ativa' | 'Baixada' | 'Suspensa' etc.
+  foundingDate?: string           // ISO date
+  cnaePrimary?: string            // código + descrição
+  cnaeSecondary?: string          // JSON array
+  partners?: string               // JSON array: [{nome, qualificacao}]
+  rfEmail?: string                // Email cadastrado na Receita Federal
+  rfPhone?: string                // Telefone cadastrado na RF
+  // --- Geolocalização ---
+  latitude?: number
+  longitude?: number
+  // --- Domínio ---
+  domainActive?: boolean
+  domainExpiry?: string
+  // --- Fonte de dados ---
+  enrichmentSources?: string  // JSON: quais fontes retornaram dados
+  enrichmentLog?: string      // JSON: log de cada etapa
   createdAt?: string
   updatedAt?: string
 }

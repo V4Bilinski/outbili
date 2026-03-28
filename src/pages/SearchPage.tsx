@@ -1,10 +1,11 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Upload } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Upload, Sparkles, Globe, Building2, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/Button'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
 import { useN8nSearch } from '../hooks/useN8nSearch'
-import { createLead } from '../services/leadService'
+import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
+import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
 
@@ -180,15 +181,65 @@ export function SearchPage() {
   const [specificEmail, setSpecificEmail] = useState('')
   const [specificWebsite, setSpecificWebsite] = useState('')
   const [specificInstagram, setSpecificInstagram] = useState('')
+  const [specificLinkedin, setSpecificLinkedin] = useState('')
+  const [specificFacebook, setSpecificFacebook] = useState('')
   const [specificSegment, setSpecificSegment] = useState('')
   const [specificCity, setSpecificCity] = useState('')
   const [specificState, setSpecificState] = useState('')
+  const [specificAddress, setSpecificAddress] = useState('')
   const [specificRevenue, setSpecificRevenue] = useState('')
   const [specificContact, setSpecificContact] = useState('')
   const [specificContactRole, setSpecificContactRole] = useState('')
   const [isCreatingSpecific, setIsCreatingSpecific] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+
+  const enrichmentProgressRef = useRef<HTMLDivElement>(null)
 
   const n8n = useN8nSearch()
+  const enrichment = useLeadEnrichment()
+
+  // --- Mask formatters ---
+  const formatCnpj = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 14)
+    return digits
+      .replace(/^(\d{2})(\d)/, '$1.$2')
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2')
+  }
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    if (digits.length <= 2) return digits.length ? `(${digits}` : ''
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  }
+
+  // --- Collapsible sections ---
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(section)) next.delete(section)
+      else next.add(section)
+      return next
+    })
+  }, [])
+
+  const sectionFilledCounts: Record<string, number> = {
+    location: [specificCity, specificState, specificAddress].filter(Boolean).length,
+    digital: [specificWebsite, specificInstagram, specificLinkedin, specificFacebook].filter(Boolean).length,
+    metrics: [specificRevenue].filter(Boolean).length,
+    contact: [specificContact, specificContactRole, specificPhone, specificEmail].filter(Boolean).length,
+  }
+
+  // --- Reset form ---
+  const resetSpecificForm = () => {
+    setSpecificName(''); setSpecificCnpj(''); setSpecificPhone(''); setSpecificEmail('')
+    setSpecificWebsite(''); setSpecificInstagram(''); setSpecificLinkedin(''); setSpecificFacebook('')
+    setSpecificSegment(''); setSpecificCity(''); setSpecificState(''); setSpecificAddress('')
+    setSpecificRevenue(''); setSpecificContact(''); setSpecificContactRole('')
+    enrichment.reset()
+  }
 
   const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
   const selectClass = cn(inputClass, 'appearance-none cursor-pointer')
@@ -205,6 +256,7 @@ export function SearchPage() {
 
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
+    if (!specificCnpj || specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ válido é obrigatório para pesquisa'); return }
     setIsCreatingSpecific(true)
     try {
       // Format WhatsApp number
@@ -218,9 +270,10 @@ export function SearchPage() {
       const revenue = parseInt(specificRevenue) || 100000
       const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
 
-      // 1. Save lead to Airtable
-      const lead = await createLead({
+      // Build lead data with ALL fields
+      const leadData: Record<string, any> = {
         companyName: specificName,
+        cnpj: specificCnpj.replace(/\D/g, ''),
         segment: specificSegment || 'Varejo',
         tier,
         monthlyRevenue: revenue,
@@ -229,13 +282,43 @@ export function SearchPage() {
         status: 'Novo',
         score: 0,
         temperature: 'WARM',
-        website: specificWebsite || '',
-        instagram: specificInstagram || '',
-        city: specificCity || '',
-        state: specificState || '',
-        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente · R$ ${Math.round(revenue / 1000)}k/mês`,
+        ...(specificWebsite && { website: specificWebsite }),
+        ...(specificInstagram && { instagram: specificInstagram }),
+        ...(specificLinkedin && { linkedin: specificLinkedin }),
+        ...(specificFacebook && { facebook: specificFacebook }),
+        ...(specificAddress && { address: specificAddress }),
+        ...(specificCity && { city: specificCity }),
+        ...(specificState && { state: specificState }),
+        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente${revenue ? ` · R$ ${Math.round(revenue / 1000)}k/mês` : ''}`,
         enrichmentStatus: 'pending',
-      } as any)
+      }
+
+      // 1. Verificar duplicados por CNPJ (mais confiável) ou nome
+      const cnpjClean = specificCnpj.replace(/\D/g, '')
+      const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
+      if (existingByCnpj.length > 0) {
+        const confirmed = window.confirm(
+          `Já existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Deseja criar outro mesmo assim?`
+        )
+        if (!confirmed) {
+          setIsCreatingSpecific(false)
+          return
+        }
+      } else {
+        const existingByName = await getLeads(`{companyName} = "${specificName.replace(/"/g, '\\"')}"`)
+        if (existingByName.length > 0) {
+          const confirmed = window.confirm(
+            `Já existe um lead "${existingByName[0].companyName}" cadastrado. Deseja criar outro mesmo assim?`
+          )
+          if (!confirmed) {
+            setIsCreatingSpecific(false)
+            return
+          }
+        }
+      }
+
+      // 2. Save lead to Airtable
+      const lead = await createLead(leadData as any)
 
       // 2. Save contact if we have data
       if (lead.id && (whatsapp || specificEmail || specificContact)) {
@@ -249,9 +332,12 @@ export function SearchPage() {
         } as any)
       }
 
-      toast.success(`${specificName} salvo com sucesso!`)
+      toast.success(`${specificName} salvo! Iniciando enriquecimento...`)
 
-      // 3. Trigger n8n enrichment with company name as keyword
+      // 3. Trigger Apify enrichment pipeline (runs in background)
+      enrichment.enrich(lead.id, leadData)
+
+      // 4. Also trigger n8n for deep analysis (business intelligence)
       n8n.search({
         segments: specificSegment ? [specificSegment] : ['Varejo'],
         states: specificState ? [specificState] : [],
@@ -261,11 +347,10 @@ export function SearchPage() {
         revenueMax: '2000000',
       })
 
-      // Reset form
-      setSpecificName(''); setSpecificCnpj(''); setSpecificPhone(''); setSpecificEmail('')
-      setSpecificWebsite(''); setSpecificInstagram(''); setSpecificSegment('')
-      setSpecificCity(''); setSpecificState(''); setSpecificRevenue('')
-      setSpecificContact(''); setSpecificContactRole('')
+      // Auto-scroll to enrichment progress
+      setTimeout(() => {
+        enrichmentProgressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar lead')
     } finally {
@@ -304,84 +389,333 @@ export function SearchPage() {
       {/* Specific lead form */}
       {searchMode === 'specific' && (
         <Card>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 rounded-xl bg-red/10">
+          {/* ===== HERO SECTION ===== */}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2.5 rounded-xl bg-red/10 border border-red/20">
               <UserPlus className="h-5 w-5 text-red" />
             </div>
             <div>
-              <CardTitle>Cadastrar lead manualmente</CardTitle>
-              <p className="text-xs text-text-muted mt-0.5">Preencha os dados que você tem. O lead é salvo e enriquecido com IA automaticamente.</p>
+              <CardTitle>Cadastrar lead</CardTitle>
+              <p className="text-xs text-text-muted mt-0.5">Preencha nome e CNPJ. O resto a IA busca em 10 fontes.</p>
             </div>
           </div>
 
-          {/* Company data */}
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-border mb-4">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-red font-semibold mb-3">Dados da empresa</p>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da empresa *</label>
-                <input type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clínica Odonto Premium" className={cn(inputClass, 'bg-white/[0.05]')} />
+          <div className="space-y-4 mt-5">
+            {/* Name field — large, prominent */}
+            <div>
+              <label htmlFor="specific-name" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da empresa *</label>
+              <input id="specific-name" type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clinica Odonto Premium" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base')} />
+            </div>
+
+            {/* CNPJ field — large, prominent */}
+            <div>
+              <label htmlFor="specific-cnpj" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
+                <Hash className="h-3 w-3" /> CNPJ *
+              </label>
+              <input id="specific-cnpj" type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base font-mono')} />
+            </div>
+
+            {/* Dynamic enrichment preview pills */}
+            {specificName && specificCnpj.replace(/\D/g, '').length >= 2 && (
+              <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/10">
+                <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
+                  <Sparkles className="h-3 w-3" /> Com nome + CNPJ buscamos automaticamente:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Razao social', 'Socios', 'Endereco', 'Porte', 'Capital social', 'Regime tributario', 'CNAE', 'Geolocalizacao', 'Google Maps', 'Website', 'Redes sociais', 'Instagram', 'LinkedIn', 'Decisores', 'Emails', 'Telefones'].map((pill) => (
+                    <span key={pill} className="inline-flex items-center gap-1 text-[10px] text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
+                      <Sparkles className="h-2.5 w-2.5 text-amber-400/60" />
+                      {pill}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">CNPJ</label>
-                <input type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(e.target.value)} placeholder="00.000.000/0000-00" className={inputClass} />
+            )}
+
+            {/* Segment field (optional, standalone) */}
+            <div>
+              <label htmlFor="specific-segment" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento <span className="text-text-muted font-normal">(opcional)</span></label>
+              <input id="specific-segment" type="text" value={specificSegment} onChange={(e) => setSpecificSegment(e.target.value)} placeholder="Ex: Odontologia, Pet Shop, Estetica" className={inputClass} list="segments-list" />
+              <datalist id="segments-list">
+                {RECOMMENDED_SEGMENTS.map((s) => <option key={s} value={s} />)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* ===== COLLAPSIBLE SECTIONS ===== */}
+          <div className="space-y-3 mt-6">
+            {/* Section: Location */}
+            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+              <button type="button" onClick={() => toggleSection('location')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+                <MapPin className="h-3.5 w-3.5 text-red" />
+                <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Localizacao</p>
+                {sectionFilledCounts.location > 0 && (
+                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.location}</span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('location') && 'rotate-180')} />
+              </button>
+              {!expandedSections.has('location') && sectionFilledCounts.location === 0 && (
+                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — a IA busca esses dados automaticamente</p>
+              )}
+              <div className={cn('grid md:grid-cols-3 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('location') ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+                <div>
+                  <label htmlFor="specific-city" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
+                  <input id="specific-city" type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: Sao Paulo" className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="specific-state" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado</label>
+                  <select id="specific-state" value={specificState} onChange={(e) => setSpecificState(e.target.value)} className={selectClass}>
+                    <option value="">Selecione</option>
+                    {ALL_STATES.map((s) => <option key={s.uf} value={s.uf}>{s.uf} - {s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="specific-address" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Endereco</label>
+                  <input id="specific-address" type="text" value={specificAddress} onChange={(e) => setSpecificAddress(e.target.value)} placeholder="Ex: Av. Paulista, 1000" className={inputClass} />
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento</label>
-                <input type="text" value={specificSegment} onChange={(e) => setSpecificSegment(e.target.value)} placeholder="Ex: Odontologia, Pet Shop, Estética" className={inputClass} />
+            </div>
+
+            {/* Section: Digital Presence */}
+            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+              <button type="button" onClick={() => toggleSection('digital')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+                <Globe className="h-3.5 w-3.5 text-red" />
+                <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Presenca digital</p>
+                {sectionFilledCounts.digital > 0 && (
+                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.digital}</span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('digital') && 'rotate-180')} />
+              </button>
+              {!expandedSections.has('digital') && sectionFilledCounts.digital === 0 && (
+                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — a IA busca esses dados automaticamente</p>
+              )}
+              <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('digital') ? 'max-h-[800px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="specific-website" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
+                      <Globe className="h-3 w-3" /> Website
+                    </label>
+                    <input id="specific-website" type="url" value={specificWebsite} onChange={(e) => setSpecificWebsite(e.target.value)} placeholder="https://empresa.com.br" className={inputClass} />
+                  </div>
+                  <div>
+                    <label htmlFor="specific-instagram" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Instagram</label>
+                    <input id="specific-instagram" type="text" value={specificInstagram} onChange={(e) => setSpecificInstagram(e.target.value)} placeholder="@empresa" className={inputClass} />
+                  </div>
+                  <div>
+                    <label htmlFor="specific-linkedin" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">LinkedIn</label>
+                    <input id="specific-linkedin" type="url" value={specificLinkedin} onChange={(e) => setSpecificLinkedin(e.target.value)} placeholder="https://linkedin.com/company/empresa" className={inputClass} />
+                  </div>
+                  <div>
+                    <label htmlFor="specific-facebook" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Facebook</label>
+                    <input id="specific-facebook" type="url" value={specificFacebook} onChange={(e) => setSpecificFacebook(e.target.value)} placeholder="https://facebook.com/empresa" className={inputClass} />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-                <input type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: São Paulo" className={inputClass} />
+            </div>
+
+            {/* Section: Business Metrics */}
+            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+              <button type="button" onClick={() => toggleSection('metrics')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+                <CircleDot className="h-3.5 w-3.5 text-red" />
+                <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Metricas do negocio</p>
+                {sectionFilledCounts.metrics > 0 && (
+                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.metrics}</span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('metrics') && 'rotate-180')} />
+              </button>
+              {!expandedSections.has('metrics') && sectionFilledCounts.metrics === 0 && (
+                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — a IA busca esses dados automaticamente</p>
+              )}
+              <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('metrics') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+                <div>
+                  <label htmlFor="specific-revenue" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mensal estimado</label>
+                  <select id="specific-revenue" value={specificRevenue} onChange={(e) => setSpecificRevenue(e.target.value)} className={selectClass}>
+                    <option value="">Nao informado</option>
+                    <option value="50000">R$ 50k</option>
+                    <option value="70000">R$ 70k</option>
+                    <option value="100000">R$ 100k</option>
+                    <option value="200000">R$ 200k</option>
+                    <option value="500000">R$ 500k</option>
+                    <option value="830000">R$ 830k</option>
+                    <option value="1000000">R$ 1M</option>
+                    <option value="2000000">R$ 2M+</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado</label>
-                <input type="text" value={specificState} onChange={(e) => setSpecificState(e.target.value)} placeholder="Ex: SP" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mensal estimado</label>
-                <input type="text" value={specificRevenue} onChange={(e) => setSpecificRevenue(e.target.value)} placeholder="Ex: 200000" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Website</label>
-                <input type="text" value={specificWebsite} onChange={(e) => setSpecificWebsite(e.target.value)} placeholder="Ex: https://empresa.com.br" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Instagram</label>
-                <input type="text" value={specificInstagram} onChange={(e) => setSpecificInstagram(e.target.value)} placeholder="Ex: @empresa" className={inputClass} />
+            </div>
+
+            {/* Section: Decision Maker Contact */}
+            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+              <button type="button" onClick={() => toggleSection('contact')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+                <Phone className="h-3.5 w-3.5 text-red" />
+                <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Contato do decisor</p>
+                {sectionFilledCounts.contact > 0 && (
+                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.contact}</span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('contact') && 'rotate-180')} />
+              </button>
+              {!expandedSections.has('contact') && sectionFilledCounts.contact === 0 && (
+                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — a IA busca esses dados automaticamente</p>
+              )}
+              <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('contact') ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+                <div>
+                  <label htmlFor="specific-contact" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome do decisor</label>
+                  <input id="specific-contact" type="text" value={specificContact} onChange={(e) => setSpecificContact(e.target.value)} placeholder="Ex: Dr. Joao Silva" className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="specific-contact-role" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
+                  <input id="specific-contact-role" type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietario, Socio" className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="specific-phone" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
+                    <Phone className="h-3 w-3" /> WhatsApp do decisor
+                  </label>
+                  <input id="specific-phone" type="tel" value={specificPhone} onChange={(e) => setSpecificPhone(formatPhone(e.target.value))} placeholder="(11) 99999-8888" className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="specific-email" className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
+                    <Mail className="h-3 w-3" /> E-mail
+                  </label>
+                  <input id="specific-email" type="email" value={specificEmail} onChange={(e) => setSpecificEmail(e.target.value)} placeholder="joao@empresa.com" className={inputClass} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Decisor contact */}
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-red font-semibold mb-3">Contato do decisor</p>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome do decisor</label>
-                <input type="text" value={specificContact} onChange={(e) => setSpecificContact(e.target.value)} placeholder="Ex: Dr. João Silva" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
-                <input type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietário, Sócio" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">WhatsApp do decisor</label>
-                <input type="text" value={specificPhone} onChange={(e) => setSpecificPhone(e.target.value)} placeholder="Ex: 11999998888" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">E-mail</label>
-                <input type="text" value={specificEmail} onChange={(e) => setSpecificEmail(e.target.value)} placeholder="Ex: joao@empresa.com" className={inputClass} />
-              </div>
+          {/* ===== CTA SECTION ===== */}
+          <div className="mt-6">
+            <div className="flex items-center gap-3">
+              <Button size="lg" icon={<Upload className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || !specificCnpj || specificCnpj.replace(/\D/g, '').length !== 14 || isCreatingSpecific || enrichment.isEnriching}>
+                Salvar e enriquecer com IA
+              </Button>
+              {enrichment.isEnriching && <span className="text-[11px] text-amber-400 animate-pulse">Enriquecendo...</span>}
+            </div>
+            {/* CNPJ validation indicator */}
+            <div className="mt-2">
+              {specificCnpj && specificCnpj.replace(/\D/g, '').length < 14 && (
+                <p className="text-[11px] text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 digitos)</p>
+              )}
+              {specificCnpj && specificCnpj.replace(/\D/g, '').length === 14 && (
+                <p className="text-[11px] text-success flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> CNPJ valido — pronto para pesquisa
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
-            <Button size="lg" icon={<Upload className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || isCreatingSpecific}>
-              Salvar e enriquecer com IA
-            </Button>
-            <p className="text-[11px] text-text-muted">O lead será salvo no Airtable e enriquecido automaticamente</p>
-          </div>
+          {/* ===== ENRICHMENT PROGRESS — TWO-PHASE VISUAL ===== */}
+          {enrichment.progress && enrichment.progress.steps.length > 0 && (
+            <div ref={enrichmentProgressRef} className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-border">
+              {/* Progress bar */}
+              <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-4">
+                <div
+                  className="h-full bg-gradient-to-r from-red to-amber-400 rounded-full transition-all duration-500"
+                  style={{ width: `${(enrichment.progress.currentStep / enrichment.progress.totalSteps) * 100}%` }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <p className="text-[11px] uppercase tracking-[0.12em] text-amber-300 font-semibold">
+                  Enriquecimento {enrichment.progress.isDone ? 'concluido' : 'em andamento'}
+                </p>
+                <span className="text-[10px] text-text-muted ml-auto font-mono">
+                  {enrichment.progress.currentStep}/{enrichment.progress.totalSteps}
+                </span>
+              </div>
+
+              {/* FASE 1: APIs Publicas */}
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-3 w-3 text-text-muted" />
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 1: APIs Publicas (gratuitas)</p>
+                </div>
+                <div className="space-y-1 pl-1">
+                  {enrichment.progress.steps.slice(0, 4).map((step) => (
+                    <div key={step.source} className="flex items-center gap-2 text-[11px]">
+                      {step.status === 'running' && <Loader2 className="h-3 w-3 text-amber-400 animate-spin shrink-0" />}
+                      {step.status === 'done' && <CheckCircle className="h-3 w-3 text-success shrink-0" />}
+                      {step.status === 'error' && <AlertCircle className="h-3 w-3 text-error shrink-0" />}
+                      {step.status === 'skipped' && <X className="h-3 w-3 text-text-muted shrink-0" />}
+                      {step.status === 'pending' && <div className="h-3 w-3 rounded-full border border-border shrink-0" />}
+                      <span className={cn(
+                        step.status === 'running' && 'text-amber-300',
+                        step.status === 'done' && 'text-text-primary',
+                        step.status === 'error' && 'text-error',
+                        step.status === 'skipped' && 'text-text-muted line-through',
+                        step.status === 'pending' && 'text-text-muted',
+                      )}>
+                        {step.label}
+                      </span>
+                      {step.status === 'done' && step.detail && (
+                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5">{step.detail}</span>
+                      )}
+                      {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-border my-3" />
+
+              {/* FASE 2: Inteligencia de Mercado */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-3 w-3 text-text-muted" />
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 2: Inteligencia de Mercado (APIs externas)</p>
+                </div>
+                <div className="space-y-1 pl-1">
+                  {enrichment.progress.steps.slice(4).map((step) => (
+                    <div key={step.source} className="flex items-center gap-2 text-[11px]">
+                      {step.status === 'running' && <Loader2 className="h-3 w-3 text-amber-400 animate-spin shrink-0" />}
+                      {step.status === 'done' && <CheckCircle className="h-3 w-3 text-success shrink-0" />}
+                      {step.status === 'error' && <AlertCircle className="h-3 w-3 text-error shrink-0" />}
+                      {step.status === 'skipped' && <X className="h-3 w-3 text-text-muted shrink-0" />}
+                      {step.status === 'pending' && <div className="h-3 w-3 rounded-full border border-border shrink-0" />}
+                      <span className={cn(
+                        step.status === 'running' && 'text-amber-300',
+                        step.status === 'done' && 'text-text-primary',
+                        step.status === 'error' && 'text-error',
+                        step.status === 'skipped' && 'text-text-muted line-through',
+                        step.status === 'pending' && 'text-text-muted',
+                      )}>
+                        {step.label}
+                      </span>
+                      {step.status === 'done' && step.detail && (
+                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5">{step.detail}</span>
+                      )}
+                      {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ===== COMPLETION STATE ===== */}
+              {enrichment.progress.isDone && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="p-4 rounded-xl bg-success/5 border border-success/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <span className="text-[12px] text-success font-semibold">Lead enriquecido com sucesso!</span>
+                    </div>
+                    <div className="space-y-1 text-[11px] text-text-secondary">
+                      <p>Dados encontrados: <strong className="text-text-primary">{enrichment.progress.steps.filter(s => s.status === 'done').length} de {enrichment.progress.totalSteps} fontes</strong></p>
+                      <p>Contatos descobertos: <strong className="text-text-primary">{enrichment.progress.steps.filter(s => s.status === 'done' && s.detail?.toLowerCase().includes('contato')).length > 0 ? 'Sim' : 'Verificar no lead'}</strong></p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button variant="ghost" size="sm" onClick={resetSpecificForm}>
+                        Novo lead
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => { enrichment.reset(); window.location.hash = '#/leads' }}>
+                        Ver lead completo <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
       )}
 
