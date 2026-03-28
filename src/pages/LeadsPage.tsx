@@ -200,8 +200,7 @@ function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void 
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 50 : 'auto' as any,
+    opacity: isDragging ? 0 : 1,
   }
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
@@ -503,12 +502,12 @@ function KanbanView({ leads }: { leads: Lead[] }) {
         </div>
 
         {/* Drag overlay (floating card) */}
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeLead && (
-            <div className="w-[280px]">
+            <div style={{ width: 260 }}>
               <Card
                 accent={activeLead.temperature === 'HOT' ? 'hot' : activeLead.temperature === 'WARM' ? 'warm' : 'cold'}
-                className="p-4 shadow-2xl shadow-black/40 ring-2 ring-red/40 rotate-2 scale-105"
+                className="p-4 shadow-2xl shadow-black/50 ring-2 ring-red/40 scale-[1.03] cursor-grabbing"
               >
                 <div className="flex items-start justify-between mb-2.5">
                   <Badge variant={activeLead.temperature === 'HOT' ? 'hot' : activeLead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
