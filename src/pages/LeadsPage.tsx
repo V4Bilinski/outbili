@@ -464,7 +464,7 @@ function KanbanView({ leads }: { leads: Lead[] }) {
     createActivity({
       leadId: lead.id,
       type: 'status_change',
-      content,
+      description: content,
     }).catch(() => { /* non-critical */ })
 
     if (to === 'Fechado') {
