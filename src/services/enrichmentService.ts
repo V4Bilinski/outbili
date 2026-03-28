@@ -1,6 +1,6 @@
 import { updateLead } from './leadService'
 import { createContact, getContacts } from './contactService'
-import { matchBusiness, matchProspects, type VPBusinessMatch, type VPProspectMatch } from '../lib/vibeprospecting'
+import { matchBusiness, matchProspects } from '../lib/vibeprospecting'
 import type { Lead } from '../types'
 
 const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN || ''

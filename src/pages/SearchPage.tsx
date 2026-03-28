@@ -1,5 +1,5 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Upload, Sparkles, Globe, Building2, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Upload, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
