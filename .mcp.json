@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "vibe-prospecting": {
+      "url": "https://mcp-gemini.vibeprospecting.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer 3f0c3ab0-41c8-4751-94a9-7451270ae15a"
+      }
+    },
+    "explorium-mcp": {
+      "command": "node",
+      "args": [
+        "./node_modules/mcp-remote/dist/proxy.js",
+        "https://mcp-claude-ext.explorium.ai/mcp"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "3f0c3ab0-41c8-4751-94a9-7451270ae15a"
+      }
+    }
+  }
+}

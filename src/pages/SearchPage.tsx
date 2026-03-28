@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
 import { useN8nSearch } from '../hooks/useN8nSearch'
 import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
+import { useMassEnrichment } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
@@ -200,6 +201,17 @@ export function SearchPage() {
 
   const n8n = useN8nSearch()
   const enrichment = useLeadEnrichment()
+  const massEnrichment = useMassEnrichment()
+  const massEnrichmentRef = useRef<HTMLDivElement>(null)
+
+  // Auto-trigger mass enrichment when n8n finds new leads
+  useEffect(() => {
+    if (n8n.phase === 'done' && n8n.leads.length > 0 && !massEnrichment.isRunning && massEnrichment.totalLeads === 0) {
+      toast.success(`${n8n.leadsCreated} leads encontrados! Iniciando enriquecimento...`)
+      massEnrichment.enrichAll(n8n.leads)
+      setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+    }
+  }, [n8n.phase, n8n.leads, n8n.leadsCreated, massEnrichment.isRunning, massEnrichment.totalLeads, massEnrichment.enrichAll])
 
   // --- Mask formatters ---
   const formatCnpj = (value: string) => {
@@ -748,72 +760,189 @@ export function SearchPage() {
       {/* Mass search form */}
       {searchMode === 'mass' && (<>
       <Card>
-        <div className="flex items-center justify-between mb-5">
-          <CardTitle>Configurar pesquisa</CardTitle>
-          {activeFilters > 0 && <span className="text-[11px] text-red font-medium bg-red/10 px-2.5 py-1 rounded-full">{activeFilters} filtro{activeFilters > 1 ? 's' : ''}</span>}
-        </div>
-        <div className="grid md:grid-cols-2 gap-5">
-          <TagInput label="Setor / Segmento" placeholder="Digite ou selecione segmentos..." tags={segments} setTags={setSegments} suggestions={RECOMMENDED_SEGMENTS} suggestionsLabel="Segmentos recomendados" />
-          <StateMultiSelect selected={states} setSelected={setStates} />
-          <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-            <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: São Paulo, Campinas, Curitiba" className={inputClass} />
-          </div>
-          <TagInput label="Palavras-chave" placeholder="Ex: implantes, ortodontia, clínica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonização', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']} suggestionsLabel="Sugestões" />
-          <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mínimo</label>
-            <select value={revenueMin} onChange={(e) => setRevenueMin(e.target.value)} className={selectClass}>
-              {REVENUE_MIN_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.label}</option>)}
-            </select>
+        {/* ===== HERO SECTION ===== */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-xl bg-red/10 border border-red/20">
+            <Search className="h-5 w-5 text-red" />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento máximo</label>
-            <select value={revenueMax} onChange={(e) => setRevenueMax(e.target.value)} className={selectClass}>
-              {REVENUE_MAX_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.label}</option>)}
-            </select>
+            <CardTitle>Pesquisa em massa</CardTitle>
+            <p className="text-xs text-text-muted mt-0.5">Defina o perfil ideal e encontre dezenas de leads qualificados automaticamente.</p>
           </div>
+          {activeFilters > 0 && (
+            <span className="ml-auto text-[11px] text-red font-medium bg-red/10 border border-red/20 px-2.5 py-1 rounded-full shrink-0">
+              {activeFilters} filtro{activeFilters > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        {/* Active filters */}
-        {activeFilters > 0 && (
-          <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-1.5 items-center">
-            <span className="text-[11px] text-text-muted mr-1">Filtros:</span>
-            {segments.map((s) => <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{s} <button onClick={() => setSegments(segments.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
-            {states.map((s) => <span key={s} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{s} <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
-            {city && <span className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{city} <button onClick={() => setCity('')} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>}
-            {keywords.map((k) => <span key={k} className="inline-flex items-center gap-1 bg-white/5 border border-border rounded-lg px-2 py-0.5 text-[11px] text-text-secondary">{k} <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-red"><X className="h-2.5 w-2.5" /></button></span>)}
-            <button onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin(''); setRevenueMax('') }} className="text-[11px] text-text-muted hover:text-red ml-2 cursor-pointer">Limpar</button>
+        {/* ===== MAIN FIELDS ===== */}
+        <div className="space-y-4 mt-5">
+          {/* Segmento — large, prominent (like Nome in specific) */}
+          <TagInput label="Setor / Segmento *" placeholder="Digite ou selecione segmentos..." tags={segments} setTags={setSegments} suggestions={RECOMMENDED_SEGMENTS} suggestionsLabel="Segmentos recomendados" />
+
+          {/* Estado — prominent */}
+          <StateMultiSelect selected={states} setSelected={setStates} />
+        </div>
+
+        {/* Preview pills — what the AI will search for */}
+        {segments.length > 0 && (
+          <div className="mt-4 p-3 rounded-xl bg-amber-400/5 border border-amber-400/10 animate-[fade-in_0.3s_ease-out]">
+            <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
+              <Sparkles className="h-3 w-3" /> Para cada lead encontrado, a IA busca automaticamente:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {['Google Maps', 'Website', 'WhatsApp', 'Instagram', 'CNPJ', 'Faturamento', 'Decisores', 'Score SPICED'].map((pill) => (
+                <span key={pill} className="inline-flex items-center gap-1 text-[10px] text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
+                  <Sparkles className="h-2.5 w-2.5 text-amber-400/60" />
+                  {pill}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-3">
-          <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={handleSearch} loading={isSearching} disabled={isSearching}>
-            Pesquisar leads
-          </Button>
-          {n8n.phase === 'done' && <Button variant="ghost" size="sm" onClick={n8n.reset}>Nova pesquisa</Button>}
+        {/* ===== COLLAPSIBLE SECTIONS (like specific lead) ===== */}
+        <div className="space-y-3 mt-6">
+          {/* Section: Localizacao */}
+          <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+            <button type="button" onClick={() => toggleSection('mass-location')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+              <MapPin className="h-3.5 w-3.5 text-red" />
+              <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Localizacao</p>
+              {city && (
+                <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">1</span>
+              )}
+              <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-location') && 'rotate-180')} />
+            </button>
+            {!expandedSections.has('mass-location') && !city && (
+              <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — refine por cidade para resultados mais precisos</p>
+            )}
+            <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-location') ? 'max-h-[200px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
+                <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: Sao Paulo, Campinas, Curitiba" className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Palavras-chave */}
+          <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+            <button type="button" onClick={() => toggleSection('mass-keywords')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+              <Hash className="h-3.5 w-3.5 text-red" />
+              <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Palavras-chave</p>
+              {keywords.length > 0 && (
+                <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{keywords.length}</span>
+              )}
+              <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-keywords') && 'rotate-180')} />
+            </button>
+            {!expandedSections.has('mass-keywords') && keywords.length === 0 && (
+              <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">Opcional — refine com termos especificos do nicho</p>
+            )}
+            <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-keywords') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clinica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonizacao', 'manipulacao', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultorio']} suggestionsLabel="Sugestoes" />
+            </div>
+          </div>
+
+          {/* Section: Faturamento */}
+          <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+            <button type="button" onClick={() => toggleSection('mass-revenue')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
+              <CircleDot className="h-3.5 w-3.5 text-red" />
+              <p className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-semibold">Faixa de faturamento</p>
+              <span className="text-[10px] text-text-muted font-mono ml-1">
+                {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label || ''} — {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label || ''}
+              </span>
+              <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-revenue') && 'rotate-180')} />
+            </button>
+            <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-revenue') ? 'max-h-[200px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento minimo</label>
+                <select value={revenueMin} onChange={(e) => setRevenueMin(e.target.value)} className={selectClass}>
+                  {REVENUE_MIN_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento maximo</label>
+                <select value={revenueMax} onChange={(e) => setRevenueMax(e.target.value)} className={selectClass}>
+                  {REVENUE_MAX_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== ACTIVE FILTERS SUMMARY ===== */}
+        {activeFilters > 0 && (
+          <div className="mt-5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Resumo da pesquisa</p>
+              <button onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin('70000'); setRevenueMax('2000000') }} className="text-[10px] text-text-muted hover:text-red cursor-pointer transition-colors">Limpar tudo</button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {segments.map((s) => (
+                <span key={`seg-${s}`} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                  {s}
+                  <button onClick={() => setSegments(segments.filter((x) => x !== s))} className="cursor-pointer hover:text-red-vivid"><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+              {states.map((s) => (
+                <span key={`st-${s}`} className="inline-flex items-center gap-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                  {s}
+                  <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-blue-300"><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+              {city && (
+                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                  <MapPin className="h-3 w-3" /> {city}
+                  <button onClick={() => setCity('')} className="cursor-pointer hover:text-emerald-300"><X className="h-3 w-3" /></button>
+                </span>
+              )}
+              {keywords.map((k) => (
+                <span key={`kw-${k}`} className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                  {k}
+                  <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-purple-300"><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+              <span className="inline-flex items-center gap-1 bg-white/5 text-text-muted border border-border rounded-lg px-2.5 py-1 text-[11px]">
+                {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label} — {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ===== CTA SECTION ===== */}
+        <div className="mt-6">
+          <div className="flex items-center gap-3">
+            <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={handleSearch} loading={isSearching} disabled={isSearching || segments.length === 0}>
+              {isSearching ? 'Pesquisando...' : 'Pesquisar leads'}
+            </Button>
+            {n8n.phase === 'done' && <Button variant="ghost" size="sm" onClick={n8n.reset}>Nova pesquisa</Button>}
+          </div>
+          {segments.length === 0 && (
+            <p className="text-[11px] text-text-muted mt-2">Selecione pelo menos um segmento para iniciar</p>
+          )}
         </div>
       </Card>
 
       {/* Search history */}
       {history.length > 0 && n8n.phase === 'idle' && (
-        <div>
+        <div className="animate-[fade-in_0.5s_ease-out]">
           <div className="flex items-center gap-2 mb-3">
             <History className="h-4 w-4 text-text-muted" />
             <span className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">Pesquisas recentes</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
             {history.slice(0, 5).map((entry) => (
               <button
                 key={entry.id}
                 onClick={() => loadFromHistory(entry)}
-                className="flex-shrink-0 p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-pointer text-left group"
+                className="flex-shrink-0 p-3.5 rounded-xl bg-white/[0.02] border border-border hover:border-red/30 hover:bg-white/[0.03] transition-all duration-200 cursor-pointer text-left group"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  {entry.segments.map((s) => <span key={s} className="text-[10px] text-red bg-red/10 px-1.5 py-0.5 rounded">{s}</span>)}
-                  {entry.states.map((s) => <span key={s} className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{s}</span>)}
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  {entry.segments.map((s) => <span key={s} className="text-[10px] text-red bg-red/10 border border-red/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
+                  {entry.states.map((s) => <span key={s} className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
                 </div>
-                <p className="text-[10px] text-text-muted">
-                  {entry.city && `${entry.city} · `}{new Date(entry.date).toLocaleDateString('pt-BR')}
+                <p className="text-[10px] text-text-muted group-hover:text-text-secondary transition-colors">
+                  {entry.city && <><MapPin className="h-2.5 w-2.5 inline mr-0.5" />{entry.city} · </>}{new Date(entry.date).toLocaleDateString('pt-BR')}
                 </p>
               </button>
             ))}
@@ -824,19 +953,71 @@ export function SearchPage() {
 
       {/* Processing animation */}
       {isSearching && (
-        <Card className="py-12 text-center">
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(from ${n8n.elapsed * 30}deg, transparent 0deg, rgba(230,51,41,0.3) 60deg, transparent 120deg)` }} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 text-red animate-spin" />
+        <Card className="animate-[fade-in_0.4s_ease-out]">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="relative p-2.5 rounded-xl bg-red/10 border border-red/20">
+              <Loader2 className="h-5 w-5 text-red animate-spin" />
+              <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-400 animate-pulse" />
             </div>
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Pesquisa em andamento</p>
+              <p className="text-xs text-text-muted">Analisando mercado e coletando leads qualificados...</p>
+            </div>
+            <span className="ml-auto text-sm font-mono text-red font-bold">{n8n.elapsed}s</span>
           </div>
-          <p className="text-sm font-medium text-text-primary animate-[fade-in_0.5s_ease-out]" key={Math.floor(n8n.elapsed / 4)}>
-            {CURIOSITY_MESSAGES[Math.floor(n8n.elapsed / 4) % CURIOSITY_MESSAGES.length]}
-          </p>
-          <p className="text-xs text-text-muted font-mono mt-2">{n8n.elapsed}s</p>
-          <p className="text-[11px] text-text-muted mt-4">A pesquisa roda em background. Os leads serão salvos automaticamente.</p>
+
+          {/* Progress bar */}
+          <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-5">
+            <div
+              className="h-full bg-gradient-to-r from-red via-amber-400 to-red rounded-full transition-all duration-1000"
+              style={{
+                width: `${Math.min(95, (n8n.elapsed / 120) * 100)}%`,
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s linear infinite',
+              }}
+            />
+          </div>
+
+          {/* Search steps visualization */}
+          <div className="space-y-2 mb-5">
+            {[
+              { label: 'Enviando filtros para o motor de busca', done: n8n.elapsed > 2 },
+              { label: 'Mapeando empresas no Google Maps', done: n8n.elapsed > 15 },
+              { label: 'Coletando dados de contato e WhatsApp', done: n8n.elapsed > 40 },
+              { label: 'Validando faturamento e qualificacao', done: n8n.elapsed > 70 },
+              { label: 'Salvando leads no Airtable', done: n8n.elapsed > 100 },
+            ].map((step, i) => {
+              const isActive = !step.done && (i === 0 || (n8n.elapsed > [0, 2, 15, 40, 70][i]))
+              return (
+                <div key={step.label} className="flex items-center gap-2.5 text-[11px]">
+                  {step.done ? (
+                    <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+                  ) : isActive ? (
+                    <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin shrink-0" />
+                  ) : (
+                    <div className="h-3.5 w-3.5 rounded-full border border-border shrink-0" />
+                  )}
+                  <span className={cn(
+                    step.done && 'text-text-primary',
+                    isActive && 'text-amber-300',
+                    !step.done && !isActive && 'text-text-muted',
+                  )}>
+                    {step.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Curiosity message */}
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+            <p className="text-[11px] text-text-secondary animate-[fade-in_0.5s_ease-out]" key={Math.floor(n8n.elapsed / 4)}>
+              <Sparkles className="h-3 w-3 text-amber-400 inline mr-1.5" />
+              {CURIOSITY_MESSAGES[Math.floor(n8n.elapsed / 4) % CURIOSITY_MESSAGES.length]}
+            </p>
+          </div>
+
+          <p className="text-[10px] text-text-muted mt-3 text-center">A pesquisa roda em background. Os leads serao salvos automaticamente no Airtable.</p>
         </Card>
       )}
 
@@ -856,15 +1037,179 @@ export function SearchPage() {
 
       {/* Success */}
       {n8n.phase === 'done' && n8n.leadsCreated > 0 && (
-        <Card className="p-8 text-center animate-[slide-up_0.4s_ease-out]">
-          <div className="p-4 rounded-2xl bg-success/10 inline-flex mx-auto mb-4">
-            <CheckCircle className="h-10 w-10 text-success" />
+        <Card className="animate-[slide-up_0.4s_ease-out]">
+          <div className="text-center py-4">
+            <div className="p-4 rounded-2xl bg-success/10 border border-success/20 inline-flex mx-auto mb-4">
+              <CheckCircle className="h-10 w-10 text-success" />
+            </div>
+            <h3 className="text-lg font-bold text-text-primary">{n8n.leadsCreated} leads encontrados e salvos!</h3>
+            <p className="text-sm text-text-muted mt-1">Pesquisa concluida em {n8n.elapsed}s. Leads com WhatsApp e dentro da faixa de faturamento.</p>
           </div>
-          <h3 className="text-lg font-bold text-text-primary">{n8n.leadsCreated} leads encontrados e salvos!</h3>
-          <p className="text-sm text-text-muted mt-1">Pesquisa concluída em {n8n.elapsed}s. Leads com WhatsApp e dentro da faixa de faturamento.</p>
-          <div className="flex gap-3 justify-center mt-6">
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 gap-3 mt-4 mb-5">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+              <p className="text-lg font-bold font-mono text-red">{n8n.leadsCreated}</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider">Leads salvos</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+              <p className="text-lg font-bold font-mono text-amber-400">{n8n.elapsed}s</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider">Tempo total</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+              <p className="text-lg font-bold font-mono text-success">{segments.length}</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider">Segmentos</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-center">
             <Button variant="ghost" onClick={n8n.reset}>Nova pesquisa</Button>
-            <Button onClick={() => window.location.hash = '#/leads'}>Ver leads</Button>
+            <Button onClick={() => window.location.hash = '#/leads'}>
+              Ver leads <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Mass enrichment progress */}
+      {massEnrichment.totalLeads > 0 && (
+        <Card className="animate-[fade-in_0.4s_ease-out]">
+          <div ref={massEnrichmentRef}>
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20">
+                <Sparkles className="h-5 w-5 text-amber-400" />
+                {massEnrichment.isRunning && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-400 animate-pulse" />}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-text-primary">
+                  {massEnrichment.isRunning ? 'Enriquecendo leads com IA...' : 'Enriquecimento concluido'}
+                </p>
+                <p className="text-xs text-text-muted">
+                  {massEnrichment.completedLeads} de {massEnrichment.totalLeads} leads processados
+                  {massEnrichment.failedLeads > 0 && ` (${massEnrichment.failedLeads} com erro)`}
+                </p>
+              </div>
+              {massEnrichment.isRunning && (
+                <Button variant="ghost" size="sm" onClick={massEnrichment.abort} className="ml-auto">
+                  Parar
+                </Button>
+              )}
+              {!massEnrichment.isRunning && (
+                <Button variant="ghost" size="sm" onClick={() => { massEnrichment.reset(); n8n.reset() }} className="ml-auto">
+                  Nova pesquisa
+                </Button>
+              )}
+            </div>
+
+            {/* Global progress bar */}
+            <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-4">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-success rounded-full transition-all duration-500"
+                style={{ width: `${(massEnrichment.completedLeads / massEnrichment.totalLeads) * 100}%` }}
+              />
+            </div>
+
+            {/* Lead-by-lead progress */}
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {massEnrichment.queue.map((lead, idx) => (
+                <div
+                  key={lead.leadId}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl border transition-all duration-300',
+                    lead.status === 'enriching' && 'bg-amber-400/5 border-amber-400/20',
+                    lead.status === 'done' && 'bg-success/5 border-success/20',
+                    lead.status === 'error' && 'bg-error/5 border-error/20',
+                    lead.status === 'queued' && 'bg-white/[0.01] border-border',
+                  )}
+                >
+                  {/* Status icon */}
+                  {lead.status === 'queued' && <div className="h-4 w-4 rounded-full border border-border shrink-0" />}
+                  {lead.status === 'enriching' && <Loader2 className="h-4 w-4 text-amber-400 animate-spin shrink-0" />}
+                  {lead.status === 'done' && <CheckCircle className="h-4 w-4 text-success shrink-0" />}
+                  {lead.status === 'error' && <AlertCircle className="h-4 w-4 text-error shrink-0" />}
+
+                  {/* Lead info */}
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-[12px] font-medium truncate',
+                      lead.status === 'enriching' && 'text-amber-300',
+                      lead.status === 'done' && 'text-text-primary',
+                      lead.status === 'error' && 'text-error',
+                      lead.status === 'queued' && 'text-text-muted',
+                    )}>
+                      {lead.companyName}
+                    </p>
+
+                    {/* Enrichment steps for active lead */}
+                    {lead.status === 'enriching' && lead.progress && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {lead.progress.steps.map((step) => (
+                          <div
+                            key={step.source}
+                            title={step.label}
+                            className={cn(
+                              'h-1.5 flex-1 rounded-full transition-all duration-300',
+                              step.status === 'done' && 'bg-success',
+                              step.status === 'running' && 'bg-amber-400 animate-pulse',
+                              step.status === 'error' && 'bg-error',
+                              step.status === 'skipped' && 'bg-white/10',
+                              step.status === 'pending' && 'bg-white/[0.05]',
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {lead.status === 'error' && lead.error && (
+                      <p className="text-[10px] text-error mt-0.5 truncate">{lead.error}</p>
+                    )}
+                  </div>
+
+                  {/* Sources found badge */}
+                  {lead.status === 'done' && (
+                    <span className="text-[10px] text-success bg-success/10 border border-success/20 rounded-full px-2 py-0.5 font-medium shrink-0">
+                      {lead.sourcesFound} fontes
+                    </span>
+                  )}
+
+                  {/* Position indicator */}
+                  <span className="text-[10px] text-text-muted font-mono shrink-0">
+                    {idx + 1}/{massEnrichment.totalLeads}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Completion summary */}
+            {!massEnrichment.isRunning && massEnrichment.completedLeads > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
+                    <p className="text-lg font-bold font-mono text-success">{massEnrichment.completedLeads}</p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Enriquecidos</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/20 text-center">
+                    <p className="text-lg font-bold font-mono text-amber-400">
+                      {massEnrichment.queue.reduce((acc, q) => acc + q.sourcesFound, 0)}
+                    </p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Fontes coletadas</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+                    <p className="text-lg font-bold font-mono text-red">
+                      {massEnrichment.queue.filter((q) => q.sourcesFound >= 3).length}
+                    </p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Score completo</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-center mt-4">
+                  <Button variant="ghost" onClick={() => { massEnrichment.reset(); n8n.reset() }}>Nova pesquisa</Button>
+                  <Button onClick={() => window.location.hash = '#/leads'}>
+                    Ver leads enriquecidos <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -872,7 +1217,7 @@ export function SearchPage() {
       {n8n.phase === 'done' && n8n.leadsCreated === 0 && (
         <Card className="p-8 text-center">
           <p className="text-sm text-text-muted">Nenhum lead qualificado encontrado. Tente ajustar segmento, cidade ou faixa de faturamento.</p>
-          <Button variant="ghost" onClick={n8n.reset} className="mt-4">Tentar novamente</Button>
+          <Button variant="ghost" onClick={() => { n8n.reset(); massEnrichment.reset() }} className="mt-4">Tentar novamente</Button>
         </Card>
       )}
     </div>

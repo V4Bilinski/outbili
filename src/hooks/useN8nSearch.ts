@@ -30,9 +30,11 @@ export function useN8nSearch() {
 
     // Count leads before search to detect new ones (filter by "Novo" status for efficiency)
     let initialCount = 0
+    let initialIds: Set<string> = new Set()
     try {
       const existing = await getLeads('{status} = "Novo"')
       initialCount = existing.length
+      initialIds = new Set(existing.map((l) => l.id))
     } catch { /* ignore */ }
 
     try {
@@ -63,11 +65,12 @@ export function useN8nSearch() {
 
             // Final count
             const finalLeads = await getLeads('{status} = "Novo"')
-            newLeadsFound = finalLeads.length - initialCount
+            const newLeads = finalLeads.filter((l) => !initialIds.has(l.id))
+            newLeadsFound = newLeads.length
 
             setState({
               phase: 'done',
-              leads: finalLeads,
+              leads: newLeads,
               error: null,
               elapsed: Math.round((Date.now() - startTime) / 1000),
               leadsCreated: newLeadsFound,
@@ -82,12 +85,13 @@ export function useN8nSearch() {
       newLeadsFound = finalCheck.length - initialCount
 
       if (newLeadsFound > 0) {
+        const newLeads = finalCheck.filter((l) => !initialIds.has(l.id))
         setState({
           phase: 'done',
-          leads: finalCheck,
+          leads: newLeads,
           error: null,
           elapsed: Math.round((Date.now() - startTime) / 1000),
-          leadsCreated: newLeadsFound,
+          leadsCreated: newLeads.length,
         })
       } else {
         setState((s) => ({
