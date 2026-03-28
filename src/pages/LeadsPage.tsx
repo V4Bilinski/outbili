@@ -14,6 +14,7 @@ import {
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
+import { createActivity } from '../services/activityService'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -268,10 +269,11 @@ function DroppableColumn({ id, label, color, leads, isOver, onCardClick }: {
 
 // --- Stage gate modal (gamification) ---
 function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
-  lead: Lead; fromStatus: string; toStatus: string; onConfirm: () => void; onCancel: () => void
+  lead: Lead; fromStatus: string; toStatus: string; onConfirm: (notes: string) => void; onCancel: () => void
 }) {
   const gate = STAGE_GATES[toStatus]
   const [checked, setChecked] = useState<Set<number>>(new Set())
+  const [notes, setNotes] = useState('')
   const allChecked = gate ? checked.size === gate.checks.length : true
   const fromLabel = LEAD_STATUSES.find((s) => s.value === fromStatus)?.label || fromStatus
   const toLabel = LEAD_STATUSES.find((s) => s.value === toStatus)?.label || toStatus
@@ -374,11 +376,25 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
           </div>
         )}
 
+        {/* Observacoes */}
+        <div className="mb-4">
+          <label className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold mb-2 block">
+            Observacoes (opcional)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Ex: Falei com a secretaria, decisor viaja dia 15..."
+            rows={2}
+            className="w-full rounded-xl bg-white/[0.03] border border-border text-xs text-text-primary placeholder:text-text-muted p-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none"
+          />
+        </div>
+
         {/* Actions */}
         <div className="flex gap-3">
           <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
           <Button
-            onClick={onConfirm}
+            onClick={() => onConfirm(notes)}
             disabled={!allChecked}
             className="flex-1"
             icon={isCelebration ? <Trophy className="h-4 w-4" /> : allChecked ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
@@ -431,13 +447,26 @@ function KanbanView({ leads }: { leads: Lead[] }) {
     setPendingMove({ lead, from: lead.status, to: newStatus })
   }, [leads])
 
-  const handleConfirmMove = useCallback(() => {
+  const handleConfirmMove = useCallback((notes: string) => {
     if (!pendingMove) return
 
-    const { lead, to } = pendingMove
+    const { lead, from, to } = pendingMove
     updateLead.mutate({ id: lead.id, data: { status: to } })
 
+    const fromLabel = LEAD_STATUSES.find((s) => s.value === from)?.label || from
     const toLabel = LEAD_STATUSES.find((s) => s.value === to)?.label || to
+
+    // Save stage change as activity (with notes if provided)
+    const content = notes.trim()
+      ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}`
+      : `Movido de ${fromLabel} para ${toLabel}`
+
+    createActivity({
+      leadId: lead.id,
+      type: 'status_change',
+      content,
+    }).catch(() => { /* non-critical */ })
+
     if (to === 'Fechado') {
       toast.success(`🏆 ${lead.companyName} — Negocio fechado!`)
     } else {
