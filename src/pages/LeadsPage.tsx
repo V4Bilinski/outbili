@@ -237,7 +237,7 @@ function DroppableColumn({ id, label, color, leads, isOver, onCardClick }: {
   const { setNodeRef } = useDroppable({ id })
 
   return (
-    <div ref={setNodeRef} className="min-w-[280px] flex-shrink-0 snap-start">
+    <div ref={setNodeRef} className="min-w-[260px] md:min-w-0 md:flex-1 flex-shrink-0 snap-start">
       <div className="flex items-center gap-2.5 mb-3 px-1">
         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
         <span className="text-xs font-semibold text-text-secondary">{label}</span>
@@ -290,10 +290,10 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   const isCelebration = toStatus === 'Fechado'
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 animate-[fade-in_0.2s_ease-out]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className={cn(
-        'relative w-full max-w-md rounded-2xl border p-6 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]',
+        'relative w-full max-w-md rounded-t-2xl md:rounded-2xl border border-t md:border p-5 md:p-6 max-h-[85vh] overflow-y-auto animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]',
         isCelebration
           ? 'bg-gradient-to-br from-amber-900/80 to-surface-md/90 border-amber-400/30'
           : 'bg-gradient-to-br from-surface/95 to-surface-md/90 border-border',
@@ -456,7 +456,7 @@ function KanbanView({ leads }: { leads: Lead[] }) {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 snap-x">
+        <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 md:overflow-x-visible snap-x snap-mandatory md:snap-none">
           {columns.map((col) => {
             const colLeads = leads.filter((l) => l.status === col.value)
             return (
@@ -539,7 +539,7 @@ export function LeadsPage() {
   return (
     <div className="space-y-5">
       <AnimateIn>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
             <p className="text-xs text-text-muted mt-0.5">{filteredLeads.length} leads encontrados</p>
