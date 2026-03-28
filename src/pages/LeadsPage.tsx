@@ -309,126 +309,112 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   )
 }
 
-// --- Kanban DnD view ---
+// --- Kanban view (HTML5 native drag-and-drop) ---
 function KanbanView({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
   const updateLead = useUpdateLead()
   const columns = LEAD_STATUSES.filter((s) => s.value !== 'Perdido')
-
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [overId, setOverId] = useState<string | null>(null)
+  const dragLeadId = useRef<string | null>(null)
+  const [overColumn, setOverColumn] = useState<string | null>(null)
   const [pendingMove, setPendingMove] = useState<{ lead: Lead; from: string; to: string } | null>(null)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  )
-
-  const activeLead = activeId ? leads.find((l) => l.id === activeId) : null
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
-  }, [])
-
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    setOverId(event.over?.id as string || null)
-  }, [])
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setActiveId(null)
-    setOverId(null)
-
-    const { active, over } = event
-    if (!over) return
-
-    const leadId = active.id as string
-    const newStatus = over.id as string
-    const lead = leads.find((l) => l.id === leadId)
-    if (!lead || lead.status === newStatus) return
-
-    // Open stage gate modal
-    setPendingMove({ lead, from: lead.status, to: newStatus })
-  }, [leads])
 
   const handleConfirmMove = useCallback((notes: string) => {
     if (!pendingMove) return
-
     const { lead, from, to } = pendingMove
     updateLead.mutate({ id: lead.id, data: { status: to } })
 
     const fromLabel = LEAD_STATUSES.find((s) => s.value === from)?.label || from
     const toLabel = LEAD_STATUSES.find((s) => s.value === to)?.label || to
+    const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
+    createActivity({ leadId: lead.id, type: 'status_change', description: desc }).catch(() => {})
 
-    // Save stage change as activity (with notes if provided)
-    const content = notes.trim()
-      ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}`
-      : `Movido de ${fromLabel} para ${toLabel}`
-
-    createActivity({
-      leadId: lead.id,
-      type: 'status_change',
-      description: content,
-    }).catch(() => { /* non-critical */ })
-
-    if (to === 'Fechado') {
-      toast.success(`🏆 ${lead.companyName} — Negocio fechado!`)
-    } else {
-      toast.success(`${lead.companyName} movido para ${toLabel}`)
-    }
-
+    toast.success(to === 'Fechado' ? `🏆 ${lead.companyName} — Negocio fechado!` : `${lead.companyName} movido para ${toLabel}`)
     setPendingMove(null)
   }, [pendingMove, updateLead])
 
   return (
     <>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 md:overflow-x-visible snap-x snap-mandatory md:snap-none">
-          {columns.map((col) => {
-            const colLeads = leads.filter((l) => l.status === col.value)
-            return (
-              <DroppableColumn
-                key={col.value}
-                id={col.value}
-                label={col.label}
-                color={col.color}
-                leads={colLeads}
-                isOver={overId === col.value}
-                onCardClick={(id) => navigate(`/leads/${id}`)}
-              />
-            )
-          })}
-        </div>
-
-        {/* Drag overlay (floating card) */}
-        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
-          {activeLead && (
-            <div style={{ width: 260 }}>
-              <Card
-                accent={activeLead.temperature === 'HOT' ? 'hot' : activeLead.temperature === 'WARM' ? 'warm' : 'cold'}
-                className="p-4 shadow-2xl shadow-black/50 ring-2 ring-red/40 scale-[1.03] cursor-grabbing"
-              >
-                <div className="flex items-start justify-between mb-2.5">
-                  <Badge variant={activeLead.temperature === 'HOT' ? 'hot' : activeLead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
-                    {activeLead.temperature}
-                  </Badge>
-                  <span className="text-xs font-mono font-bold text-text-muted">
-                    {activeLead.score || '—'}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold text-text-primary mb-1">{activeLead.companyName}</p>
-                <p className="text-[11px] text-text-muted">{activeLead.segment} · {activeLead.tier}</p>
-              </Card>
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 md:overflow-x-visible snap-x snap-mandatory md:snap-none">
+        {columns.map((col) => {
+          const colLeads = leads.filter((l) => l.status === col.value)
+          const isOver = overColumn === col.value
+          return (
+            <div
+              key={col.value}
+              className="min-w-[260px] md:min-w-0 md:flex-1 flex-shrink-0 snap-start"
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOverColumn(col.value) }}
+              onDragLeave={() => setOverColumn(null)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setOverColumn(null)
+                const leadId = dragLeadId.current
+                if (!leadId) return
+                const lead = leads.find((l) => l.id === leadId)
+                if (!lead || lead.status === col.value) return
+                setPendingMove({ lead, from: lead.status, to: col.value })
+                dragLeadId.current = null
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-3 px-1">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+                <span className="text-xs font-semibold text-text-secondary">{col.label}</span>
+                <span className="text-[11px] text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5">{colLeads.length}</span>
+              </div>
+              <div className={cn(
+                'space-y-2.5 min-h-[120px] rounded-2xl p-2 transition-all duration-200',
+                isOver ? 'bg-red/5 border-2 border-dashed border-red/30' : 'border-2 border-transparent',
+              )}>
+                {colLeads.map((lead) => {
+                  const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
+                  return (
+                    <div
+                      key={lead.id}
+                      draggable
+                      onDragStart={(e) => {
+                        dragLeadId.current = lead.id
+                        e.dataTransfer.effectAllowed = 'move'
+                        // Make drag image slightly transparent
+                        if (e.currentTarget instanceof HTMLElement) {
+                          e.currentTarget.style.opacity = '0.5'
+                          setTimeout(() => { if (e.currentTarget instanceof HTMLElement) e.currentTarget.style.opacity = '1' }, 0)
+                        }
+                      }}
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                    >
+                      <Card
+                        accent={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'}
+                        hover
+                        className="p-4 cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="flex items-start justify-between mb-2.5">
+                          <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
+                            {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
+                          </Badge>
+                          <span className="text-xs font-mono font-bold text-text-muted">{score}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-text-primary mb-1 truncate">{lead.companyName}</p>
+                        <p className="text-[11px] text-text-muted">{lead.segment} · {lead.tier}</p>
+                        {lead.city && <p className="text-[10px] text-text-muted mt-1">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
+                      </Card>
+                    </div>
+                  )
+                })}
+                {colLeads.length === 0 && (
+                  <div className={cn(
+                    'rounded-2xl border border-dashed p-6 text-center transition-all',
+                    isOver ? 'border-red/40 bg-red/5' : 'border-border',
+                  )}>
+                    <p className={cn('text-xs', isOver ? 'text-red font-medium' : 'text-text-muted')}>
+                      {isOver ? 'Solte aqui' : 'Arraste leads aqui'}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+          )
+        })}
+      </div>
 
-      {/* Stage gate modal */}
       {pendingMove && (
         <StageGateModal
           lead={pendingMove.lead}
