@@ -275,7 +275,7 @@ async function enrichByGoogleMaps(companyName: string, city?: string, state?: st
 
   if (best.phone || best.phoneNumber) {
     enriched.contacts = [{
-      name: `${best.title || best.name || 'Empresa'} (Google Maps)`,
+      name: undefined,  // telefone comercial — nome do decisor será identificado por outras fontes
       whatsapp: formatPhone(best.phone || best.phoneNumber),
       source: 'google_maps',
     }]
@@ -353,7 +353,7 @@ async function enrichByVibeProspecting(
     const contacts: Array<{ name?: string; whatsapp?: string; email?: string; source: string }> = []
 
     if (biz.phone) {
-      contacts.push({ name: `${biz.name} (VibeProspecting)`, whatsapp: formatPhone(biz.phone), source: 'vibeprospecting' })
+      contacts.push({ name: undefined, whatsapp: formatPhone(biz.phone), source: 'vibeprospecting' })
     }
 
     // Try to get prospects (decision-makers)
@@ -373,6 +373,25 @@ async function enrichByVibeProspecting(
   } catch {
     return null
   }
+}
+
+// --- Decision maker extraction ---
+
+function extractDecisionMaker(partnersJson?: string): { nome: string; qualificacao: string } | null {
+  if (!partnersJson) return null
+  try {
+    const partners: Array<{ nome: string; qualificacao: string }> = JSON.parse(partnersJson)
+    if (!partners.length) return null
+    // Priority: Administrador > Sócio-Administrador > Diretor > CEO > Fundador > any Sócio > first
+    const priorities = ['administrador', 'socio-administrador', 'sócio-administrador', 'diretor', 'ceo', 'fundador', 'presidente', 'gerente']
+    for (const keyword of priorities) {
+      const match = partners.find(p => p.qualificacao?.toLowerCase().includes(keyword))
+      if (match && match.nome) return match
+    }
+    // Fallback: first partner with a name
+    const first = partners.find(p => p.nome && p.nome.length > 2)
+    return first || null
+  } catch { return null }
 }
 
 // --- Orchestrator ---
@@ -516,12 +535,14 @@ export async function enrichLead(
         mergeField('rfPhone', cnpjData.rfPhone)
         // CEP para geolocalização
         cnpjCep = (cnpjData as any)._cep || ''
-        // Contato da RF
-        if (cnpjData.rfPhone) {
-          newContacts.push({ name: `${cnpjData.tradeName || cnpjData.companyName || 'Empresa'} (Receita Federal)`, whatsapp: formatPhone(cnpjData.rfPhone), source: 'receita_federal' })
+        // Extrair decisor dos sócios da RF (Administrador > Sócio > primeiro da lista)
+        const rfDecisionMaker = extractDecisionMaker(cnpjData.partners)
+        // Contato da RF — usar nome do decisor, NUNCA nome da empresa
+        if (cnpjData.rfPhone && rfDecisionMaker) {
+          newContacts.push({ name: rfDecisionMaker.nome, whatsapp: formatPhone(cnpjData.rfPhone), source: 'receita_federal' })
         }
-        if (cnpjData.rfEmail) {
-          newContacts.push({ name: `${cnpjData.tradeName || cnpjData.companyName || 'Empresa'} (Receita Federal)`, email: cnpjData.rfEmail, source: 'receita_federal' })
+        if (cnpjData.rfEmail && rfDecisionMaker) {
+          newContacts.push({ name: rfDecisionMaker.nome, email: cnpjData.rfEmail, source: 'receita_federal' })
         }
       }
       step('cnpj').status = 'done'
@@ -850,8 +871,8 @@ export async function enrichLead(
         )
         if (!isDup && (c.email || c.whatsapp)) {
           await createContact({
-            name: c.name || `Contato via ${c.source}`,
-            role: c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : `Via ${c.source}`,
+            name: c.name || 'Decisor nao identificado',
+            role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'vibeprospecting' ? 'Decisor (VibeProspecting)' : `Via ${c.source}`,
             contactType: 'stakeholder',
             whatsapp: c.whatsapp || '',
             email: c.email || '',

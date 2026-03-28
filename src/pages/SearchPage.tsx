@@ -320,11 +320,11 @@ export function SearchPage() {
       // 2. Save lead to Airtable
       const lead = await createLead(leadData as any)
 
-      // 2. Save contact if we have data
-      if (lead.id && (whatsapp || specificEmail || specificContact)) {
+      // 2. Save contact if we have decision maker data
+      if (lead.id && specificContact && (whatsapp || specificEmail)) {
         await createContact({
-          name: specificContact || specificName,
-          role: specificContactRole || 'Proprietário(a) / Decisor',
+          name: specificContact,
+          role: specificContactRole || 'Decisor',
           contactType: 'decisor',
           whatsapp: whatsapp,
           email: specificEmail || '',
