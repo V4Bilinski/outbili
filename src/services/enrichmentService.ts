@@ -499,17 +499,25 @@ export async function enrichLead(
   leadData: Partial<Lead>,
   onProgress?: (progress: EnrichmentProgress) => void,
 ): Promise<Partial<Lead>> {
+  // Smart skip: if lead was already enriched, skip steps that have data
+  const alreadyEnriched = leadData.enrichmentStatus === 'complete' || leadData.enrichmentStatus === 'basic'
+  const hasGeo = !!(leadData.city && leadData.state)
+  const hasGoogleData = !!(leadData.googleRating || leadData.googleReviewsCount)
+  const hasWebsite = !!leadData.website
+  const hasInstagramData = !!(leadData.instagramFollowers || leadData.instagramBio)
+  const hasLinkedinData = !!(leadData.linkedinEmployeeCount || leadData.businessSummary)
+
   const steps: EnrichmentStep[] = [
-    { source: 'cnpj', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Receita Federal (CNPJ)', estimatedMs: 3000 },
-    { source: 'tax_regime', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Regime Tributario (Simples/MEI)', estimatedMs: 2000 },
-    { source: 'geolocation', status: 'pending', label: 'Geolocalizacao (CEP)', estimatedMs: 2000 },
-    { source: 'domain_check', status: 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
-    { source: 'google_search', status: 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
-    { source: 'google_maps', status: 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },
+    { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && leadData.tradeName) ? 'skipped' : 'pending', label: 'Receita Federal (CNPJ)', estimatedMs: 3000 },
+    { source: 'tax_regime', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && (leadData as any).taxRegime) ? 'skipped' : 'pending', label: 'Regime Tributario (Simples/MEI)', estimatedMs: 2000 },
+    { source: 'geolocation', status: (alreadyEnriched && hasGeo) ? 'skipped' : 'pending', label: 'Geolocalizacao (CEP)', estimatedMs: 2000 },
+    { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
+    { source: 'google_search', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
+    { source: 'google_maps', status: (alreadyEnriched && hasGoogleData) ? 'skipped' : 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },
     { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (fallback)', estimatedMs: 15000 },
-    { source: 'instagram', status: leadData.instagram ? 'pending' : 'skipped', label: 'Instagram', estimatedMs: 25000 },
-    { source: 'website', status: 'pending', label: 'Website (contatos)', estimatedMs: 30000 },
-    { source: 'linkedin', status: leadData.linkedin ? 'pending' : 'skipped', label: 'LinkedIn', estimatedMs: 25000 },
+    { source: 'instagram', status: !leadData.instagram ? 'skipped' : (alreadyEnriched && hasInstagramData) ? 'skipped' : 'pending', label: 'Instagram', estimatedMs: 25000 },
+    { source: 'website', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Website (contatos)', estimatedMs: 30000 },
+    { source: 'linkedin', status: !leadData.linkedin ? 'skipped' : (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
   ]
 
   const notify = () => {
@@ -922,6 +930,16 @@ export async function enrichLead(
     if (summary) updateFields.businessSummary = summary
   }
 
+  // Build enrichment log before saving
+  const enrichmentLog = steps.map(s => ({
+    source: s.source,
+    status: s.status,
+    label: s.label,
+  }))
+  updateFields.enrichmentSources = JSON.stringify(steps.filter(s => s.status === 'done').map(s => s.source))
+  updateFields.enrichmentLog = JSON.stringify(enrichmentLog)
+
+  // Single batched Airtable write (all fields + SPICED + log)
   try {
     await updateLead(leadId, updateFields)
   } catch {
@@ -933,7 +951,6 @@ export async function enrichLead(
     try {
       const existing = await getContacts(leadId)
       for (const c of newContacts) {
-        // Skip duplicates
         const isDup = existing.some((e) =>
           (c.email && e.email === c.email) || (c.whatsapp && e.whatsapp === c.whatsapp),
         )
@@ -951,22 +968,6 @@ export async function enrichLead(
     } catch {
       // Non-critical
     }
-  }
-
-  // Build enrichment log
-  const enrichmentLog = steps.map(s => ({
-    source: s.source,
-    status: s.status,
-    label: s.label,
-  }))
-  updateFields.enrichmentSources = JSON.stringify(steps.filter(s => s.status === 'done').map(s => s.source))
-  updateFields.enrichmentLog = JSON.stringify(enrichmentLog)
-
-  // Persist enrichment log fields to Airtable
-  try {
-    await updateLead(leadId, { enrichmentSources: updateFields.enrichmentSources, enrichmentLog: updateFields.enrichmentLog })
-  } catch {
-    // Non-critical
   }
 
   // Final notification

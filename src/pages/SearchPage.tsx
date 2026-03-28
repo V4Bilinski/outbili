@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
 import { useN8nSearch } from '../hooks/useN8nSearch'
 import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
-import { useMassEnrichment } from '../hooks/useMassEnrichment'
+import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
@@ -204,14 +204,31 @@ export function SearchPage() {
   const massEnrichment = useMassEnrichment()
   const massEnrichmentRef = useRef<HTMLDivElement>(null)
 
-  // Auto-trigger mass enrichment when n8n finds new leads
+  // Auto-trigger mass enrichment when n8n finds new leads (with dedup)
   useEffect(() => {
     if (n8n.phase === 'done' && n8n.leads.length > 0 && !massEnrichment.isRunning && massEnrichment.totalLeads === 0) {
-      toast.success(`${n8n.leadsCreated} leads encontrados! Iniciando enriquecimento...`)
-      massEnrichment.enrichAll(n8n.leads)
-      setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+      // Filter out leads already enriched (dedup)
+      const leadsToEnrich = n8n.leads.filter((l) => l.enrichmentStatus !== 'complete')
+      const skipped = n8n.leads.length - leadsToEnrich.length
+
+      if (leadsToEnrich.length > 0) {
+        toast.success(`${leadsToEnrich.length} leads para enriquecer${skipped > 0 ? ` (${skipped} ja completos)` : ''}`)
+        massEnrichment.enrichAll(leadsToEnrich)
+        setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+      } else {
+        toast.info('Todos os leads ja estao enriquecidos!')
+      }
     }
   }, [n8n.phase, n8n.leads, n8n.leadsCreated, massEnrichment.isRunning, massEnrichment.totalLeads, massEnrichment.enrichAll])
+
+  // Check for pending enrichment queue on mount (resume after refresh)
+  const [pendingResume, setPendingResume] = useState<Array<{ leadId: string; companyName: string }> | null>(null)
+  useEffect(() => {
+    const pending = loadPendingQueue()
+    if (pending && !massEnrichment.isRunning) {
+      setPendingResume(pending)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Mask formatters ---
   const formatCnpj = (value: string) => {
@@ -1071,6 +1088,29 @@ export function SearchPage() {
         </Card>
       )}
 
+      {/* Resume pending enrichment banner */}
+      {pendingResume && !massEnrichment.isRunning && massEnrichment.totalLeads === 0 && (
+        <Card className="animate-[fade-in_0.3s_ease-out]">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20">
+              <AlertCircle className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">Enriquecimento pendente</p>
+              <p className="text-xs text-text-muted">{pendingResume.length} lead{pendingResume.length > 1 ? 's' : ''} aguardando enriquecimento ({pendingResume.map(p => p.companyName).slice(0, 3).join(', ')}{pendingResume.length > 3 ? '...' : ''})</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { clearPendingQueue(); setPendingResume(null) }}>
+                Descartar
+              </Button>
+              <Button size="sm" onClick={() => { setPendingResume(null); massEnrichment.resumeFromStorage() }}>
+                Retomar
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Mass enrichment progress */}
       {massEnrichment.totalLeads > 0 && (
         <Card className="animate-[fade-in_0.4s_ease-out]">
@@ -1088,6 +1128,11 @@ export function SearchPage() {
                 <p className="text-xs text-text-muted">
                   {massEnrichment.completedLeads} de {massEnrichment.totalLeads} leads processados
                   {massEnrichment.failedLeads > 0 && ` (${massEnrichment.failedLeads} com erro)`}
+                  {massEnrichment.isRunning && massEnrichment.etaSeconds > 0 && (
+                    <span className="text-amber-300 ml-1">
+                      · ~{massEnrichment.etaSeconds >= 60 ? `${Math.round(massEnrichment.etaSeconds / 60)} min` : `${massEnrichment.etaSeconds}s`} restantes
+                    </span>
+                  )}
                 </p>
               </div>
               {massEnrichment.isRunning && (
