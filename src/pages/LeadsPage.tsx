@@ -12,7 +12,7 @@ import {
   type DragOverEvent,
 } from '@dnd-kit/core'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
+// @dnd-kit/utilities removed — using DragOverlay instead of CSS transform
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
 import { createActivity } from '../services/activityService'
 import { AnimateIn } from '../components/ui/AnimateIn'
@@ -143,7 +143,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
             <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
             <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Score</th>
             <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Trava</th>
-            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Veredicto</th>
+            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Temperatura</th>
           </tr>
         </thead>
         <tbody>
@@ -180,7 +180,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.COLD}`}>{lead.temperature}</span>
+                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.COLD}`}>{lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}</span>
                 </td>
               </tr>
             )
@@ -193,14 +193,14 @@ function LeadTable({ leads }: { leads: Lead[] }) {
 
 // --- Draggable card ---
 function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
   })
 
   const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    transition: 'opacity 0.15s ease',
   }
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
@@ -218,7 +218,7 @@ function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void 
       >
         <div className="flex items-start justify-between mb-2.5">
           <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
-            {lead.temperature}
+            {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
           </Badge>
           <span className="text-xs font-mono font-bold text-text-muted">{score}</span>
         </div>
@@ -491,7 +491,7 @@ function KanbanView({ leads }: { leads: Lead[] }) {
         </div>
 
         {/* Drag overlay (floating card) */}
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
           {activeLead && (
             <div style={{ width: 260 }}>
               <Card
