@@ -6,6 +6,25 @@ import type { Lead } from '../types'
 const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN || ''
 const APIFY_API = 'https://api.apify.com/v2'
 
+async function fetchWithRetry(url: string, options?: RequestInit, retries = 1): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, options)
+      if (res.ok || i === retries) return res
+      // Non-OK but retriable (5xx)
+      if (res.status >= 500 && i < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)))
+        continue
+      }
+      return res
+    } catch (err) {
+      if (i === retries) throw err
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)))
+    }
+  }
+  throw new Error('fetchWithRetry exhausted')
+}
+
 // --- Apify helpers ---
 
 async function runActor<T = any>(actorId: string, input: Record<string, any>, timeoutMs = 120_000): Promise<T[] | null> {
@@ -58,6 +77,7 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
   const items = await runActor('viralanalyzer/cnpj-enricher', { cnpjs: [clean] })
   if (!items?.length) return null
   const d = items[0]
+  const apifySocios = d.qsa || []
   return {
     tradeName: d.nome_fantasia || d.tradeName || undefined,
     segment: d.cnae_fiscal_descricao || d.segment || undefined,
@@ -66,12 +86,22 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
     state: d.uf || d.state || undefined,
     employees: d.porte ? estimateEmployees(d.porte) : undefined,
     yearsInMarket: d.data_inicio_atividade ? yearsSince(d.data_inicio_atividade) : undefined,
+    capitalSocial: d.capital_social ? Number(d.capital_social) : undefined,
+    registrationStatus: d.descricao_situacao_cadastral || undefined,
+    foundingDate: d.data_inicio_atividade || undefined,
+    cnaePrimary: d.cnae_fiscal_descricao || undefined,
+    partners: apifySocios.length ? JSON.stringify(apifySocios.map((s: any) => ({
+      nome: s.nome_socio || s.nome,
+      qualificacao: s.qual_socio || s.qualificacao_socio || 'Socio',
+    }))) : undefined,
+    rfEmail: d.email || undefined,
+    rfPhone: d.telefone ? String(d.telefone).replace(/\D/g, '') : undefined,
   }
 }
 
 async function fetchOpenCnpj(cnpj: string): Promise<Partial<Lead> | null> {
   try {
-    const res = await fetch(`https://api.opencnpj.org/${cnpj}`)
+    const res = await fetchWithRetry(`https://api.opencnpj.org/${cnpj}`)
     if (!res.ok) return null
     const d = await res.json()
     return parseCnpjResponse(d)
@@ -80,7 +110,7 @@ async function fetchOpenCnpj(cnpj: string): Promise<Partial<Lead> | null> {
 
 async function fetchBrasilApiCnpj(cnpj: string): Promise<Partial<Lead> | null> {
   try {
-    const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
+    const res = await fetchWithRetry(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
     if (!res.ok) return null
     const d = await res.json()
     return parseCnpjResponse(d)
@@ -138,7 +168,7 @@ function parseCnpjResponse(d: any): Partial<Lead> {
 
 async function fetchTaxRegime(cnpj: string): Promise<Partial<Lead> | null> {
   try {
-    const res = await fetch(`https://open.cnpja.com/office/${cnpj}`)
+    const res = await fetchWithRetry(`https://open.cnpja.com/office/${cnpj}`)
     if (!res.ok) return null
     const d = await res.json()
 
@@ -163,7 +193,7 @@ async function fetchGeoFromCep(cep: string): Promise<Partial<Lead> | null> {
   const clean = cep.replace(/\D/g, '')
   if (clean.length !== 8) return null
   try {
-    const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${clean}`)
+    const res = await fetchWithRetry(`https://brasilapi.com.br/api/cep/v2/${clean}`)
     if (!res.ok) return null
     const d = await res.json()
     return {
@@ -184,7 +214,7 @@ async function fetchDomainStatus(domain: string): Promise<Partial<Lead> | null> 
   const match = domain.match(/([a-z0-9-]+\.com\.br|[a-z0-9-]+\.br)/i)
   if (!match) return null
   try {
-    const res = await fetch(`https://brasilapi.com.br/api/registrobr/v1/${match[0]}`)
+    const res = await fetchWithRetry(`https://brasilapi.com.br/api/registrobr/v1/${match[0]}`)
     if (!res.ok) return null
     const d = await res.json()
     return {
@@ -401,6 +431,7 @@ export type EnrichmentStep = {
   status: 'pending' | 'running' | 'done' | 'skipped' | 'error'
   label: string
   detail?: string
+  estimatedMs?: number
 }
 
 export type EnrichmentProgress = {
@@ -469,16 +500,16 @@ export async function enrichLead(
   onProgress?: (progress: EnrichmentProgress) => void,
 ): Promise<Partial<Lead>> {
   const steps: EnrichmentStep[] = [
-    { source: 'cnpj', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Receita Federal (CNPJ)' },
-    { source: 'tax_regime', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Regime Tributario (Simples/MEI)' },
-    { source: 'geolocation', status: 'pending', label: 'Geolocalizacao (CEP)' },
-    { source: 'domain_check', status: 'pending', label: 'Dominio .br (Registro.br)' },
-    { source: 'google_search', status: 'pending', label: 'Pesquisa Google' },
-    { source: 'google_maps', status: 'pending', label: 'Google Maps / Perfil Comercial' },
-    { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (fallback)' },
-    { source: 'instagram', status: leadData.instagram ? 'pending' : 'skipped', label: 'Instagram' },
-    { source: 'website', status: 'pending', label: 'Website (contatos)' },
-    { source: 'linkedin', status: leadData.linkedin ? 'pending' : 'skipped', label: 'LinkedIn' },
+    { source: 'cnpj', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Receita Federal (CNPJ)', estimatedMs: 3000 },
+    { source: 'tax_regime', status: leadData.cnpj ? 'pending' : 'skipped', label: 'Regime Tributario (Simples/MEI)', estimatedMs: 2000 },
+    { source: 'geolocation', status: 'pending', label: 'Geolocalizacao (CEP)', estimatedMs: 2000 },
+    { source: 'domain_check', status: 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
+    { source: 'google_search', status: 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
+    { source: 'google_maps', status: 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },
+    { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (fallback)', estimatedMs: 15000 },
+    { source: 'instagram', status: leadData.instagram ? 'pending' : 'skipped', label: 'Instagram', estimatedMs: 25000 },
+    { source: 'website', status: 'pending', label: 'Website (contatos)', estimatedMs: 30000 },
+    { source: 'linkedin', status: leadData.linkedin ? 'pending' : 'skipped', label: 'LinkedIn', estimatedMs: 25000 },
   ]
 
   const notify = () => {
@@ -538,10 +569,12 @@ export async function enrichLead(
         // Extrair decisor dos sócios da RF (Administrador > Sócio > primeiro da lista)
         const rfDecisionMaker = extractDecisionMaker(cnpjData.partners)
         // Contato da RF — usar nome do decisor, NUNCA nome da empresa
-        if (cnpjData.rfPhone && rfDecisionMaker) {
-          newContacts.push({ name: rfDecisionMaker.nome, whatsapp: formatPhone(cnpjData.rfPhone), source: 'receita_federal' })
+        const rfPhoneClean = cnpjData.rfPhone ? cnpjData.rfPhone.replace(/\D/g, '') : ''
+        const rfPhoneValid = rfPhoneClean.length >= 10 && rfPhoneClean.length <= 13
+        if (rfPhoneValid && rfDecisionMaker) {
+          newContacts.push({ name: rfDecisionMaker.nome, whatsapp: formatPhone(rfPhoneClean), source: 'receita_federal' })
         }
-        if (cnpjData.rfEmail && rfDecisionMaker) {
+        if (cnpjData.rfEmail && cnpjData.rfEmail.includes('@') && rfDecisionMaker) {
           newContacts.push({ name: rfDecisionMaker.nome, email: cnpjData.rfEmail, source: 'receita_federal' })
         }
       }
@@ -582,7 +615,7 @@ export async function enrichLead(
     notify()
   }
 
-  // Step 3: Geolocalização (BrasilAPI CEP v2)
+  // Step 3: Geolocalização (BrasilAPI CEP v2, com fallback por cidade)
   const cepToLookup = cnpjCep || ''
   if (cepToLookup) {
     step('geolocation').status = 'running'
@@ -603,13 +636,44 @@ export async function enrichLead(
     }
     notify()
   } else {
-    step('geolocation').status = 'skipped'
-    notify()
+    // Fallback: geocode by city + state name
+    const geoCity = leadData.city || merged.city
+    const geoState = leadData.state || merged.state
+    if (geoCity && geoState) {
+      step('geolocation').status = 'running'
+      notify()
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(geoCity)}&state=${encodeURIComponent(geoState)}&country=Brazil&format=json&limit=1`, {
+          headers: { 'User-Agent': 'Outbili/1.0' }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.length > 0) {
+            merged.latitude = parseFloat(data[0].lat)
+            merged.longitude = parseFloat(data[0].lon)
+            step('geolocation').status = 'done'
+            step('geolocation').detail = `${geoCity}, ${geoState} · lat/long estimados`
+          } else {
+            step('geolocation').status = 'done'
+            step('geolocation').detail = 'Sem coordenadas'
+          }
+        } else {
+          step('geolocation').status = 'error'
+        }
+      } catch {
+        step('geolocation').status = 'error'
+      }
+      notify()
+    } else {
+      step('geolocation').status = 'skipped'
+      notify()
+    }
   }
 
   // Step 4: Verificação de domínio .br (Registro.br)
   const websiteForDomain = leadData.website || merged.website || ''
-  if (websiteForDomain && websiteForDomain.includes('.br')) {
+  const isBrDomain = websiteForDomain.includes('.br')
+  if (websiteForDomain && isBrDomain) {
     step('domain_check').status = 'running'
     notify()
     try {
@@ -624,6 +688,10 @@ export async function enrichLead(
     } catch {
       step('domain_check').status = 'error'
     }
+    notify()
+  } else if (websiteForDomain) {
+    step('domain_check').status = 'skipped'
+    step('domain_check').detail = 'Apenas dominios .br'
     notify()
   } else {
     step('domain_check').status = 'skipped'

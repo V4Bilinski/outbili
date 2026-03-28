@@ -28,10 +28,10 @@ export function useN8nSearch() {
       setState((s) => ({ ...s, elapsed: Math.round((Date.now() - startTime) / 1000) }))
     }, 1000)
 
-    // Count leads before search to detect new ones
+    // Count leads before search to detect new ones (filter by "Novo" status for efficiency)
     let initialCount = 0
     try {
-      const existing = await getLeads()
+      const existing = await getLeads('{status} = "Novo"')
       initialCount = existing.length
     } catch { /* ignore */ }
 
@@ -51,7 +51,7 @@ export function useN8nSearch() {
         await new Promise((r) => setTimeout(r, 10_000)) // poll every 10s
 
         try {
-          const currentLeads = await getLeads()
+          const currentLeads = await getLeads('{status} = "Novo"')
           newLeadsFound = currentLeads.length - initialCount
 
           if (newLeadsFound > 0) {
@@ -62,7 +62,7 @@ export function useN8nSearch() {
             await new Promise((r) => setTimeout(r, 15_000))
 
             // Final count
-            const finalLeads = await getLeads()
+            const finalLeads = await getLeads('{status} = "Novo"')
             newLeadsFound = finalLeads.length - initialCount
 
             setState({
@@ -78,7 +78,7 @@ export function useN8nSearch() {
       }
 
       // Timeout — check one more time
-      const finalCheck = await getLeads()
+      const finalCheck = await getLeads('{status} = "Novo"')
       newLeadsFound = finalCheck.length - initialCount
 
       if (newLeadsFound > 0) {

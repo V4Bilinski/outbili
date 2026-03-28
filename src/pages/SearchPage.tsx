@@ -192,6 +192,9 @@ export function SearchPage() {
   const [specificContactRole, setSpecificContactRole] = useState('')
   const [isCreatingSpecific, setIsCreatingSpecific] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [dupWarning, setDupWarning] = useState<string | null>(null)
+  const [dupOverride, setDupOverride] = useState(false)
+  const [lastCreatedLead, setLastCreatedLead] = useState<{ id: string; data: Record<string, any> } | null>(null)
 
   const enrichmentProgressRef = useRef<HTMLDivElement>(null)
 
@@ -267,8 +270,8 @@ export function SearchPage() {
       }
 
       // Estimate revenue
-      const revenue = parseInt(specificRevenue) || 100000
-      const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
+      const revenue = specificRevenue ? parseInt(specificRevenue) : undefined
+      const tier = !revenue ? 'Nao qualificado' : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
 
       // Build lead data with ALL fields
       const leadData: Record<string, any> = {
@@ -276,9 +279,9 @@ export function SearchPage() {
         cnpj: specificCnpj.replace(/\D/g, ''),
         segment: specificSegment || 'Varejo',
         tier,
-        monthlyRevenue: revenue,
-        employees: revenue >= 120000 ? 8 : 5,
-        yearsInMarket: revenue >= 120000 ? 7 : 5,
+        ...(revenue && { monthlyRevenue: revenue }),
+        employees: revenue && revenue >= 120000 ? 8 : 5,
+        yearsInMarket: revenue && revenue >= 120000 ? 7 : 5,
         status: 'Novo',
         score: 0,
         temperature: 'WARM',
@@ -289,36 +292,35 @@ export function SearchPage() {
         ...(specificAddress && { address: specificAddress }),
         ...(specificCity && { city: specificCity }),
         ...(specificState && { state: specificState }),
-        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente${revenue ? ` · R$ ${Math.round(revenue / 1000)}k/mês` : ''}`,
+        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente${revenue ? ` · R$ ${Math.round(revenue / 1000)}k/mes` : ''}`,
         enrichmentStatus: 'pending',
       }
 
       // 1. Verificar duplicados por CNPJ (mais confiável) ou nome
       const cnpjClean = specificCnpj.replace(/\D/g, '')
       const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
-      if (existingByCnpj.length > 0) {
-        const confirmed = window.confirm(
-          `Já existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Deseja criar outro mesmo assim?`
-        )
-        if (!confirmed) {
+      if (existingByCnpj.length > 0 && !dupOverride) {
+        setDupWarning(`Ja existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Clique novamente para criar mesmo assim.`)
+        setDupOverride(true)
+        setIsCreatingSpecific(false)
+        return
+      }
+      if (!existingByCnpj.length) {
+        const existingByName = await getLeads(`{companyName} = "${specificName.replace(/"/g, '\\"')}"`)
+        if (existingByName.length > 0 && !dupOverride) {
+          setDupWarning(`Ja existe um lead "${existingByName[0].companyName}". Clique novamente para criar mesmo assim.`)
+          setDupOverride(true)
           setIsCreatingSpecific(false)
           return
         }
-      } else {
-        const existingByName = await getLeads(`{companyName} = "${specificName.replace(/"/g, '\\"')}"`)
-        if (existingByName.length > 0) {
-          const confirmed = window.confirm(
-            `Já existe um lead "${existingByName[0].companyName}" cadastrado. Deseja criar outro mesmo assim?`
-          )
-          if (!confirmed) {
-            setIsCreatingSpecific(false)
-            return
-          }
-        }
       }
+      // Reset override for next use
+      setDupOverride(false)
+      setDupWarning(null)
 
       // 2. Save lead to Airtable
       const lead = await createLead(leadData as any)
+      setLastCreatedLead({ id: lead.id, data: leadData })
 
       // 2. Save contact if we have decision maker data
       if (lead.id && specificContact && (whatsapp || specificEmail)) {
@@ -584,6 +586,15 @@ export function SearchPage() {
 
           {/* ===== CTA SECTION ===== */}
           <div className="mt-6">
+            {dupWarning && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[11px] text-amber-300 font-medium">{dupWarning}</p>
+                  <button onClick={() => { setDupWarning(null); setDupOverride(false) }} className="text-[11px] text-text-muted hover:text-text-secondary mt-1 cursor-pointer">Cancelar</button>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <Button size="lg" icon={<Upload className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || !specificCnpj || specificCnpj.replace(/\D/g, '').length !== 14 || isCreatingSpecific || enrichment.isEnriching}>
                 Salvar e enriquecer com IA
@@ -647,8 +658,11 @@ export function SearchPage() {
                       )}>
                         {step.label}
                       </span>
+                      {(step.status === 'pending' || step.status === 'running') && step.estimatedMs && (
+                        <span className="text-[9px] text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
+                      )}
                       {step.status === 'done' && step.detail && (
-                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5">{step.detail}</span>
+                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
                       )}
                       {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
                     </div>
@@ -682,8 +696,11 @@ export function SearchPage() {
                       )}>
                         {step.label}
                       </span>
+                      {(step.status === 'pending' || step.status === 'running') && step.estimatedMs && (
+                        <span className="text-[9px] text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
+                      )}
                       {step.status === 'done' && step.detail && (
-                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5">{step.detail}</span>
+                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
                       )}
                       {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
                     </div>
@@ -707,6 +724,15 @@ export function SearchPage() {
                       <Button variant="ghost" size="sm" onClick={resetSpecificForm}>
                         Novo lead
                       </Button>
+                      {lastCreatedLead && (
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          enrichment.reset()
+                          enrichment.enrich(lastCreatedLead.id, lastCreatedLead.data)
+                          setTimeout(() => enrichmentProgressRef.current?.scrollIntoView({ behavior: 'smooth' }), 300)
+                        }}>
+                          Re-enriquecer
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => { enrichment.reset(); window.location.hash = '#/leads' }}>
                         Ver lead completo <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
