@@ -729,6 +729,72 @@ async function enrichByLinkedIn(companyUrl: string): Promise<Partial<Lead> | nul
   }
 }
 
+// --- Fallback: Search Instagram by company name using Apify ---
+async function searchInstagramByName(companyName: string, city?: string): Promise<string | null> {
+  const query = city ? `${companyName} ${city}` : companyName
+  const items = await runActor('apify/instagram-profile-scraper', {
+    search: query,
+    searchType: 'user',
+    resultsLimit: 5,
+  }, 90_000)
+  if (!items?.length) return null
+
+  // Find best match by comparing name/username with company name
+  const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '')
+  for (const p of items) {
+    const username = (p.username || '').toLowerCase()
+    const fullName = (p.fullName || p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (username.includes(nameLower) || nameLower.includes(username) || fullName.includes(nameLower) || nameLower.includes(fullName)) {
+      return `https://instagram.com/${p.username}`
+    }
+  }
+  // If no exact match, return first business account
+  const business = items.find((p: any) => p.isBusinessAccount)
+  if (business) return `https://instagram.com/${business.username}`
+
+  return items[0]?.username ? `https://instagram.com/${items[0].username}` : null
+}
+
+// --- Fallback: Search LinkedIn company by name using Google ---
+async function searchLinkedInByName(companyName: string, city?: string): Promise<string | null> {
+  const query = city
+    ? `"${companyName}" "${city}" linkedin.com/company`
+    : `"${companyName}" linkedin.com/company`
+  const items = await runActor('apify/google-search-scraper', {
+    queries: query,
+    countryCode: 'br',
+    languageCode: 'pt-BR',
+    maxPagesPerQuery: 1,
+    resultsPerPage: 10,
+  }, 60_000)
+  if (!items?.length) return null
+
+  const results = items[0]?.organicResults || items
+  for (const r of results) {
+    const url = r.url || r.link || ''
+    if (url.includes('linkedin.com/company/')) return url
+  }
+  return null
+}
+
+// --- Fallback: Search website using RAG Web Browser ---
+async function searchWebsiteByName(companyName: string, city?: string): Promise<string | null> {
+  const query = city ? `${companyName} ${city} site oficial` : `${companyName} site oficial`
+  const items = await runActor('apify/rag-web-browser', {
+    query,
+    maxResults: 5,
+  }, 60_000)
+  if (!items?.length) return null
+
+  for (const r of items) {
+    const url = r.url || r.link || ''
+    if (url && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('linkedin.com') && !url.includes('google.com') && !url.includes('youtube.com') && !url.includes('reclameaqui')) {
+      return url
+    }
+  }
+  return null
+}
+
 // --- VibeProspecting fallback ---
 
 async function enrichByVibeProspecting(
@@ -1281,15 +1347,16 @@ export async function enrichLead(
   }
   notify()
 
-  // Step 8: Instagram — busca ativa se nao tem handle
+  // Step 8: Instagram — busca ativa com multiplas estrategias
   let igHandle = leadData.instagram || merged.instagram
   if (!igHandle) {
-    // Buscar perfil do Instagram via Google
     step('instagram').status = 'running'
-    step('instagram').detail = 'Buscando perfil...'
+    step('instagram').detail = 'Buscando perfil via Google...'
     notify()
+    const igCity = leadData.city || merged.city || ''
+
+    // Strategy 1: Google site search
     try {
-      const igCity = leadData.city || merged.city || ''
       const foundIgUrl = await findUrlViaGoogle(
         `site:instagram.com "${leadData.companyName}" ${igCity}`,
         'instagram.com',
@@ -1299,6 +1366,19 @@ export async function enrichLead(
         merged.instagram = foundIgUrl
       }
     } catch { /* continue */ }
+
+    // Strategy 2: Apify Instagram search by name (fallback)
+    if (!igHandle) {
+      step('instagram').detail = 'Buscando perfil via Instagram Search...'
+      notify()
+      try {
+        const foundIg = await searchInstagramByName(leadData.companyName || '', igCity)
+        if (foundIg) {
+          igHandle = foundIg
+          merged.instagram = foundIg
+        }
+      } catch { /* continue */ }
+    }
   }
   if (igHandle) {
     step('instagram').status = 'running'
@@ -1342,15 +1422,16 @@ export async function enrichLead(
     notify()
   }
 
-  // Step 9: Website contact crawl — busca ativa se nao tem URL
+  // Step 9: Website contact crawl — busca ativa com fallbacks
   let websiteUrl = leadData.website || merged.website
   if (!websiteUrl) {
-    // Tentar encontrar website via Google
     step('website').status = 'running'
-    step('website').detail = 'Buscando site...'
+    step('website').detail = 'Buscando site via Google...'
     notify()
+    const siteCity = leadData.city || merged.city || ''
+
+    // Strategy 1: Google Search
     try {
-      const siteCity = leadData.city || merged.city || ''
       const items = await runActor('apify/google-search-scraper', {
         queries: `"${leadData.companyName}" ${siteCity} site oficial`,
         countryCode: 'br',
@@ -1370,6 +1451,19 @@ export async function enrichLead(
         }
       }
     } catch { /* continue */ }
+
+    // Strategy 2: RAG Web Browser fallback
+    if (!websiteUrl) {
+      step('website').detail = 'Buscando site via RAG Browser...'
+      notify()
+      try {
+        const foundUrl = await searchWebsiteByName(leadData.companyName || '', siteCity)
+        if (foundUrl) {
+          websiteUrl = foundUrl
+          merged.website = foundUrl
+        }
+      } catch { /* continue */ }
+    }
   }
   if (websiteUrl) {
     step('website').status = 'running'
@@ -1408,12 +1502,15 @@ export async function enrichLead(
     notify()
   }
 
-  // Step 10: LinkedIn — busca ativa se nao tem URL
+  // Step 10: LinkedIn — busca ativa com fallbacks
   let linkedinUrl = leadData.linkedin || merged.linkedin
   if (!linkedinUrl) {
     step('linkedin').status = 'running'
-    step('linkedin').detail = 'Buscando pagina...'
+    step('linkedin').detail = 'Buscando pagina via Google...'
     notify()
+    const liCity = leadData.city || merged.city || ''
+
+    // Strategy 1: Google site:linkedin search
     try {
       const foundLiUrl = await findUrlViaGoogle(
         `site:linkedin.com/company "${leadData.companyName}"`,
@@ -1424,6 +1521,19 @@ export async function enrichLead(
         merged.linkedin = foundLiUrl
       }
     } catch { /* continue */ }
+
+    // Strategy 2: Google general search (fallback)
+    if (!linkedinUrl) {
+      step('linkedin').detail = 'Buscando pagina via pesquisa ampla...'
+      notify()
+      try {
+        const foundLi = await searchLinkedInByName(leadData.companyName || '', liCity)
+        if (foundLi) {
+          linkedinUrl = foundLi
+          merged.linkedin = foundLi
+        }
+      } catch { /* continue */ }
+    }
   }
   if (linkedinUrl) {
     step('linkedin').status = 'running'
