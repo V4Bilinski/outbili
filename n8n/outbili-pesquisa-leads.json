@@ -27,7 +27,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.apify.com/v2/acts/compass~crawler-google-places/runs?token={{$env.APIFY_TOKEN}}",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs?token=apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"searchStringsArray\": [\"{{ $json.query }}\"],\n  \"locationQuery\": \"{{ $json.location }}\",\n  \"maxCrawledPlacesPerSearch\": 20,\n  \"language\": \"pt-BR\",\n  \"scrapeContacts\": true,\n  \"scrapeEmails\": true\n}",
@@ -41,7 +41,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Wait for Apify run to complete\nconst runId = $input.first().json.data.id;\nconst token = $env.APIFY_TOKEN;\nlet status = 'RUNNING';\nlet datasetId = '';\n\nwhile (status === 'RUNNING' || status === 'READY') {\n  await new Promise(r => setTimeout(r, 5000));\n  const resp = await fetch(`https://api.apify.com/v2/acts/compass~crawler-google-places/runs/${runId}?token=${token}`);\n  const data = await resp.json();\n  status = data.data.status;\n  datasetId = data.data.defaultDatasetId;\n}\n\nif (status !== 'SUCCEEDED') throw new Error(`Apify run failed: ${status}`);\n\n// Get results\nconst itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=50`);\nconst items = await itemsResp.json();\n\nreturn [{ json: { items, count: items.length, datasetId } }];"
+        "jsCode": "// Wait for Apify run to complete\nconst runId = $input.first().json.data.id;\nconst token = 'apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf';\nlet status = 'RUNNING';\nlet datasetId = '';\n\nwhile (status === 'RUNNING' || status === 'READY') {\n  await new Promise(r => setTimeout(r, 5000));\n  const resp = await fetch(`https://api.apify.com/v2/acts/compass~crawler-google-places/runs/${runId}?token=${token}`);\n  const data = await resp.json();\n  status = data.data.status;\n  datasetId = data.data.defaultDatasetId;\n}\n\nif (status !== 'SUCCEEDED') throw new Error(`Apify run failed: ${status}`);\n\n// Get results\nconst itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=50`);\nconst items = await itemsResp.json();\n\nreturn [{ json: { items, count: items.length, datasetId } }];"
       },
       "id": "poll-maps",
       "name": "Poll & Get Results",

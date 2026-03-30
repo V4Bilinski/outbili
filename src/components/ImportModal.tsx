@@ -196,7 +196,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
           tier: 'Small',
           status: 'Novo',
           score: 0,
-          temperature: 'COLD',
+          temperature: 'Frio',
           spicedS: 0, spicedP: 0, spicedI: 0, spicedC: 0, spicedD: 0,
           website: company.website || '',
           instagram: company.instagram || '',

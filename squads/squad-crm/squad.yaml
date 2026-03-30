@@ -1,0 +1,192 @@
+name: squad-crm
+version: 1.0.0
+description: |
+  Squad de CRM & Business Operations para gestão completa da V4 Bilinski & Co.
+  Especializado em todo o ciclo de vida do cliente e operações de negócio:
+  Pré-vendas → Reunião → Fechamento → Distribuição → Produção → CS → Monetização → Financeiro.
+
+  Baseado em benchmarking de 13 plataformas (ClickUp, HubSpot, Salesforce, Pipedrive, Monday,
+  Ekyte, Pipefy, Bitrix24, Kommo, RD Station, Asana, Trello, Notion) com as melhores práticas
+  de cada uma incorporadas nos agentes especializados.
+
+  Missão: Tornar o Brabissimo o núcleo de inteligência operacional da V4 Bilinski & Co,
+  controlando todas as áreas com enriquecimento de dados e alta performance.
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: crm
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - crm
+  - business-operations
+  - sales-pipeline
+  - customer-success
+  - revenue-operations
+  - people-performance
+  - project-management
+  - financial-control
+  - production-management
+  - automation
+  - analytics
+  - v4-bilinski
+  - nucleo-inteligencia
+
+components:
+  agents:
+    # Orquestração Central
+    - crm-master.md
+    # Receita & Vendas (inspirado em Pipedrive + HubSpot + Kommo)
+    - sales-pipeline-architect.md
+    - pre-sales-specialist.md
+    # Ciclo de Vida do Cliente (inspirado em HubSpot + Salesforce)
+    - cs-retention-strategist.md
+    # Inteligência Financeira (inspirado em Salesforce + Bitrix24 + Ekyte)
+    - revenue-ops-analyst.md
+    # Operações & Entrega (inspirado em ClickUp + Ekyte + Monday)
+    - production-ops-manager.md
+    - project-delivery-manager.md
+    # Pessoas & Cultura (inspirado em Monday + ClickUp + Bitrix24)
+    - people-performance-coach.md
+    # Inteligência & Dados (inspirado em Salesforce + HubSpot)
+    - data-intelligence-analyst.md
+    # Automação & Integração
+    - automation-engineer.md
+
+  tasks:
+    # Pipeline de Vendas
+    - crm-pipeline-setup.md
+    - crm-lead-scoring-config.md
+    - crm-sales-forecast.md
+    - crm-deal-to-squad-bridge.md
+    # Pré-vendas
+    - crm-lead-qualification.md
+    - crm-pre-sales-workflow.md
+    # Customer Success
+    - crm-health-score-design.md
+    - crm-churn-prevention.md
+    - crm-nps-automation.md
+    - crm-renewal-tracking.md
+    # Revenue Operations
+    - crm-revenue-dashboard.md
+    - crm-roi-per-client.md
+    - crm-financial-forecasting.md
+    - crm-mrr-arr-tracking.md
+    # Produção & Projetos
+    - crm-demand-workflow.md
+    - crm-workload-balancing.md
+    - crm-sprint-tracking.md
+    - crm-project-template-setup.md
+    # Pessoas & Performance
+    - crm-okr-setup.md
+    - crm-performance-review.md
+    - crm-capacity-planning.md
+    - crm-onboarding-checklist.md
+    # Dados & Analytics
+    - crm-kpi-dashboard-setup.md
+    - crm-cross-entity-report.md
+    - crm-data-enrichment.md
+    # Automação
+    - crm-workflow-builder.md
+    - crm-notification-rules.md
+    - crm-integration-setup.md
+    # Auditoria & Otimização
+    - crm-full-audit.md
+    - crm-gap-analysis.md
+
+  workflows:
+    - sales-lifecycle.md
+    - client-onboarding-flow.md
+    - cs-retention-cycle.md
+    - monthly-review-cycle.md
+    - deal-to-delivery-bridge.md
+
+  checklists:
+    - pipeline-health-checklist.md
+    - client-health-checklist.md
+    - financial-audit-checklist.md
+    - production-quality-checklist.md
+    - crm-implementation-checklist.md
+
+  templates:
+    - sales-report-template.md
+    - client-health-report-template.md
+    - financial-review-template.md
+    - performance-review-template.md
+    - project-kickoff-template.md
+
+  tools:
+    # Já disponíveis
+    - playwright        # Automação de browser para testes de UI
+    - context7          # Documentação de APIs
+    - n8n               # Automações (via MCP)
+    - webfetch          # Busca de dados
+    # Integração Supabase
+    - supabase          # Operações de banco de dados
+
+  scripts: []
+
+  data:
+    - crm-benchmarking-matrix.md
+    - pipeline-stages-reference.md
+    - health-score-formula.md
+    - kpi-definitions.md
+    - v4-bilinski-processes.md
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads:
+    - squad-nexus  # Integra com growth marketing para aquisição
+
+philosophy:
+  core_mantra: "Controle total com inteligência em cada dado — do lead ao lucro."
+  pilares_operacionais:
+    - name: Receita & Crescimento
+      description: "Pipeline de vendas otimizado com forecasting e deal-to-squad bridge"
+      inspiracao: "Pipedrive (UX) + HubSpot (automação) + Kommo (WhatsApp)"
+    - name: Aquisição de Clientes
+      description: "Lead scoring, pré-vendas estruturado, conversão mensurável"
+      inspiracao: "HubSpot (lead scoring) + Pipedrive (activity-based) + RD Station (Brasil)"
+    - name: Customer Success
+      description: "Health score, NPS, alertas de churn, playbooks de retenção"
+      inspiracao: "HubSpot (CS Workspace) + Salesforce (churn prediction)"
+    - name: Financeiro & RevOps
+      description: "MRR/ARR, ROI por cliente, lucratividade, forecasting"
+      inspiracao: "Salesforce (revenue) + Bitrix24 (invoicing) + Ekyte (ROI por cliente)"
+    - name: Produção & Demandas
+      description: "Gestão de squads, workload, sprints, aprovações de criativos"
+      inspiracao: "ClickUp (hierarquia) + Ekyte (produção agência) + Monday (workload)"
+    - name: Pessoas & Performance
+      description: "OKRs, DISC, performance reviews, capacity planning"
+      inspiracao: "Monday (HR) + ClickUp (goals) + Bitrix24 (directory)"
+    - name: Inteligência de Dados
+      description: "Dashboards cross-entity, KPIs, ranking, drill-down"
+      inspiracao: "Salesforce (analytics) + HubSpot (dashboards)"
+  ciclo_completo:
+    etapas:
+      - "PRÉ-VENDAS: Lead scoring + qualificação + WhatsApp"
+      - "REUNIÃO: Activity-based selling + proposta automatizada"
+      - "FECHAMENTO: Contrato + assinatura + distribuição"
+      - "DISTRIBUIÇÃO: Deal-to-Squad bridge automático"
+      - "PRODUÇÃO: Demandas + sprints + workload + aprovação"
+      - "CS: Health score + NPS + alertas + retenção"
+      - "MONETIZAÇÃO: Upsell + expansion + renewal tracking"
+      - "FINANCEIRO: MRR/ARR + ROI + margem + forecast"
+  diferenciais_brabissimo:
+    - "Vertical para franquias de marketing digital — nenhuma plataforma atende 100%"
+    - "Deal-to-Squad bridge nativo — fechamento vira distribuição automática"
+    - "ROI por cliente em tempo real — custo operacional vs receita"
+    - "Health Score que considera produção — não apenas tickets e NPS"
+    - "Ranking NRR integrado — crescimento de receita por cliente"
+    - "Pessoas + Produção linkados — workload conectado à performance"
+    - "Financeiro operacional — lucratividade por operação em tempo real"

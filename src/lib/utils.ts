@@ -33,16 +33,16 @@ export function calculateSpicedScore(s: number, p: number, i: number, c: number,
   return Math.round(score * 10) / 10
 }
 
-export function getTemperatureFromScore(score: number): 'HOT' | 'WARM' | 'COLD' {
-  if (score >= 4) return 'HOT'
-  if (score >= 3) return 'WARM'
-  return 'COLD'
+export function getTemperatureFromScore(score: number): 'Quente' | 'Morno' | 'Frio' {
+  if (score >= 4) return 'Quente'
+  if (score >= 3) return 'Morno'
+  return 'Frio'
 }
 
 export function temperatureLabel(temp: string): string {
-  if (temp === 'HOT') return 'Quente'
-  if (temp === 'WARM') return 'Morno'
-  if (temp === 'COLD') return 'Frio'
+  if (temp === 'Quente') return 'Quente'
+  if (temp === 'Morno') return 'Morno'
+  if (temp === 'Frio') return 'Frio'
   return temp
 }
 

@@ -23,8 +23,8 @@ function CountUpValue({ end, color, isInView }: { end: number; color: string; is
 }
 
 function KPICards({ leads }: { leads: Lead[] }) {
-  const hotCount = leads.filter((l) => l.temperature === 'HOT').length
-  const warmCount = leads.filter((l) => l.temperature === 'WARM').length
+  const hotCount = leads.filter((l) => l.temperature === 'Quente').length
+  const warmCount = leads.filter((l) => l.temperature === 'Morno').length
   const meetingsToday = leads.filter((l) => l.status === 'Reunião').length
   const { ref, isInView } = useInView({ threshold: 0.2 })
 
@@ -68,7 +68,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
   const sorted = [...leads]
     .filter((l) => l.status !== 'Fechado' && l.status !== 'Perdido')
     .sort((a, b) => {
-      const tempOrder = { HOT: 0, WARM: 1, COLD: 2 }
+      const tempOrder: Record<string, number> = { Quente: 0, Morno: 1, Frio: 2 }
       const tempDiff = (tempOrder[a.temperature] ?? 2) - (tempOrder[b.temperature] ?? 2)
       if (tempDiff !== 0) return tempDiff
       return (b.score || 0) - (a.score || 0)
@@ -96,7 +96,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
       <div className="divide-y divide-border">
         {sorted.map((lead) => {
           const action = getAction(lead)
-          const tempVariant = lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'
+          const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
           const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
 
           return (
@@ -107,7 +107,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
-                  lead.temperature === 'HOT' ? 'bg-hot/12 text-hot' : lead.temperature === 'WARM' ? 'bg-warm/12 text-warm' : 'bg-cold/12 text-cold'
+                  lead.temperature === 'Quente' ? 'bg-hot/12 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/12 text-warm' : 'bg-cold/12 text-cold'
                 }`}>
                   {score}
                 </div>
@@ -115,7 +115,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-text-primary truncate">{lead.companyName}</p>
                     <Badge variant={tempVariant} size="sm">
-                      {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
+                      {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                     </Badge>
                   </div>
                   <p className="text-xs text-text-muted mt-0.5">{action.text} · {lead.segment}</p>

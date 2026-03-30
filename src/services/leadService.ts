@@ -41,5 +41,5 @@ export async function getLeadsByTemperature(temperature: string): Promise<Lead[]
 }
 
 export async function getHotLeads(): Promise<Lead[]> {
-  return getLeads(`{temperature} = "HOT"`)
+  return getLeads(`{temperature} = "Quente"`)
 }

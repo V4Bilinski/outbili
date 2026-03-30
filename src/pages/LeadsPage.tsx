@@ -64,7 +64,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
         <tbody>
           {leads.map((lead, index) => {
             const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
-            const tempColors = { HOT: 'bg-red text-white', WARM: 'bg-warning text-black', COLD: 'bg-cold text-white' }
+            const tempColors: Record<string, string> = { Quente: 'bg-red text-white', Morno: 'bg-warning text-black', Frio: 'bg-cold text-white' }
             const statusInfo = LEAD_STATUSES.find((s) => s.value === lead.status)
             return (
               <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${index * 50}ms` }}>
@@ -98,8 +98,8 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.COLD}`}>
-                    {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
+                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.Frio}`}>
+                    {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                   </span>
                 </td>
               </tr>

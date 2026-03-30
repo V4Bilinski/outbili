@@ -8,7 +8,7 @@ export interface Lead {
   monthlyRevenue?: number
   status: string
   score: number
-  temperature: 'HOT' | 'WARM' | 'COLD'
+  temperature: 'Quente' | 'Morno' | 'Frio'
   spicedS: number
   spicedP: number
   spicedI: number
@@ -189,7 +189,7 @@ export interface NextAction {
   leadId: string
   companyName: string
   contactName?: string
-  temperature: 'HOT' | 'WARM' | 'COLD'
+  temperature: 'Quente' | 'Morno' | 'Frio'
   score: number
   action: string
   actionType: 'whatsapp' | 'view' | 'import' | 'meeting'

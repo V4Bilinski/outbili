@@ -196,8 +196,8 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       className="p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
     >
       <div className="flex items-start justify-between mb-1.5">
-        <Badge variant={lead.temperature === 'HOT' ? 'hot' : lead.temperature === 'WARM' ? 'warm' : 'cold'} size="sm">
-          {lead.temperature === 'HOT' ? 'Quente' : lead.temperature === 'WARM' ? 'Morno' : 'Frio'}
+        <Badge variant={lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'} size="sm">
+          {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
         </Badge>
         <span className="text-xs font-mono font-bold text-text-muted">{score.toFixed(1)}</span>
       </div>

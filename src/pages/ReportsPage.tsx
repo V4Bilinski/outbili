@@ -37,8 +37,8 @@ export function ReportsPage() {
 
   // --- KPIs ---
   const totalLeads = allLeads.length
-  const hotLeads = allLeads.filter((l) => l.temperature === 'HOT').length
-  const warmLeads = allLeads.filter((l) => l.temperature === 'WARM').length
+  const hotLeads = allLeads.filter((l) => l.temperature === 'Quente').length
+  const warmLeads = allLeads.filter((l) => l.temperature === 'Morno').length
   const contactados = allLeads.filter((l) => ['Contactado', 'Respondeu', 'Reunião', 'Proposta', 'Fechado'].includes(l.status)).length
   const responderam = allLeads.filter((l) => ['Respondeu', 'Reunião', 'Proposta', 'Fechado'].includes(l.status)).length
   const reunioes = allLeads.filter((l) => ['Reunião', 'Proposta', 'Fechado'].includes(l.status)).length
@@ -69,7 +69,7 @@ export function ReportsPage() {
   // --- Segment analysis ---
   const segmentData = SEGMENTS.map((seg) => {
     const segLeads = allLeads.filter((l) => l.segment === seg.name)
-    const segHot = segLeads.filter((l) => l.temperature === 'HOT').length
+    const segHot = segLeads.filter((l) => l.temperature === 'Quente').length
     const segClosed = segLeads.filter((l) => l.status === 'Fechado').length
     return {
       name: seg.name,
@@ -84,11 +84,11 @@ export function ReportsPage() {
   const tempData = [
     { name: 'Quente', value: hotLeads, color: '#FF3B30' },
     { name: 'Morno', value: warmLeads, color: '#FF9F0A' },
-    { name: 'Frio', value: allLeads.filter((l) => l.temperature === 'COLD').length, color: '#71717A' },
+    { name: 'Frio', value: allLeads.filter((l) => l.temperature === 'Frio').length, color: '#71717A' },
   ].filter((d) => d.value > 0)
 
   // --- Predictive metrics ---
-  const avgScoreHot = hotLeads > 0 ? (allLeads.filter((l) => l.temperature === 'HOT').reduce((a, l) => a + (l.score || 0), 0) / hotLeads).toFixed(1) : '0'
+  const avgScoreHot = hotLeads > 0 ? (allLeads.filter((l) => l.temperature === 'Quente').reduce((a, l) => a + (l.score || 0), 0) / hotLeads).toFixed(1) : '0'
   const pipelineValue = allLeads
     .filter((l) => l.status !== 'Fechado' && l.status !== 'Perdido')
     .reduce((a, l) => a + (l.monthlyRevenue || 0) * 0.12, 0) // 12% WTP estimate
