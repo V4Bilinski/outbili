@@ -1643,7 +1643,8 @@ export async function enrichLead(
   // --- Save enriched data to Airtable ---
   const updateFields: Partial<Lead> = { ...merged }
   Object.assign(updateFields, spiced)
-  updateFields.score = spiced.spicedS + spiced.spicedP + spiced.spicedI + spiced.spicedC + spiced.spicedD
+  // Score = media ponderada SPICED (S*25% + P*25% + I*20% + C*15% + D*15%) = escala 1 a 5
+  updateFields.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
   const successSteps = steps.filter((s) => s.status === 'done').length
   updateFields.enrichmentStatus = successSteps >= 3 ? 'complete' : successSteps > 0 ? 'basic' : 'pending'
 
