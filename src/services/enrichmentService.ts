@@ -919,26 +919,51 @@ export async function enrichLead(
         cnpjCep = (cnpjData as any)._cep || ''
         // Extrair decisor dos sócios da RF (Administrador > Sócio > primeiro da lista)
         const rfDecisionMaker = extractDecisionMaker(cnpjData.partners)
-        // Use ReceitaWS decisor name if available (more accurate)
         const decisorName = (cnpjData as any)._receitaWsDecisor || rfDecisionMaker?.nome
-        // Use ALL phones from ReceitaWS (includes mobile/WhatsApp)
-        const allPhones: string[] = (cnpjData as any)._receitaWsPhones || []
-        const mobilePhones = allPhones.filter(p => classifyPhone(p) === 'mobile')
+
+        // Collect ALL available phones
+        const receitaWsPhones: string[] = (cnpjData as any)._receitaWsPhones || []
         const rfPhoneClean = cnpjData.rfPhone ? cnpjData.rfPhone.replace(/\D/g, '') : ''
 
-        // Priority: mobile phone (WhatsApp) from ReceitaWS > rfPhone from other APIs
-        const bestWhatsApp = mobilePhones[0] || (rfPhoneClean.length >= 10 ? rfPhoneClean : '')
-        if (bestWhatsApp && decisorName) {
+        // Add rfPhone to the pool if not already there
+        const allPhones = [...receitaWsPhones]
+        if (rfPhoneClean && rfPhoneClean.length >= 10 && !allPhones.includes(rfPhoneClean)) {
+          allPhones.push(rfPhoneClean)
+        }
+
+        // Classify and sort: CELULAR (WhatsApp) first, FIXO second
+        const mobilePhones = allPhones.filter(p => classifyPhone(p) === 'mobile')
+        const landlinePhones = allPhones.filter(p => classifyPhone(p) === 'landline')
+
+        // PRIORITY 1: Celular/WhatsApp do decisor (MOST IMPORTANT)
+        if (mobilePhones.length > 0 && decisorName) {
+          const whatsappNumber = formatPhone(mobilePhones[0])
           newContacts.push({
             name: decisorName,
-            whatsapp: formatPhone(bestWhatsApp),
-            source: mobilePhones.length > 0 ? 'receita_federal_whatsapp' : 'receita_federal',
+            whatsapp: whatsappNumber,
+            source: 'receita_federal_whatsapp',
+          })
+          // Also update rfPhone on the lead to the mobile number
+          merged.rfPhone = whatsappNumber
+        }
+        // PRIORITY 2: If no mobile, use landline as fallback
+        else if (landlinePhones.length > 0 && decisorName) {
+          newContacts.push({
+            name: decisorName,
+            whatsapp: formatPhone(landlinePhones[0]),
+            source: 'receita_federal',
           })
         }
-        // Also add landline as separate contact if we have mobile
-        if (mobilePhones.length > 0 && rfPhoneClean && classifyPhone(rfPhoneClean) === 'landline') {
-          newContacts.push({ name: `${leadData.companyName || 'Empresa'} (fixo)`, whatsapp: formatPhone(rfPhoneClean), source: 'receita_federal' })
+        // PRIORITY 3: Any phone without decisor name
+        else if (allPhones.length > 0) {
+          newContacts.push({
+            name: rfDecisionMaker?.nome || 'Decisor nao identificado',
+            whatsapp: formatPhone(allPhones[0]),
+            source: 'receita_federal',
+          })
         }
+
+        // Email contact (separate entry for dedup)
         if (cnpjData.rfEmail && cnpjData.rfEmail.includes('@') && decisorName) {
           newContacts.push({ name: decisorName, email: cnpjData.rfEmail, source: 'receita_federal' })
         }
