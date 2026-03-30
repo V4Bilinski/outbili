@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LeadsPage } from './pages/LeadsPage'
 import { CompanyPage } from './pages/CompanyPage'
 import { SearchPage } from './pages/SearchPage'
+import { PipelinePage } from './pages/PipelinePage'
 import { CampaignsPage } from './pages/CampaignsPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -28,6 +29,7 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="leads/:id" element={<CompanyPage />} />
+            <Route path="pipeline" element={<PipelinePage />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="campaigns/new" element={<CampaignsPage />} />
