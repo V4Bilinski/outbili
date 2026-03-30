@@ -11,7 +11,8 @@ import { calculateSpicedScore } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useMassEnrichment } from '../hooks/useMassEnrichment'
 import { useCountUp } from '../hooks/useCountUp'
 import { useInView } from '../hooks/useInView'
 import { AnimateIn } from '../components/ui/AnimateIn'
@@ -221,6 +222,13 @@ export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
   const navigate = useNavigate()
   const [showImport, setShowImport] = useState(false)
+  const massEnrichment = useMassEnrichment()
+
+  const handleEnrichRequest = useCallback((importedLeads: any[]) => {
+    if (importedLeads.length > 0 && !massEnrichment.isRunning) {
+      massEnrichment.enrichAll(importedLeads)
+    }
+  }, [massEnrichment])
 
   if (isLoading) {
     return (
@@ -349,7 +357,7 @@ export function DashboardPage() {
           ))}
         </div>
 
-        <ImportModal open={showImport} onClose={() => setShowImport(false)} />
+        <ImportModal open={showImport} onClose={() => setShowImport(false)} onEnrichRequest={handleEnrichRequest} />
       </div>
     )
   }
@@ -386,7 +394,7 @@ export function DashboardPage() {
         </AnimateIn>
       </div>
 
-      <ImportModal open={showImport} onClose={() => setShowImport(false)} />
+      <ImportModal open={showImport} onClose={() => setShowImport(false)} onEnrichRequest={handleEnrichRequest} />
     </div>
   )
 }

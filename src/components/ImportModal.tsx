@@ -3,10 +3,11 @@ import { parseFile, ACCEPTED_FORMATS, FORMAT_LABELS, type ParseResult } from '..
 import { useCreateLead } from '../hooks/useLeads'
 import { Button } from './ui/Button'
 import { cn } from '../lib/cn'
-import { Upload, X, CheckCircle, AlertTriangle, ArrowRight, Scan, Sparkles } from 'lucide-react'
+import { Upload, X, CheckCircle, AlertTriangle, ArrowRight, Scan, Sparkles, Zap } from 'lucide-react'
 import { toast } from 'sonner'
+import type { Lead } from '../types'
 
-type Step = 'upload' | 'reading' | 'preview' | 'importing' | 'done'
+type Step = 'upload' | 'reading' | 'preview' | 'importing' | 'done' | 'enriching'
 
 // Fields that can be detected
 const DETECTABLE_FIELDS = [
@@ -37,6 +38,7 @@ const READING_MESSAGES = [
 interface ImportModalProps {
   open: boolean
   onClose: () => void
+  onEnrichRequest?: (leads: Lead[]) => void
 }
 
 // Animated reading step
@@ -153,13 +155,14 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
   )
 }
 
-export function ImportModal({ open, onClose }: ImportModalProps) {
+export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps) {
   const [step, setStep] = useState<Step>('upload')
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [segment, setSegment] = useState('')
   const [importProgress, setImportProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [createdLeads, setCreatedLeads] = useState<Lead[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createLead = useCreateLead()
 
@@ -182,10 +185,11 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
     setStep('importing')
     const companies = parseResult.companies.filter((_, i) => selected.has(i))
     let done = 0
+    const imported: Lead[] = []
 
     for (const company of companies) {
       try {
-        await createLead.mutateAsync({
+        const lead = await createLead.mutateAsync({
           companyName: company.companyName,
           cnpj: company.cnpj || '',
           segment: segment || company.segment || '',
@@ -203,11 +207,13 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
           businessSummary: [company.notes, company.contactName ? `Contato: ${company.contactName}${company.contactRole ? ` (${company.contactRole})` : ''}` : ''].filter(Boolean).join(' · '),
           sourceHtmlReport: 'importado_manual',
         })
+        imported.push(lead)
       } catch { /* error handled by mutation */ }
       done++
       setImportProgress(Math.round((done / companies.length) * 100))
     }
 
+    setCreatedLeads(imported)
     setStep('done')
     toast.success(`${done} empresas importadas com sucesso`)
   }
@@ -218,6 +224,7 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
     setSelected(new Set())
     setSegment('')
     setImportProgress(0)
+    setCreatedLeads([])
   }
 
   if (!open) return null
@@ -428,8 +435,38 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
               </div>
               <h3 className="text-lg font-bold text-text-primary">Importação concluída!</h3>
               <p className="text-sm text-text-muted">
-                {selected.size} empresa{selected.size !== 1 ? 's' : ''} adicionada{selected.size !== 1 ? 's' : ''} ao pipeline.
+                {createdLeads.length} empresa{createdLeads.length !== 1 ? 's' : ''} adicionada{createdLeads.length !== 1 ? 's' : ''} ao pipeline.
               </p>
+
+              {/* Enrichment CTA */}
+              {createdLeads.length > 0 && onEnrichRequest && (
+                <div className="p-4 rounded-2xl bg-red/5 border border-red/15 text-left space-y-3 max-w-md mx-auto">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-red/10">
+                      <Zap className="h-5 w-5 text-red" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">Enriquecer dados automaticamente?</p>
+                      <p className="text-[11px] text-text-muted">
+                        CNPJ, Google Maps, Instagram, LinkedIn, contatos e mais
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    icon={<Zap className="h-4 w-4" />}
+                    onClick={() => {
+                      onEnrichRequest(createdLeads)
+                      reset()
+                      onClose()
+                      toast.success(`Enriquecimento iniciado para ${createdLeads.length} empresa${createdLeads.length !== 1 ? 's' : ''}`)
+                    }}
+                  >
+                    Enriquecer {createdLeads.length} empresa{createdLeads.length !== 1 ? 's' : ''}
+                  </Button>
+                </div>
+              )}
+
               <p className="text-[11px] text-text-muted">
                 Identificadas com a tag <span className="text-info font-medium bg-info/10 px-1.5 py-0.5 rounded">Importado manual</span> na lista de leads.
               </p>
