@@ -1282,7 +1282,14 @@ export function SearchPage() {
       </>)}
 
       {/* Processing animation */}
-      {isSearching && (
+      {isSearching && (() => {
+        // Progress: logarithmic curve (fast start, slow end) — max 300s, caps at 95%
+        // When leads are found (polling phase), jump to 90%+
+        const progressPct = n8n.phase === 'polling'
+          ? Math.min(98, 90 + Math.min(8, n8n.leadsCreated))
+          : Math.min(95, Math.round(Math.log(1 + n8n.elapsed) / Math.log(1 + 300) * 100))
+
+        return (
         <Card className="animate-[fade-in_0.4s_ease-out]">
           <div className="flex items-center gap-3 mb-5">
             <div className="relative p-2.5 rounded-xl bg-red/10 border border-red/20">
@@ -1291,9 +1298,13 @@ export function SearchPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary">Pesquisa em andamento</p>
-              <p className="text-xs text-text-muted">Analisando mercado e coletando leads qualificados...</p>
+              <p className="text-xs text-text-muted">
+                {n8n.phase === 'polling'
+                  ? `${n8n.leadsCreated} leads encontrados, finalizando...`
+                  : 'Analisando mercado e coletando leads qualificados...'}
+              </p>
             </div>
-            <span className="ml-auto text-sm font-mono text-red font-bold">{Math.min(99, Math.round((n8n.elapsed / 120) * 100))}%</span>
+            <span className="ml-auto text-sm font-mono text-red font-bold">{progressPct}%</span>
           </div>
 
           {/* Progress bar */}
@@ -1301,7 +1312,7 @@ export function SearchPage() {
             <div
               className="h-full bg-gradient-to-r from-red via-amber-400 to-red rounded-full transition-all duration-1000"
               style={{
-                width: `${Math.min(95, (n8n.elapsed / 120) * 100)}%`,
+                width: `${progressPct}%`,
                 backgroundSize: '200% 100%',
                 animation: 'shimmer 2s linear infinite',
               }}
@@ -1311,13 +1322,13 @@ export function SearchPage() {
           {/* Search steps visualization */}
           <div className="space-y-2 mb-5">
             {[
-              { label: 'Enviando filtros para o motor de busca', done: n8n.elapsed > 2 },
-              { label: 'Mapeando empresas no Google Maps', done: n8n.elapsed > 15 },
-              { label: 'Coletando dados de contato e WhatsApp', done: n8n.elapsed > 40 },
-              { label: 'Validando faturamento e qualificacao', done: n8n.elapsed > 70 },
-              { label: 'Salvando leads no Airtable', done: n8n.elapsed > 100 },
+              { label: 'Enviando filtros para o motor de busca', done: n8n.elapsed > 3 },
+              { label: 'Mapeando empresas no Google Maps', done: n8n.elapsed > 20 },
+              { label: 'Coletando dados de contato e WhatsApp', done: n8n.elapsed > 60 },
+              { label: 'Validando faturamento e qualificacao', done: n8n.elapsed > 120 },
+              { label: 'Salvando leads no Airtable', done: n8n.phase === 'polling' },
             ].map((step, i) => {
-              const isActive = !step.done && (i === 0 || (n8n.elapsed > [0, 2, 15, 40, 70][i]))
+              const isActive = !step.done && (i === 0 || (n8n.elapsed > [0, 3, 20, 60, 120][i]))
               return (
                 <div key={step.label} className="flex items-center gap-2.5 text-[11px]">
                   {step.done ? (
@@ -1349,7 +1360,8 @@ export function SearchPage() {
 
           <p className="text-[10px] text-text-muted mt-3 text-center">A pesquisa roda em background. Os leads serao salvos automaticamente no Airtable.</p>
         </Card>
-      )}
+        )
+      })()}
 
       {/* Error */}
       {n8n.phase === 'error' && (
