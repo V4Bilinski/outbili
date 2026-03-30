@@ -399,6 +399,14 @@ function parseHTML(html: string): { rows: Record<string, string>[]; columns: str
   return { rows: [], columns: [] }
 }
 
+// --- Word/DOCX Parser (mammoth) ---
+async function parseDocx(buffer: ArrayBuffer): Promise<{ rows: Record<string, string>[]; columns: string[]; rawText: string }> {
+  const mammoth = await import('mammoth')
+  const result = await mammoth.extractRawText({ arrayBuffer: buffer })
+  const rawText = result.value || ''
+  return { rows: [], columns: [], rawText }
+}
+
 // --- PDF Parser (pdfjs-dist) ---
 async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, string>[]; columns: string[]; rawText: string }> {
   const pdfjsLib = await import('pdfjs-dist')
@@ -489,6 +497,11 @@ export async function parseFile(file: File): Promise<ParseResult> {
       columns = result.columns
       rawText = result.rawText
       fileType = 'PDF'
+    } else if (ext === 'docx' || ext === 'doc') {
+      const buffer = await file.arrayBuffer()
+      const result = await parseDocx(buffer)
+      rawText = result.rawText
+      fileType = 'Word'
     } else if (ext === 'txt' || ext === 'md' || ext === 'text' || !ext) {
       rawText = await file.text()
       fileType = 'Texto'
@@ -546,5 +559,5 @@ export async function parseFile(file: File): Promise<ParseResult> {
   }
 }
 
-export const ACCEPTED_FORMATS = '.csv,.tsv,.xlsx,.xls,.html,.htm,.pdf,.txt,.md,.text'
-export const FORMAT_LABELS = 'CSV, Excel, HTML, PDF, TXT'
+export const ACCEPTED_FORMATS = '.csv,.tsv,.xlsx,.xls,.html,.htm,.pdf,.docx,.doc,.txt,.md,.text'
+export const FORMAT_LABELS = 'CSV, Excel, Word, PDF, TXT'
