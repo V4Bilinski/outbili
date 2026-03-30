@@ -500,6 +500,68 @@ async function enrichByGoogleSearch(companyName: string, city?: string, state?: 
   return Object.keys(enriched).length > 0 ? enriched : null
 }
 
+// --- Apify RAG Web Browser (deep research on company) ---
+async function enrichByRagBrowser(companyName: string, cnpj?: string, city?: string): Promise<Partial<Lead> & { phones: string[]; emails: string[] } | null> {
+  const query = cnpj
+    ? `"${companyName}" CNPJ ${cnpj} telefone whatsapp email contato`
+    : `"${companyName}" ${city || 'Brasil'} telefone whatsapp email contato dono proprietario`
+
+  const items = await runActor('apify/rag-web-browser', {
+    query,
+    maxResults: 5,
+  }, 90_000)
+  if (!items?.length) return null
+
+  const phones: string[] = []
+  const emails: string[] = []
+  const enriched: Partial<Lead> = {}
+
+  for (const item of items) {
+    const text = (item.text || item.markdown || item.content || '').slice(0, 5000)
+
+    // Extract phones from RAG results
+    const phoneMatches = text.match(/(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)(?:9?\s?\d{4}[\s-]?\d{4})/g)
+    if (phoneMatches) {
+      for (const p of phoneMatches) {
+        const digits = p.replace(/\D/g, '')
+        if (digits.length >= 10 && digits.length <= 13 && !phones.includes(digits)) {
+          phones.push(digits)
+        }
+      }
+    }
+
+    // Extract emails
+    const emailMatches = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)
+    if (emailMatches) {
+      for (const e of emailMatches) {
+        if (!emails.includes(e.toLowerCase())) emails.push(e.toLowerCase())
+      }
+    }
+
+    // Extract website
+    if (!enriched.website) {
+      const urlMatch = text.match(/https?:\/\/(?:www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?)/i)
+      if (urlMatch && !urlMatch[0].includes('google') && !urlMatch[0].includes('facebook') && !urlMatch[0].includes('instagram')) {
+        enriched.website = urlMatch[0]
+      }
+    }
+
+    // Extract Instagram
+    if (!enriched.instagram) {
+      const igMatch = text.match(/instagram\.com\/([a-zA-Z0-9._]+)/i)
+      if (igMatch) enriched.instagram = `https://instagram.com/${igMatch[1]}`
+    }
+
+    // Extract LinkedIn
+    if (!enriched.linkedin) {
+      const liMatch = text.match(/linkedin\.com\/company\/([a-zA-Z0-9-]+)/i)
+      if (liMatch) enriched.linkedin = `https://linkedin.com/company/${liMatch[1]}`
+    }
+  }
+
+  return { ...enriched, phones, emails }
+}
+
 async function enrichByGoogleMaps(companyName: string, city?: string, state?: string): Promise<Partial<Lead> & { contacts?: any[] } | null> {
   const location = [city, state || 'Brasil'].filter(Boolean).join(', ')
 
@@ -830,6 +892,7 @@ export async function enrichLead(
     { source: 'geolocation', status: (alreadyEnriched && hasGeo) ? 'skipped' : 'pending', label: 'Geolocalizacao (CEP)', estimatedMs: 2000 },
     { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
     { source: 'google_search', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
+    { source: 'rag_browser', status: 'pending', label: 'RAG Web Browser (pesquisa profunda)', estimatedMs: 60000 },
     { source: 'google_maps', status: (alreadyEnriched && hasGoogleData) ? 'skipped' : 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },
     { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (contatos)', estimatedMs: 15000 },
     { source: 'instagram', status: (alreadyEnriched && hasInstagramData) ? 'skipped' : 'pending', label: 'Instagram', estimatedMs: 25000 },
@@ -1113,7 +1176,49 @@ export async function enrichLead(
   }
   notify()
 
-  // Step 6: Google Maps / Business Profile
+  // Step 6: RAG Web Browser (deep research — phones, emails, socials)
+  step('rag_browser').status = 'running'
+  notify()
+  try {
+    const ragData = await enrichByRagBrowser(
+      leadData.companyName || '',
+      leadData.cnpj?.replace(/\D/g, ''),
+      leadData.city || merged.city,
+    )
+    if (ragData) {
+      mergeField('website', ragData.website)
+      mergeField('instagram', ragData.instagram)
+      mergeField('linkedin', ragData.linkedin)
+
+      // Add discovered phones as contacts (prioritize mobile/WhatsApp)
+      const ragMobiles = ragData.phones.filter(p => classifyPhone(p) === 'mobile')
+      const ragLandlines = ragData.phones.filter(p => classifyPhone(p) === 'landline')
+      for (const phone of [...ragMobiles, ...ragLandlines].slice(0, 3)) {
+        newContacts.push({
+          whatsapp: formatPhone(phone),
+          source: 'rag_web_browser',
+        })
+      }
+      for (const email of ragData.emails.slice(0, 2)) {
+        newContacts.push({ email, source: 'rag_web_browser' })
+      }
+    }
+    step('rag_browser').status = 'done'
+    if (ragData) {
+      const ragDetails = [
+        ragData.phones.length > 0 ? `${ragData.phones.length} tel` : null,
+        ragData.emails.length > 0 ? `${ragData.emails.length} email` : null,
+        ragData.website ? 'Website' : null,
+        ragData.instagram ? 'Instagram' : null,
+      ].filter(Boolean)
+      if (ragDetails.length > 0) step('rag_browser').detail = ragDetails.join(' · ')
+    }
+  } catch {
+    step('rag_browser').status = 'error'
+  }
+  notify()
+
+  // Step 7: Google Maps / Business Profile
   step('google_maps').status = 'running'
   notify()
   try {
