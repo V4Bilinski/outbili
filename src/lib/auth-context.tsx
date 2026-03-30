@@ -3,6 +3,7 @@ import { login as loginService, logActivity, type User } from '../services/authS
 import { useLocation } from 'react-router-dom'
 
 const STORAGE_KEY = 'outbili_user'
+const ADMIN_EMAIL = 'luizhenrique.benicio@v4company.com'
 
 interface AuthContextType {
   user: User | null
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       isLoading,
-      isAdmin: user?.role === 'admin',
+      isAdmin: user?.email?.toLowerCase() === ADMIN_EMAIL,
       login,
       logout,
       track,

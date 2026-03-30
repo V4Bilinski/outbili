@@ -43,27 +43,35 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6 animate-[fade-in_0.4s_ease-out]">
-        {/* Logo */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red to-red-dark flex items-center justify-center">
-              <span className="text-white font-bold text-lg">O</span>
-            </div>
-            <span className="text-xl font-bold font-heading text-text-primary">OUTBILI</span>
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4 overflow-hidden relative">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full rounded-full bg-red/[0.03] blur-[120px] animate-[float_8s_ease-in-out_infinite]" />
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full rounded-full bg-red/[0.05] blur-[100px] animate-[float_6s_ease-in-out_infinite_reverse]" />
+      </div>
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
+        {/* Logo V4 */}
+        <div className="text-center animate-[fade-in_0.5s_ease-out]">
+          <div className="inline-flex items-center gap-3 mb-2">
+            <img
+              src="/v4-icon.png"
+              alt="V4 Company"
+              className="w-12 h-12 rounded-xl animate-[pulse-glow_3s_ease-in-out_infinite] shadow-lg shadow-red/20"
+            />
+            <span className="text-2xl font-bold font-heading text-text-primary tracking-tight">OUTBILI</span>
           </div>
-          <p className="text-xs text-text-muted">Sistema de prospeccao outbound · Bilinski&Co</p>
+          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Sistema de prospeccao outbound · Bilinski&Co</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl bg-surface border border-border p-6 space-y-5">
+        <div className="rounded-2xl bg-surface border border-border p-6 space-y-5 animate-[slide-up_0.5s_cubic-bezier(0.16,1,0.3,1)] backdrop-blur-sm shadow-2xl shadow-black/20">
           {/* Mode toggle */}
           <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border">
             <button
               onClick={() => setMode('login')}
               className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
+                'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer',
                 mode === 'login' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary',
               )}
             >
@@ -72,7 +80,7 @@ export function LoginPage() {
             <button
               onClick={() => setMode('signup')}
               className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
+                'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer',
                 mode === 'signup' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary',
               )}
             >
@@ -82,7 +90,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
-              <div>
+              <div className="animate-[fade-in_0.3s_ease-out]">
                 <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome completo</label>
                 <input
                   type="text"
@@ -121,7 +129,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer p-1 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -131,7 +139,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-red hover:bg-red-dark text-white font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full h-12 rounded-xl bg-red hover:bg-red-dark text-white font-semibold text-sm transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg hover:shadow-red/25 active:scale-[0.98]"
             >
               {isLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
@@ -144,9 +152,19 @@ export function LoginPage() {
           </form>
         </div>
 
-        <p className="text-[10px] text-text-muted text-center">
-          OUTBILI v1.0 · Bilinski&Co
-        </p>
+        <div className="flex items-center justify-center gap-1.5 text-[10px] text-text-muted animate-[fade-in_1s_ease-out]">
+          <span>Criado por</span>
+          <a
+            href="https://www.instagram.com/luizhenriquexpro/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red hover:text-red-dark transition-colors font-medium"
+          >
+            @luizhenriquexpro
+          </a>
+          <span className="mx-1">·</span>
+          <span className="font-medium text-text-secondary">V4 Bilinski&Co</span>
+        </div>
       </div>
     </div>
   )

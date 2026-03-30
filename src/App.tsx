@@ -30,6 +30,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const { isAdmin } = useAuth()
+  if (!isAdmin) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -48,7 +54,7 @@ export default function App() {
               <Route path="campaigns/:id" element={<CampaignsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="admin" element={<AdminPage />} />
+              <Route path="admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
             </Route>
           </Routes>
         </AuthProvider>

@@ -62,9 +62,7 @@ export async function createUser(data: {
   email: string
   password: string
   fullName: string
-  role?: 'admin' | 'user'
 }): Promise<User> {
-  // Check if email already exists
   const existing = await getUserByEmail(data.email)
   if (existing) throw new Error('Email ja cadastrado')
 
@@ -74,7 +72,7 @@ export async function createUser(data: {
       email: data.email.toLowerCase().trim(),
       passwordHash,
       fullName: data.fullName,
-      role: data.role || 'user',
+      role: 'user',
       isActive: true,
       createdAt: new Date().toISOString(),
     },

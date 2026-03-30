@@ -206,15 +206,15 @@ async function fetchReceitaWs(cnpj: string): Promise<{ lead: Partial<Lead>; phon
   } catch { return null }
 }
 
-// Classify phone: mobile (9 digits after DDD) = likely WhatsApp
+// Classify phone: mobile (starts with 9 after DDD) = likely WhatsApp
 function classifyPhone(phone: string): 'mobile' | 'landline' {
   const digits = phone.replace(/\D/g, '')
-  // Brazilian mobile: DDD (2 digits) + 9 + 8 digits = 11 total
-  // With country code: 55 + DDD + 9XXXX-XXXX = 13 digits
   const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits
-  // Mobile starts with 9 after DDD
+  // Brazilian mobile formats:
+  // New: DDD (2) + 9 + 8 digits = 11 total (e.g., 11999887766)
+  // Old: DDD (2) + 8 digits starting with 9 = 10 total (e.g., 6199921313)
   if (withoutCountry.length === 11 && withoutCountry[2] === '9') return 'mobile'
-  if (withoutCountry.length === 10) return 'landline'
+  if (withoutCountry.length === 10 && withoutCountry[2] === '9') return 'mobile'
   return 'landline'
 }
 
