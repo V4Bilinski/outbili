@@ -309,7 +309,7 @@ export function PipelinePage() {
         <AnimateIn delay={80}>
           <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none">
             {PIPELINE_COLUMNS.map((col) => {
-              const colLeads = allLeads.filter((l) => l.status === col.value)
+              const colLeads = allLeads.filter((l) => (l.status || 'Novo') === col.value)
               const isOver = overColumn === col.value
 
               return (
