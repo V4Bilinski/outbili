@@ -536,9 +536,33 @@ export async function enrichLead(
   // Helper to find step by source name (avoids hardcoded indices)
   const step = (source: string) => steps.find(s => s.source === source)!
 
+  // Classify a URL to the correct field (website vs instagram vs linkedin vs facebook)
+  const classifyUrl = (url: string): { field: keyof Lead; value: string } | null => {
+    if (!url) return null
+    const lower = url.toLowerCase()
+    if (lower.includes('instagram.com') || lower.includes('instagr.am')) return { field: 'instagram', value: url }
+    if (lower.includes('linkedin.com')) return { field: 'linkedin', value: url }
+    if (lower.includes('facebook.com') || lower.includes('fb.com')) return { field: 'facebook', value: url }
+    if (lower.includes('linktr.ee') || lower.includes('linklist.bio') || lower.includes('links.') || lower.includes('bio/')) return { field: 'website', value: url }
+    return { field: 'website', value: url }
+  }
+
   // Helper to merge without overwriting existing user data
+  // Automatically classifies URLs to the correct field
   const mergeField = (key: keyof Lead, value: any) => {
-    if (value && !leadData[key]) {
+    if (!value) return
+    // If writing to website, classify the URL first
+    if (key === 'website' && typeof value === 'string') {
+      const classified = classifyUrl(value)
+      if (classified && classified.field !== 'website') {
+        // URL belongs to a social field, not website
+        if (!leadData[classified.field] && !(merged as any)[classified.field]) {
+          ;(merged as any)[classified.field] = classified.value
+        }
+        return
+      }
+    }
+    if (!leadData[key] && !(merged as any)[key]) {
       ;(merged as any)[key] = value
     }
   }
@@ -911,6 +935,18 @@ export async function enrichLead(
 
   // --- Auto-score SPICED ---
   const spiced = calculateSpicedScore(leadData, merged)
+
+  // --- Reclassify misplaced URLs (e.g., Instagram URL in website field) ---
+  const finalData = { ...leadData, ...merged }
+  if (finalData.website) {
+    const classified = classifyUrl(finalData.website)
+    if (classified && classified.field !== 'website') {
+      if (!finalData[classified.field]) {
+        merged[classified.field as keyof typeof merged] = classified.value as any
+      }
+      merged.website = undefined as any
+    }
+  }
 
   // --- Save enriched data to Airtable ---
   const updateFields: Partial<Lead> = { ...merged }
