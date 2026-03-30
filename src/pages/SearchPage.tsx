@@ -491,16 +491,6 @@ export function SearchPage() {
       // 4. Trigger enrichment pipeline (runs in background, non-blocking)
       enrichment.enrich(lead.id, leadData)
 
-      // 5. Trigger n8n for deep analysis (non-blocking, complementa o enriquecimento)
-      n8n.search({
-        segments: specificSegment ? [specificSegment] : ['Varejo'],
-        states: specificState ? [specificState] : [],
-        city: specificCity || '',
-        keywords: [specificName],
-        revenueMin: specificRevenue || '70000',
-        revenueMax: '2000000',
-      })
-
       // Auto-scroll to enrichment progress
       setTimeout(() => {
         enrichmentProgressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
