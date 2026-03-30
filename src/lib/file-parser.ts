@@ -25,38 +25,53 @@ export interface ParseResult {
   totalRows: number
   columns: string[]
   errors: string[]
+  rawText?: string
 }
 
-// --- Column name mapping (fuzzy match) ---
+// --- Regex patterns for intelligent extraction ---
+const PATTERNS = {
+  cnpj: /(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/g,
+  cpf: /(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/g,
+  phone: /(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)(?:9?\s?\d{4}[\s-]?\d{4})/g,
+  email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+  website: /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s)]*)?/gi,
+  instagram: /@[a-zA-Z0-9._]{2,30}|instagram\.com\/[a-zA-Z0-9._]+/gi,
+  cep: /\d{5}-?\d{3}/g,
+}
+
+// Brazilian states for detection
+const BR_STATES = new Set([
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+])
+
+const BR_STATE_NAMES: Record<string, string> = {
+  'acre':'AC','alagoas':'AL','amapa':'AP','amazonas':'AM','bahia':'BA',
+  'ceara':'CE','distrito federal':'DF','espirito santo':'ES','goias':'GO',
+  'maranhao':'MA','mato grosso':'MT','mato grosso do sul':'MS','minas gerais':'MG',
+  'para':'PA','paraiba':'PB','parana':'PR','pernambuco':'PE','piaui':'PI',
+  'rio de janeiro':'RJ','rio grande do norte':'RN','rio grande do sul':'RS',
+  'rondonia':'RO','roraima':'RR','santa catarina':'SC','sao paulo':'SP',
+  'sergipe':'SE','tocantins':'TO',
+}
+
+// --- Column name mapping (fuzzy match for structured files) ---
 const COLUMN_MAP: Record<string, keyof ParsedCompany> = {
-  // Company name
   empresa: 'companyName', company: 'companyName', nome: 'companyName', 'nome da empresa': 'companyName',
   'razão social': 'companyName', 'razao social': 'companyName', name: 'companyName', 'nome fantasia': 'companyName',
-  // CNPJ
   cnpj: 'cnpj', 'cnpj/cpf': 'cnpj',
-  // Phone
   telefone: 'phone', phone: 'phone', tel: 'phone', celular: 'phone', whatsapp: 'phone', fone: 'phone',
-  // Email
   email: 'email', 'e-mail': 'email', mail: 'email',
-  // Website
   site: 'website', website: 'website', url: 'website', 'web site': 'website', dominio: 'website',
-  // Address
   endereco: 'address', endereço: 'address', address: 'address', logradouro: 'address', rua: 'address',
-  // City
   cidade: 'city', city: 'city', municipio: 'city', município: 'city',
-  // State
   estado: 'state', uf: 'state', state: 'state',
-  // Segment
   segmento: 'segment', segment: 'segment', setor: 'segment', ramo: 'segment', atividade: 'segment', categoria: 'segment',
-  // Contact
   contato: 'contactName', 'nome do contato': 'contactName', responsavel: 'contactName', responsável: 'contactName',
   decisor: 'contactName', proprietario: 'contactName', proprietário: 'contactName', dono: 'contactName', ceo: 'contactName',
-  // Contact role
   cargo: 'contactRole', role: 'contactRole', função: 'contactRole', funcao: 'contactRole',
-  // Social
   instagram: 'instagram', ig: 'instagram',
   linkedin: 'linkedin',
-  // Notes
   observacao: 'notes', observação: 'notes', obs: 'notes', notas: 'notes', notes: 'notes', comentario: 'notes',
 }
 
@@ -79,7 +94,6 @@ function rowToCompany(row: Record<string, string>, columns: string[]): ParsedCom
     }
   }
 
-  // If no mapped company name, try first text column with content
   if (!hasName) {
     for (const col of columns) {
       const value = (row[col] || '').toString().trim()
@@ -95,21 +109,212 @@ function rowToCompany(row: Record<string, string>, columns: string[]): ParsedCom
 
   return {
     companyName: mapped.companyName || '',
-    cnpj: mapped.cnpj,
-    phone: mapped.phone,
-    email: mapped.email,
-    website: mapped.website,
-    address: mapped.address,
-    city: mapped.city,
-    state: mapped.state,
-    segment: mapped.segment,
-    contactName: mapped.contactName,
-    contactRole: mapped.contactRole,
-    instagram: mapped.instagram,
-    linkedin: mapped.linkedin,
-    notes: mapped.notes,
-    raw: row,
+    cnpj: mapped.cnpj, phone: mapped.phone, email: mapped.email,
+    website: mapped.website, address: mapped.address, city: mapped.city,
+    state: mapped.state, segment: mapped.segment, contactName: mapped.contactName,
+    contactRole: mapped.contactRole, instagram: mapped.instagram,
+    linkedin: mapped.linkedin, notes: mapped.notes, raw: row,
   }
+}
+
+// =============================================
+// INTELLIGENT TEXT ANALYZER (pattern-based)
+// Reads the document first, detects entities,
+// then groups them into company records
+// =============================================
+
+function extractAllPatterns(text: string) {
+  const cnpjs = [...new Set((text.match(PATTERNS.cnpj) || []).map(c => c.replace(/\D/g, '')).filter(c => c.length === 14))]
+  const phones = [...new Set((text.match(PATTERNS.phone) || []).map(p => p.replace(/\D/g, '')))]
+  const emails = [...new Set(text.match(PATTERNS.email) || [])]
+  const websites = [...new Set((text.match(PATTERNS.website) || []).filter(w =>
+    !w.includes('@') && !w.match(/^\d/) && w.includes('.') && w.length > 5
+    && !w.match(/\.(pdf|jpg|png|gif|svg|css|js)$/i)
+  ))]
+  const instagrams = [...new Set((text.match(PATTERNS.instagram) || []).map(i =>
+    i.replace(/instagram\.com\//i, '@').replace(/^@/, '')
+  ))]
+
+  return { cnpjs, phones, emails, websites, instagrams }
+}
+
+function detectState(text: string): string | undefined {
+  // Check for UF abbreviations
+  const ufMatch = text.match(/\b([A-Z]{2})\b/g)
+  if (ufMatch) {
+    for (const m of ufMatch) {
+      if (BR_STATES.has(m)) return m
+    }
+  }
+  // Check for full state names
+  const lower = text.toLowerCase()
+  for (const [name, uf] of Object.entries(BR_STATE_NAMES)) {
+    if (lower.includes(name)) return uf
+  }
+  return undefined
+}
+
+function detectCity(text: string, state?: string): string | undefined {
+  // Common patterns: "Cidade/UF", "Cidade - UF", "Cidade, UF"
+  if (state) {
+    const cityPattern = new RegExp(`([A-ZÀ-Ú][a-zà-ú]+(?:\\s+[A-ZÀ-Ú][a-zà-ú]+)*)\\s*[/,\\-–]\\s*${state}`, 'g')
+    const match = cityPattern.exec(text)
+    if (match) return match[1].trim()
+  }
+  return undefined
+}
+
+function isLikelyCompanyName(text: string): boolean {
+  if (text.length < 3 || text.length > 120) return false
+  if (/^\d+$/.test(text)) return false
+  if (text.match(PATTERNS.email)) return false
+  if (text.match(PATTERNS.cnpj)) return false
+  // Company name indicators
+  const indicators = /\b(ltda|eireli|me|epp|s\.?a\.?|ss|empresa|clinica|cl[ií]nica|consultorio|consult[oó]rio|laborat[oó]rio|farm[aá]cia|loja|com[eé]rcio|ind[uú]stria|servi[cç]os|studio|est[eé]tica|academia|pet\s*shop|agência|ag[eê]ncia|escola|instituto|hospital|odonto|dental)\b/i
+  const hasIndicator = indicators.test(text)
+  // Starts with uppercase and has reasonable word count
+  const wordCount = text.split(/\s+/).length
+  const startsUpper = /^[A-ZÀ-Ú]/.test(text)
+  return hasIndicator || (startsUpper && wordCount >= 2 && wordCount <= 10)
+}
+
+function analyzeUnstructuredText(text: string): ParsedCompany[] {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0)
+  const extracted = extractAllPatterns(text)
+  const companies: ParsedCompany[] = []
+
+  // Strategy 1: If CNPJs found, use them as anchors to group data
+  if (extracted.cnpjs.length > 0) {
+    for (const cnpj of extracted.cnpjs) {
+      const formatted = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+      // Find the line containing this CNPJ
+      const cnpjLineIdx = lines.findIndex(l => l.replace(/\D/g, '').includes(cnpj))
+      if (cnpjLineIdx === -1) continue
+
+      // Look for company name in surrounding lines (before and after)
+      let companyName = ''
+      const searchRange = 5
+
+      // Check lines before CNPJ for company name
+      for (let i = Math.max(0, cnpjLineIdx - searchRange); i < cnpjLineIdx; i++) {
+        const cleaned = lines[i].replace(/cnpj\s*:?\s*/i, '').trim()
+        if (isLikelyCompanyName(cleaned)) {
+          companyName = cleaned
+          break
+        }
+      }
+
+      // If not found before, check the CNPJ line itself (might have "Nome - CNPJ")
+      if (!companyName) {
+        const cnpjLine = lines[cnpjLineIdx]
+        const beforeCnpj = cnpjLine.split(/\d{2}\.?\d{3}\.?\d{3}/)[0].trim()
+        if (beforeCnpj && isLikelyCompanyName(beforeCnpj.replace(/[-–|:;]/g, '').trim())) {
+          companyName = beforeCnpj.replace(/[-–|:;]\s*$/, '').trim()
+        }
+      }
+
+      // Check lines after CNPJ
+      if (!companyName) {
+        for (let i = cnpjLineIdx + 1; i <= Math.min(lines.length - 1, cnpjLineIdx + searchRange); i++) {
+          const cleaned = lines[i].replace(/raz[aã]o\s*social\s*:?\s*/i, '').replace(/nome\s*fantasia\s*:?\s*/i, '').trim()
+          if (isLikelyCompanyName(cleaned)) {
+            companyName = cleaned
+            break
+          }
+        }
+      }
+
+      if (!companyName) companyName = `Empresa CNPJ ${formatted}`
+
+      // Extract surrounding context for additional fields
+      const context = lines.slice(
+        Math.max(0, cnpjLineIdx - searchRange),
+        Math.min(lines.length, cnpjLineIdx + searchRange + 1)
+      ).join(' ')
+
+      const contextPatterns = extractAllPatterns(context)
+      const state = detectState(context)
+      const city = detectCity(context, state)
+
+      companies.push({
+        companyName,
+        cnpj: formatted,
+        phone: contextPatterns.phones[0],
+        email: contextPatterns.emails[0],
+        website: contextPatterns.websites[0],
+        city,
+        state,
+        instagram: contextPatterns.instagrams[0],
+        raw: { _source: 'intelligent_extraction', _cnpj: cnpj },
+      })
+    }
+  }
+
+  // Strategy 2: If no CNPJs, look for company names as anchors
+  if (companies.length === 0) {
+    const companyLines: Array<{ name: string; lineIdx: number }> = []
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      // Skip very short lines, numbers-only, and common headers
+      if (line.length < 4) continue
+      if (/^(empresa|nome|cnpj|telefone|email|endereco|cidade|#|\d+\.|---)/i.test(line)) continue
+
+      if (isLikelyCompanyName(line)) {
+        companyLines.push({ name: line, lineIdx: i })
+      }
+    }
+
+    for (const { name, lineIdx } of companyLines) {
+      const context = lines.slice(
+        Math.max(0, lineIdx - 2),
+        Math.min(lines.length, lineIdx + 5)
+      ).join(' ')
+
+      const contextPatterns = extractAllPatterns(context)
+      const state = detectState(context)
+      const city = detectCity(context, state)
+
+      companies.push({
+        companyName: name,
+        cnpj: contextPatterns.cnpjs[0] ? contextPatterns.cnpjs[0].replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : undefined,
+        phone: contextPatterns.phones[0],
+        email: contextPatterns.emails[0],
+        website: contextPatterns.websites[0],
+        city,
+        state,
+        instagram: contextPatterns.instagrams[0],
+        raw: { _source: 'intelligent_extraction', _line: String(lineIdx) },
+      })
+    }
+  }
+
+  // Strategy 3: Last resort — if we found emails/phones but no companies, create entries from them
+  if (companies.length === 0 && (extracted.emails.length > 0 || extracted.phones.length > 0)) {
+    const emailDomains = extracted.emails.map(e => {
+      const domain = e.split('@')[1]?.split('.')[0]
+      return domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : null
+    }).filter(Boolean)
+
+    for (let i = 0; i < Math.max(extracted.emails.length, extracted.phones.length); i++) {
+      companies.push({
+        companyName: emailDomains[i] || `Lead ${i + 1}`,
+        email: extracted.emails[i],
+        phone: extracted.phones[i],
+        website: extracted.websites[i],
+        raw: { _source: 'pattern_fallback' },
+      })
+    }
+  }
+
+  // Deduplicate by CNPJ or company name
+  const seen = new Set<string>()
+  return companies.filter(c => {
+    const key = c.cnpj || c.companyName.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 // --- CSV Parser ---
@@ -117,7 +322,6 @@ function parseCSV(text: string): { rows: Record<string, string>[]; columns: stri
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
   if (lines.length < 2) return { rows: [], columns: [] }
 
-  // Detect separator
   const firstLine = lines[0]
   const sep = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ','
 
@@ -155,12 +359,11 @@ function parseExcel(buffer: ArrayBuffer): { rows: Record<string, string>[]; colu
   return { rows, columns }
 }
 
-// --- HTML Parser (extract tables or structured data) ---
+// --- HTML Parser ---
 function parseHTML(html: string): { rows: Record<string, string>[]; columns: string[] } {
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
 
-  // Try to find tables
   const tables = doc.querySelectorAll('table')
   if (tables.length > 0) {
     const table = tables[0]
@@ -183,7 +386,6 @@ function parseHTML(html: string): { rows: Record<string, string>[]; columns: str
     return { rows, columns }
   }
 
-  // Try to extract company names from headings or cards
   const names: string[] = []
   doc.querySelectorAll('h1, h2, h3, h4, .company-name, [class*="company"], [class*="empresa"]').forEach((el) => {
     const text = el.textContent?.trim()
@@ -191,46 +393,16 @@ function parseHTML(html: string): { rows: Record<string, string>[]; columns: str
   })
 
   if (names.length > 0) {
-    const columns = ['empresa']
-    const rows = names.map((name) => ({ empresa: name }))
-    return { rows, columns }
+    return { rows: names.map((name) => ({ empresa: name })), columns: ['empresa'] }
   }
 
   return { rows: [], columns: [] }
 }
 
-// --- Text/Notes Parser (one company per line or structured) ---
-function parseText(text: string): { rows: Record<string, string>[]; columns: string[] } {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && l.length > 2)
-
-  // Check if it looks like a CSV
-  if (lines[0]?.includes(',') || lines[0]?.includes(';') || lines[0]?.includes('\t')) {
-    return parseCSV(text)
-  }
-
-  // Each line is a company name (possibly with extra info separated by - or |)
-  const columns = ['empresa', 'info']
-  const rows: Record<string, string>[] = []
-
-  for (const line of lines) {
-    // Skip obvious headers
-    if (/^(empresa|company|nome|#|\d+\.)$/i.test(line)) continue
-
-    const parts = line.split(/[\-\|–—]/).map((p) => p.trim())
-    rows.push({
-      empresa: parts[0] || line,
-      info: parts.slice(1).join(' · ') || '',
-    })
-  }
-
-  return { rows, columns }
-}
-
-// --- PDF Parser (using pdfjs-dist for proper text extraction) ---
-async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, string>[]; columns: string[] }> {
+// --- PDF Parser (pdfjs-dist) ---
+async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, string>[]; columns: string[]; rawText: string }> {
   const pdfjsLib = await import('pdfjs-dist')
 
-  // Use bundled worker
   pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
@@ -243,7 +415,6 @@ async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, str
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
 
-    // Group text items by Y position to reconstruct lines
     const itemsByY = new Map<number, string[]>()
     for (const item of content.items) {
       if (!('str' in item) || !item.str.trim()) continue
@@ -252,7 +423,6 @@ async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, str
       itemsByY.get(y)!.push(item.str)
     }
 
-    // Sort by Y descending (PDF Y is bottom-up) and join each line
     const sortedYs = Array.from(itemsByY.keys()).sort((a, b) => b - a)
     for (const y of sortedYs) {
       const line = itemsByY.get(y)!.join(' ').trim()
@@ -260,18 +430,26 @@ async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, str
     }
   }
 
-  const text = lines.join('\n')
+  const rawText = lines.join('\n')
 
-  // Check if extracted text looks like a table (has separators)
-  if (text.includes(';') || text.includes('\t') || text.includes(',')) {
-    // Try CSV parse first (common in PDF exports)
-    const csvResult = parseCSV(text)
-    if (csvResult.rows.length > 0 && csvResult.columns.length > 1) {
-      return csvResult
+  // Try structured parse first (CSV-like)
+  if (rawText.includes(';') || rawText.includes('\t')) {
+    const csvLines = rawText.split(/\r?\n/).filter(l => l.trim())
+    if (csvLines.length >= 2) {
+      const firstLine = csvLines[0]
+      const sep = firstLine.includes('\t') ? '\t' : ';'
+      const colCount = firstLine.split(sep).length
+      if (colCount >= 2) {
+        const csvResult = parseCSV(rawText)
+        if (csvResult.rows.length > 0 && csvResult.columns.length > 1) {
+          return { ...csvResult, rawText }
+        }
+      }
     }
   }
 
-  return parseText(text)
+  // Otherwise return raw text for intelligent analysis
+  return { rows: [], columns: [], rawText }
 }
 
 // --- Main parser ---
@@ -283,6 +461,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
   let rows: Record<string, string>[] = []
   let columns: string[] = []
   let fileType = ext
+  let rawText = ''
 
   try {
     if (ext === 'csv' || ext === 'tsv') {
@@ -308,43 +487,62 @@ export async function parseFile(file: File): Promise<ParseResult> {
       const result = await parsePDF(buffer)
       rows = result.rows
       columns = result.columns
+      rawText = result.rawText
       fileType = 'PDF'
     } else if (ext === 'txt' || ext === 'md' || ext === 'text' || !ext) {
-      const text = await file.text()
-      const result = parseText(text)
-      rows = result.rows
-      columns = result.columns
+      rawText = await file.text()
       fileType = 'Texto'
     } else {
-      // Try as text
-      const text = await file.text()
-      const result = parseText(text)
-      rows = result.rows
-      columns = result.columns
+      rawText = await file.text()
       fileType = ext.toUpperCase()
     }
   } catch (err: any) {
     errors.push(`Erro ao processar arquivo: ${err.message}`)
   }
 
-  // Map rows to companies
-  const companies: ParsedCompany[] = []
-  for (const row of rows) {
-    const company = rowToCompany(row, columns)
-    if (company) companies.push(company)
+  // =============================================
+  // INTELLIGENT ANALYSIS LAYER
+  // For structured files (CSV, Excel): use column mapping
+  // For unstructured files (PDF, TXT): use pattern detection
+  // =============================================
+
+  let companies: ParsedCompany[] = []
+
+  if (rows.length > 0 && columns.length > 0) {
+    // Structured file — use column mapping
+    for (const row of rows) {
+      const company = rowToCompany(row, columns)
+      if (company) companies.push(company)
+    }
   }
 
-  if (companies.length === 0 && rows.length > 0) {
-    errors.push('Nenhuma empresa identificada. Verifique se o arquivo contém uma coluna com nomes de empresas.')
+  if (companies.length === 0 && rawText) {
+    // Unstructured file — use intelligent pattern extraction
+    companies = analyzeUnstructuredText(rawText)
+    if (companies.length > 0) {
+      // Set columns based on what was detected
+      columns = ['empresa']
+      if (companies.some(c => c.cnpj)) columns.push('cnpj')
+      if (companies.some(c => c.phone)) columns.push('telefone')
+      if (companies.some(c => c.email)) columns.push('email')
+      if (companies.some(c => c.website)) columns.push('website')
+      if (companies.some(c => c.city)) columns.push('cidade')
+      if (companies.some(c => c.state)) columns.push('estado')
+    }
+  }
+
+  if (companies.length === 0 && (rows.length > 0 || rawText)) {
+    errors.push('Nenhuma empresa identificada. O sistema analisou o documento por CNPJs, nomes de empresas, telefones e emails mas nao encontrou dados estruturados.')
   }
 
   return {
     companies,
     fileType,
     fileName,
-    totalRows: rows.length,
+    totalRows: companies.length || rows.length,
     columns,
     errors,
+    rawText: rawText || undefined,
   }
 }
 
