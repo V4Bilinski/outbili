@@ -1,15 +1,16 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useLead } from '../hooks/useLeads'
+import { useLead, useDeleteLead } from '../hooks/useLeads'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2 } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
 import { TabProjecao } from '../components/company/TabProjecao'
@@ -36,7 +37,9 @@ export function CompanyPage() {
   const { data: contacts } = useContacts(id)
   const [activeTab, setActiveTab] = useState('resumo')
   const [showAddContact, setShowAddContact] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const createContact = useCreateContact()
+  const deleteLead = useDeleteLead()
 
   if (isLoading) {
     return (
@@ -64,10 +67,57 @@ export function CompanyPage() {
 
   return (
     <div className="space-y-4 animate-[fade-in_0.4s_ease-out]">
-      {/* Back */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Voltar
-      </button>
+      {/* Back + Delete */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </button>
+        <Button
+          size="sm"
+          variant="danger"
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          Excluir lead
+        </Button>
+      </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-surface border border-border p-6 space-y-4 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-3">
+                <Trash2 className="h-6 w-6 text-error" />
+              </div>
+              <h3 className="text-base font-bold text-text-primary">Excluir lead?</h3>
+              <p className="text-sm text-text-muted mt-1">
+                <strong>{lead.companyName}</strong> sera removido permanentemente do sistema, incluindo todos os contatos e atividades.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                icon={<Trash2 className="h-4 w-4" />}
+                loading={deleteLead.isPending}
+                onClick={() => {
+                  deleteLead.mutate(lead.id, {
+                    onSuccess: () => {
+                      toast.success(`${lead.companyName} excluido`)
+                      navigate('/leads')
+                    },
+                  })
+                }}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <Card className="space-y-4">
