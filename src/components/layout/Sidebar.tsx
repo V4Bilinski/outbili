@@ -1,7 +1,8 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Users, Columns3, Smartphone, BarChart3, Settings, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { LayoutDashboard, Search, Users, Columns3, Smartphone, BarChart3, Settings, Shield, LogOut, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useSidebar } from '../../lib/sidebar-context'
+import { useAuth } from '../../lib/auth-context'
 import { useEffect } from 'react'
 
 const navItems = [
@@ -14,6 +15,7 @@ const navItems = [
 ]
 
 function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavClick?: () => void }) {
+  const { user, isAdmin, logout } = useAuth()
   return (
     <>
       {/* Logo */}
@@ -57,7 +59,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
       </nav>
 
       {/* Bottom */}
-      <div className="py-3 px-3 border-t border-border">
+      <div className="py-3 px-3 border-t border-border space-y-1">
         <NavLink
           to="/settings"
           title={collapsed ? 'Configurações' : undefined}
@@ -65,9 +67,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
           className={({ isActive }) =>
             cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-              isActive
-                ? 'bg-red/10 text-red'
-                : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+              isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
               collapsed && 'justify-center px-2',
             )
           }
@@ -75,6 +75,46 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
           <Settings className="h-[18px] w-[18px] shrink-0" />
           {!collapsed && <span>Configurações</span>}
         </NavLink>
+
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            title={collapsed ? 'Administração' : undefined}
+            onClick={onNavClick}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+                collapsed && 'justify-center px-2',
+              )
+            }
+          >
+            <Shield className="h-[18px] w-[18px] shrink-0" />
+            {!collapsed && <span>Administração</span>}
+          </NavLink>
+        )}
+
+        {/* User info + logout */}
+        {user && (
+          <div className={cn('flex items-center gap-2 px-3 py-2', collapsed && 'justify-center px-2')}>
+            <div className="w-7 h-7 rounded-full bg-red/20 flex items-center justify-center text-[11px] font-bold text-red shrink-0">
+              {user.fullName?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-text-primary truncate">{user.fullName}</p>
+                <p className="text-[9px] text-text-muted truncate">{user.email}</p>
+              </div>
+            )}
+            <button
+              onClick={logout}
+              title="Sair"
+              className={cn('p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer', collapsed && 'ml-0')}
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
