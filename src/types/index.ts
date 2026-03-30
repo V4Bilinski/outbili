@@ -61,6 +61,10 @@ export interface Lead {
   // --- Geolocalização ---
   latitude?: number
   longitude?: number
+  // --- INPI (Marcas / Propriedade Industrial) ---
+  inpiTrademarks?: string        // JSON: [{marca, numero, status, classe, dataDeposito}]
+  inpiTrademarkCount?: number    // Quantidade de marcas registradas
+  inpiHasRegisteredTrademark?: boolean  // Tem marca registrada?
   // --- Domínio ---
   domainActive?: boolean
   domainExpiry?: string

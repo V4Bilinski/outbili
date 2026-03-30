@@ -350,6 +350,120 @@ async function enrichByInstagram(handle: string): Promise<{ profile: any } | nul
   }
 }
 
+// --- INPI: Busca de marcas registradas por CNPJ ---
+
+async function enrichByInpi(cnpj: string, companyName: string): Promise<Partial<Lead> | null> {
+  const clean = cnpj.replace(/\D/g, '')
+  if (clean.length !== 14) return null
+
+  // Strategy 1: Google Search for INPI records (fast, free)
+  const items = await runActor('apify/google-search-scraper', {
+    queries: `site:busca.inpi.gov.br "${clean}" OR site:busca.inpi.gov.br "${companyName}" marca`,
+    countryCode: 'br',
+    languageCode: 'pt-BR',
+    maxPagesPerQuery: 1,
+    resultsPerPage: 10,
+  }, 60_000)
+
+  const trademarks: Array<{ marca: string; numero?: string; status?: string; classe?: string; fonte: string }> = []
+
+  if (items?.length) {
+    const results = items[0]?.organicResults || items
+    for (const r of results) {
+      const title = r.title || ''
+      const desc = r.description || ''
+      const text = `${title} ${desc}`
+
+      // Extract trademark info from search results
+      if (text.toLowerCase().includes('marca') || text.toLowerCase().includes('inpi') || text.toLowerCase().includes('registro')) {
+        // Try to extract processo number (format: BR XXXXXXX or numbers)
+        const numMatch = text.match(/\b(\d{7,12})\b/)
+        // Try to extract status
+        const statusKeywords = ['deferido', 'indeferido', 'arquivado', 'vigente', 'registrado', 'publicado', 'em andamento']
+        const foundStatus = statusKeywords.find(kw => text.toLowerCase().includes(kw))
+        // Try to extract classe Nice
+        const classeMatch = text.match(/(?:classe|NCL)\s*(\d{1,2})/i)
+
+        if (title && !title.includes('Busca') && !title.includes('INPI -')) {
+          trademarks.push({
+            marca: title.replace(/\s*[-–|].*$/, '').trim().slice(0, 100),
+            numero: numMatch?.[1] || undefined,
+            status: foundStatus || undefined,
+            classe: classeMatch?.[1] || undefined,
+            fonte: 'google_inpi',
+          })
+        }
+      }
+    }
+  }
+
+  // Strategy 2: Web scraper on busca.inpi.gov.br (if Google didn't find enough)
+  if (trademarks.length === 0) {
+    try {
+      const webItems = await runActor('apify/web-scraper', {
+        startUrls: [{
+          url: `https://busca.inpi.gov.br/pePI/servlet/MarcaServletController?Action=getResult&CodPedido=&CodTipo=&PalavraChave=&Titular=${clean}&NrProcDe=&NrProcAte=&DtDepDe=&DtDepAte=&DtPubDe=&DtPubAte=&DtRegDe=&DtRegAte=&CodDespacho=&CodNcl=&CodNat=&CodPresApworking=&CodPresApre=&CodSitReq=&Ession=`,
+        }],
+        pageFunction: `async function pageFunction(context) {
+          const { page, request } = context;
+          await page.waitForSelector('table', { timeout: 10000 }).catch(() => null);
+          const rows = await page.$$eval('table tr', trs => {
+            return trs.slice(1).map(tr => {
+              const tds = tr.querySelectorAll('td');
+              return {
+                numero: tds[0]?.textContent?.trim() || '',
+                marca: tds[1]?.textContent?.trim() || '',
+                ncl: tds[2]?.textContent?.trim() || '',
+                titular: tds[3]?.textContent?.trim() || '',
+                situacao: tds[4]?.textContent?.trim() || '',
+              };
+            }).filter(r => r.marca);
+          });
+          return rows;
+        }`,
+        proxyConfiguration: { useApifyProxy: true },
+      }, 90_000)
+
+      if (webItems?.length) {
+        for (const item of webItems) {
+          // webItems can be nested arrays from web-scraper
+          const rows = Array.isArray(item) ? item : [item]
+          for (const row of rows) {
+            if (row.marca) {
+              trademarks.push({
+                marca: row.marca,
+                numero: row.numero || undefined,
+                status: row.situacao || undefined,
+                classe: row.ncl || undefined,
+                fonte: 'inpi_direto',
+              })
+            }
+          }
+        }
+      }
+    } catch { /* non-critical, Google search may have been enough */ }
+  }
+
+  if (trademarks.length === 0) return null
+
+  // Deduplicate by marca name
+  const unique = trademarks.filter((t, i, arr) =>
+    arr.findIndex(x => x.marca.toLowerCase() === t.marca.toLowerCase()) === i
+  ).slice(0, 10)
+
+  const hasRegistered = unique.some(t =>
+    t.status?.toLowerCase().includes('registrad') ||
+    t.status?.toLowerCase().includes('deferid') ||
+    t.status?.toLowerCase().includes('vigente')
+  )
+
+  return {
+    inpiTrademarks: JSON.stringify(unique),
+    inpiTrademarkCount: unique.length,
+    inpiHasRegisteredTrademark: hasRegistered,
+  }
+}
+
 async function enrichByGoogleSearch(companyName: string, city?: string, state?: string): Promise<Partial<Lead> | null> {
   const location = [city, state].filter(Boolean).join(', ')
   const query = location ? `"${companyName}" ${location}` : `"${companyName}" Brasil`
@@ -688,6 +802,10 @@ function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): {
   if (data.partners) spicedD++
   if (data.rfEmail || data.rfPhone) spicedD++
 
+  // Bonus INPI: empresa com marca registrada = mais consolidada e investidora
+  if (data.inpiHasRegisteredTrademark) { spicedS++; spicedI++ }
+  if (data.inpiTrademarkCount && data.inpiTrademarkCount >= 3) spicedS++
+
   // Cap all scores at 5
   const cap = (n: number) => Math.min(5, Math.max(1, n))
   return { spicedS: cap(spicedS), spicedP: cap(spicedP), spicedI: cap(spicedI), spicedC: cap(spicedC), spicedD: cap(spicedD) }
@@ -718,6 +836,7 @@ export async function enrichLead(
     { source: 'website', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Website (contatos)', estimatedMs: 30000 },
     { source: 'linkedin', status: (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
     { source: 'decisor', status: 'pending', label: 'Contato do Decisor (CEO/Fundador)', estimatedMs: 30000 },
+    { source: 'inpi', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'INPI (Marcas e Patentes)', estimatedMs: 30000 },
   ]
 
   const notify = () => {
@@ -1239,6 +1358,33 @@ export async function enrichLead(
   }
   notify()
 
+  // Step 12: INPI (Marcas e Patentes)
+  if (leadData.cnpj) {
+    step('inpi').status = 'running'
+    notify()
+    try {
+      const inpiData = await enrichByInpi(leadData.cnpj, leadData.companyName || '')
+      if (inpiData) {
+        merged.inpiTrademarks = inpiData.inpiTrademarks
+        merged.inpiTrademarkCount = inpiData.inpiTrademarkCount
+        merged.inpiHasRegisteredTrademark = inpiData.inpiHasRegisteredTrademark
+      }
+      step('inpi').status = 'done'
+      if (inpiData?.inpiTrademarkCount) {
+        const inpiDetails = [
+          `${inpiData.inpiTrademarkCount} marca${inpiData.inpiTrademarkCount > 1 ? 's' : ''}`,
+          inpiData.inpiHasRegisteredTrademark ? 'Registrada' : 'Sem registro ativo',
+        ].filter(Boolean)
+        step('inpi').detail = inpiDetails.join(' · ')
+      } else {
+        step('inpi').detail = 'Nenhuma marca encontrada'
+      }
+    } catch {
+      step('inpi').status = 'error'
+    }
+    notify()
+  }
+
   // --- Auto-score SPICED ---
   const spiced = calculateSpicedScore(leadData, merged)
 
@@ -1270,6 +1416,14 @@ export async function enrichLead(
       merged.yearsInMarket ? `${merged.yearsInMarket} anos no mercado` : null,
     ].filter(Boolean).join(' · ')
     if (summary) updateFields.businessSummary = summary
+  }
+
+  // Append INPI info to market context
+  if (merged.inpiTrademarkCount && merged.inpiTrademarkCount > 0) {
+    const inpiInfo = merged.inpiHasRegisteredTrademark
+      ? `INPI: ${merged.inpiTrademarkCount} marca${merged.inpiTrademarkCount > 1 ? 's' : ''} registrada${merged.inpiTrademarkCount > 1 ? 's' : ''} — empresa protege sua propriedade intelectual`
+      : `INPI: ${merged.inpiTrademarkCount} pedido${merged.inpiTrademarkCount > 1 ? 's' : ''} de marca (sem registro ativo)`
+    merged.marketContext = [leadData.marketContext || merged.marketContext, inpiInfo].filter(Boolean).join('\n\n')
   }
 
   // Build enrichment log before saving
