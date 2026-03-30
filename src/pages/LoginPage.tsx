@@ -54,11 +54,13 @@ export function LoginPage() {
         {/* Logo V4 */}
         <div className="text-center animate-[fade-in_0.5s_ease-out]">
           <div className="inline-flex items-center gap-3 mb-2">
-            <img
-              src="/v4-icon.png"
-              alt="V4 Company"
-              className="w-12 h-12 rounded-xl animate-[pulse-glow_3s_ease-in-out_infinite] shadow-lg shadow-red/20"
-            />
+            <div className="w-14 h-14 rounded-2xl bg-[#1a1a1a] p-1.5 shadow-lg shadow-red/20 animate-[pulse-glow_3s_ease-in-out_infinite]">
+              <img
+                src="/v4-icon.png"
+                alt="V4 Company"
+                className="w-full h-full rounded-xl object-cover"
+              />
+            </div>
             <span className="text-2xl font-bold font-heading text-text-primary tracking-tight">OUTBILI</span>
           </div>
           <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Sistema de prospeccao outbound · Bilinski&Co</p>
