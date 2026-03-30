@@ -1328,7 +1328,15 @@ export async function enrichLead(
 
 function formatPhone(phone: string): string {
   if (!phone) return ''
-  const digits = phone.replace(/\D/g, '').replace(/^0+/, '')
+  let digits = phone.replace(/\D/g, '').replace(/^0+/, '')
+  // Remove country code for normalization
+  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits
+  // Add 9th digit for old mobile format (DDD + 8 digits starting with 9)
+  // e.g., 6199921313 → 61999921313 (WhatsApp requires 9-digit mobile)
+  if (withoutCountry.length === 10 && withoutCountry[2] === '9') {
+    digits = withoutCountry.slice(0, 2) + '9' + withoutCountry.slice(2)
+    return '55' + digits
+  }
   if (digits.length >= 10) return digits.startsWith('55') ? digits : '55' + digits
   return digits
 }
