@@ -1293,7 +1293,7 @@ export function SearchPage() {
               <p className="text-sm font-semibold text-text-primary">Pesquisa em andamento</p>
               <p className="text-xs text-text-muted">Analisando mercado e coletando leads qualificados...</p>
             </div>
-            <span className="ml-auto text-sm font-mono text-red font-bold">{n8n.elapsed}s</span>
+            <span className="ml-auto text-sm font-mono text-red font-bold">{Math.min(99, Math.round((n8n.elapsed / 120) * 100))}%</span>
           </div>
 
           {/* Progress bar */}
