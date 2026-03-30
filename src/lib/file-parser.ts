@@ -226,39 +226,49 @@ function parseText(text: string): { rows: Record<string, string>[]; columns: str
   return { rows, columns }
 }
 
-// --- PDF Parser (extract text then parse as text) ---
+// --- PDF Parser (using pdfjs-dist for proper text extraction) ---
 async function parsePDF(buffer: ArrayBuffer): Promise<{ rows: Record<string, string>[]; columns: string[] }> {
-  // Simple text extraction from PDF - read raw bytes for text content
-  const bytes = new Uint8Array(buffer)
-  let text = ''
+  const pdfjsLib = await import('pdfjs-dist')
 
-  // Try to extract text streams from PDF
-  const decoder = new TextDecoder('latin1')
-  const rawText = decoder.decode(bytes)
+  // Use bundled worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString()
 
-  // Extract text between BT and ET markers (PDF text objects)
-  const textMatches = rawText.match(/\(([^)]+)\)/g)
-  if (textMatches) {
-    text = textMatches
-      .map((m) => m.slice(1, -1))
-      .filter((t) => t.length > 1 && !/^[\x00-\x1f]+$/.test(t))
-      .join('\n')
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+  const lines: string[] = []
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+
+    // Group text items by Y position to reconstruct lines
+    const itemsByY = new Map<number, string[]>()
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str.trim()) continue
+      const y = Math.round(item.transform[5])
+      if (!itemsByY.has(y)) itemsByY.set(y, [])
+      itemsByY.get(y)!.push(item.str)
+    }
+
+    // Sort by Y descending (PDF Y is bottom-up) and join each line
+    const sortedYs = Array.from(itemsByY.keys()).sort((a, b) => b - a)
+    for (const y of sortedYs) {
+      const line = itemsByY.get(y)!.join(' ').trim()
+      if (line) lines.push(line)
+    }
   }
 
-  if (!text.trim()) {
-    // Fallback: extract any readable strings
-    const strings: string[] = []
-    let current = ''
-    for (let i = 0; i < bytes.length; i++) {
-      const c = bytes[i]
-      if (c >= 32 && c < 127) {
-        current += String.fromCharCode(c)
-      } else {
-        if (current.length > 5) strings.push(current.trim())
-        current = ''
-      }
+  const text = lines.join('\n')
+
+  // Check if extracted text looks like a table (has separators)
+  if (text.includes(';') || text.includes('\t') || text.includes(',')) {
+    // Try CSV parse first (common in PDF exports)
+    const csvResult = parseCSV(text)
+    if (csvResult.rows.length > 0 && csvResult.columns.length > 1) {
+      return csvResult
     }
-    text = strings.filter((s) => s.length > 3 && !/^[%\/\[\]{}]+$/.test(s)).join('\n')
   }
 
   return parseText(text)
