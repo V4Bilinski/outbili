@@ -65,15 +65,29 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
 
-  // 1. OpenCNPJ (50 req/s, mais rápida)
-  const data = await fetchOpenCnpj(clean)
-  if (data) return data
+  // Query BOTH APIs in parallel and merge results (BrasilAPI is more complete)
+  const [openCnpjData, brasilApiData] = await Promise.all([
+    fetchOpenCnpj(clean),
+    fetchBrasilApiCnpj(clean),
+  ])
 
-  // 2. Fallback: BrasilAPI
-  const data2 = await fetchBrasilApiCnpj(clean)
-  if (data2) return data2
+  // BrasilAPI is the primary source (has CNAE, socios, porte, telefone)
+  // OpenCNPJ fills gaps (email, some fields BrasilAPI may miss)
+  if (brasilApiData || openCnpjData) {
+    const merged: Partial<Lead> = {}
+    const sources = [brasilApiData, openCnpjData].filter(Boolean) as Partial<Lead>[]
+    // Merge: first non-empty value wins (BrasilAPI first = priority)
+    for (const source of sources) {
+      for (const [key, value] of Object.entries(source)) {
+        if (value && !(merged as any)[key]) {
+          ;(merged as any)[key] = value
+        }
+      }
+    }
+    return merged
+  }
 
-  // 3. Último recurso: Apify actor
+  // Fallback: Apify actor
   const items = await runActor('viralanalyzer/cnpj-enricher', { cnpjs: [clean] })
   if (!items?.length) return null
   const d = items[0]
