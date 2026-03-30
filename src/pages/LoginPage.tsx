@@ -56,7 +56,7 @@ export function LoginPage() {
           <div className="inline-flex items-center gap-3 mb-2">
             <div className="w-14 h-14 rounded-2xl bg-[#1a1a1a] p-1.5 shadow-lg shadow-red/20 animate-[pulse-glow_3s_ease-in-out_infinite]">
               <img
-                src="/v4-icon.png"
+                src="/outbili/v4-icon.png"
                 alt="V4 Company"
                 className="w-full h-full rounded-xl object-cover"
               />
