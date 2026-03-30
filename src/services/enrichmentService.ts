@@ -338,6 +338,104 @@ async function enrichByWebsite(url: string): Promise<{ emails: string[]; phones:
   }
 }
 
+// --- Targeted Google Search (find specific URLs) ---
+
+async function findUrlViaGoogle(query: string, urlPattern: string): Promise<string | null> {
+  const items = await runActor('apify/google-search-scraper', {
+    queries: query,
+    countryCode: 'br',
+    languageCode: 'pt-BR',
+    maxPagesPerQuery: 1,
+    resultsPerPage: 5,
+  }, 60_000)
+  if (!items?.length) return null
+
+  const results = items[0]?.organicResults || items
+  for (const r of results) {
+    const url = r.url || r.link || ''
+    if (url.includes(urlPattern)) return url
+  }
+  return null
+}
+
+// --- Active CEO/Founder contact search ---
+
+async function searchDecisionMakerContact(
+  companyName: string,
+  decisionMakerName?: string,
+  city?: string,
+): Promise<Array<{ name?: string; whatsapp?: string; email?: string; source: string }>> {
+  const contacts: Array<{ name?: string; whatsapp?: string; email?: string; source: string }> = []
+
+  // 1. Google search for CEO contact info
+  const personQuery = decisionMakerName
+    ? `"${decisionMakerName}" "${companyName}" telefone WhatsApp contato`
+    : `"${companyName}" CEO fundador proprietario telefone WhatsApp contato ${city || ''}`
+
+  const items = await runActor('apify/google-search-scraper', {
+    queries: personQuery,
+    countryCode: 'br',
+    languageCode: 'pt-BR',
+    maxPagesPerQuery: 1,
+    resultsPerPage: 10,
+  }, 60_000)
+
+  if (items?.length) {
+    const results = items[0]?.organicResults || items
+    for (const r of results) {
+      const text = `${r.title || ''} ${r.description || ''}`
+      // Extract phone numbers from search results
+      const phoneMatches = text.match(/\(?\d{2}\)?\s?\d{4,5}[-.\s]?\d{4}/g)
+      if (phoneMatches) {
+        for (const phone of phoneMatches.slice(0, 2)) {
+          const digits = phone.replace(/\D/g, '')
+          if (digits.length >= 10 && digits.length <= 11) {
+            contacts.push({
+              name: decisionMakerName || undefined,
+              whatsapp: formatPhone(digits),
+              source: 'google_search_decisor',
+            })
+          }
+        }
+      }
+      // Extract emails
+      const emailMatches = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)
+      if (emailMatches) {
+        for (const email of emailMatches.slice(0, 2)) {
+          if (!email.includes('example') && !email.includes('sentry') && !email.includes('google')) {
+            contacts.push({
+              name: decisionMakerName || undefined,
+              email,
+              source: 'google_search_decisor',
+            })
+          }
+        }
+      }
+    }
+
+    // Also check if any result links to a LinkedIn profile of the decision maker
+    for (const r of results) {
+      const url = r.url || r.link || ''
+      if (url.includes('linkedin.com/in/') && decisionMakerName) {
+        // Found decision maker's LinkedIn profile — try to scrape it
+        try {
+          const profileItems = await runActor('harvestapi/linkedin-profile-scraper', {
+            profileUrls: [url],
+          }, 60_000)
+          if (profileItems?.length) {
+            const p = profileItems[0]
+            if (p.email) contacts.push({ name: decisionMakerName, email: p.email, source: 'linkedin_profile' })
+            if (p.phone || p.phoneNumber) contacts.push({ name: decisionMakerName, whatsapp: formatPhone(p.phone || p.phoneNumber), source: 'linkedin_profile' })
+          }
+        } catch { /* non-critical */ }
+        break // Only try first LinkedIn profile
+      }
+    }
+  }
+
+  return contacts
+}
+
 async function enrichByLinkedIn(companyUrl: string): Promise<Partial<Lead> | null> {
   if (!companyUrl) return null
 
@@ -514,10 +612,11 @@ export async function enrichLead(
     { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
     { source: 'google_search', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
     { source: 'google_maps', status: (alreadyEnriched && hasGoogleData) ? 'skipped' : 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },
-    { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (fallback)', estimatedMs: 15000 },
-    { source: 'instagram', status: !leadData.instagram ? 'skipped' : (alreadyEnriched && hasInstagramData) ? 'skipped' : 'pending', label: 'Instagram', estimatedMs: 25000 },
+    { source: 'vibeprospecting', status: 'pending', label: 'VibeProspecting (contatos)', estimatedMs: 15000 },
+    { source: 'instagram', status: (alreadyEnriched && hasInstagramData) ? 'skipped' : 'pending', label: 'Instagram', estimatedMs: 25000 },
     { source: 'website', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Website (contatos)', estimatedMs: 30000 },
-    { source: 'linkedin', status: !leadData.linkedin ? 'skipped' : (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
+    { source: 'linkedin', status: (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
+    { source: 'decisor', status: 'pending', label: 'Contato do Decisor (CEO/Fundador)', estimatedMs: 30000 },
   ]
 
   const notify = () => {
@@ -784,52 +883,59 @@ export async function enrichLead(
   }
   notify()
 
-  // Step 7: VibeProspecting fallback
-  const googleSearchFailed = step('google_search').status === 'error'
-  const googleMapsFailed = step('google_maps').status === 'error'
-  const missingKeyData = !merged.website && !leadData.website && !merged.employees && !leadData.employees
-  const shouldFallback = googleSearchFailed || googleMapsFailed || missingKeyData
+  // Step 7: VibeProspecting — sempre buscar contatos de decisores
+  step('vibeprospecting').status = 'running'
+  notify()
+  try {
+    const domain = (leadData.website || merged.website || '')
+      .replace(/^https?:\/\//, '').replace(/\/.*$/, '') || undefined
+    const vpData = await enrichByVibeProspecting(leadData.companyName || '', domain)
+    if (vpData) {
+      mergeField('segment', vpData.lead.segment)
+      mergeField('employees', vpData.lead.employees)
+      mergeField('city', vpData.lead.city)
+      mergeField('state', vpData.lead.state)
+      mergeField('website', vpData.lead.website)
+      mergeField('linkedin', vpData.lead.linkedin)
+      mergeField('businessSummary', vpData.lead.businessSummary)
+      mergeField('techStack', vpData.lead.techStack)
+      if (vpData.lead.linkedinEmployeeCount) merged.linkedinEmployeeCount = vpData.lead.linkedinEmployeeCount
+      if (vpData.lead.marketContext) {
+        merged.marketContext = [leadData.marketContext || merged.marketContext, vpData.lead.marketContext].filter(Boolean).join('\n\n')
+      }
+      if (vpData.contacts.length > 0) newContacts.push(...vpData.contacts)
+    }
+    step('vibeprospecting').status = 'done'
+    const vpDetails = [
+      vpData?.contacts?.length ? `${vpData.contacts.length} contato${vpData.contacts.length > 1 ? 's' : ''}` : null,
+      vpData?.lead.techStack ? 'Tech stack' : null,
+      vpData?.lead.employees ? `~${vpData.lead.employees} func.` : null,
+    ].filter(Boolean)
+    if (vpDetails.length > 0) step('vibeprospecting').detail = vpDetails.join(' · ')
+  } catch {
+    step('vibeprospecting').status = 'error'
+  }
+  notify()
 
-  if (shouldFallback) {
-    step('vibeprospecting').status = 'running'
+  // Step 8: Instagram — busca ativa se nao tem handle
+  let igHandle = leadData.instagram || merged.instagram
+  if (!igHandle) {
+    // Buscar perfil do Instagram via Google
+    step('instagram').status = 'running'
+    step('instagram').detail = 'Buscando perfil...'
     notify()
     try {
-      const domain = (leadData.website || merged.website || '')
-        .replace(/^https?:\/\//, '').replace(/\/.*$/, '') || undefined
-      const vpData = await enrichByVibeProspecting(leadData.companyName || '', domain)
-      if (vpData) {
-        mergeField('segment', vpData.lead.segment)
-        mergeField('employees', vpData.lead.employees)
-        mergeField('city', vpData.lead.city)
-        mergeField('state', vpData.lead.state)
-        mergeField('website', vpData.lead.website)
-        mergeField('linkedin', vpData.lead.linkedin)
-        mergeField('businessSummary', vpData.lead.businessSummary)
-        mergeField('techStack', vpData.lead.techStack)
-        if (vpData.lead.linkedinEmployeeCount) merged.linkedinEmployeeCount = vpData.lead.linkedinEmployeeCount
-        if (vpData.lead.marketContext) {
-          merged.marketContext = [leadData.marketContext || merged.marketContext, vpData.lead.marketContext].filter(Boolean).join('\n\n')
-        }
-        if (vpData.contacts.length > 0) newContacts.push(...vpData.contacts)
+      const igCity = leadData.city || merged.city || ''
+      const foundIgUrl = await findUrlViaGoogle(
+        `site:instagram.com "${leadData.companyName}" ${igCity}`,
+        'instagram.com',
+      )
+      if (foundIgUrl) {
+        igHandle = foundIgUrl
+        merged.instagram = foundIgUrl
       }
-      step('vibeprospecting').status = 'done'
-      const vpDetails = [
-        vpData?.contacts?.length ? `${vpData.contacts.length} contato${vpData.contacts.length > 1 ? 's' : ''}` : null,
-        vpData?.lead.techStack ? 'Tech stack' : null,
-        vpData?.lead.employees ? `~${vpData.lead.employees} func.` : null,
-      ].filter(Boolean)
-      if (vpDetails.length > 0) step('vibeprospecting').detail = vpDetails.join(' · ')
-    } catch {
-      step('vibeprospecting').status = 'error'
-    }
-    notify()
-  } else {
-    step('vibeprospecting').status = 'skipped'
-    notify()
+    } catch { /* continue */ }
   }
-
-  // Step 8: Instagram
-  const igHandle = leadData.instagram || merged.instagram
   if (igHandle) {
     step('instagram').status = 'running'
     notify()
@@ -866,10 +972,41 @@ export async function enrichLead(
       step('instagram').status = 'error'
     }
     notify()
+  } else {
+    step('instagram').status = 'skipped'
+    step('instagram').detail = 'Perfil nao encontrado'
+    notify()
   }
 
-  // Step 9: Website contact crawl
-  const websiteUrl = leadData.website || merged.website
+  // Step 9: Website contact crawl — busca ativa se nao tem URL
+  let websiteUrl = leadData.website || merged.website
+  if (!websiteUrl) {
+    // Tentar encontrar website via Google
+    step('website').status = 'running'
+    step('website').detail = 'Buscando site...'
+    notify()
+    try {
+      const siteCity = leadData.city || merged.city || ''
+      const items = await runActor('apify/google-search-scraper', {
+        queries: `"${leadData.companyName}" ${siteCity} site oficial`,
+        countryCode: 'br',
+        languageCode: 'pt-BR',
+        maxPagesPerQuery: 1,
+        resultsPerPage: 5,
+      }, 60_000)
+      if (items?.length) {
+        const results = items[0]?.organicResults || items
+        for (const r of results) {
+          const url = r.url || r.link || ''
+          if (url && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('linkedin.com') && !url.includes('google.com') && !url.includes('youtube.com') && !url.includes('reclameaqui')) {
+            websiteUrl = url
+            merged.website = url
+            break
+          }
+        }
+      }
+    } catch { /* continue */ }
+  }
   if (websiteUrl) {
     step('website').status = 'running'
     notify()
@@ -903,11 +1040,27 @@ export async function enrichLead(
     notify()
   } else {
     step('website').status = 'skipped'
+    step('website').detail = 'Site nao encontrado'
     notify()
   }
 
-  // Step 10: LinkedIn
-  const linkedinUrl = leadData.linkedin || merged.linkedin
+  // Step 10: LinkedIn — busca ativa se nao tem URL
+  let linkedinUrl = leadData.linkedin || merged.linkedin
+  if (!linkedinUrl) {
+    step('linkedin').status = 'running'
+    step('linkedin').detail = 'Buscando pagina...'
+    notify()
+    try {
+      const foundLiUrl = await findUrlViaGoogle(
+        `site:linkedin.com/company "${leadData.companyName}"`,
+        'linkedin.com/company',
+      )
+      if (foundLiUrl) {
+        linkedinUrl = foundLiUrl
+        merged.linkedin = foundLiUrl
+      }
+    } catch { /* continue */ }
+  }
   if (linkedinUrl) {
     step('linkedin').status = 'running'
     notify()
@@ -931,7 +1084,45 @@ export async function enrichLead(
       step('linkedin').status = 'error'
     }
     notify()
+  } else {
+    step('linkedin').status = 'skipped'
+    step('linkedin').detail = 'Pagina nao encontrada'
+    notify()
   }
+
+  // Step 11: Contato do Decisor (CEO/Fundador) — busca ativa
+  step('decisor').status = 'running'
+  notify()
+  try {
+    // Extrair nome do decisor dos socios da RF
+    const partnersData = merged.partners || leadData.partners
+    const decisionMaker = extractDecisionMaker(partnersData as string | undefined)
+    const dmName = decisionMaker?.nome || undefined
+
+    const dmContacts = await searchDecisionMakerContact(
+      leadData.companyName || '',
+      dmName,
+      leadData.city || merged.city,
+    )
+    if (dmContacts.length > 0) {
+      newContacts.push(...dmContacts)
+      step('decisor').status = 'done'
+      const hasPhone = dmContacts.some(c => c.whatsapp)
+      const hasEmail = dmContacts.some(c => c.email)
+      const details = [
+        dmName || 'Decisor',
+        hasPhone ? 'WhatsApp encontrado' : null,
+        hasEmail ? 'Email encontrado' : null,
+      ].filter(Boolean)
+      step('decisor').detail = details.join(' · ')
+    } else {
+      step('decisor').status = 'done'
+      step('decisor').detail = dmName ? `${dmName} (sem contato direto)` : 'Sem contato direto'
+    }
+  } catch {
+    step('decisor').status = 'error'
+  }
+  notify()
 
   // --- Auto-score SPICED ---
   const spiced = calculateSpicedScore(leadData, merged)
@@ -993,7 +1184,7 @@ export async function enrichLead(
         if (!isDup && (c.email || c.whatsapp)) {
           await createContact({
             name: c.name || 'Decisor nao identificado',
-            role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'vibeprospecting' ? 'Decisor (VibeProspecting)' : `Via ${c.source}`,
+            role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'vibeprospecting' ? 'Decisor (VibeProspecting)' : c.source === 'google_search_decisor' ? 'CEO/Fundador (Google)' : c.source === 'linkedin_profile' ? 'CEO/Fundador (LinkedIn)' : `Via ${c.source}`,
             contactType: 'stakeholder',
             whatsapp: c.whatsapp || '',
             email: c.email || '',
