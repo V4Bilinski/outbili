@@ -9,7 +9,7 @@ import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
-import { parseFile, ACCEPTED_FORMATS, type ParseResult, type ParsedCompany } from '../lib/file-parser'
+import { parseFile, ACCEPTED_FORMATS, type ParseResult } from '../lib/file-parser'
 
 // --- Constants ---
 const RECOMMENDED_SEGMENTS = [
@@ -201,7 +201,6 @@ export function SearchPage() {
   // File upload states
   const [fileParseResult, setFileParseResult] = useState<ParseResult | null>(null)
   const [fileSelected, setFileSelected] = useState<Set<number>>(new Set())
-  const [fileUploading, setFileUploading] = useState(false)
   const [fileReadingStep, setFileReadingStep] = useState<'idle' | 'reading' | 'preview'>('idle')
   const [fileDragging, setFileDragging] = useState(false)
   const [fileImporting, setFileImporting] = useState(false)
@@ -279,13 +278,11 @@ export function SearchPage() {
   // --- File upload handlers ---
   const handleFileUpload = useCallback(async (file: File) => {
     setFileReadingStep('reading')
-    setFileUploading(true)
     try {
       const result = await parseFile(file)
       if (result.companies.length === 0) {
         toast.error('Nenhuma empresa encontrada no arquivo. Verifique o formato.')
         setFileReadingStep('idle')
-        setFileUploading(false)
         return
       }
       if (result.companies.length > MAX_FILE_LEADS) {
@@ -294,15 +291,10 @@ export function SearchPage() {
       }
       setFileParseResult(result)
       setFileSelected(new Set(result.companies.map((_, i) => i)))
-      // Delay transition for reading animation
-      setTimeout(() => {
-        setFileReadingStep('preview')
-        setFileUploading(false)
-      }, 1500)
+      setTimeout(() => setFileReadingStep('preview'), 1500)
     } catch {
       toast.error('Erro ao processar arquivo')
       setFileReadingStep('idle')
-      setFileUploading(false)
     }
   }, [])
 
@@ -317,7 +309,6 @@ export function SearchPage() {
     setFileParseResult(null)
     setFileSelected(new Set())
     setFileReadingStep('idle')
-    setFileUploading(false)
     setFileImporting(false)
     setFileImportProgress(0)
   }
@@ -374,7 +365,7 @@ export function SearchPage() {
 
     // Trigger mass enrichment for all created leads
     if (createdLeads.length > 0) {
-      massEnrichment.enrichAll(createdLeads.map(l => ({ leadId: l.id, companyName: (l.data as any).companyName })))
+      massEnrichment.enrichAll(createdLeads.map(l => ({ id: l.id, companyName: (l.data as any).companyName } as any)))
       setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
     }
 
