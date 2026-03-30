@@ -148,6 +148,12 @@
   100% { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes loading {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
 /* Hide scrollbar for tabs */
 .scrollbar-hide {
   -ms-overflow-style: none;

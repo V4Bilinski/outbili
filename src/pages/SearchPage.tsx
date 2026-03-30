@@ -1,5 +1,5 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
@@ -9,6 +9,7 @@ import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
+import { parseFile, ACCEPTED_FORMATS, type ParseResult, type ParsedCompany } from '../lib/file-parser'
 
 // --- Constants ---
 const RECOMMENDED_SEGMENTS = [
@@ -197,6 +198,17 @@ export function SearchPage() {
   const [dupOverride, setDupOverride] = useState(false)
   const [lastCreatedLead, setLastCreatedLead] = useState<{ id: string; data: Record<string, any> } | null>(null)
 
+  // File upload states
+  const [fileParseResult, setFileParseResult] = useState<ParseResult | null>(null)
+  const [fileSelected, setFileSelected] = useState<Set<number>>(new Set())
+  const [fileUploading, setFileUploading] = useState(false)
+  const [fileReadingStep, setFileReadingStep] = useState<'idle' | 'reading' | 'preview'>('idle')
+  const [fileDragging, setFileDragging] = useState(false)
+  const [fileImporting, setFileImporting] = useState(false)
+  const [fileImportProgress, setFileImportProgress] = useState(0)
+  const fileInputRef2 = useRef<HTMLInputElement>(null)
+  const MAX_FILE_LEADS = 15
+
   const enrichmentProgressRef = useRef<HTMLDivElement>(null)
 
   const n8n = useN8nSearch()
@@ -264,6 +276,112 @@ export function SearchPage() {
     contact: [specificContact, specificContactRole, specificPhone, specificEmail].filter(Boolean).length,
   }
 
+  // --- File upload handlers ---
+  const handleFileUpload = useCallback(async (file: File) => {
+    setFileReadingStep('reading')
+    setFileUploading(true)
+    try {
+      const result = await parseFile(file)
+      if (result.companies.length === 0) {
+        toast.error('Nenhuma empresa encontrada no arquivo. Verifique o formato.')
+        setFileReadingStep('idle')
+        setFileUploading(false)
+        return
+      }
+      if (result.companies.length > MAX_FILE_LEADS) {
+        result.companies = result.companies.slice(0, MAX_FILE_LEADS)
+        toast.info(`Limitado a ${MAX_FILE_LEADS} leads por vez. ${result.totalRows - MAX_FILE_LEADS} foram ignorados.`)
+      }
+      setFileParseResult(result)
+      setFileSelected(new Set(result.companies.map((_, i) => i)))
+      // Delay transition for reading animation
+      setTimeout(() => {
+        setFileReadingStep('preview')
+        setFileUploading(false)
+      }, 1500)
+    } catch {
+      toast.error('Erro ao processar arquivo')
+      setFileReadingStep('idle')
+      setFileUploading(false)
+    }
+  }, [])
+
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setFileDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFileUpload(file)
+  }, [handleFileUpload])
+
+  const resetFileUpload = () => {
+    setFileParseResult(null)
+    setFileSelected(new Set())
+    setFileReadingStep('idle')
+    setFileUploading(false)
+    setFileImporting(false)
+    setFileImportProgress(0)
+  }
+
+  const handleFileImportAndEnrich = async () => {
+    if (!fileParseResult || fileSelected.size === 0) return
+    setFileImporting(true)
+    setFileImportProgress(0)
+    const companies = fileParseResult.companies.filter((_, i) => fileSelected.has(i))
+    let done = 0
+    const createdLeads: Array<{ id: string; data: Record<string, any> }> = []
+
+    for (const company of companies) {
+      try {
+        const leadData: Record<string, any> = {
+          companyName: company.companyName,
+          cnpj: company.cnpj?.replace(/\D/g, '') || '',
+          segment: company.segment || specificSegment || '',
+          tier: 'Small',
+          status: 'Novo',
+          score: 0,
+          temperature: 'WARM',
+          ...(company.website && { website: company.website }),
+          ...(company.instagram && { instagram: company.instagram }),
+          ...(company.linkedin && { linkedin: company.linkedin }),
+          ...(company.address && { address: company.address }),
+          ...(company.city && { city: company.city }),
+          ...(company.state && { state: company.state }),
+          businessSummary: `${company.segment || 'Importado'} · Upload manual`,
+          enrichmentStatus: 'pending',
+          sourceHtmlReport: 'upload_manual',
+        }
+
+        const lead = await createLead(leadData as any)
+        createdLeads.push({ id: lead.id, data: leadData })
+
+        // Save contact if available
+        if (lead.id && company.contactName && (company.phone || company.email)) {
+          await createContact({
+            name: company.contactName,
+            role: company.contactRole || 'Contato',
+            contactType: 'decisor',
+            whatsapp: company.phone || '',
+            email: company.email || '',
+            leadId: lead.id,
+          } as any)
+        }
+      } catch { /* continue with next */ }
+      done++
+      setFileImportProgress(Math.round((done / companies.length) * 100))
+    }
+
+    toast.success(`${createdLeads.length} leads importados! Iniciando enriquecimento...`)
+
+    // Trigger mass enrichment for all created leads
+    if (createdLeads.length > 0) {
+      massEnrichment.enrichAll(createdLeads.map(l => ({ leadId: l.id, companyName: (l.data as any).companyName })))
+      setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+    }
+
+    setFileImporting(false)
+    resetFileUpload()
+  }
+
   // --- Reset form ---
   const resetSpecificForm = () => {
     setSpecificName(''); setSpecificCnpj(''); setSpecificPhone(''); setSpecificEmail('')
@@ -288,7 +406,7 @@ export function SearchPage() {
 
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
-    if (!specificCnpj || specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ válido é obrigatório para pesquisa'); return }
+    if (specificCnpj && specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ incompleto — preencha todos os 14 digitos ou deixe em branco'); return }
     setIsCreatingSpecific(true)
     try {
       // Format WhatsApp number
@@ -327,14 +445,16 @@ export function SearchPage() {
 
       // 1. Verificar duplicados por CNPJ (mais confiável) ou nome
       const cnpjClean = specificCnpj.replace(/\D/g, '')
-      const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
-      if (existingByCnpj.length > 0 && !dupOverride) {
-        setDupWarning(`Ja existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Clique novamente para criar mesmo assim.`)
-        setDupOverride(true)
-        setIsCreatingSpecific(false)
-        return
+      if (cnpjClean) {
+        const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
+        if (existingByCnpj.length > 0 && !dupOverride) {
+          setDupWarning(`Ja existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Clique novamente para criar mesmo assim.`)
+          setDupOverride(true)
+          setIsCreatingSpecific(false)
+          return
+        }
       }
-      if (!existingByCnpj.length) {
+      {
         const existingByName = await getLeads(`{companyName} = "${specificName.replace(/"/g, '\\"')}"`)
         if (existingByName.length > 0 && !dupOverride) {
           setDupWarning(`Ja existe um lead "${existingByName[0].companyName}". Clique novamente para criar mesmo assim.`)
@@ -446,19 +566,19 @@ export function SearchPage() {
               <input id="specific-name" type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clinica Odonto Premium" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base')} />
             </div>
 
-            {/* CNPJ field — large, prominent */}
+            {/* CNPJ field — optional when file is uploaded */}
             <div>
               <label htmlFor="specific-cnpj" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
-                <Hash className="h-3 w-3" /> CNPJ *
+                <Hash className="h-3 w-3" /> CNPJ {fileReadingStep !== 'preview' ? '*' : <span className="text-text-muted font-normal">(opcional com arquivo)</span>}
               </label>
               <input id="specific-cnpj" type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base font-mono')} />
             </div>
 
             {/* Dynamic enrichment preview pills */}
-            {specificName && specificCnpj.replace(/\D/g, '').length >= 2 && (
+            {specificName && (specificCnpj.replace(/\D/g, '').length >= 2 || specificName.length >= 3) && (
               <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/10">
                 <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
-                  <Sparkles className="h-3 w-3" /> Com nome + CNPJ buscamos automaticamente:
+                  <Sparkles className="h-3 w-3" /> {specificCnpj ? 'Com nome + CNPJ buscamos automaticamente:' : 'Com o nome buscamos automaticamente:'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {['Razao social', 'Socios', 'Endereco', 'Porte', 'Capital social', 'Regime tributario', 'CNAE', 'Geolocalizacao', 'Google Maps', 'Website', 'Redes sociais', 'Instagram', 'LinkedIn', 'Decisores', 'Emails', 'Telefones'].map((pill) => (
@@ -479,6 +599,165 @@ export function SearchPage() {
                 {RECOMMENDED_SEGMENTS.map((s) => <option key={s} value={s} />)}
               </datalist>
             </div>
+          </div>
+
+          {/* ===== FILE UPLOAD ZONE ===== */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium px-2">ou importe uma lista</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            {fileReadingStep === 'idle' && (
+              <div
+                onDragOver={(e) => { e.preventDefault(); setFileDragging(true) }}
+                onDragLeave={() => setFileDragging(false)}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef2.current?.click()}
+                className={cn(
+                  'flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300',
+                  fileDragging
+                    ? 'border-red bg-red/5 scale-[1.01]'
+                    : 'border-border/60 hover:border-red/30 hover:bg-white/[0.02]',
+                )}
+              >
+                <Upload className={cn('h-6 w-6 mb-2 transition-colors', fileDragging ? 'text-red' : 'text-text-muted')} />
+                <p className="text-sm font-medium text-text-primary">
+                  {fileDragging ? 'Solte o arquivo aqui' : 'Enviar documento'}
+                </p>
+                <p className="text-[11px] text-text-muted mt-0.5">
+                  CSV, Excel, PDF, TXT, MD — ate {MAX_FILE_LEADS} leads por vez
+                </p>
+                <input
+                  ref={fileInputRef2}
+                  type="file"
+                  accept={ACCEPTED_FORMATS}
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f) }}
+                />
+              </div>
+            )}
+
+            {/* Reading animation */}
+            {fileReadingStep === 'reading' && (
+              <div className="p-6 rounded-2xl bg-white/[0.02] border border-border text-center">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className="p-2.5 rounded-xl bg-red/10 animate-pulse">
+                    <FileUp className="h-5 w-5 text-red" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-text-primary">{fileParseResult?.fileName || 'Processando...'}</p>
+                    <p className="text-[11px] text-amber-300 animate-pulse">Analisando estrutura e identificando leads...</p>
+                  </div>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-red to-amber-400 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Preview parsed leads */}
+            {fileReadingStep === 'preview' && fileParseResult && (
+              <div className="rounded-2xl bg-white/[0.02] border border-border overflow-hidden animate-[fade-in_0.3s_ease-out]">
+                {/* File info header */}
+                <div className="flex items-center gap-3 p-4 border-b border-border">
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-text-primary truncate">{fileParseResult.fileName}</p>
+                    <p className="text-[11px] text-success">
+                      {fileParseResult.fileType} · {fileParseResult.companies.length} leads identificados
+                    </p>
+                  </div>
+                  <button onClick={resetFileUpload} className="p-2 rounded-xl hover:bg-white/[0.04] text-text-muted hover:text-error transition-colors cursor-pointer" title="Remover arquivo">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Detected fields badges */}
+                <div className="flex flex-wrap gap-1.5 px-4 pt-3">
+                  {['companyName', 'cnpj', 'phone', 'email', 'website', 'city', 'segment', 'contactName'].map((key) => {
+                    const found = fileParseResult.companies.some((c: any) => c[key])
+                    const labels: Record<string, string> = { companyName: 'Empresa', cnpj: 'CNPJ', phone: 'Telefone', email: 'E-mail', website: 'Website', city: 'Cidade', segment: 'Segmento', contactName: 'Contato' }
+                    return (
+                      <span key={key} className={cn(
+                        'text-[10px] px-2 py-0.5 rounded-lg border',
+                        found ? 'text-success bg-success/8 border-success/15 font-medium' : 'text-text-muted bg-white/[0.02] border-border/50 opacity-40',
+                      )}>
+                        {found ? '✓' : '·'} {labels[key]}
+                      </span>
+                    )
+                  })}
+                </div>
+
+                {/* Lead list with checkboxes */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] text-text-muted">{fileSelected.size} de {fileParseResult.companies.length} selecionados</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setFileSelected(new Set(fileParseResult.companies.map((_, i) => i)))} className="text-[11px] text-red cursor-pointer hover:underline">Todos</button>
+                      <button onClick={() => setFileSelected(new Set())} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhum</button>
+                    </div>
+                  </div>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1 rounded-xl">
+                    {fileParseResult.companies.map((company, i) => (
+                      <label
+                        key={i}
+                        className={cn(
+                          'flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200',
+                          fileSelected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-white/[0.02] border border-transparent',
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={fileSelected.has(i)}
+                          onChange={() => { const next = new Set(fileSelected); next.has(i) ? next.delete(i) : next.add(i); setFileSelected(next) }}
+                          className="accent-red w-3.5 h-3.5 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-text-primary truncate">{company.companyName}</p>
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {company.cnpj && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded font-mono">{company.cnpj}</span>}
+                            {company.phone && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
+                            {company.email && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.email}</span>}
+                            {company.city && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}</span>}
+                            {company.segment && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.segment}</span>}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Import CTA */}
+                <div className="px-4 pb-4">
+                  {fileImporting ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Loader2 className="h-4 w-4 text-red animate-spin" />
+                        <span className="text-text-primary font-medium">Importando e enriquecendo...</span>
+                        <span className="text-[11px] text-text-muted ml-auto font-mono">{fileImportProgress}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-300" style={{ width: `${fileImportProgress}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="lg"
+                      className="w-full"
+                      icon={<Sparkles className="h-4 w-4" />}
+                      onClick={handleFileImportAndEnrich}
+                      disabled={fileSelected.size === 0}
+                    >
+                      Salvar {fileSelected.size} lead{fileSelected.size !== 1 ? 's' : ''} e enriquecer com IA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ===== COLLAPSIBLE SECTIONS ===== */}
@@ -649,7 +928,7 @@ export function SearchPage() {
               </div>
             )}
             <div className="flex items-center gap-3">
-              <Button size="lg" icon={<Sparkles className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || !specificCnpj || specificCnpj.replace(/\D/g, '').length !== 14 || isCreatingSpecific || enrichment.isEnriching}>
+              <Button size="lg" icon={<Sparkles className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || (specificCnpj.length > 0 && specificCnpj.replace(/\D/g, '').length !== 14) || isCreatingSpecific || enrichment.isEnriching}>
                 Salvar e enriquecer com IA
               </Button>
               {enrichment.isEnriching && <span className="text-[11px] text-amber-400 animate-pulse">Enriquecendo...</span>}
@@ -663,6 +942,9 @@ export function SearchPage() {
                 <p className="text-[11px] text-success flex items-center gap-1">
                   <CheckCircle className="h-3 w-3" /> CNPJ valido — pronto para pesquisa
                 </p>
+              )}
+              {!specificCnpj && specificName && (
+                <p className="text-[11px] text-text-muted">Sem CNPJ — a IA busca os dados pelo nome da empresa</p>
               )}
             </div>
           </div>
