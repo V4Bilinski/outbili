@@ -65,18 +65,18 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
 
-  // Query BOTH APIs in parallel and merge results (BrasilAPI is more complete)
-  const [openCnpjData, brasilApiData] = await Promise.all([
+  // Query ALL 3 APIs in parallel and merge results
+  const [openCnpjData, brasilApiData, receitaWsData] = await Promise.all([
     fetchOpenCnpj(clean),
     fetchBrasilApiCnpj(clean),
+    fetchReceitaWs(clean),
   ])
 
-  // BrasilAPI is the primary source (has CNAE, socios, porte, telefone)
-  // OpenCNPJ fills gaps (email, some fields BrasilAPI may miss)
-  if (brasilApiData || openCnpjData) {
+  const hasAnyData = brasilApiData || openCnpjData || receitaWsData
+  if (hasAnyData) {
     const merged: Partial<Lead> = {}
-    const sources = [brasilApiData, openCnpjData].filter(Boolean) as Partial<Lead>[]
-    // Merge: first non-empty value wins (BrasilAPI first = priority)
+    // Priority: ReceitaWS > BrasilAPI > OpenCNPJ (ReceitaWS has most complete phone data)
+    const sources = [receitaWsData?.lead, brasilApiData, openCnpjData].filter(Boolean) as Partial<Lead>[]
     for (const source of sources) {
       for (const [key, value] of Object.entries(source)) {
         if (value && !(merged as any)[key]) {
@@ -84,6 +84,31 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
         }
       }
     }
+
+    // Smart phone extraction: prioritize mobile (WhatsApp) over landline
+    if (receitaWsData?.phones?.length) {
+      const mobilePhones = receitaWsData.phones.filter(p => classifyPhone(p) === 'mobile')
+      const landlinePhones = receitaWsData.phones.filter(p => classifyPhone(p) === 'landline')
+      // rfPhone = best phone for WhatsApp (mobile first)
+      merged.rfPhone = (mobilePhones[0] || landlinePhones[0] || '').replace(/\D/g, '') || merged.rfPhone
+      // Store all phones in businessSummary for reference
+      if (mobilePhones.length > 0) {
+        const phoneInfo = `WhatsApp provavel: ${mobilePhones.map(p => formatPhone(p)).join(', ')}${landlinePhones.length ? ` | Fixo: ${landlinePhones.map(p => formatPhone(p)).join(', ')}` : ''}`
+        merged.businessSummary = merged.businessSummary ? `${merged.businessSummary}\n${phoneInfo}` : phoneInfo
+      }
+    }
+
+    // Attach decisor name from ReceitaWS if available
+    if (receitaWsData?.decisorName && !merged.rfPhone) {
+      // No phone but we have the decisor name — useful for contact creation
+    }
+
+    // Store _receitaWsDecisor for contact creation later (via any field hack)
+    if (receitaWsData?.decisorName) {
+      ;(merged as any)._receitaWsDecisor = receitaWsData.decisorName
+      ;(merged as any)._receitaWsPhones = receitaWsData.phones
+    }
+
     return merged
   }
 
@@ -129,6 +154,68 @@ async function fetchBrasilApiCnpj(cnpj: string): Promise<Partial<Lead> | null> {
     const d = await res.json()
     return parseCnpjResponse(d)
   } catch { return null }
+}
+
+// --- ReceitaWS (returns multiple phones including mobile/WhatsApp) ---
+async function fetchReceitaWs(cnpj: string): Promise<{ lead: Partial<Lead>; phones: string[]; decisorName?: string } | null> {
+  try {
+    const res = await fetchWithRetry(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`)
+    if (!res.ok) return null
+    const d = await res.json()
+    if (d.status === 'ERROR') return null
+
+    // Extract ALL phones (ReceitaWS returns "tel1 / tel2" format)
+    const rawPhones = (d.telefone || '').split(/[\/;,]/).map((p: string) => p.trim()).filter(Boolean)
+    const phones = rawPhones.map((p: string) => p.replace(/\D/g, '')).filter((p: string) => p.length >= 10)
+
+    // Find the decisor (admin partner)
+    const socios = d.qsa || []
+    const decisor = socios.find((s: any) =>
+      s.qual?.toLowerCase().includes('administrador') ||
+      s.qual?.toLowerCase().includes('diretor') ||
+      s.qual?.toLowerCase().includes('presidente')
+    ) || socios[0]
+
+    return {
+      lead: parseCnpjResponse({
+        ...d,
+        razao_social: d.nome,
+        nome_fantasia: d.fantasia,
+        cnae_fiscal_descricao: d.atividade_principal?.[0]?.text,
+        atividade_principal: d.atividade_principal,
+        atividades_secundarias: d.atividades_secundarias,
+        descricao_situacao_cadastral: d.situacao,
+        data_inicio_atividade: d.abertura,
+        descricao_porte: d.porte,
+        natureza_juridica: d.natureza_juridica,
+        capital_social: d.capital_social ? Number(String(d.capital_social).replace(/\D/g, '')) / 100 : undefined,
+        qsa: socios.map((s: any) => ({ nome_socio: s.nome, qualificacao_socio: s.qual })),
+        email: d.email,
+        correio_eletronico: d.email,
+        logradouro: d.logradouro,
+        numero: d.numero,
+        complemento: d.complemento,
+        bairro: d.bairro,
+        municipio: d.municipio,
+        uf: d.uf,
+        cep: d.cep,
+      }),
+      phones,
+      decisorName: decisor?.nome,
+    }
+  } catch { return null }
+}
+
+// Classify phone: mobile (9 digits after DDD) = likely WhatsApp
+function classifyPhone(phone: string): 'mobile' | 'landline' {
+  const digits = phone.replace(/\D/g, '')
+  // Brazilian mobile: DDD (2 digits) + 9 + 8 digits = 11 total
+  // With country code: 55 + DDD + 9XXXX-XXXX = 13 digits
+  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits
+  // Mobile starts with 9 after DDD
+  if (withoutCountry.length === 11 && withoutCountry[2] === '9') return 'mobile'
+  if (withoutCountry.length === 10) return 'landline'
+  return 'landline'
 }
 
 function parseCnpjResponse(d: any): Partial<Lead> {
@@ -713,14 +800,28 @@ export async function enrichLead(
         cnpjCep = (cnpjData as any)._cep || ''
         // Extrair decisor dos sócios da RF (Administrador > Sócio > primeiro da lista)
         const rfDecisionMaker = extractDecisionMaker(cnpjData.partners)
-        // Contato da RF — usar nome do decisor, NUNCA nome da empresa
+        // Use ReceitaWS decisor name if available (more accurate)
+        const decisorName = (cnpjData as any)._receitaWsDecisor || rfDecisionMaker?.nome
+        // Use ALL phones from ReceitaWS (includes mobile/WhatsApp)
+        const allPhones: string[] = (cnpjData as any)._receitaWsPhones || []
+        const mobilePhones = allPhones.filter(p => classifyPhone(p) === 'mobile')
         const rfPhoneClean = cnpjData.rfPhone ? cnpjData.rfPhone.replace(/\D/g, '') : ''
-        const rfPhoneValid = rfPhoneClean.length >= 10 && rfPhoneClean.length <= 13
-        if (rfPhoneValid && rfDecisionMaker) {
-          newContacts.push({ name: rfDecisionMaker.nome, whatsapp: formatPhone(rfPhoneClean), source: 'receita_federal' })
+
+        // Priority: mobile phone (WhatsApp) from ReceitaWS > rfPhone from other APIs
+        const bestWhatsApp = mobilePhones[0] || (rfPhoneClean.length >= 10 ? rfPhoneClean : '')
+        if (bestWhatsApp && decisorName) {
+          newContacts.push({
+            name: decisorName,
+            whatsapp: formatPhone(bestWhatsApp),
+            source: mobilePhones.length > 0 ? 'receita_federal_whatsapp' : 'receita_federal',
+          })
         }
-        if (cnpjData.rfEmail && cnpjData.rfEmail.includes('@') && rfDecisionMaker) {
-          newContacts.push({ name: rfDecisionMaker.nome, email: cnpjData.rfEmail, source: 'receita_federal' })
+        // Also add landline as separate contact if we have mobile
+        if (mobilePhones.length > 0 && rfPhoneClean && classifyPhone(rfPhoneClean) === 'landline') {
+          newContacts.push({ name: `${leadData.companyName || 'Empresa'} (fixo)`, whatsapp: formatPhone(rfPhoneClean), source: 'receita_federal' })
+        }
+        if (cnpjData.rfEmail && cnpjData.rfEmail.includes('@') && decisorName) {
+          newContacts.push({ name: decisorName, email: cnpjData.rfEmail, source: 'receita_federal' })
         }
       }
       step('cnpj').status = 'done'
