@@ -458,28 +458,40 @@ export function SearchPage() {
       setDupOverride(false)
       setDupWarning(null)
 
-      // 2. Save lead to Airtable
-      const lead = await createLead(leadData as any)
+      // 2. Save lead to Airtable (safe fields only — no Single Select risk)
+      let lead: any
+      try {
+        lead = await createLead(leadData as any)
+      } catch (saveErr: any) {
+        // If full save fails, retry with minimal fields (name + cnpj only)
+        const minimalData = {
+          companyName: specificName,
+          cnpj: specificCnpj.replace(/\D/g, ''),
+          score: 0,
+        }
+        lead = await createLead(minimalData as any)
+        toast.warning('Salvo com dados basicos — enriquecimento completara os demais campos')
+      }
       setLastCreatedLead({ id: lead.id, data: leadData })
 
-      // 2. Save contact if we have decision maker data
+      // 3. Save contact if we have decision maker data (non-blocking)
       if (lead.id && specificContact && (whatsapp || specificEmail)) {
-        await createContact({
+        createContact({
           name: specificContact,
           role: specificContactRole || 'Decisor',
           contactType: 'decisor',
           whatsapp: whatsapp,
           email: specificEmail || '',
           leadId: lead.id,
-        } as any)
+        } as any).catch(() => {})
       }
 
       toast.success(`${specificName} salvo! Iniciando enriquecimento...`)
 
-      // 3. Trigger Apify enrichment pipeline (runs in background)
+      // 4. Trigger enrichment pipeline (runs in background, non-blocking)
       enrichment.enrich(lead.id, leadData)
 
-      // 4. Also trigger n8n for deep analysis (business intelligence)
+      // 5. Also trigger n8n for deep analysis (non-blocking)
       n8n.search({
         segments: specificSegment ? [specificSegment] : ['Varejo'],
         states: specificState ? [specificState] : [],
