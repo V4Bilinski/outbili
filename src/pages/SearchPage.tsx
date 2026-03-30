@@ -409,7 +409,7 @@ export function SearchPage() {
 
       // Estimate revenue
       const revenue = specificRevenue ? parseInt(specificRevenue) : undefined
-      const tier = !revenue ? 'Nao qualificado' : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
+      const tier = !revenue ? 'Small' : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
 
       // Build lead data with ALL fields
       const leadData: Record<string, any> = {
