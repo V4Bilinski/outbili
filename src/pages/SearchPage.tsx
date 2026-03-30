@@ -1377,7 +1377,23 @@ export function SearchPage() {
         </Card>
       )}
 
-      {/* Success */}
+      {/* Success — 0 leads */}
+      {n8n.phase === 'done' && n8n.leadsCreated === 0 && (
+        <Card className="animate-[slide-up_0.4s_ease-out]">
+          <div className="text-center py-4">
+            <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/20 inline-flex mx-auto mb-4">
+              <AlertCircle className="h-10 w-10 text-amber-400" />
+            </div>
+            <h3 className="text-lg font-bold text-text-primary">Pesquisa concluida</h3>
+            <p className="text-sm text-text-muted mt-1">Nenhum lead novo encontrado. Tente ajustar os filtros ou a regiao.</p>
+          </div>
+          <div className="flex gap-3 justify-center mt-2">
+            <Button variant="ghost" onClick={n8n.reset}>Nova pesquisa</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Success — leads found */}
       {n8n.phase === 'done' && n8n.leadsCreated > 0 && (
         <Card className="animate-[slide-up_0.4s_ease-out]">
           <div className="text-center py-4">
