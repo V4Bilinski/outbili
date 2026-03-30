@@ -28,7 +28,7 @@ export function useN8nSearch() {
       setState((s) => ({ ...s, elapsed: Math.round((Date.now() - startTime) / 1000) }))
     }, 1000)
 
-    // Count ALL leads before search to detect new ones (any status)
+    // Snapshot current leads to detect new ones
     let initialIds: Set<string> = new Set()
     try {
       const existing = await getLeads()
@@ -36,73 +36,89 @@ export function useN8nSearch() {
     } catch { /* ignore */ }
 
     try {
-      // Phase 1: Send to n8n (fire-and-forget — don't wait for response)
       setState({ phase: 'sending', leads: [], error: null, elapsed: 0, leadsCreated: 0 })
 
-      // Trigger n8n webhook — don't await response (it times out)
-      triggerN8nSearch(params).catch(() => {}) // fire and forget
+      // Strategy: race between n8n response and polling
+      // n8n may respond with leadsCreated count, OR may timeout (the webhook can be slow)
+      // Meanwhile, poll Airtable for new leads
+      let resolved = false
 
-      // Phase 2: Poll Airtable for new leads (every 10s for up to 3 min)
+      const finalize = async (leadsCreated: number) => {
+        if (resolved) return
+        resolved = true
+
+        if (leadsCreated > 0) {
+          setState((s) => ({ ...s, phase: 'polling', leadsCreated }))
+          // Wait for remaining leads to be saved
+          await new Promise((r) => setTimeout(r, 10_000))
+        }
+
+        // Final count from Airtable
+        try {
+          const finalLeads = await getLeads()
+          const newLeads = finalLeads.filter((l) => !initialIds.has(l.id))
+          setState({
+            phase: 'done',
+            leads: newLeads,
+            error: null,
+            elapsed: Math.round((Date.now() - startTime) / 1000),
+            leadsCreated: Math.max(leadsCreated, newLeads.length),
+          })
+        } catch {
+          setState({
+            phase: 'done',
+            leads: [],
+            error: null,
+            elapsed: Math.round((Date.now() - startTime) / 1000),
+            leadsCreated,
+          })
+        }
+      }
+
+      // Path A: Wait for n8n webhook response
+      const n8nPromise = triggerN8nSearch(params).then(async (response) => {
+        if (resolved) return
+        if (response.success && response.leadsCreated > 0) {
+          await finalize(response.leadsCreated)
+        }
+        // If response.success but 0 leads, or failed — let polling handle it
+      }).catch(() => {})
+
+      // Path B: Poll Airtable for new leads
       setState((s) => ({ ...s, phase: 'processing' }))
 
       const maxWait = 180_000 // 3 min
-      while (Date.now() - startTime < maxWait) {
-        await new Promise((r) => setTimeout(r, 10_000)) // poll every 10s
+      while (!resolved && Date.now() - startTime < maxWait) {
+        await new Promise((r) => setTimeout(r, 10_000))
+        if (resolved) break
 
         try {
           const currentLeads = await getLeads()
           const newLeads = currentLeads.filter((l) => !initialIds.has(l.id))
 
           if (newLeads.length > 0) {
-            // New leads appeared — n8n is saving them
-            setState((s) => ({ ...s, phase: 'polling', leadsCreated: newLeads.length }))
-
-            // Wait a bit more for remaining leads
-            await new Promise((r) => setTimeout(r, 15_000))
-
-            // Final count
-            const finalLeads = await getLeads()
-            const finalNewLeads = finalLeads.filter((l) => !initialIds.has(l.id))
-
-            setState({
-              phase: 'done',
-              leads: finalNewLeads,
-              error: null,
-              elapsed: Math.round((Date.now() - startTime) / 1000),
-              leadsCreated: finalNewLeads.length,
-            })
-            return
+            await finalize(newLeads.length)
+            break
           }
-        } catch { /* airtable error — retry */ }
+        } catch { /* retry */ }
       }
 
-      // Timeout — check one last time
-      try {
-        const finalCheck = await getLeads()
-        const newLeads = finalCheck.filter((l) => !initialIds.has(l.id))
-
-        // Always conclude — even with 0 leads
-        setState({
-          phase: 'done',
-          leads: newLeads,
-          error: null,
-          elapsed: Math.round((Date.now() - startTime) / 1000),
-          leadsCreated: newLeads.length,
-        })
-      } catch {
-        setState({
-          phase: 'done',
-          leads: [],
-          error: null,
-          elapsed: Math.round((Date.now() - startTime) / 1000),
-          leadsCreated: 0,
-        })
+      // Timeout — force conclusion
+      if (!resolved) {
+        // Wait for n8n one more time (5s)
+        await Promise.race([n8nPromise, new Promise((r) => setTimeout(r, 5000))])
+        if (!resolved) {
+          await finalize(0)
+        }
       }
     } catch (err: any) {
       setState((s) => ({
         ...s,
-        phase: 'error',
-        error: err.message || 'Erro na pesquisa',
+        phase: 'done',
+        leads: [],
+        error: null,
+        elapsed: Math.round((Date.now() - startTime) / 1000),
+        leadsCreated: 0,
       }))
     } finally {
       clearInterval(tick)
