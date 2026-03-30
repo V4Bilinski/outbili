@@ -132,10 +132,11 @@ export async function createRecords<T>(
   table: string,
   records: Array<{ fields: Partial<T> }>,
 ): Promise<AirtableRecord<T>[]> {
-  // Airtable max 10 records per batch
   const batches: AirtableRecord<T>[] = []
   for (let i = 0; i < records.length; i += 10) {
-    const batch = records.slice(i, i + 10)
+    const batch = records.slice(i, i + 10).map((r) => ({
+      fields: mapFieldsToAirtable(r.fields as Record<string, any>),
+    }))
     const result = await airtableFetch(`/${encodeURIComponent(table)}`, {
       method: 'POST',
       body: JSON.stringify({ records: batch }),
@@ -151,7 +152,10 @@ export async function updateRecords<T>(
 ): Promise<AirtableRecord<T>[]> {
   const batches: AirtableRecord<T>[] = []
   for (let i = 0; i < records.length; i += 10) {
-    const batch = records.slice(i, i + 10)
+    const batch = records.slice(i, i + 10).map((r) => ({
+      id: r.id,
+      fields: mapFieldsToAirtable(r.fields as Record<string, any>),
+    }))
     const result = await airtableFetch(`/${encodeURIComponent(table)}`, {
       method: 'PATCH',
       body: JSON.stringify({ records: batch }),
@@ -169,9 +173,37 @@ export async function deleteRecords(table: string, ids: string[]): Promise<void>
   }
 }
 
+// Field name mapping: code → Airtable (for renamed fields)
+const FIELD_TO_AIRTABLE: Record<string, string> = {
+  temperature: 'temperatura',
+}
+const AIRTABLE_TO_FIELD: Record<string, string> = {
+  temperatura: 'temperature',
+}
+
+// Map fields before sending to Airtable (code → Airtable names)
+function mapFieldsToAirtable(fields: Record<string, any>): Record<string, any> {
+  const mapped: Record<string, any> = {}
+  for (const [key, value] of Object.entries(fields)) {
+    const airtableKey = FIELD_TO_AIRTABLE[key] || key
+    if (value !== undefined) mapped[airtableKey] = value
+  }
+  return mapped
+}
+
+// Map fields from Airtable (Airtable names → code)
+function mapFieldsFromAirtable(fields: Record<string, any>): Record<string, any> {
+  const mapped: Record<string, any> = {}
+  for (const [key, value] of Object.entries(fields)) {
+    const codeKey = AIRTABLE_TO_FIELD[key] || key
+    mapped[codeKey] = value
+  }
+  return mapped
+}
+
 // Helper to map Airtable record to typed object
 export function mapRecord<T extends { id: string }>(record: AirtableRecord<any>): T {
-  return { id: record.id, ...record.fields, createdAt: record.createdTime } as T
+  return { id: record.id, ...mapFieldsFromAirtable(record.fields), createdAt: record.createdTime } as unknown as T
 }
 
 export function mapRecords<T extends { id: string }>(records: AirtableRecord<any>[]): T[] {
