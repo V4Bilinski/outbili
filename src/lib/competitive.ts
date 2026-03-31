@@ -32,6 +32,13 @@ const DIMENSION_ALIAS_MAP: Record<string, string> = (() => {
   // Legacy Apify search dimension aliases
   map['avaliacao google'] = 'Qualidade percebida'
   map['volume de avaliacoes'] = 'Força da marca'
+  // Short-form aliases from legacy data (e.g. "Variedade", "Preço", "Marca")
+  map['variedade'] = 'Variedade de produtos'
+  map['preco'] = 'Preço médio'
+  map['qualidade'] = 'Qualidade percebida'
+  map['margem'] = 'Margem estimada'
+  map['inovacao'] = 'Inovação'
+  map['marca'] = 'Força da marca'
   return map
 })()
 
@@ -42,8 +49,15 @@ function normalizeDimensionName(name: string): string {
 
 function normalizeLevel(value: string): DimensionLevel {
   const lower = removeAccents(value).toLowerCase().trim()
+  // Exact matches
   if (lower === 'forte') return 'Forte'
   if (lower === 'fraca') return 'Fraca'
+  if (lower === 'media') return 'Média'
+  // Descriptive values from legacy data (e.g. "Alta", "Premium", "Excelente")
+  const strongWords = ['forte', 'alta', 'alto', 'excelente', 'premium', 'consolidada', 'nacional', 'muito']
+  const weakWords = ['fraca', 'fraco', 'baixa', 'baixo', 'ausente', 'nenhum', 'zero', 'limitada']
+  if (strongWords.some((w) => lower.includes(w))) return 'Forte'
+  if (weakWords.some((w) => lower.includes(w))) return 'Fraca'
   return 'Média'
 }
 
