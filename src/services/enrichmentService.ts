@@ -1136,59 +1136,85 @@ export async function enrichLead(
     notify()
   }
 
-  // Step 3: Geolocalização (BrasilAPI CEP v2, com fallback por cidade)
-  const cepToLookup = cnpjCep || ''
-  if (cepToLookup) {
+  // Step 3: Geolocalização — CNPJ obrigatório garante CEP disponível
+  // Strategy: CEP (BrasilAPI) → Fallback 1 (ViaCEP) → Fallback 2 (Nominatim cidade+estado)
+  {
     step('geolocation').status = 'running'
     notify()
-    try {
-      const geoData = await fetchGeoFromCep(cepToLookup)
-      if (geoData) {
-        mergeField('city', geoData.city)
-        mergeField('state', geoData.state)
-        if (geoData.latitude) merged.latitude = geoData.latitude
-        if (geoData.longitude) merged.longitude = geoData.longitude
-      }
-      step('geolocation').status = 'done'
-      if (geoData?.latitude && geoData?.longitude) step('geolocation').detail = `${geoData.city || ''} · lat/long encontrados`
-      else if (geoData?.city) step('geolocation').detail = geoData.city
-    } catch {
-      step('geolocation').status = 'error'
+
+    // CEP primário vem do CNPJ (sempre disponível pois CNPJ é obrigatório)
+    let cepToLookup = cnpjCep || ''
+    // Fallback: extrair CEP do endereço se CNPJ não retornou
+    if (!cepToLookup) {
+      const addressField = merged.address || leadData.address || ''
+      const cepMatch = addressField.match(/\d{5}-?\d{3}/)
+      if (cepMatch) cepToLookup = cepMatch[0]
     }
-    notify()
-  } else {
-    // Fallback: geocode by city + state name
-    const geoCity = leadData.city || merged.city
-    const geoState = leadData.state || merged.state
-    if (geoCity && geoState) {
-      step('geolocation').status = 'running'
-      notify()
+
+    let geoResolved = false
+
+    // Primary: BrasilAPI CEP v2 (lat/long inclusos)
+    if (cepToLookup) {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(geoCity)}&state=${encodeURIComponent(geoState)}&country=Brazil&format=json&limit=1`, {
-          headers: { 'User-Agent': 'Outbili/1.0' }
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.length > 0) {
-            merged.latitude = parseFloat(data[0].lat)
-            merged.longitude = parseFloat(data[0].lon)
-            step('geolocation').status = 'done'
-            step('geolocation').detail = `${geoCity}, ${geoState} · lat/long estimados`
-          } else {
-            step('geolocation').status = 'done'
-            step('geolocation').detail = 'Sem coordenadas'
-          }
-        } else {
-          step('geolocation').status = 'error'
+        const geoData = await fetchGeoFromCep(cepToLookup)
+        if (geoData) {
+          mergeField('city', geoData.city)
+          mergeField('state', geoData.state)
+          if (geoData.address) mergeField('address', geoData.address)
+          if (geoData.latitude) merged.latitude = geoData.latitude
+          if (geoData.longitude) merged.longitude = geoData.longitude
+          geoResolved = true
+          step('geolocation').status = 'done'
+          step('geolocation').detail = geoData.latitude
+            ? `${geoData.city || ''} · lat/long via BrasilAPI`
+            : `${geoData.city || ''} · sem coordenadas`
         }
-      } catch {
-        step('geolocation').status = 'error'
-      }
-      notify()
-    } else {
-      step('geolocation').status = 'skipped'
-      notify()
+      } catch { /* fallback below */ }
     }
+
+    // Fallback 1: ViaCEP (API pública gratuita, sem lat/long mas confirma cidade/estado)
+    if (!geoResolved && cepToLookup) {
+      try {
+        const cleanCep = cepToLookup.replace(/\D/g, '')
+        const res = await fetchWithRetry(`https://viacep.com.br/ws/${cleanCep}/json/`)
+        if (res.ok) {
+          const d = await res.json()
+          if (!d.erro) {
+            mergeField('city', d.localidade)
+            mergeField('state', d.uf)
+            if (d.logradouro) mergeField('address', [d.logradouro, d.bairro].filter(Boolean).join(', '))
+            geoResolved = true
+            step('geolocation').detail = `${d.localidade || ''}, ${d.uf || ''} · via ViaCEP (sem coordenadas)`
+          }
+        }
+      } catch { /* fallback below */ }
+    }
+
+    // Fallback 2: Nominatim geocode por cidade + estado (lat/long estimados)
+    if (!geoResolved) {
+      const geoCity = merged.city || leadData.city
+      const geoState = merged.state || leadData.state
+      if (geoCity && geoState) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(geoCity)}&state=${encodeURIComponent(geoState)}&country=Brazil&format=json&limit=1`, {
+            headers: { 'User-Agent': 'Outbili/1.0' },
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.length > 0) {
+              merged.latitude = parseFloat(data[0].lat)
+              merged.longitude = parseFloat(data[0].lon)
+              geoResolved = true
+              step('geolocation').detail = `${geoCity}, ${geoState} · lat/long via Nominatim`
+            }
+          }
+        } catch { /* all fallbacks exhausted */ }
+      }
+    }
+
+    step('geolocation').status = geoResolved ? 'done' : 'error'
+    if (!geoResolved) step('geolocation').detail = 'Nenhuma API de geo retornou dados'
+    notify()
   }
 
   // Step 4: Verificação de domínio .br (Registro.br)
