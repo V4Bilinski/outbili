@@ -1,5 +1,6 @@
 import { updateLead } from './leadService'
 import { createContact, getContacts } from './contactService'
+import { generateStrategicAnalysis } from './strategicAnalysisService'
 import { matchBusiness, matchProspects } from '../lib/vibeprospecting'
 import type { Lead } from '../types'
 
@@ -966,6 +967,7 @@ export async function enrichLead(
     { source: 'linkedin', status: (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
     { source: 'decisor', status: 'pending', label: 'Contato do Decisor (CEO/Fundador)', estimatedMs: 30000 },
     { source: 'inpi', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'INPI (Marcas e Patentes)', estimatedMs: 30000 },
+    { source: 'strategic', status: 'pending', label: 'Analise Estrategica Personalizada', estimatedMs: 500 },
   ]
 
   const notify = () => {
@@ -1639,6 +1641,30 @@ export async function enrichLead(
       merged.website = undefined as any
     }
   }
+
+  // --- Generate Strategic Analysis (personalized from enrichment data) ---
+  step('strategic').status = 'running'
+  notify()
+  try {
+    const fullLeadData = { ...leadData, ...merged, ...spiced }
+    fullLeadData.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
+    const strategic = generateStrategicAnalysis(fullLeadData)
+    // Only overwrite if not already set (respect n8n or manual data)
+    if (!leadData.hypotheticalTrap) merged.hypotheticalTrap = strategic.hypotheticalTrap
+    if (!leadData.discoveryQuestions) merged.discoveryQuestions = strategic.discoveryQuestions
+    if (!leadData.eligibilityChecklist) merged.eligibilityChecklist = strategic.eligibilityChecklist
+    if (!leadData.meetingPrep) merged.meetingPrep = strategic.meetingPrep
+    if (!leadData.salesArguments) merged.salesArguments = strategic.salesArguments
+    if (!leadData.vulnerabilities) merged.vulnerabilities = strategic.vulnerabilities
+    if (!leadData.competitiveAnalysis) merged.competitiveAnalysis = strategic.competitiveAnalysis
+    if (!leadData.projectionData) merged.projectionData = strategic.projectionData
+    if (!leadData.productPortfolio) merged.productPortfolio = strategic.productPortfolio
+    step('strategic').status = 'done'
+    step('strategic').detail = 'Reuniao + Discovery + Vulnerabilidades + Argumentos'
+  } catch {
+    step('strategic').status = 'error'
+  }
+  notify()
 
   // --- Save enriched data to Airtable ---
   const updateFields: Partial<Lead> = { ...merged }

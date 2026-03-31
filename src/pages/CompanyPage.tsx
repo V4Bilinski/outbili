@@ -9,6 +9,7 @@ import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
+import { generateDiscoveryQuestions, generateEligibilityChecklist } from '../services/strategicAnalysisService'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -61,8 +62,8 @@ export function CompanyPage() {
   const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
   const whatsappLink = mainContact?.whatsapp ? `https://wa.me/${mainContact.whatsapp.replace(/\D/g, '')}` : null
 
-  const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, [])
-  const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, [])
+  const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, generateDiscoveryQuestions(lead))
+  const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, generateEligibilityChecklist(lead))
   const spicedNotes = parseJsonField<Record<string, string>>(lead.spicedNotes, {})
 
   return (
