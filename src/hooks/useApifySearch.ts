@@ -480,10 +480,13 @@ export function useApifySearch() {
 function buildCompetitorDimensions(competitor: GoogleMapsResult, lead: GoogleMapsResult): Record<string, string> {
   const dims: Record<string, string> = {}
   dims['Presença digital'] = competitor.website ? (competitor.reviewsCount > lead.reviewsCount ? 'Forte' : 'Média') : 'Fraca'
-  dims['Avaliação Google'] = competitor.totalScore >= 4.5 ? 'Forte' : competitor.totalScore >= 4.0 ? 'Média' : 'Fraca'
-  dims['Volume de avaliações'] = competitor.reviewsCount > 100 ? 'Forte' : competitor.reviewsCount > 30 ? 'Média' : 'Fraca'
-  dims['Atendimento'] = competitor.totalScore >= 4.5 ? 'Forte' : 'Média'
-  dims['Força da marca'] = competitor.reviewsCount > lead.reviewsCount * 2 ? 'Forte' : competitor.reviewsCount > lead.reviewsCount ? 'Média' : 'Fraca'
+  dims['Variedade de produtos'] = 'Média'
+  dims['Preço médio'] = 'Média'
+  dims['Qualidade percebida'] = competitor.totalScore >= 4.5 ? 'Forte' : competitor.totalScore >= 3.5 ? 'Média' : 'Fraca'
+  dims['Atendimento'] = competitor.totalScore >= 4.5 ? 'Forte' : competitor.totalScore >= 4.0 ? 'Média' : 'Fraca'
+  dims['Margem estimada'] = 'Média'
+  dims['Inovação'] = competitor.website ? 'Média' : 'Fraca'
+  dims['Força da marca'] = competitor.reviewsCount > 100 ? 'Forte' : competitor.reviewsCount > 30 ? 'Média' : 'Fraca'
   return dims
 }
 

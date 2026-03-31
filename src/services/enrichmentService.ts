@@ -1642,13 +1642,48 @@ export async function enrichLead(
     }
   }
 
+  // --- Competitor Research via Google Maps (non-blocking) ---
+  let realCompetitors: Array<{ name: string; rating: number; reviews: number; website?: string; category?: string }> = []
+  if (!leadData.competitiveAnalysis && APIFY_TOKEN) {
+    const compSegment = merged.segment || leadData.segment || ''
+    const compCity = merged.city || leadData.city || ''
+    if (compSegment && compCity) {
+      try {
+        const compResults = await runActor<any>('compass~crawler-google-places', {
+          searchStringsArray: [compSegment],
+          locationQuery: `${compCity}, ${merged.state || leadData.state || 'Brasil'}`,
+          maxCrawledPlacesPerSearch: 5,
+          language: 'pt-BR',
+          maxImages: 0,
+          scrapeContacts: false,
+          deeperCityScrape: false,
+        }, 30_000)
+        if (compResults && compResults.length > 0) {
+          const leadName = (merged.companyName || leadData.companyName || '').toLowerCase()
+          realCompetitors = compResults
+            .filter((c: any) => c.title && c.title.toLowerCase() !== leadName)
+            .slice(0, 3)
+            .map((c: any) => ({
+              name: c.title,
+              rating: c.totalScore || 0,
+              reviews: c.reviewsCount || 0,
+              website: c.website,
+              category: c.categoryName,
+            }))
+        }
+      } catch {
+        // Non-blocking: fall through to generic competitors
+      }
+    }
+  }
+
   // --- Generate Strategic Analysis (personalized from enrichment data) ---
   step('strategic').status = 'running'
   notify()
   try {
     const fullLeadData = { ...leadData, ...merged, ...spiced }
     fullLeadData.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
-    const strategic = generateStrategicAnalysis(fullLeadData)
+    const strategic = generateStrategicAnalysis(fullLeadData, realCompetitors.length > 0 ? realCompetitors : undefined)
     // Only overwrite if not already set (respect n8n or manual data)
     if (!leadData.hypotheticalTrap) merged.hypotheticalTrap = strategic.hypotheticalTrap
     if (!leadData.discoveryQuestions) merged.discoveryQuestions = strategic.discoveryQuestions
@@ -1660,7 +1695,9 @@ export async function enrichLead(
     if (!leadData.projectionData) merged.projectionData = strategic.projectionData
     if (!leadData.productPortfolio) merged.productPortfolio = strategic.productPortfolio
     step('strategic').status = 'done'
-    step('strategic').detail = 'Reuniao + Discovery + Vulnerabilidades + Argumentos'
+    step('strategic').detail = realCompetitors.length > 0
+      ? `Reuniao + Discovery + ${realCompetitors.length} concorrentes reais`
+      : 'Reuniao + Discovery + Vulnerabilidades + Argumentos'
   } catch {
     step('strategic').status = 'error'
   }

@@ -1,12 +1,8 @@
-import { parseJsonField } from '../../lib/utils'
+import { normalizeCompetitiveAnalysis, COMPETITIVE_DIMENSIONS } from '../../lib/competitive'
 import type { Lead, Competitor } from '../../types'
+import type { DimensionLevel } from '../../lib/competitive'
 import { cn } from '../../lib/cn'
 import { Swords } from 'lucide-react'
-
-const DIMENSIONS = [
-  'Presença digital', 'Variedade de produtos', 'Preço médio', 'Qualidade percebida',
-  'Atendimento', 'Margem estimada', 'Inovação', 'Força da marca',
-]
 
 function buildDefaultCompetitors(lead: Lead): Competitor[] {
   return [
@@ -23,7 +19,8 @@ const levelStyles: Record<string, { bg: string; text: string }> = {
 }
 
 export function TabCompetitiva({ lead }: { lead: Lead }) {
-  const data = parseJsonField<{ competitors: Competitor[] }>(lead.competitiveAnalysis, { competitors: buildDefaultCompetitors(lead) })
+  const normalized = normalizeCompetitiveAnalysis(lead.competitiveAnalysis, lead.companyName)
+  const data = normalized ?? { lead: {}, competitors: buildDefaultCompetitors(lead) }
 
   return (
     <div className="space-y-5">
@@ -41,31 +38,40 @@ export function TabCompetitiva({ lead }: { lead: Lead }) {
                 {lead.companyName}
               </th>
               {data.competitors.map((c) => (
-                <th key={(c as any).name || c.nome} className="text-center py-3 px-3 text-[11px] font-medium text-text-muted uppercase tracking-wider">{(c as any).name || c.nome}</th>
+                <th key={c.nome} className="text-center py-3 px-3 text-[11px] font-medium text-text-muted uppercase tracking-wider">{c.nome}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {DIMENSIONS.map((dim) => (
-              <tr key={dim} className="border-b border-border/50">
-                <td className="py-2.5 px-3 text-xs text-text-secondary font-medium">{dim}</td>
-                <td className="py-2.5 px-3 text-center">
-                  <span className="text-xs font-medium text-text-muted bg-white/[0.04] px-2 py-1 rounded-md">A definir</span>
-                </td>
-                {data.competitors.map((c) => {
-                  const dims = (c as any).dimensions || c.dimensoes || {}
-                  const level = dims[dim] || 'Média'
-                  const style = levelStyles[level] || levelStyles.Média
-                  return (
-                    <td key={(c as any).name || c.nome} className="py-2.5 px-3 text-center">
-                      <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-md', style.bg, style.text)}>
-                        {level}
+            {COMPETITIVE_DIMENSIONS.map((dim) => {
+              const leadLevel = data.lead[dim] as DimensionLevel | undefined
+              const leadStyle = leadLevel ? levelStyles[leadLevel] : null
+              return (
+                <tr key={dim} className="border-b border-border/50">
+                  <td className="py-2.5 px-3 text-xs text-text-secondary font-medium">{dim}</td>
+                  <td className="py-2.5 px-3 text-center">
+                    {leadStyle ? (
+                      <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-md', leadStyle.bg, leadStyle.text)}>
+                        {leadLevel}
                       </span>
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
+                    ) : (
+                      <span className="text-xs font-medium text-text-muted bg-white/[0.04] px-2 py-1 rounded-md">A definir</span>
+                    )}
+                  </td>
+                  {data.competitors.map((c) => {
+                    const level = c.dimensoes[dim] || 'Média'
+                    const style = levelStyles[level] || levelStyles.Média
+                    return (
+                      <td key={c.nome} className="py-2.5 px-3 text-center">
+                        <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-md', style.bg, style.text)}>
+                          {level}
+                        </span>
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

@@ -159,6 +159,10 @@ export interface Vulnerability {
 
 export interface Competitor {
   nome: string
+  website?: string
+  rating?: number
+  reviews?: number
+  category?: string
   dimensoes: Record<string, 'Fraca' | 'Média' | 'Forte'>
 }
 

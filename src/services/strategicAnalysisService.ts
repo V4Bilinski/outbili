@@ -1,4 +1,6 @@
 import type { Lead } from '../types'
+import { COMPETITIVE_DIMENSIONS, computeLeadDimensions, buildCanonicalCompetitiveJson } from '../lib/competitive'
+import type { DimensionLevel } from '../lib/competitive'
 
 // =============================================
 // Strategic Analysis Generator
@@ -247,24 +249,57 @@ function generateVulnerabilities(lead: Partial<Lead>): Array<{ titulo: string; i
 }
 
 // --- Competitive Analysis ---
-function generateCompetitiveAnalysis(lead: Partial<Lead>): string {
+function generateCompetitiveAnalysis(
+  lead: Partial<Lead>,
+  realCompetitors?: Array<{ name: string; rating: number; reviews: number; website?: string; category?: string }>,
+): string {
   const segment = lead.segment || 'Varejo'
   const city = lead.city || 'regiao'
-  const name = lead.companyName || 'Empresa'
 
-  const dimensions = ['Presenca Digital', 'Redes Sociais', 'Reputacao Online', 'Diversificacao', 'Atendimento']
-  const competitors = [
-    { nome: `Concorrente A (${segment} ${city})`, dimensoes: Object.fromEntries(dimensions.map(d => [d, lead.website ? 'Media' : 'Forte'])) },
-    { nome: `Concorrente B (${segment} referencia)`, dimensoes: Object.fromEntries(dimensions.map(d => [d, 'Forte'])) },
-    { nome: name, dimensoes: Object.fromEntries(dimensions.map(d => {
-      if (d === 'Presenca Digital') return [d, lead.website ? 'Media' : 'Fraca']
-      if (d === 'Redes Sociais') return [d, (lead.instagramFollowers || 0) > 1000 ? 'Media' : 'Fraca']
-      if (d === 'Reputacao Online') return [d, (lead.googleRating || 0) >= 4.0 ? 'Forte' : (lead.googleRating || 0) >= 3.0 ? 'Media' : 'Fraca']
-      return [d, 'Media']
-    })) },
-  ]
+  // Lead's own dimensions (data-driven)
+  const leadDims = computeLeadDimensions(lead)
 
-  return JSON.stringify(competitors)
+  // Build competitors — use real data if available, otherwise generate contextual placeholders
+  const competitors = realCompetitors && realCompetitors.length > 0
+    ? realCompetitors.slice(0, 3).map((c) => {
+        const dims: Record<string, DimensionLevel> = {}
+        for (const dim of COMPETITIVE_DIMENSIONS) {
+          if (dim === 'Presença digital') dims[dim] = c.website ? (c.reviews > 50 ? 'Forte' : 'Média') : 'Fraca'
+          else if (dim === 'Qualidade percebida') dims[dim] = c.rating >= 4.5 ? 'Forte' : c.rating >= 3.5 ? 'Média' : 'Fraca'
+          else if (dim === 'Atendimento') dims[dim] = c.rating >= 4.5 ? 'Forte' : c.rating >= 4.0 ? 'Média' : 'Fraca'
+          else if (dim === 'Força da marca') dims[dim] = c.reviews >= 100 ? 'Forte' : c.reviews >= 30 ? 'Média' : 'Fraca'
+          else dims[dim] = 'Média'
+        }
+        return { nome: c.name, website: c.website, rating: c.rating, reviews: c.reviews, category: c.category, dimensoes: dims }
+      })
+    : [
+        {
+          nome: `Lider ${segment} (${city})`,
+          dimensoes: Object.fromEntries(COMPETITIVE_DIMENSIONS.map((d) => {
+            if (d === 'Presença digital' || d === 'Força da marca') return [d, 'Forte' as DimensionLevel]
+            if (d === 'Atendimento' || d === 'Inovação') return [d, 'Fraca' as DimensionLevel]
+            return [d, 'Média' as DimensionLevel]
+          })) as Record<string, DimensionLevel>,
+        },
+        {
+          nome: `Referencia regional (${segment})`,
+          dimensoes: Object.fromEntries(COMPETITIVE_DIMENSIONS.map((d) => {
+            if (d === 'Atendimento' || d === 'Qualidade percebida') return [d, 'Forte' as DimensionLevel]
+            if (d === 'Presença digital' || d === 'Inovação') return [d, 'Fraca' as DimensionLevel]
+            return [d, 'Média' as DimensionLevel]
+          })) as Record<string, DimensionLevel>,
+        },
+        {
+          nome: `Player nacional (${segment})`,
+          dimensoes: Object.fromEntries(COMPETITIVE_DIMENSIONS.map((d) => {
+            if (d === 'Presença digital' || d === 'Inovação' || d === 'Força da marca') return [d, 'Forte' as DimensionLevel]
+            if (d === 'Preço médio') return [d, 'Fraca' as DimensionLevel]
+            return [d, 'Média' as DimensionLevel]
+          })) as Record<string, DimensionLevel>,
+        },
+      ]
+
+  return buildCanonicalCompetitiveJson(leadDims, competitors)
 }
 
 // --- Projection Data ---
@@ -300,7 +335,10 @@ function generateProductPortfolio(lead: Partial<Lead>): string {
 // MAIN EXPORT
 // =============================================
 
-export function generateStrategicAnalysis(lead: Partial<Lead>): StrategicAnalysis {
+export function generateStrategicAnalysis(
+  lead: Partial<Lead>,
+  realCompetitors?: Array<{ name: string; rating: number; reviews: number; website?: string; category?: string }>,
+): StrategicAnalysis {
   return {
     hypotheticalTrap: detectTrap(lead),
     discoveryQuestions: JSON.stringify(generateDiscoveryQuestions(lead)),
@@ -308,7 +346,7 @@ export function generateStrategicAnalysis(lead: Partial<Lead>): StrategicAnalysi
     meetingPrep: JSON.stringify(generateMeetingPrep(lead)),
     salesArguments: JSON.stringify(generateSalesArguments(lead)),
     vulnerabilities: JSON.stringify(generateVulnerabilities(lead)),
-    competitiveAnalysis: generateCompetitiveAnalysis(lead),
+    competitiveAnalysis: generateCompetitiveAnalysis(lead, realCompetitors),
     projectionData: generateProjectionData(lead),
     productPortfolio: generateProductPortfolio(lead),
   }
