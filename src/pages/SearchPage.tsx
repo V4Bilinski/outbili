@@ -219,11 +219,11 @@ export function SearchPage() {
       const skipped = n8n.leads.length - leadsToEnrich.length
 
       if (leadsToEnrich.length > 0) {
-        toast.success(`${leadsToEnrich.length} leads para enriquecer${skipped > 0 ? ` (${skipped} ja completos)` : ''}`)
+        toast.success(`${leadsToEnrich.length} leads para enriquecer${skipped > 0 ? ` (${skipped} já completos)` : ''}`)
         massEnrichment.enrichAll(leadsToEnrich)
         setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
       } else {
-        toast.info('Todos os leads ja estao enriquecidos!')
+        toast.info('Todos os leads já estão enriquecidos!')
       }
     }
   }, [n8n.phase, n8n.leads, n8n.leadsCreated, massEnrichment.isRunning, massEnrichment.totalLeads, massEnrichment.enrichAll])
@@ -393,7 +393,7 @@ export function SearchPage() {
 
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
-    if (specificCnpj && specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ incompleto — preencha todos os 14 digitos ou deixe em branco'); return }
+    if (specificCnpj && specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ incompleto — preencha todos os 14 dígitos ou deixe em branco'); return }
     setIsCreatingSpecific(true)
     try {
       // Format WhatsApp number
@@ -435,7 +435,7 @@ export function SearchPage() {
       if (cnpjClean) {
         const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
         if (existingByCnpj.length > 0 && !dupOverride) {
-          setDupWarning(`Ja existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Clique novamente para criar mesmo assim.`)
+          setDupWarning(`Já existe um lead com este CNPJ: "${existingByCnpj[0].companyName}". Clique novamente para criar mesmo assim.`)
           setDupOverride(true)
           setIsCreatingSpecific(false)
           return
@@ -444,7 +444,7 @@ export function SearchPage() {
       {
         const existingByName = await getLeads(`{companyName} = "${specificName.replace(/"/g, '\\"')}"`)
         if (existingByName.length > 0 && !dupOverride) {
-          setDupWarning(`Ja existe um lead "${existingByName[0].companyName}". Clique novamente para criar mesmo assim.`)
+          setDupWarning(`Já existe um lead "${existingByName[0].companyName}". Clique novamente para criar mesmo assim.`)
           setDupOverride(true)
           setIsCreatingSpecific(false)
           return
@@ -466,7 +466,7 @@ export function SearchPage() {
           score: 0,
         }
         lead = await createLead(minimalData as any)
-        toast.warning('Salvo com dados basicos — enriquecimento completara os demais campos')
+        toast.warning('Salvo com dados básicos — enriquecimento completará os demais campos')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
 
@@ -518,7 +518,7 @@ export function SearchPage() {
             <Search className="h-3.5 w-3.5" />
             <div className="text-left">
               <span className="block leading-tight">Em massa</span>
-              <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'mass' ? 'text-white/70' : 'text-text-muted')}>Multiplos leads</span>
+              <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'mass' ? 'text-white/70' : 'text-text-muted')}>Múltiplos leads</span>
             </div>
           </button>
           <button
@@ -527,7 +527,7 @@ export function SearchPage() {
           >
             <UserPlus className="h-3.5 w-3.5" />
             <div className="text-left">
-              <span className="block leading-tight">Lead especifico</span>
+              <span className="block leading-tight">Lead específico</span>
               <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'specific' ? 'text-white/70' : 'text-text-muted')}>Cadastro manual</span>
             </div>
           </button>
@@ -570,7 +570,7 @@ export function SearchPage() {
                   <Sparkles className="h-3 w-3" /> {specificCnpj ? 'Com nome + CNPJ buscamos automaticamente:' : 'Com o nome buscamos automaticamente:'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {['Razao social', 'Socios', 'Endereco', 'Porte', 'Capital social', 'Regime tributario', 'CNAE', 'Geolocalizacao', 'Google Maps', 'Website', 'Redes sociais', 'Instagram', 'LinkedIn', 'Decisores', 'Emails', 'Telefones'].map((pill) => (
+                  {['Razão social', 'Sócios', 'Endereço', 'Porte', 'Capital social', 'Regime tributário', 'CNAE', 'Geolocalização', 'Google Maps', 'Website', 'Redes sociais', 'Instagram', 'LinkedIn', 'Decisores', 'Emails', 'Telefones'].map((pill) => (
                     <span key={pill} className="inline-flex items-center gap-1 text-[10px] text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
                       <Sparkles className="h-2.5 w-2.5 text-amber-400/60" />
                       {pill}
@@ -583,7 +583,7 @@ export function SearchPage() {
             {/* Segment field (optional, standalone) */}
             <div>
               <label htmlFor="specific-segment" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento <span className="text-text-muted font-normal">(opcional)</span></label>
-              <input id="specific-segment" type="text" value={specificSegment} onChange={(e) => setSpecificSegment(e.target.value)} placeholder="Ex: Odontologia, Pet Shop, Estetica" className={inputClass} list="segments-list" />
+              <input id="specific-segment" type="text" value={specificSegment} onChange={(e) => setSpecificSegment(e.target.value)} placeholder="Ex: Odontologia, Pet Shop, Estética" className={inputClass} list="segments-list" />
               <datalist id="segments-list">
                 {RECOMMENDED_SEGMENTS.map((s) => <option key={s} value={s} />)}
               </datalist>
@@ -616,7 +616,7 @@ export function SearchPage() {
                   {fileDragging ? 'Solte o arquivo aqui' : 'Enviar documento'}
                 </p>
                 <p className="text-[11px] text-text-muted mt-0.5">
-                  CSV, Excel, PDF, TXT, MD — ate {MAX_FILE_LEADS} leads por vez
+                  CSV, Excel, PDF, TXT, MD — até {MAX_FILE_LEADS} leads por vez
                 </p>
                 <input
                   ref={fileInputRef2}
@@ -755,7 +755,7 @@ export function SearchPage() {
             <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
               <button type="button" onClick={() => toggleSection('location')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
                 <MapPin className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localizacao</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localização</p>
                 {sectionFilledCounts.location > 0 && (
                   <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.location}</span>
                 )}
@@ -781,7 +781,7 @@ export function SearchPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="specific-address" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Endereco</label>
+                  <label htmlFor="specific-address" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Endereço</label>
                   <input id="specific-address" type="text" value={specificAddress} onChange={(e) => setSpecificAddress(e.target.value)} placeholder="Ex: Av. Paulista, 1000" className={inputClass} />
                 </div>
               </div>
@@ -791,7 +791,7 @@ export function SearchPage() {
             <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
               <button type="button" onClick={() => toggleSection('digital')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
                 <Globe className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Presenca digital</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Presença digital</p>
                 {sectionFilledCounts.digital > 0 && (
                   <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.digital}</span>
                 )}
@@ -832,7 +832,7 @@ export function SearchPage() {
             <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
               <button type="button" onClick={() => toggleSection('metrics')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
                 <CircleDot className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Metricas do negocio</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Métricas do negócio</p>
                 {sectionFilledCounts.metrics > 0 && (
                   <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.metrics}</span>
                 )}
@@ -849,7 +849,7 @@ export function SearchPage() {
                 <div>
                   <label htmlFor="specific-revenue" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mensal estimado</label>
                   <select id="specific-revenue" value={specificRevenue} onChange={(e) => setSpecificRevenue(e.target.value)} className={selectClass}>
-                    <option value="">Nao informado</option>
+                    <option value="">Não informado</option>
                     <option value="50000">R$ 50k</option>
                     <option value="70000">R$ 70k</option>
                     <option value="100000">R$ 100k</option>
@@ -887,7 +887,7 @@ export function SearchPage() {
                 </div>
                 <div>
                   <label htmlFor="specific-contact-role" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
-                  <input id="specific-contact-role" type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietario, Socio" className={inputClass} />
+                  <input id="specific-contact-role" type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietário, Sócio" className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="specific-phone" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
@@ -925,11 +925,11 @@ export function SearchPage() {
             {/* CNPJ validation indicator */}
             <div className="mt-2">
               {specificCnpj && specificCnpj.replace(/\D/g, '').length < 14 && (
-                <p className="text-[11px] text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 digitos)</p>
+                <p className="text-[11px] text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 dígitos)</p>
               )}
               {specificCnpj && specificCnpj.replace(/\D/g, '').length === 14 && (
                 <p className="text-[11px] text-success flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" /> CNPJ valido — pronto para pesquisa
+                  <CheckCircle className="h-3 w-3" /> CNPJ válido — pronto para pesquisa
                 </p>
               )}
               {!specificCnpj && specificName && (
@@ -952,7 +952,7 @@ export function SearchPage() {
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                 <p className="text-[11px] uppercase tracking-[0.12em] text-amber-300 font-semibold">
-                  Enriquecimento {enrichment.progress.isDone ? 'concluido' : 'em andamento'}
+                  Enriquecimento {enrichment.progress.isDone ? 'concluído' : 'em andamento'}
                 </p>
                 <span className="text-[10px] text-text-muted ml-auto font-mono">
                   {enrichment.progress.currentStep}/{enrichment.progress.totalSteps}
@@ -963,7 +963,7 @@ export function SearchPage() {
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-3 w-3 text-text-muted" />
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 1: APIs Publicas (gratuitas)</p>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 1: APIs Públicas (gratuitas)</p>
                 </div>
                 <div className="space-y-1 pl-1">
                   {enrichment.progress.steps.slice(0, 4).map((step) => (
@@ -1001,7 +1001,7 @@ export function SearchPage() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-3 w-3 text-text-muted" />
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 2: Inteligencia de Mercado (APIs externas)</p>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 2: Inteligência de Mercado (APIs externas)</p>
                 </div>
                 <div className="space-y-1 pl-1">
                   {enrichment.progress.steps.slice(4).map((step) => (
@@ -1116,11 +1116,11 @@ export function SearchPage() {
 
         {/* ===== COLLAPSIBLE SECTIONS (like specific lead) ===== */}
         <div className="space-y-3 mt-6">
-          {/* Section: Localizacao */}
+          {/* Section: Localização */}
           <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
             <button type="button" onClick={() => toggleSection('mass-location')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
               <MapPin className="h-3.5 w-3.5 text-red" />
-              <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localizacao</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localização</p>
               {city && (
                 <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">1</span>
               )}
@@ -1151,11 +1151,11 @@ export function SearchPage() {
             </button>
             {!expandedSections.has('mass-keywords') && (
               <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
-                {keywords.length > 0 ? keywords.join(', ') : 'Opcional — refine com termos especificos do nicho'}
+                {keywords.length > 0 ? keywords.join(', ') : 'Opcional — refine com termos específicos do nicho'}
               </p>
             )}
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-keywords') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clinica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonizacao', 'manipulacao', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultorio']} suggestionsLabel="Sugestoes" />
+              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clinica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonizacao', 'manipulacao', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultorio']} suggestionsLabel="Sugestões" />
             </div>
           </div>
 
@@ -1171,13 +1171,13 @@ export function SearchPage() {
             </button>
             <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-revenue') ? 'max-h-[200px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
               <div>
-                <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento minimo</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mínimo</label>
                 <select value={revenueMin} onChange={(e) => setRevenueMin(e.target.value)} className={selectClass}>
                   {REVENUE_MIN_OPTIONS.map((r) => <option key={'min-' + r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento maximo</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento máximo</label>
                 <select value={revenueMax} onChange={(e) => setRevenueMax(e.target.value)} className={selectClass}>
                   {REVENUE_MAX_OPTIONS.map((r) => <option key={'max-' + r.value} value={r.value}>{r.label}</option>)}
                 </select>
@@ -1311,7 +1311,7 @@ export function SearchPage() {
               { label: 'Enviando filtros para o motor de busca', done: n8n.elapsed > 3 },
               { label: 'Mapeando empresas no Google Maps', done: n8n.elapsed > 20 },
               { label: 'Coletando dados de contato e WhatsApp', done: n8n.elapsed > 60 },
-              { label: 'Validando faturamento e qualificacao', done: n8n.elapsed > 120 },
+              { label: 'Validando faturamento e qualificação', done: n8n.elapsed > 120 },
               { label: 'Salvando leads no Airtable', done: n8n.phase === 'polling' },
             ].map((step, i) => {
               const isActive = !step.done && (i === 0 || (n8n.elapsed > [0, 3, 20, 60, 120][i]))
@@ -1450,7 +1450,7 @@ export function SearchPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-text-primary">
-                  {massEnrichment.isRunning ? 'Enriquecendo leads com IA...' : 'Enriquecimento concluido'}
+                  {massEnrichment.isRunning ? 'Enriquecendo leads com IA...' : 'Enriquecimento concluído'}
                 </p>
                 <p className="text-xs text-text-muted">
                   {massEnrichment.completedLeads} de {massEnrichment.totalLeads} leads processados

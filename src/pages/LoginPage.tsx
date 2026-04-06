@@ -24,7 +24,7 @@ export function LoginPage() {
     e.preventDefault()
     if (!email || !password) { toast.error('Preencha email e senha'); return }
     if (mode === 'signup' && !fullName) { toast.error('Preencha seu nome'); return }
-    if (password.length < 6) { toast.error('Senha deve ter no minimo 6 caracteres'); return }
+    if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return }
 
     setIsLoading(true)
     try {
@@ -63,7 +63,7 @@ export function LoginPage() {
             </div>
             <span className="text-2xl font-bold font-heading text-text-primary tracking-tight">OUTBILI</span>
           </div>
-          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Sistema de prospeccao outbound · Bilinski&Co</p>
+          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Sistema de prospecção outbound · Bilinski&Co</p>
         </div>
 
         {/* Card */}
@@ -124,7 +124,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimo 6 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                   className={cn(inputClass, 'pr-12')}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />

@@ -222,7 +222,7 @@ export function useMassEnrichment() {
 
     // Browser notification
     sendNotification(
-      'Enriquecimento concluido',
+      'Enriquecimento concluído',
       `${counters.completed} leads enriquecidos com sucesso${counters.failed > 0 ? ` (${counters.failed} com erro)` : ''}`,
     )
 

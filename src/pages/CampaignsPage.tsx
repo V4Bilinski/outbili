@@ -24,7 +24,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
   DRAFT: { label: 'Rascunho', variant: 'default' },
   SCHEDULED: { label: 'Agendada', variant: 'info' },
   SENDING: { label: 'Enviando', variant: 'warning' },
-  COMPLETED: { label: 'Concluido', variant: 'success' },
+  COMPLETED: { label: 'Concluído', variant: 'success' },
   PAUSED: { label: 'Pausada', variant: 'default' },
   FAILED: { label: 'Falhou', variant: 'error' },
   CANCELLED: { label: 'Cancelada', variant: 'error' },
@@ -103,18 +103,18 @@ function CampaignRow({ campaign, onView }: { campaign: ZapCampaign; onView: () =
         </span>
       </td>
 
-      {/* Acoes */}
+      {/* Ações */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={(e) => { e.stopPropagation(); toast.info('Funcao de duplicar em breve') }}
+            onClick={(e) => { e.stopPropagation(); toast.info('Função de duplicar em breve') }}
             className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
             title="Duplicar"
           >
             <Copy className="h-4 w-4" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); toast.info('Funcao de excluir em breve') }}
+            onClick={(e) => { e.stopPropagation(); toast.info('Função de excluir em breve') }}
             className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted hover:text-error transition-colors"
             title="Excluir"
           >
@@ -170,11 +170,11 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
   // KPI cards config
   const kpis = [
     {
-      label: 'Enviadas', value: campaign.sent, sub: `${campaign.recipients} destinatarios`,
+      label: 'Enviadas', value: campaign.sent, sub: `${campaign.recipients} destinatários`,
       icon: <Send className="h-5 w-5" />, borderColor: 'border-text-muted/20', iconColor: 'text-text-muted',
     },
     {
-      label: 'Entregues', value: campaign.delivered, sub: `${deliveryRate}% taxa de entrega${campaign.sent - campaign.delivered > 0 ? ` - ${campaign.sent - campaign.delivered} nao entregues` : ''}`,
+      label: 'Entregues', value: campaign.delivered, sub: `${deliveryRate}% taxa de entrega${campaign.sent - campaign.delivered > 0 ? ` - ${campaign.sent - campaign.delivered} não entregues` : ''}`,
       icon: <CheckCircle className="h-5 w-5" />, borderColor: 'border-success/30', iconColor: 'text-success',
     },
     {
@@ -182,11 +182,11 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
       icon: <Eye className="h-5 w-5" />, borderColor: 'border-info/30', iconColor: 'text-info',
     },
     {
-      label: 'Ignoradas', value: stats?.skipped || 0, sub: 'Variaveis/telefones invalidos (pre-check)',
+      label: 'Ignoradas', value: stats?.skipped || 0, sub: 'Variáveis/telefones inválidos (pre-check)',
       icon: <CircleAlert className="h-5 w-5" />, borderColor: 'border-warning/30', iconColor: 'text-warning',
     },
     {
-      label: 'Falhas', value: campaign.failed, sub: 'Numeros invalidos ou bloqueio',
+      label: 'Falhas', value: campaign.failed, sub: 'Números inválidos ou bloqueio',
       icon: <AlertTriangle className="h-5 w-5" />, borderColor: 'border-error/30', iconColor: 'text-error',
     },
   ]
@@ -243,9 +243,9 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
           <div className="flex items-center justify-between mb-4">
             <div>
               <CardTitle>Velocidade do disparo</CardTitle>
-              <p className="text-[11px] text-text-muted mt-0.5">Conta apenas o periodo do primeiro envio ate o ultimo envio (sent-only).</p>
+              <p className="text-[11px] text-text-muted mt-0.5">Conta apenas o período do primeiro envio até o último envio (sent-only).</p>
             </div>
-            <Badge variant="outline" size="sm">DADOS: AVANCADOS</Badge>
+            <Badge variant="outline" size="sm">DADOS: AVANÇADOS</Badge>
           </div>
           <div className="grid md:grid-cols-[1fr,auto] gap-3">
             {/* Throughput */}
@@ -267,7 +267,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
                 <div>
                   <p className="text-xs text-text-muted mb-1">Tempo total</p>
                   <p className="text-2xl font-bold font-mono text-text-primary">{velocity.totalTime}</p>
-                  <p className="text-[11px] text-text-muted mt-1">Do primeiro envio ate o ultimo envio</p>
+                  <p className="text-[11px] text-text-muted mt-1">Do primeiro envio até o último envio</p>
                 </div>
                 <Clock className="h-5 w-5 text-text-muted shrink-0" />
               </div>
@@ -289,7 +289,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
               <input
                 value={logSearch}
                 onChange={(e) => setLogSearch(e.target.value)}
-                placeholder="Buscar destinatario..."
+                placeholder="Buscar destinatário..."
                 className="h-8 w-52 rounded-lg bg-white/[0.03] border border-border text-xs text-text-primary pl-8 pr-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
               />
             </div>
@@ -327,12 +327,12 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatario</th>
+                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatário</th>
                   <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Telefone</th>
                   <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Status</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horario</th>
+                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horário</th>
                   <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Info</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Acoes</th>
+                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -402,7 +402,7 @@ function TemplatePreview({ template }: { template: ZapTemplate | null }) {
         {header?.format === 'IMAGE' && <div className="h-32 rounded-lg bg-white/5 flex items-center justify-center text-text-muted text-xs">Imagem</div>}
         {body?.text && (
           <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-            {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => `[Variavel ${n}]`)}
+            {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => `[Variável ${n}]`)}
           </p>
         )}
         {footer?.text && <p className="text-[11px] text-text-muted italic">{footer.text}</p>}
@@ -545,7 +545,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
   const handleCreate = async () => {
     const contacts = buildContacts()
     if (contacts.length === 0) {
-      toast.error('Nenhum contato valido para enviar')
+      toast.error('Nenhum contato válido para enviar')
       return
     }
     try {
@@ -569,7 +569,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const stepLabels = ['Template', 'Publico', 'Validacao', 'Disparar']
+  const stepLabels = ['Template', 'Público', 'Validação', 'Disparar']
 
   return (
     <Card>
@@ -606,7 +606,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
         <div className="space-y-4">
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da campanha</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Cadencia Odontologia D+0" className={inputClass} />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Cadência Odontologia D+0" className={inputClass} />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Agendar para (opcional)</label>
@@ -624,7 +624,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
                   <option value="all">Todos</option>
                   <option value="MARKETING">Marketing</option>
                   <option value="UTILITY">Utilidade</option>
-                  <option value="AUTHENTICATION">Autenticacao</option>
+                  <option value="AUTHENTICATION">Autenticação</option>
                 </select>
               </div>
               <div className="max-h-[260px] overflow-y-auto space-y-1.5 rounded-xl border border-border p-2">
@@ -664,7 +664,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
               {selectedTemplate && variableCount > 0 && (
                 <div className="mt-2 p-2 rounded-lg bg-info/5 border border-info/15">
                   <p className="text-[10px] text-info font-medium">
-                    {variableCount} variavel(is) — serao preenchidas automaticamente com dados do lead
+                    {variableCount} variável(is) — serão preenchidas automaticamente com dados do lead
                   </p>
                 </div>
               )}
@@ -672,7 +672,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
           </div>
           <div className="flex justify-end">
             <Button onClick={() => setStep(2)} disabled={!name || !templateName} icon={<ArrowRight className="h-4 w-4" />}>
-              Selecionar publico
+              Selecionar público
             </Button>
           </div>
         </div>
@@ -701,7 +701,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-xs text-text-muted">
-              <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {filteredLeads.length} leads disponiveis</span>
+              <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {filteredLeads.length} leads disponíveis</span>
               <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {filteredLeads.filter((l) => l.decisorContact).length} com WhatsApp</span>
               <span className="font-semibold text-red">{selectedLeadIds.length} selecionados</span>
             </div>
@@ -798,7 +798,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
               </Badge>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-muted">Destinatarios</span>
+              <span className="text-text-muted">Destinatários</span>
               <span className="font-medium text-text-primary">{selectedLeadIds.length}</span>
             </div>
             <div className="flex justify-between text-sm">
@@ -820,14 +820,14 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
           </div>
           {!precheckResult && (
             <div className="text-center space-y-3 py-4">
-              <p className="text-sm text-text-secondary">Valide os numeros antes de disparar para evitar falhas.</p>
+              <p className="text-sm text-text-secondary">Valide os números antes de disparar para evitar falhas.</p>
               <Button
                 icon={precheckLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                 onClick={runPrecheck}
                 loading={precheckLoading}
                 variant="secondary"
               >
-                {precheckLoading ? 'Validando numeros...' : 'Validar numeros (Precheck)'}
+                {precheckLoading ? 'Validando números...' : 'Validar números (Precheck)'}
               </Button>
             </div>
           )}
@@ -839,7 +839,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
               <div className="flex items-center gap-2 mb-2">
                 {precheckResult.ok ? <CheckCircle className="h-5 w-5 text-success" /> : <AlertTriangle className="h-5 w-5 text-warning" />}
                 <span className="text-sm font-semibold text-text-primary">
-                  {precheckResult.ok ? 'Validacao OK' : 'Atencao'}
+                  {precheckResult.ok ? 'Validação OK' : 'Atenção'}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
@@ -849,7 +849,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
                 </div>
                 <div>
                   <p className="text-lg font-bold font-mono text-success">{precheckResult.totals.valid}</p>
-                  <p className="text-[10px] text-text-muted">Validos</p>
+                  <p className="text-[10px] text-text-muted">Válidos</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold font-mono text-warning">{precheckResult.totals.skipped}</p>
@@ -861,7 +861,7 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
           {variableCount > 0 && (
             <div className="p-3 rounded-xl bg-info/5 border border-info/15 space-y-2">
               <p className="text-xs font-semibold text-info flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5" /> Personalizacao automatica
+                <Zap className="h-3.5 w-3.5" /> Personalização automática
               </p>
               <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                 <div className="flex justify-between">
@@ -1033,7 +1033,7 @@ export function CampaignsPage() {
             >
               <option value="all">Todos os Status ({campaigns.length})</option>
               <option value="SENDING">Enviando ({statusCounts.SENDING || 0})</option>
-              <option value="COMPLETED">Concluido ({statusCounts.COMPLETED || 0})</option>
+              <option value="COMPLETED">Concluído ({statusCounts.COMPLETED || 0})</option>
               <option value="DRAFT">Rascunho ({statusCounts.DRAFT || 0})</option>
               <option value="SCHEDULED">Agendada ({statusCounts.SCHEDULED || 0})</option>
               <option value="FAILED">Falhou ({statusCounts.FAILED || 0})</option>
@@ -1075,7 +1075,7 @@ export function CampaignsPage() {
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Entrega</th>
                       <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Envio</th>
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Criado em</th>
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Acoes</th>
+                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Ações</th>
                     </tr>
                   </thead>
                   <tbody>

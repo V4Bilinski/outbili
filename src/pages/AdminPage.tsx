@@ -28,8 +28,8 @@ const PAGE_LABELS: Record<string, string> = {
   '/pipeline': 'Pipeline',
   '/search': 'Pesquisa',
   '/campaigns': 'Campanhas',
-  '/reports': 'Relatorios',
-  '/settings': 'Configuracoes',
+  '/reports': 'Relatórios',
+  '/settings': 'Configurações',
   '/admin': 'Admin',
 }
 
@@ -74,7 +74,7 @@ export function AdminPage() {
         <div className="text-center space-y-3">
           <Shield className="h-12 w-12 text-error mx-auto" />
           <p className="text-lg font-bold text-text-primary">Acesso restrito</p>
-          <p className="text-sm text-text-muted">Apenas administradores podem acessar esta pagina.</p>
+          <p className="text-sm text-text-muted">Apenas administradores podem acessar esta página.</p>
         </div>
       </div>
     )
@@ -103,9 +103,9 @@ export function AdminPage() {
         <div>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-red" />
-            <h1 className="text-xl font-bold font-heading gradient-text">Administracao</h1>
+            <h1 className="text-xl font-bold font-heading gradient-text">Administração</h1>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">Usuarios, atividades e controle de acesso</p>
+          <p className="text-xs text-text-muted mt-0.5">Usuários, atividades e controle de acesso</p>
         </div>
         <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3.5 w-3.5" />} onClick={loadData}>
           Atualizar
@@ -116,7 +116,7 @@ export function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono">{users.length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Usuarios</p>
+          <p className="text-[10px] text-text-muted uppercase">Usuários</p>
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono text-success">{users.filter(u => u.isActive).length}</p>
@@ -124,7 +124,7 @@ export function AdminPage() {
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono text-info">{logs.length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Acoes registradas</p>
+          <p className="text-[10px] text-text-muted uppercase">Ações registradas</p>
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono">{logs.filter(l => l.action === 'login').length}</p>
@@ -146,7 +146,7 @@ export function AdminPage() {
           className={cn('flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
             tab === 'users' ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary')}
         >
-          <Users className="h-4 w-4" /> Usuarios
+          <Users className="h-4 w-4" /> Usuários
         </button>
       </div>
 
@@ -160,7 +160,7 @@ export function AdminPage() {
               onChange={(e) => setSelectedUser(e.target.value)}
               className="text-xs bg-white/[0.04] border border-border rounded-lg px-3 py-1.5 text-text-primary cursor-pointer"
             >
-              <option value="">Todos os usuarios</option>
+              <option value="">Todos os usuários</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>
               ))}
@@ -201,7 +201,7 @@ export function AdminPage() {
       {/* Users Management */}
       {tab === 'users' && (
         <Card>
-          <CardTitle className="mb-4">Usuarios do sistema</CardTitle>
+          <CardTitle className="mb-4">Usuários do sistema</CardTitle>
           <div className="space-y-2">
             {users.map((user) => (
               <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
@@ -211,12 +211,12 @@ export function AdminPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-text-primary">{user.fullName}</p>
-                    <Badge variant={user.role === 'admin' ? 'error' : 'info'} size="sm">{user.role === 'admin' ? 'Admin' : 'Usuario'}</Badge>
+                    <Badge variant={user.role === 'admin' ? 'error' : 'info'} size="sm">{user.role === 'admin' ? 'Admin' : 'Usuário'}</Badge>
                     {!user.isActive && <Badge variant="default" size="sm">Desativado</Badge>}
                   </div>
                   <p className="text-[11px] text-text-muted">{user.email}</p>
                   {user.lastLoginAt && (
-                    <p className="text-[10px] text-text-muted">Ultimo login: {new Date(user.lastLoginAt).toLocaleString('pt-BR')}</p>
+                    <p className="text-[10px] text-text-muted">Último login: {new Date(user.lastLoginAt).toLocaleString('pt-BR')}</p>
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -226,7 +226,7 @@ export function AdminPage() {
                     icon={<Eye className="h-3.5 w-3.5" />}
                     onClick={() => { setSelectedUser(user.id); setTab('activity') }}
                   >
-                    Ver acoes
+                    Ver ações
                   </Button>
                   {user.role !== 'admin' && (
                     <Button

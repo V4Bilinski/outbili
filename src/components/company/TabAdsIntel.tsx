@@ -279,7 +279,7 @@ export function TabAdsIntel({ lead }: { lead: Lead }) {
           <h3 className="text-sm font-semibold font-heading">SpyBili — {report.companyName}</h3>
         </div>
         <button onClick={reset} className="text-[11px] text-text-muted hover:text-text-primary cursor-pointer">
-          Regerar
+          Regenerar
         </button>
       </div>
 

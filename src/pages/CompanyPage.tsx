@@ -94,7 +94,7 @@ export function CompanyPage() {
               </div>
               <h3 className="text-base font-bold text-text-primary">Excluir lead?</h3>
               <p className="text-sm text-text-muted mt-1">
-                <strong>{lead.companyName}</strong> sera removido permanentemente do sistema, incluindo todos os contatos e atividades.
+                <strong>{lead.companyName}</strong> será removido permanentemente do sistema, incluindo todos os contatos e atividades.
               </p>
             </div>
             <div className="flex gap-3">
@@ -107,7 +107,7 @@ export function CompanyPage() {
                 onClick={() => {
                   deleteLead.mutate(lead.id, {
                     onSuccess: () => {
-                      toast.success(`${lead.companyName} excluido`)
+                      toast.success(`${lead.companyName} excluído`)
                       navigate('/leads')
                     },
                   })

@@ -24,6 +24,12 @@ const impactColors: Record<string, { variant: 'error' | 'warning' | 'success'; a
   BAIXO: { variant: 'success', accent: 'var(--color-success)' },
 }
 
+const impactLabels: Record<string, string> = {
+  ALTO: 'ALTO',
+  MEDIO: 'MÉDIO',
+  BAIXO: 'BAIXO',
+}
+
 export function TabVulnerabilidades({ lead }: { lead: Lead }) {
   const vulnerabilities = parseJsonField<Vulnerability[]>(lead.vulnerabilities, buildDefaultVulnerabilities(lead))
 
@@ -60,7 +66,7 @@ export function TabVulnerabilidades({ lead }: { lead: Lead }) {
               accentColor={colors.accent}
               title={
                 <div className="flex items-center gap-3">
-                  <Badge variant={colors.variant} size="sm">{vuln.impacto}</Badge>
+                  <Badge variant={colors.variant} size="sm">{impactLabels[vuln.impacto] || vuln.impacto}</Badge>
                   <span className="text-sm font-medium text-text-primary">{vuln.titulo}</span>
                 </div>
               }

@@ -78,7 +78,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   <p className="text-[11px] text-text-muted mt-0.5">
                     {lead.segment || 'Sem segmento'}
                     {lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
-                    {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mes` : ''}
+                    {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
                   </p>
                 </td>
                 <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs text-text-secondary">{lead.tier}</span></td>
@@ -158,7 +158,7 @@ export function LeadsPage() {
           <EmptyState
             icon={Users}
             title="Nenhum lead encontrado"
-            description="Faca sua primeira pesquisa ou ajuste os filtros."
+            description="Faça sua primeira pesquisa ou ajuste os filtros."
             action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
           />
         </AnimateIn>

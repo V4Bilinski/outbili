@@ -191,7 +191,7 @@ function QuickActions() {
     { label: 'Nova pesquisa', desc: 'Buscar leads via Apify', icon: Search, onClick: () => navigate('/search') },
     { label: 'Importar relatório', desc: 'Upload HTML existente', icon: FileDown, onClick: () => navigate('/search') },
     { label: 'Nova cadência', desc: 'Criar sequência WhatsApp', icon: Plus, onClick: () => navigate('/campaigns/new') },
-    { label: 'Agendar reuniao', desc: 'Marcar com lead Quente', icon: Calendar, onClick: () => {} },
+    { label: 'Agendar reunião', desc: 'Marcar com lead Quente', icon: Calendar, onClick: () => {} },
   ]
 
   return (

@@ -236,7 +236,7 @@ export function ReportsPage() {
           </div>
 
           <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Score medio leads Quentes</p>
+            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Score médio leads Quentes</p>
             <p className="text-xl font-bold font-mono text-hot">{avgScoreHot}/5</p>
             <p className="text-[10px] text-text-muted mt-1">{hotLeads} leads Quentes ativos no pipeline</p>
           </div>
@@ -247,7 +247,7 @@ export function ReportsPage() {
           <p className="text-xs font-semibold text-red uppercase tracking-wider mb-2">Recomendações estratégicas</p>
           <ul className="space-y-1.5 text-xs text-text-secondary">
             {hotLeads > 0 && contactRate < 50 && (
-              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads Quentes nao contactados — priorizar cadencia imediata</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads Quentes não contactados — priorizar cadência imediata</li>
             )}
             {responseRate < 30 && contactados > 5 && (
               <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> Taxa de resposta {responseRate}% abaixo do benchmark (30%) — revisar scripts de abordagem</li>

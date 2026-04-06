@@ -16,11 +16,11 @@ import type { Lead } from '../types'
 
 // --- Pipeline columns (all statuses from prospect to close) ---
 const PIPELINE_COLUMNS = [
-  { value: 'Novo', label: 'Prospeccao', color: '#6366F1', accent: 'border-l-indigo-500' },
-  { value: 'Qualificado', label: 'Qualificacao', color: '#A855F7', accent: 'border-l-purple-500' },
+  { value: 'Novo', label: 'Prospecção', color: '#6366F1', accent: 'border-l-indigo-500' },
+  { value: 'Qualificado', label: 'Qualificação', color: '#A855F7', accent: 'border-l-purple-500' },
   { value: 'Contactado', label: 'Contactado', color: '#F59E0B', accent: 'border-l-amber-500' },
   { value: 'Respondeu', label: 'Respondeu', color: '#22C55E', accent: 'border-l-green-500' },
-  { value: 'Reunião', label: 'Reuniao', color: '#EC4899', accent: 'border-l-pink-500' },
+  { value: 'Reunião', label: 'Reunião', color: '#EC4899', accent: 'border-l-pink-500' },
   { value: 'Proposta', label: 'Proposta', color: '#F97316', accent: 'border-l-orange-500' },
   { value: 'Fechado', label: 'Fechado', color: '#10B981', accent: 'border-l-emerald-500' },
 ]
@@ -32,7 +32,7 @@ const STAGE_GATES: Record<string, { emoji: string; title: string; checks: string
     title: 'Qualificar lead',
     checks: [
       'CNPJ validado e empresa ativa',
-      'Faturamento estimado compativel com ICP',
+      'Faturamento estimado compatível com ICP',
       'Decisor identificado (nome + cargo)',
       'Score SPICED >= 3.0',
     ],
@@ -51,16 +51,16 @@ const STAGE_GATES: Record<string, { emoji: string; title: string; checks: string
     title: 'Lead respondeu',
     checks: [
       'Resposta recebida do decisor',
-      'Interesse confirmado ou objecao mapeada',
-      'Proximo passo definido (reuniao, proposta, follow-up)',
+      'Interesse confirmado ou objeção mapeada',
+      'Próximo passo definido (reunião, proposta, follow-up)',
     ],
   },
   'Reunião': {
     emoji: '🤝',
-    title: 'Reuniao agendada',
+    title: 'Reunião agendada',
     checks: [
-      'Data e horario da reuniao confirmados',
-      'Pauta/diagnostico preparado',
+      'Data e horário da reunião confirmados',
+      'Pauta/diagnóstico preparado',
       'Participantes definidos (quem do lado do cliente)',
     ],
   },
@@ -75,7 +75,7 @@ const STAGE_GATES: Record<string, { emoji: string; title: string; checks: string
   },
   Fechado: {
     emoji: '🏆',
-    title: 'Negocio fechado!',
+    title: 'Negócio fechado!',
     checks: [
       'Contrato assinado ou aceite formal',
       'Pagamento confirmado ou faturado',
@@ -161,14 +161,14 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
           </div>
         )}
         <div className="mb-3">
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observacoes (opcional)..." rows={2}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
             className="w-full rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
         </div>
         <div className="flex gap-3">
           <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
           <Button onClick={() => onConfirm(notes)} disabled={!allChecked} className="flex-1"
             icon={isCelebration ? <Trophy className="h-4 w-4" /> : allChecked ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
-            {isCelebration ? 'Fechar negocio!' : allChecked ? 'Confirmar' : `${gate ? gate.checks.length - checked.size : 0} pendente${gate && gate.checks.length - checked.size > 1 ? 's' : ''}`}
+            {isCelebration ? 'Fechar negócio!' : allChecked ? 'Confirmar' : `${gate ? gate.checks.length - checked.size : 0} pendente${gate && gate.checks.length - checked.size > 1 ? 's' : ''}`}
           </Button>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function PipelinePage() {
     const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
     createActivity({ leadId: lead.id, type: 'status_change', description: desc }).catch(() => {})
 
-    toast.success(to === 'Fechado' ? `${lead.companyName} — Negocio fechado!` : `${lead.companyName} movido para ${toLabel}`)
+    toast.success(to === 'Fechado' ? `${lead.companyName} — Negócio fechado!` : `${lead.companyName} movido para ${toLabel}`)
     setPendingMove(null)
   }, [pendingMove, updateLead])
 
@@ -269,7 +269,7 @@ export function PipelinePage() {
               <h1 className="text-xl font-bold font-heading gradient-text">Pipeline</h1>
             </div>
             <p className="text-xs text-text-muted mt-0.5">
-              Gerencie seus leads atraves do funil de vendas · {allLeads.length} leads
+              Gerencie seus leads através do funil de vendas · {allLeads.length} leads
               {closedCount > 0 && <span className="text-success"> · {closedCount} fechados</span>}
             </p>
           </div>
@@ -301,7 +301,7 @@ export function PipelinePage() {
           <EmptyState
             icon={Columns3}
             title="Pipeline vazio"
-            description="Pesquise ou importe leads para comecar a gerenciar seu funil de vendas."
+            description="Pesquise ou importe leads para começar a gerenciar seu funil de vendas."
             action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
           />
         </AnimateIn>
