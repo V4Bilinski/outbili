@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useZapCampaigns, useZapCampaignMessages, useZapTemplates, useCreateZapCampaign, useDispatchZapCampaign, usePauseZapCampaign, useCancelZapCampaign, useImportZapContacts } from '../hooks/useBilinskiZap'
 import { useLeads } from '../hooks/useLeads'
 import { getContacts } from '../services/contactService'
-import { precheckCampaign, calculateDeliveryRate, calculateReadRate, type ZapCampaign, type ZapTemplate, type ZapMessageStatus } from '../lib/bilinskizap'
+import { precheckCampaign, calculateDeliveryRate, calculateReadRate, type ZapCampaign, type ZapTemplate } from '../lib/bilinskizap'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -13,9 +13,9 @@ import { SEGMENTS, TEMPERATURES } from '../lib/constants'
 import type { Lead, Contact } from '../types'
 import {
   Smartphone, Plus, Send, Pause, X, CheckCircle, AlertTriangle,
-  ChevronRight, Filter, Users, Zap, Search, Shield, ArrowRight,
+  Filter, Users, Zap, Search, Shield, ArrowRight,
   Phone, Mail, Loader2, RefreshCw, Copy, Trash2, Clock, Eye,
-  ChevronDown, ArrowLeft, Tag, BarChart3, CircleAlert,
+  ArrowLeft, CircleAlert,
 } from 'lucide-react'
 import { toast } from 'sonner'
 

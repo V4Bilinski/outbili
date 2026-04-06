@@ -3,6 +3,7 @@ import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, Use
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
+import { SEGMENTS } from '../lib/constants'
 import { useN8nSearch } from '../hooks/useN8nSearch'
 import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
 import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
@@ -11,13 +12,8 @@ import { createContact } from '../services/contactService'
 import { toast } from 'sonner'
 import { parseFile, ACCEPTED_FORMATS, type ParseResult } from '../lib/file-parser'
 
-// --- Constants ---
-const RECOMMENDED_SEGMENTS = [
-  'Estética', 'Odontologia', 'Varejo', 'Farmácia', 'Movelaria',
-  'Serviços', 'Alimentação', 'Saúde', 'Educação', 'Tecnologia',
-  'Automotivo', 'Pet Shop', 'Fitness', 'Beleza', 'Imobiliário',
-  'Construção', 'Moda', 'Decoração', 'Agronegócio', 'Logística',
-]
+// --- Constants (derived from single source of truth) ---
+const RECOMMENDED_SEGMENTS = SEGMENTS.map((s) => s.name)
 
 const RECOMMENDED_STATES = ['SP', 'RJ', 'MG', 'RS', 'SC', 'PR']
 const ALL_STATES = [

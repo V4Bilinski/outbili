@@ -49,8 +49,9 @@ export function useN8nSearch() {
 
         if (leadsCreated > 0) {
           setState((s) => ({ ...s, phase: 'polling', leadsCreated }))
-          // Wait for remaining leads to be saved
-          await new Promise((r) => setTimeout(r, 10_000))
+          // Wait for remaining leads to be saved (scale with count: 2s per lead, min 5s, max 30s)
+          const waitMs = Math.min(30_000, Math.max(5_000, leadsCreated * 2_000))
+          await new Promise((r) => setTimeout(r, waitMs))
         }
 
         // Final count from Airtable
@@ -84,12 +85,14 @@ export function useN8nSearch() {
         // If response.success but 0 leads, or failed — let polling handle it
       }).catch(() => {})
 
-      // Path B: Poll Airtable for new leads
+      // Path B: Poll Airtable for new leads (but don't finalize too early)
       setState((s) => ({ ...s, phase: 'processing' }))
 
-      const maxWait = 180_000 // 3 min
+      let lastNewCount = 0
+      let stableChecks = 0
+      const maxWait = 240_000 // 4 min (increased for 15+ leads)
       while (!resolved && Date.now() - startTime < maxWait) {
-        await new Promise((r) => setTimeout(r, 10_000))
+        await new Promise((r) => setTimeout(r, 8_000))
         if (resolved) break
 
         try {
@@ -97,18 +100,28 @@ export function useN8nSearch() {
           const newLeads = currentLeads.filter((l) => !initialIds.has(l.id))
 
           if (newLeads.length > 0) {
-            await finalize(newLeads.length)
-            break
+            setState((s) => ({ ...s, phase: 'polling', leadsCreated: newLeads.length }))
+
+            // Wait for count to stabilize (same count for 2 consecutive checks = all saved)
+            if (newLeads.length === lastNewCount) {
+              stableChecks++
+              if (stableChecks >= 2) {
+                await finalize(newLeads.length)
+                break
+              }
+            } else {
+              stableChecks = 0
+              lastNewCount = newLeads.length
+            }
           }
         } catch { /* retry */ }
       }
 
       // Timeout — force conclusion
       if (!resolved) {
-        // Wait for n8n one more time (5s)
-        await Promise.race([n8nPromise, new Promise((r) => setTimeout(r, 5000))])
+        await Promise.race([n8nPromise, new Promise((r) => setTimeout(r, 10_000))])
         if (!resolved) {
-          await finalize(0)
+          await finalize(lastNewCount)
         }
       }
     } catch (err: any) {

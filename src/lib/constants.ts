@@ -3,7 +3,22 @@ export const SEGMENTS = [
   { name: 'Odontologia', slug: 'odontologia', dayOfWeek: 'terca', color: '#00BCD4', subSegments: ['Clínicas odontológicas', 'Ortodontia', 'Implantes', 'Odontopediatria'] },
   { name: 'Varejo', slug: 'varejo', dayOfWeek: 'quarta', color: '#FF9800', subSegments: ['Vestuário', 'Peças automotivas', 'Pet shops', 'Acessórios'] },
   { name: 'Farmácia', slug: 'farmacia', dayOfWeek: 'quinta', color: '#4CAF50', subSegments: ['Manipulação', 'Redes regionais', 'Drogarias independentes'] },
-  { name: 'Movelaria + Mix', slug: 'movelaria-mix', dayOfWeek: 'sexta', color: '#9C27B0', subSegments: ['Móveis planejados', 'Decoração', 'Colchões', 'Mix estratégico'] },
+  { name: 'Movelaria', slug: 'movelaria', dayOfWeek: 'sexta', color: '#9C27B0', subSegments: ['Móveis planejados', 'Decoração', 'Colchões', 'Mix estratégico'] },
+  { name: 'Serviços', slug: 'servicos', dayOfWeek: '', color: '#607D8B', subSegments: ['Contabilidade', 'Advocacia', 'Consultoria', 'Agências'] },
+  { name: 'Alimentação', slug: 'alimentacao', dayOfWeek: '', color: '#FF5722', subSegments: ['Restaurantes', 'Padarias', 'Delivery', 'Food service'] },
+  { name: 'Saúde', slug: 'saude', dayOfWeek: '', color: '#4CAF50', subSegments: ['Clínicas médicas', 'Laboratórios', 'Fisioterapia', 'Psicologia'] },
+  { name: 'Educação', slug: 'educacao', dayOfWeek: '', color: '#2196F3', subSegments: ['Escolas', 'Cursos', 'Ensino técnico', 'Idiomas'] },
+  { name: 'Tecnologia', slug: 'tecnologia', dayOfWeek: '', color: '#673AB7', subSegments: ['Software houses', 'TI', 'SaaS', 'Startups'] },
+  { name: 'Automotivo', slug: 'automotivo', dayOfWeek: '', color: '#795548', subSegments: ['Oficinas', 'Concessionárias', 'Autopeças', 'Funilaria'] },
+  { name: 'Pet Shop', slug: 'petshop', dayOfWeek: '', color: '#8BC34A', subSegments: ['Pet shops', 'Veterinárias', 'Banho e tosa', 'Pet food'] },
+  { name: 'Fitness', slug: 'fitness', dayOfWeek: '', color: '#F44336', subSegments: ['Academias', 'Studios', 'CrossFit', 'Personal trainers'] },
+  { name: 'Beleza', slug: 'beleza', dayOfWeek: '', color: '#E91E63', subSegments: ['Salões', 'Barbearias', 'Nail design', 'Maquiagem'] },
+  { name: 'Imobiliário', slug: 'imobiliario', dayOfWeek: '', color: '#009688', subSegments: ['Imobiliárias', 'Construtoras', 'Corretores', 'Incorporadoras'] },
+  { name: 'Construção', slug: 'construcao', dayOfWeek: '', color: '#FF9800', subSegments: ['Materiais', 'Empreiteiras', 'Reformas', 'Engenharia'] },
+  { name: 'Moda', slug: 'moda', dayOfWeek: '', color: '#E040FB', subSegments: ['Roupas', 'Calçados', 'Acessórios', 'Moda íntima'] },
+  { name: 'Decoração', slug: 'decoracao', dayOfWeek: '', color: '#FFAB40', subSegments: ['Design de interiores', 'Iluminação', 'Cortinas', 'Artigos para casa'] },
+  { name: 'Agronegócio', slug: 'agronegocio', dayOfWeek: '', color: '#66BB6A', subSegments: ['Insumos', 'Máquinas agrícolas', 'Cooperativas', 'Agritech'] },
+  { name: 'Logística', slug: 'logistica', dayOfWeek: '', color: '#42A5F5', subSegments: ['Transportadoras', 'Entregas', 'Armazéns', 'Last mile'] },
 ] as const
 
 export const TIERS = [
@@ -58,7 +73,7 @@ export function getDaySegment(): string {
     2: 'Odontologia',
     3: 'Varejo',
     4: 'Farmácia',
-    5: 'Movelaria + Mix',
+    5: 'Movelaria',
   }
   return map[day] || 'Livre'
 }
