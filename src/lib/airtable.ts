@@ -181,12 +181,38 @@ const AIRTABLE_TO_FIELD: Record<string, string> = {
   temperatura: 'temperature',
 }
 
-// Map fields before sending to Airtable (code → Airtable names)
+// SingleSelect value normalization — maps common variants to valid Airtable options
+const SINGLE_SELECT_VALUES: Record<string, Record<string, string>> = {
+  temperatura: { HOT: 'Quente', WARM: 'Morno', COLD: 'Frio', Quente: 'Quente', Morno: 'Morno', Frio: 'Frio' },
+  tier: { 'Micro+': 'Micro+', Small: 'Small', 'Medium-': 'Medium-', 'Medium=': 'Medium=' },
+  status: { Novo: 'Novo', Qualificado: 'Qualificado', Contactado: 'Contactado', Respondeu: 'Respondeu', 'Reunião': 'Reunião', Proposta: 'Proposta', Fechado: 'Fechado', Perdido: 'Perdido', Pesquisado: 'Pesquisado' },
+}
+
+// Fields that do NOT exist in the Leads table — strip before sending to avoid 422
+const INVALID_LEAD_FIELDS = new Set([
+  'category', 'isMobile', 'revenue', 'reviews', 'rating', 'emails',
+  'ownerName', 'phone', 'whatsapp', 'email', 'estimatedRevenue',
+  '_whatsapp', '_email', '_ownerName', '_phone', '_isMobile', '_estimatedRevenue',
+])
+
+// Map fields before sending to Airtable (code → Airtable names + sanitize)
 function mapFieldsToAirtable(fields: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {}
   for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null) continue
+    if (INVALID_LEAD_FIELDS.has(key)) continue
     const airtableKey = FIELD_TO_AIRTABLE[key] || key
-    if (value !== undefined) mapped[airtableKey] = value
+    // Normalize SingleSelect values
+    const selectMap = SINGLE_SELECT_VALUES[airtableKey]
+    if (selectMap && typeof value === 'string') {
+      const normalized = selectMap[value]
+      if (normalized) {
+        mapped[airtableKey] = normalized
+      }
+      // Skip invalid SingleSelect values silently to prevent 422
+      continue
+    }
+    mapped[airtableKey] = value
   }
   return mapped
 }
