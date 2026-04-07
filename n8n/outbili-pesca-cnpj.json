@@ -9,20 +9,112 @@
         "options": {}
       },
       "id": "webhook-pesca",
-      "name": "Webhook PESCA",
+      "name": "1. Webhook PESCA",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [0, 300]
     },
     {
       "parameters": {
-        "jsCode": "// PESCA — Parse filtros e buscar CNPJs via Casa dos Dados API\nconst body = $input.first().json.body || $input.first().json;\nconst cnaeCodes = body.cnaeCodes || [];\nconst states = body.states || [];\nconst capitalMin = parseInt(body.capitalMin) || 0;\nconst capitalMax = parseInt(body.capitalMax) || 10000000;\nconst excludeMei = body.excludeMei !== false;\nconst targetCount = parseInt(body.targetCount) || 150;\n\nconst allCompanies = [];\nconst seenCnpjs = new Set();\n\n// Iterar por cada CNAE para maximizar resultados\nfor (const cnae of cnaeCodes) {\n  if (allCompanies.length >= targetCount) break;\n\n  let page = 1;\n  const maxPages = 10;\n\n  while (page <= maxPages && allCompanies.length < targetCount) {\n    try {\n      const payload = {\n        query: {\n          termo: [],\n          atividade_principal: [cnae],\n          natureza_juridica: [],\n          uf: states.length > 0 ? states : [],\n          municipio: [],\n          situacao_cadastral: 'ATIVA'\n        },\n        range_query: {\n          capital_social: { gte: capitalMin, lte: capitalMax }\n        },\n        extras: {\n          somente_mei: false,\n          excluir_mei: excludeMei,\n          com_email: false,\n          incluir_atividade_secundaria: false,\n          com_contato_telefonico: true\n        },\n        page: page\n      };\n\n      const response = await fetch('https://api.casadosdados.com.br/v2/public/cnpj/search', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(payload)\n      });\n\n      if (!response.ok) {\n        if (response.status === 429) {\n          // Rate limit — esperar 3s e tentar de novo\n          await new Promise(r => setTimeout(r, 3000));\n          continue;\n        }\n        break;\n      }\n\n      const data = await response.json();\n      const companies = data?.data?.cnpj || [];\n\n      if (companies.length === 0) break;\n\n      for (const company of companies) {\n        const cleanCnpj = (company.cnpj || '').replace(/\\D/g, '');\n        if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n        seenCnpjs.add(cleanCnpj);\n\n        allCompanies.push({\n          cnpj: cleanCnpj,\n          razao_social: company.razao_social || '',\n          nome_fantasia: company.nome_fantasia || '',\n          cnae_fiscal_descricao: company.cnae_fiscal_descricao || '',\n          cnae_fiscal: company.cnae_fiscal || '',\n          uf: company.uf || '',\n          municipio: company.municipio || '',\n          logradouro: company.logradouro || '',\n          numero: company.numero || '',\n          bairro: company.bairro || '',\n          capital_social: company.capital_social || 0,\n          porte: company.porte || '',\n          data_inicio_atividade: company.data_inicio_atividade || '',\n          telefone1: company.telefone1 || company.ddd_telefone_1 || '',\n          telefone2: company.telefone2 || company.ddd_telefone_2 || '',\n          email: company.email || company.correio_eletronico || '',\n          qsa: (company.qsa || []).map(s => ({\n            nome_socio: s.nome_socio || s.nome || '',\n            qualificacao_socio: s.qualificacao_socio || s.qual || ''\n          }))\n        });\n      }\n\n      page++;\n      // Delay entre paginas\n      await new Promise(r => setTimeout(r, 500));\n    } catch (err) {\n      // Erro de rede — tentar proximo CNAE\n      break;\n    }\n  }\n}\n\nreturn [{ json: { companies: allCompanies, total: allCompanies.length } }];"
+        "jsCode": "// Validar e extrair filtros do request\nconst body = $input.first().json.body || $input.first().json;\n\nconst cnaeCodes = body.cnaeCodes || [];\nconst states = body.states || [];\nconst capitalMin = parseInt(body.capitalMin) || 0;\nconst capitalMax = parseInt(body.capitalMax) || 10000000;\nconst excludeMei = body.excludeMei !== false;\nconst targetCount = parseInt(body.targetCount) || 150;\n\nif (cnaeCodes.length === 0) {\n  throw new Error('Nenhum codigo CNAE informado. Selecione pelo menos um segmento.');\n}\n\nreturn [{\n  json: {\n    cnaeCodes,\n    states,\n    capitalMin,\n    capitalMax,\n    excludeMei,\n    targetCount,\n    totalCnaes: cnaeCodes.length,\n    currentCnaeIndex: 0,\n    currentPage: 1,\n    allCompanies: [],\n    seenCnpjs: []\n  }\n}];"
       },
-      "id": "search-cnpj",
-      "name": "Buscar CNPJs (Casa dos Dados)",
+      "id": "validate-filters",
+      "name": "2. Validar Filtros",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [280, 0]
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construir payload para Casa dos Dados API\nconst data = $input.first().json;\nconst cnae = data.cnaeCodes[data.currentCnaeIndex];\n\nconst payload = {\n  query: {\n    termo: [],\n    atividade_principal: [cnae],\n    natureza_juridica: [],\n    uf: data.states.length > 0 ? data.states : [],\n    municipio: [],\n    situacao_cadastral: 'ATIVA'\n  },\n  range_query: {\n    capital_social: {\n      gte: data.capitalMin,\n      lte: data.capitalMax\n    }\n  },\n  extras: {\n    somente_mei: false,\n    excluir_mei: data.excludeMei,\n    com_email: false,\n    incluir_atividade_secundaria: false,\n    com_contato_telefonico: true\n  },\n  page: data.currentPage\n};\n\nreturn [{\n  json: {\n    ...data,\n    currentCnae: cnae,\n    requestPayload: payload\n  }\n}];"
+      },
+      "id": "build-query",
+      "name": "3. Montar Query CNAE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.casadosdados.com.br/v2/public/cnpj/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestPayload) }}",
+        "options": {
+          "timeout": 15000,
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-casa-dos-dados",
+      "name": "4. HTTP Casa dos Dados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [780, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resposta e acumular empresas\nconst prev = $('3. Montar Query CNAE').first().json;\nconst response = $input.first().json;\n\nconst companies = response?.data?.cnpj || [];\nconst allCompanies = [...(prev.allCompanies || [])];\nconst seenCnpjs = new Set(prev.seenCnpjs || []);\n\nlet newCount = 0;\nfor (const company of companies) {\n  const cleanCnpj = (company.cnpj || '').replace(/\\D/g, '');\n  if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n  seenCnpjs.add(cleanCnpj);\n  newCount++;\n\n  allCompanies.push({\n    cnpj: cleanCnpj,\n    razao_social: company.razao_social || '',\n    nome_fantasia: company.nome_fantasia || '',\n    cnae_fiscal_descricao: company.cnae_fiscal_descricao || '',\n    cnae_fiscal: company.cnae_fiscal || '',\n    uf: company.uf || '',\n    municipio: company.municipio || '',\n    logradouro: company.logradouro || '',\n    numero: company.numero || '',\n    bairro: company.bairro || '',\n    capital_social: company.capital_social || 0,\n    porte: company.porte || '',\n    data_inicio_atividade: company.data_inicio_atividade || '',\n    telefone1: company.ddd_telefone_1 || company.telefone1 || '',\n    telefone2: company.ddd_telefone_2 || company.telefone2 || '',\n    email: company.correio_eletronico || company.email || '',\n    qsa: (company.qsa || []).map(s => ({\n      nome_socio: s.nome_socio || s.nome || '',\n      qualificacao_socio: s.qualificacao_socio || s.qual || ''\n    }))\n  });\n}\n\n// Decidir proxima acao\nconst hasMorePages = newCount > 0 && prev.currentPage < 10;\nconst needsMoreResults = allCompanies.length < prev.targetCount;\nconst hasMoreCnaes = prev.currentCnaeIndex < prev.totalCnaes - 1;\n\nlet nextPage = prev.currentPage;\nlet nextCnaeIndex = prev.currentCnaeIndex;\nlet continueLoop = false;\n\nif (needsMoreResults && hasMorePages) {\n  // Mais paginas do mesmo CNAE\n  nextPage = prev.currentPage + 1;\n  continueLoop = true;\n} else if (needsMoreResults && hasMoreCnaes) {\n  // Proximo CNAE\n  nextCnaeIndex = prev.currentCnaeIndex + 1;\n  nextPage = 1;\n  continueLoop = true;\n}\n\nreturn [{\n  json: {\n    ...prev,\n    allCompanies,\n    seenCnpjs: Array.from(seenCnpjs),\n    currentPage: nextPage,\n    currentCnaeIndex: nextCnaeIndex,\n    continueLoop,\n    totalFound: allCompanies.length,\n    lastBatchSize: newCount\n  }\n}];"
+      },
+      "id": "process-results",
+      "name": "5. Processar Resultados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "continue-check",
+              "leftValue": "={{ $json.continueLoop }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-continue",
+      "name": "6. Mais Resultados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "amount": 0.5
+      },
+      "id": "wait-rate-limit",
+      "name": "7. Rate Limit (500ms)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1300, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enriquecer cada empresa com OpenCNPJ para obter socios e telefones\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\nconst enriched = [];\n\nfor (let i = 0; i < companies.length; i++) {\n  const company = companies[i];\n  const cnpj = company.cnpj.replace(/\\D/g, '');\n\n  try {\n    const res = await fetch('https://api.opencnpj.org/' + cnpj);\n    if (res.ok) {\n      const d = await res.json();\n\n      // Extrair socios (QSA)\n      const socios = (d.qsa || []).map(s => ({\n        nome_socio: s.nome_socio || s.nome || '',\n        qualificacao_socio: s.qualificacao_socio || s.qual || ''\n      }));\n\n      // Extrair telefones\n      const phones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone]\n        .filter(Boolean)\n        .flatMap(p => p.split(/[\\/;,]/))\n        .map(p => p.trim().replace(/\\D/g, ''))\n        .filter(p => p.length >= 10);\n\n      company.qsa = socios.length > 0 ? socios : company.qsa;\n      company.telefone1 = phones[0] || company.telefone1;\n      company.telefone2 = phones[1] || company.telefone2;\n      company.email = d.email || d.correio_eletronico || company.email;\n      company.capital_social = d.capital_social || company.capital_social;\n      company.nome_fantasia = d.nome_fantasia || company.nome_fantasia;\n    }\n  } catch (err) {\n    // OpenCNPJ falhou — manter dados originais\n  }\n\n  enriched.push(company);\n\n  // Rate limit: 200ms entre requests\n  if (i < companies.length - 1) {\n    await new Promise(r => setTimeout(r, 200));\n  }\n}\n\nreturn [{ json: { companies: enriched, total: enriched.length } }];"
+      },
+      "id": "enrich-opencnpj",
+      "name": "8. Enriquecer via OpenCNPJ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Classificar telefones e extrair decisor de cada empresa\nconst data = $input.first().json;\nconst companies = data.companies || [];\n\nfunction classifyPhone(phone) {\n  const digits = phone.replace(/\\D/g, '');\n  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits;\n  if (withoutCountry.length === 11 && withoutCountry[2] === '9') return 'mobile';\n  if (withoutCountry.length === 10 && withoutCountry[2] === '9') return 'mobile';\n  return 'landline';\n}\n\nfunction formatPhone(phone) {\n  let digits = phone.replace(/\\D/g, '').replace(/^0+/, '');\n  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits;\n  if (withoutCountry.length === 10 && withoutCountry[2] === '9') {\n    digits = withoutCountry.slice(0, 2) + '9' + withoutCountry.slice(2);\n    return '55' + digits;\n  }\n  if (digits.length >= 10) return digits.startsWith('55') ? digits : '55' + digits;\n  return digits;\n}\n\nconst results = companies.map(company => {\n  // Encontrar decisor no QSA\n  const socios = company.qsa || [];\n  const decisor = socios.find(s =>\n    (s.qualificacao_socio || '').toLowerCase().includes('administrador') ||\n    (s.qualificacao_socio || '').toLowerCase().includes('diretor') ||\n    (s.qualificacao_socio || '').toLowerCase().includes('presidente')\n  ) || socios[0];\n\n  // Classificar telefones\n  const phones = [company.telefone1, company.telefone2]\n    .filter(Boolean)\n    .flatMap(p => p.split(/[\\/;,]/))\n    .map(p => p.trim().replace(/\\D/g, ''))\n    .filter(p => p.length >= 10);\n\n  const mobilePhone = phones.find(p => classifyPhone(p) === 'mobile');\n  const whatsapp = mobilePhone ? formatPhone(mobilePhone) : '';\n  const mainPhone = phones[0] ? formatPhone(phones[0]) : '';\n\n  return {\n    cnpj: company.cnpj,\n    razao_social: company.razao_social,\n    nome_fantasia: company.nome_fantasia,\n    cnae_fiscal_descricao: company.cnae_fiscal_descricao,\n    cnae_fiscal: company.cnae_fiscal,\n    uf: company.uf,\n    municipio: company.municipio,\n    logradouro: company.logradouro,\n    numero: company.numero,\n    bairro: company.bairro,\n    capital_social: company.capital_social,\n    porte: company.porte,\n    data_inicio_atividade: company.data_inicio_atividade,\n    telefone1: mainPhone,\n    telefone2: company.telefone2 || '',\n    email: company.email,\n    qsa: company.qsa,\n    // Campos extraidos\n    decisor_nome: decisor?.nome_socio || '',\n    decisor_cargo: decisor?.qualificacao_socio || '',\n    whatsapp: whatsapp,\n    tem_whatsapp: !!whatsapp,\n    tem_decisor: !!(decisor?.nome_socio),\n    qualidade: (!!whatsapp && !!decisor?.nome_socio) ? 'gold' : (!!whatsapp || !!decisor?.nome_socio) ? 'silver' : 'bronze'\n  };\n});\n\n// Ordenar: gold primeiro, depois silver, depois bronze\nresults.sort((a, b) => {\n  const order = { gold: 0, silver: 1, bronze: 2 };\n  return order[a.qualidade] - order[b.qualidade];\n});\n\nreturn [{ json: { companies: results, total: results.length, stats: {\n  total: results.length,\n  com_whatsapp: results.filter(r => r.tem_whatsapp).length,\n  com_decisor: results.filter(r => r.tem_decisor).length,\n  gold: results.filter(r => r.qualidade === 'gold').length,\n  silver: results.filter(r => r.qualidade === 'silver').length,\n  bronze: results.filter(r => r.qualidade === 'bronze').length\n} } }];"
+      },
+      "id": "extract-decisor",
+      "name": "9. Extrair Decisor + WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1820, 300]
     },
     {
       "parameters": {
@@ -30,28 +122,49 @@
         "responseBody": "={{ JSON.stringify($input.first().json) }}"
       },
       "id": "respond-webhook",
-      "name": "Responder Webhook",
+      "name": "10. Responder ao Sistema",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [560, 0]
+      "position": [2080, 300]
     }
   ],
   "connections": {
-    "Webhook PESCA": {
+    "1. Webhook PESCA": {
+      "main": [[{ "node": "2. Validar Filtros", "type": "main", "index": 0 }]]
+    },
+    "2. Validar Filtros": {
+      "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
+    },
+    "3. Montar Query CNAE": {
+      "main": [[{ "node": "4. HTTP Casa dos Dados", "type": "main", "index": 0 }]]
+    },
+    "4. HTTP Casa dos Dados": {
+      "main": [[{ "node": "5. Processar Resultados", "type": "main", "index": 0 }]]
+    },
+    "5. Processar Resultados": {
+      "main": [[{ "node": "6. Mais Resultados?", "type": "main", "index": 0 }]]
+    },
+    "6. Mais Resultados?": {
       "main": [
-        [{ "node": "Buscar CNPJs (Casa dos Dados)", "type": "main", "index": 0 }]
+        [{ "node": "7. Rate Limit (500ms)", "type": "main", "index": 0 }],
+        [{ "node": "8. Enriquecer via OpenCNPJ", "type": "main", "index": 0 }]
       ]
     },
-    "Buscar CNPJs (Casa dos Dados)": {
-      "main": [
-        [{ "node": "Responder Webhook", "type": "main", "index": 0 }]
-      ]
+    "7. Rate Limit (500ms)": {
+      "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
+    },
+    "8. Enriquecer via OpenCNPJ": {
+      "main": [[{ "node": "9. Extrair Decisor + WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "9. Extrair Decisor + WhatsApp": {
+      "main": [[{ "node": "10. Responder ao Sistema", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": 300
   },
   "tags": [{ "name": "OUTBILI" }, { "name": "PESCA" }]
 }
