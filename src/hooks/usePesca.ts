@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import {
-  discoverBusinesses,
-  enrichBusinesses,
+  searchCnpjsViaN8n,
+  enrichCnpjRecords,
   loadExistingDedup,
   deduplicateLeads,
   savePescaToAirtable,
@@ -101,11 +101,11 @@ export function usePesca(): UsePescaReturn {
     startTimeRef.current = 0
 
     try {
-      // Fase 1: Descobrir empresas via Google Maps (Apify)
+      // Fase 1: Buscar CNPJs via n8n webhook (APIs publicas de CNPJ)
       setPhase('searching')
       setProgress({ ...INITIAL_PROGRESS })
 
-      const businesses = await discoverBusinesses(
+      const cnpjRecords = await searchCnpjsViaN8n(
         filters,
         150,
         (found) => setProgress(p => ({ ...p, found, total: found })),
@@ -113,19 +113,19 @@ export function usePesca(): UsePescaReturn {
       )
 
       if (signal.aborted) return
-      if (businesses.length === 0) {
+      if (cnpjRecords.length === 0) {
         setError('Nenhuma empresa encontrada com esses filtros. Tente ampliar a busca.')
         setPhase('error')
         return
       }
 
-      setProgress(p => ({ ...p, found: businesses.length, total: businesses.length }))
+      setProgress(p => ({ ...p, found: cnpjRecords.length, total: cnpjRecords.length }))
 
-      // Fase 2: Enriquecer com CNPJ + telefone + decisor (APIs publicas)
+      // Fase 2: Enriquecer com telefone + decisor (OpenCNPJ + ReceitaWS)
       setPhase('enriching')
 
-      const enrichedLeads = await enrichBusinesses(
-        businesses,
+      const enrichedLeads = await enrichCnpjRecords(
+        cnpjRecords,
         (enriched) => setProgress(p => ({ ...p, enriched })),
         signal,
       )

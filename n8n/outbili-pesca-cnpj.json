@@ -1,0 +1,57 @@
+{
+  "name": "OUTBILI - PESCA (Busca em Massa CNPJ)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outbili-pesca",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-pesca",
+      "name": "Webhook PESCA",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// PESCA — Parse filtros e buscar CNPJs via Casa dos Dados API\nconst body = $input.first().json.body || $input.first().json;\nconst cnaeCodes = body.cnaeCodes || [];\nconst states = body.states || [];\nconst capitalMin = parseInt(body.capitalMin) || 0;\nconst capitalMax = parseInt(body.capitalMax) || 10000000;\nconst excludeMei = body.excludeMei !== false;\nconst targetCount = parseInt(body.targetCount) || 150;\n\nconst allCompanies = [];\nconst seenCnpjs = new Set();\n\n// Iterar por cada CNAE para maximizar resultados\nfor (const cnae of cnaeCodes) {\n  if (allCompanies.length >= targetCount) break;\n\n  let page = 1;\n  const maxPages = 10;\n\n  while (page <= maxPages && allCompanies.length < targetCount) {\n    try {\n      const payload = {\n        query: {\n          termo: [],\n          atividade_principal: [cnae],\n          natureza_juridica: [],\n          uf: states.length > 0 ? states : [],\n          municipio: [],\n          situacao_cadastral: 'ATIVA'\n        },\n        range_query: {\n          capital_social: { gte: capitalMin, lte: capitalMax }\n        },\n        extras: {\n          somente_mei: false,\n          excluir_mei: excludeMei,\n          com_email: false,\n          incluir_atividade_secundaria: false,\n          com_contato_telefonico: true\n        },\n        page: page\n      };\n\n      const response = await fetch('https://api.casadosdados.com.br/v2/public/cnpj/search', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(payload)\n      });\n\n      if (!response.ok) {\n        if (response.status === 429) {\n          // Rate limit — esperar 3s e tentar de novo\n          await new Promise(r => setTimeout(r, 3000));\n          continue;\n        }\n        break;\n      }\n\n      const data = await response.json();\n      const companies = data?.data?.cnpj || [];\n\n      if (companies.length === 0) break;\n\n      for (const company of companies) {\n        const cleanCnpj = (company.cnpj || '').replace(/\\D/g, '');\n        if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n        seenCnpjs.add(cleanCnpj);\n\n        allCompanies.push({\n          cnpj: cleanCnpj,\n          razao_social: company.razao_social || '',\n          nome_fantasia: company.nome_fantasia || '',\n          cnae_fiscal_descricao: company.cnae_fiscal_descricao || '',\n          cnae_fiscal: company.cnae_fiscal || '',\n          uf: company.uf || '',\n          municipio: company.municipio || '',\n          logradouro: company.logradouro || '',\n          numero: company.numero || '',\n          bairro: company.bairro || '',\n          capital_social: company.capital_social || 0,\n          porte: company.porte || '',\n          data_inicio_atividade: company.data_inicio_atividade || '',\n          telefone1: company.telefone1 || company.ddd_telefone_1 || '',\n          telefone2: company.telefone2 || company.ddd_telefone_2 || '',\n          email: company.email || company.correio_eletronico || '',\n          qsa: (company.qsa || []).map(s => ({\n            nome_socio: s.nome_socio || s.nome || '',\n            qualificacao_socio: s.qualificacao_socio || s.qual || ''\n          }))\n        });\n      }\n\n      page++;\n      // Delay entre paginas\n      await new Promise(r => setTimeout(r, 500));\n    } catch (err) {\n      // Erro de rede — tentar proximo CNAE\n      break;\n    }\n  }\n}\n\nreturn [{ json: { companies: allCompanies, total: allCompanies.length } }];"
+      },
+      "id": "search-cnpj",
+      "name": "Buscar CNPJs (Casa dos Dados)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($input.first().json) }}"
+      },
+      "id": "respond-webhook",
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [560, 0]
+    }
+  ],
+  "connections": {
+    "Webhook PESCA": {
+      "main": [
+        [{ "node": "Buscar CNPJs (Casa dos Dados)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar CNPJs (Casa dos Dados)": {
+      "main": [
+        [{ "node": "Responder Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [{ "name": "OUTBILI" }, { "name": "PESCA" }]
+}

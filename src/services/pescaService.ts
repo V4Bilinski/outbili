@@ -1,190 +1,82 @@
 import { listAllRecords, createRecords } from '../lib/airtable'
-import { startGoogleMapsSearch, pollRunUntilDone, getDatasetItems } from '../lib/apify'
-import { classifyPhone, formatPhone, parseCnpjResponse } from './enrichmentService'
-import { TIERS, SEGMENTS } from '../lib/constants'
+import { getCnaeCodesForSegments } from '../lib/cnae-mapping'
+import { classifyPhone, formatPhone } from './enrichmentService'
+import { TIERS } from '../lib/constants'
 import type { Lead, Contact, PescaFilters, PescaLead } from '../types'
 
-// --- Fase 1: Descoberta via Google Maps (Apify) ---
+// --- Fase 1: Busca em massa via n8n webhook (proxy para APIs publicas de CNPJ) ---
 
-const GOOGLE_MAPS_ACTOR = 'compass~crawler-google-places'
+const N8N_PESCA_URL = import.meta.env.VITE_N8N_WEBHOOK_URL
+  ? import.meta.env.VITE_N8N_WEBHOOK_URL.replace('/outbili-search', '/outbili-pesca')
+  : ''
 
-const STATE_NAMES: Record<string, string> = {
-  AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia',
-  CE: 'Ceara', DF: 'Brasilia', ES: 'Espirito Santo', GO: 'Goias',
-  MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul',
-  MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana',
-  PE: 'Pernambuco', PI: 'Piaui', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
-  RS: 'Rio Grande do Sul', RO: 'Rondonia', RR: 'Roraima', SC: 'Santa Catarina',
-  SP: 'Sao Paulo', SE: 'Sergipe', TO: 'Tocantins',
-}
-
-function buildSearchQueries(filters: PescaFilters): Array<{ query: string; location: string }> {
-  const segmentNames = filters.segments
-    .map(slug => SEGMENTS.find(s => s.slug === slug)?.name || slug)
-
-  const locations = filters.states.length > 0
-    ? filters.states.map(uf => STATE_NAMES[uf] || uf)
-    : ['Sao Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Parana', 'Santa Catarina', 'Rio Grande do Sul']
-
-  const queries: Array<{ query: string; location: string }> = []
-  for (const seg of segmentNames) {
-    for (const loc of locations) {
-      queries.push({ query: seg, location: `${loc}, Brasil` })
-    }
-  }
-  return queries
-}
-
-export async function discoverBusinesses(
+export async function searchCnpjsViaN8n(
   filters: PescaFilters,
   targetCount: number = 150,
   onProgress?: (found: number) => void,
   signal?: AbortSignal,
-): Promise<GoogleMapsCompany[]> {
-  const queries = buildSearchQueries(filters)
-  const all: GoogleMapsCompany[] = []
-  const seenNames = new Set<string>()
+): Promise<CnpjRecord[]> {
+  const cnaeCodes = getCnaeCodesForSegments(filters.segments)
 
-  // Calcular quantos resultados pedir por query para atingir o target
-  const resultsPerQuery = Math.max(20, Math.ceil(targetCount * 1.5 / queries.length))
-
-  // Rodar queries em paralelo (max 3 por vez para nao estourar Apify)
-  const batchSize = 3
-  for (let i = 0; i < queries.length; i += batchSize) {
-    if (signal?.aborted) break
-    if (all.length >= targetCount) break
-
-    const batch = queries.slice(i, i + batchSize)
-
-    const runPromises = batch.map(async ({ query, location }) => {
-      try {
-        const runId = await startGoogleMapsSearch(query, location, resultsPerQuery)
-        const datasetId = await pollRunUntilDone(runId, GOOGLE_MAPS_ACTOR, undefined, 180_000)
-        return await getDatasetItems<any>(datasetId, resultsPerQuery)
-      } catch {
-        return []
-      }
-    })
-
-    const results = await Promise.allSettled(runPromises)
-
-    for (const result of results) {
-      if (result.status !== 'fulfilled' || !result.value) continue
-      for (const item of result.value) {
-        if (signal?.aborted) break
-        const key = (item.title || '').toLowerCase().trim()
-        if (!key || seenNames.has(key)) continue
-        seenNames.add(key)
-
-        all.push({
-          name: item.title || '',
-          address: item.address || '',
-          phone: item.phone || '',
-          website: item.website || '',
-          rating: item.totalScore || 0,
-          reviewsCount: item.reviewsCount || 0,
-          category: item.categoryName || '',
-          city: item.city || '',
-          state: item.state || '',
-          emails: item.emails || [],
-        })
-      }
-    }
-
-    onProgress?.(all.length)
+  if (!N8N_PESCA_URL) {
+    throw new Error('Webhook PESCA nao configurado. Configure VITE_N8N_WEBHOOK_URL.')
   }
 
-  return all.slice(0, targetCount + 50) // Overshoot para compensar dedup
+  const payload = {
+    action: 'pesca',
+    cnaeCodes,
+    states: filters.states,
+    capitalMin: filters.revenueMin,
+    capitalMax: filters.revenueMax,
+    excludeMei: filters.excludeMei,
+    targetCount,
+  }
+
+  const res = await fetch(N8N_PESCA_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+
+  if (!res.ok) {
+    throw new Error(`Erro na busca: ${res.status}. Verifique o webhook n8n.`)
+  }
+
+  const data = await res.json()
+  const companies: CnpjRecord[] = data.companies || data.results || data || []
+
+  if (!Array.isArray(companies)) {
+    throw new Error('Resposta invalida do webhook. Verifique o formato de saida do n8n.')
+  }
+
+  onProgress?.(companies.length)
+  return companies
 }
 
-interface GoogleMapsCompany {
-  name: string
-  address: string
-  phone: string
-  website: string
-  rating: number
-  reviewsCount: number
-  category: string
-  city: string
-  state: string
-  emails: string[]
-}
-
-// --- Fase 2: Enriquecimento CNPJ via APIs publicas ---
-
-interface CnpjEnrichResult {
-  cnpj?: string
-  companyName?: string
-  tradeName?: string
-  decisorName?: string
-  decisorRole?: string
-  phones: string[]
-  capitalSocial?: number
+interface CnpjRecord {
+  cnpj: string
+  razao_social: string
+  nome_fantasia?: string
+  cnae_fiscal_descricao?: string
+  cnae_fiscal?: string
+  uf?: string
+  municipio?: string
+  logradouro?: string
+  numero?: string
+  bairro?: string
+  capital_social?: number
   porte?: string
-  foundingDate?: string
-  cnaePrimary?: string
+  data_inicio_atividade?: string
+  telefone1?: string
+  telefone2?: string
   email?: string
-  state?: string
-  city?: string
-  address?: string
+  qsa?: Array<{ nome_socio: string; qualificacao_socio: string }>
 }
 
-async function searchCnpjByName(companyName: string, _state?: string): Promise<CnpjEnrichResult | null> {
-  // Tentar encontrar o CNPJ pelo nome da empresa via CNPJa Open
-  const cleanName = companyName.replace(/[^\w\s]/g, '').trim()
-  if (!cleanName) return null
+// --- Fase 2: Enriquecimento de telefone + decisor via APIs publicas ---
 
-  try {
-    // CNPJa Open permite busca por nome
-    const query = encodeURIComponent(cleanName)
-    const res = await fetch(`https://open.cnpja.com/office/${query}`, { signal: AbortSignal.timeout(8000) })
-    if (res.ok) {
-      const d = await res.json()
-      if (d.taxId) {
-        return parseCnpjaResponse(d)
-      }
-    }
-  } catch { /* fallback below */ }
-
-  return null
-}
-
-function parseCnpjaResponse(d: any): CnpjEnrichResult {
-  const socios = (d.company?.members || []).map((m: any) => ({
-    nome: m.person?.name || '',
-    qualificacao: m.role?.text || '',
-  }))
-
-  const decisor = socios.find((s: { qualificacao: string }) =>
-    s.qualificacao.toLowerCase().includes('administrador') ||
-    s.qualificacao.toLowerCase().includes('diretor') ||
-    s.qualificacao.toLowerCase().includes('presidente'),
-  ) || socios[0]
-
-  const phones = [d.phones?.[0]?.number, d.phones?.[1]?.number]
-    .filter(Boolean)
-    .map((p: string) => p.replace(/\D/g, ''))
-    .filter((p: string) => p.length >= 10)
-
-  return {
-    cnpj: d.taxId?.replace(/\D/g, ''),
-    companyName: d.company?.name,
-    tradeName: d.alias,
-    decisorName: decisor?.nome,
-    decisorRole: decisor?.qualificacao,
-    phones,
-    capitalSocial: d.company?.equity,
-    porte: d.company?.size?.text,
-    foundingDate: d.founded,
-    cnaePrimary: d.mainActivity?.id ? String(d.mainActivity.id) : undefined,
-    email: d.emails?.[0]?.address,
-    state: d.address?.state,
-    city: d.address?.city,
-    address: d.address?.street ? `${d.address.street}, ${d.address.number || ''}` : undefined,
-  }
-}
-
-async function enrichFromOpenCnpj(cnpj: string): Promise<CnpjEnrichResult | null> {
+async function enrichFromOpenCnpj(cnpj: string): Promise<EnrichResult | null> {
   try {
     const res = await fetch(`https://api.opencnpj.org/${cnpj}`, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
@@ -195,11 +87,7 @@ async function enrichFromOpenCnpj(cnpj: string): Promise<CnpjEnrichResult | null
       qualificacao: s.qualificacao_socio || s.qual || '',
     }))
 
-    const decisor = socios.find((s: { qualificacao: string }) =>
-      s.qualificacao.toLowerCase().includes('administrador') ||
-      s.qualificacao.toLowerCase().includes('diretor') ||
-      s.qualificacao.toLowerCase().includes('presidente'),
-    ) || socios[0]
+    const decisor = findDecisor(socios)
 
     const rawPhones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone]
       .filter(Boolean)
@@ -207,30 +95,26 @@ async function enrichFromOpenCnpj(cnpj: string): Promise<CnpjEnrichResult | null
       .map((p: string) => p.trim().replace(/\D/g, ''))
       .filter((p: string) => p.length >= 10)
 
-    const leadData = parseCnpjResponse(d)
-
     return {
-      cnpj: cnpj,
-      companyName: d.razao_social || leadData.companyName,
-      tradeName: d.nome_fantasia || leadData.tradeName,
+      phones: rawPhones,
       decisorName: decisor?.nome,
       decisorRole: decisor?.qualificacao,
-      phones: rawPhones,
       capitalSocial: d.capital_social ? Number(String(d.capital_social).replace(/\D/g, '')) : undefined,
-      porte: d.porte || d.descricao_porte,
-      foundingDate: d.data_inicio_atividade,
-      cnaePrimary: d.cnae_fiscal ? String(d.cnae_fiscal) : undefined,
-      email: d.email || d.correio_eletronico,
       state: d.uf,
       city: d.municipio,
       address: [d.logradouro, d.numero, d.bairro].filter(Boolean).join(', ') || undefined,
+      email: d.email || d.correio_eletronico,
+      tradeName: d.nome_fantasia,
+      companyName: d.razao_social,
+      foundingDate: d.data_inicio_atividade,
+      porte: d.porte || d.descricao_porte,
     }
   } catch {
     return null
   }
 }
 
-async function enrichFromReceitaWs(cnpj: string): Promise<{ phones: string[]; decisorName?: string; decisorRole?: string } | null> {
+async function enrichFromReceitaWs(cnpj: string): Promise<EnrichResult | null> {
   try {
     const res = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return null
@@ -238,91 +122,116 @@ async function enrichFromReceitaWs(cnpj: string): Promise<{ phones: string[]; de
     if (d.status === 'ERROR') return null
 
     const rawPhones = (d.telefone || '').split(/[\/;,]/).map((p: string) => p.trim().replace(/\D/g, '')).filter((p: string) => p.length >= 10)
+    const socios = (d.qsa || []).map((s: any) => ({ nome: s.nome || '', qualificacao: s.qual || '' }))
 
-    const socios = (d.qsa || []).map((s: any) => ({
-      nome: s.nome || '',
-      qualificacao: s.qual || '',
-    }))
-
-    const decisor = socios.find((s: { qualificacao: string }) =>
-      s.qualificacao.toLowerCase().includes('administrador') ||
-      s.qualificacao.toLowerCase().includes('diretor') ||
-      s.qualificacao.toLowerCase().includes('presidente'),
-    ) || socios[0]
-
-    return { phones: rawPhones, decisorName: decisor?.nome, decisorRole: decisor?.qualificacao }
+    return {
+      phones: rawPhones,
+      decisorName: findDecisor(socios)?.nome,
+      decisorRole: findDecisor(socios)?.qualificacao,
+    }
   } catch {
     return null
   }
 }
 
-export async function enrichBusinesses(
-  businesses: GoogleMapsCompany[],
+interface EnrichResult {
+  phones: string[]
+  decisorName?: string
+  decisorRole?: string
+  capitalSocial?: number
+  state?: string
+  city?: string
+  address?: string
+  email?: string
+  tradeName?: string
+  companyName?: string
+  foundingDate?: string
+  porte?: string
+}
+
+function findDecisor(socios: Array<{ nome: string; qualificacao: string }>): { nome: string; qualificacao: string } | undefined {
+  return socios.find(s =>
+    s.qualificacao.toLowerCase().includes('administrador') ||
+    s.qualificacao.toLowerCase().includes('diretor') ||
+    s.qualificacao.toLowerCase().includes('presidente'),
+  ) || socios[0]
+}
+
+export async function enrichCnpjRecords(
+  records: CnpjRecord[],
   onProgress?: (enriched: number) => void,
   signal?: AbortSignal,
 ): Promise<PescaLead[]> {
   const leads: PescaLead[] = []
-  const concurrency = 5
+  const concurrency = 8
   let enrichedCount = 0
 
-  for (let i = 0; i < businesses.length; i += concurrency) {
+  for (let i = 0; i < records.length; i += concurrency) {
     if (signal?.aborted) break
 
-    const batch = businesses.slice(i, i + concurrency)
+    const batch = records.slice(i, i + concurrency)
     const results = await Promise.allSettled(
-      batch.map(async (biz) => {
+      batch.map(async (record) => {
         if (signal?.aborted) return null
 
-        // Passo 1: Classificar telefone do Google Maps
-        let mobilePhone: string | undefined
+        const cnpj = record.cnpj.replace(/\D/g, '')
+
+        // Extrair dados do QSA que ja veio do n8n
+        let decisorName = undefined as string | undefined
+        let decisorRole = undefined as string | undefined
         let allPhones: string[] = []
-        if (biz.phone) {
-          const cleanPhone = biz.phone.replace(/\D/g, '')
-          if (cleanPhone.length >= 10) {
-            allPhones.push(cleanPhone)
-            if (classifyPhone(cleanPhone) === 'mobile') {
-              mobilePhone = formatPhone(cleanPhone)
-            }
+        let mobilePhone: string | undefined
+
+        // Dados basicos do registro n8n
+        if (record.qsa?.length) {
+          const decisor = findDecisor(record.qsa.map(s => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio })))
+          decisorName = decisor?.nome
+          decisorRole = decisor?.qualificacao
+        }
+
+        // Telefones do registro
+        const regPhones = [record.telefone1, record.telefone2]
+          .filter((p): p is string => !!p)
+          .flatMap(p => p.split(/[\/;,]/))
+          .map(p => p.trim().replace(/\D/g, ''))
+          .filter(p => p.length >= 10)
+        allPhones.push(...regPhones)
+
+        // Tentar OpenCNPJ para dados extras (socios, telefones)
+        const openData = await enrichFromOpenCnpj(cnpj)
+        if (openData) {
+          if (openData.phones.length) allPhones = [...new Set([...allPhones, ...openData.phones])]
+          if (!decisorName && openData.decisorName) {
+            decisorName = openData.decisorName
+            decisorRole = openData.decisorRole
           }
         }
 
-        // Passo 2: Tentar buscar CNPJ pelo nome da empresa
-        let cnpjData: CnpjEnrichResult | null = null
-        cnpjData = await searchCnpjByName(biz.name, biz.state)
-
-        // Passo 3: Se encontrou CNPJ, enriquecer com OpenCNPJ
-        if (cnpjData?.cnpj) {
-          const openData = await enrichFromOpenCnpj(cnpjData.cnpj)
-          if (openData) {
-            // Merge dados
-            if (openData.phones.length) {
-              allPhones = [...new Set([...allPhones, ...openData.phones])]
-              if (!mobilePhone) {
-                const mobile = openData.phones.find(p => classifyPhone(p) === 'mobile')
-                if (mobile) mobilePhone = formatPhone(mobile)
-              }
-            }
-            cnpjData = { ...cnpjData, ...openData, phones: allPhones }
+        // Classificar telefone movel = WhatsApp
+        for (const p of allPhones) {
+          if (classifyPhone(p) === 'mobile') {
+            mobilePhone = formatPhone(p)
+            break
           }
         }
 
         const lead: PescaLead = {
-          companyName: cnpjData?.companyName || biz.name,
-          tradeName: cnpjData?.tradeName || undefined,
-          cnpj: cnpjData?.cnpj || '',
-          segment: biz.category || cnpjData?.cnaePrimary || undefined,
-          state: cnpjData?.state || biz.state || undefined,
-          city: cnpjData?.city || biz.city || undefined,
-          address: cnpjData?.address || biz.address || undefined,
-          decisorName: cnpjData?.decisorName || undefined,
-          decisorRole: cnpjData?.decisorRole || undefined,
+          companyName: openData?.companyName || record.razao_social || '',
+          tradeName: openData?.tradeName || record.nome_fantasia || undefined,
+          cnpj,
+          segment: record.cnae_fiscal_descricao || undefined,
+          state: openData?.state || record.uf || undefined,
+          city: openData?.city || record.municipio || undefined,
+          address: openData?.address || [record.logradouro, record.numero, record.bairro].filter(Boolean).join(', ') || undefined,
+          decisorName,
+          decisorRole,
           whatsapp: mobilePhone || undefined,
           phone: allPhones[0] ? formatPhone(allPhones[0]) : undefined,
-          capitalSocial: cnpjData?.capitalSocial || undefined,
-          porte: cnpjData?.porte || undefined,
-          cnaePrimary: cnpjData?.cnaePrimary || undefined,
-          foundingDate: cnpjData?.foundingDate || undefined,
-          email: cnpjData?.email || biz.emails?.[0] || undefined,
+          capitalSocial: openData?.capitalSocial || record.capital_social || undefined,
+          porte: openData?.porte || record.porte || undefined,
+          cnaePrimary: record.cnae_fiscal || undefined,
+          foundingDate: openData?.foundingDate || record.data_inicio_atividade || undefined,
+          email: openData?.email || record.email || undefined,
           source: 'pesca',
         }
 
@@ -338,11 +247,11 @@ export async function enrichBusinesses(
     }
 
     onProgress?.(enrichedCount)
-    await delay(300)
+    await delay(200)
   }
 
-  // Fase extra: ReceitaWS para leads sem celular (max 10, rate limit 3/min)
-  const leadsWithoutMobile = leads.filter(l => !l.whatsapp && l.cnpj)
+  // ReceitaWS para leads sem celular (max 10, rate limit 3/min)
+  const leadsWithoutMobile = leads.filter(l => !l.whatsapp)
   const receitaWsLimit = Math.min(leadsWithoutMobile.length, 10)
 
   for (let i = 0; i < receitaWsLimit; i++) {
