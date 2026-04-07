@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardTitle } from '../ui/Card'
 import { Button } from '../ui/Button'
-import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, Filter, SortAsc, SortDesc, Copy, ExternalLink } from 'lucide-react'
+import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, SortAsc, SortDesc, Copy, ExternalLink } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { SEGMENTS } from '../../lib/constants'
 import { usePesca } from '../../hooks/usePesca'
@@ -145,9 +145,9 @@ export function PescaPanel() {
       return
     }
 
-    const slugs = segments
+    const slugs: string[] = segments
       .map(name => SEGMENTS.find(s => s.name === name)?.slug)
-      .filter((s): s is string => !!s)
+      .filter(Boolean) as string[]
 
     const filters: PescaFilters = {
       segments: slugs,
