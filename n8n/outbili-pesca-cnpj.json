@@ -113,7 +113,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer patXXXXXXXX" }
+            { "name": "Authorization", "value": "Bearer {{ $env.AIRTABLE_PAT }}" }
           ]
         },
         "sendBody": true,
@@ -134,7 +134,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer patXXXXXXXX" }
+            { "name": "Authorization", "value": "Bearer {{ $env.AIRTABLE_PAT }}" }
           ]
         },
         "sendBody": true,
