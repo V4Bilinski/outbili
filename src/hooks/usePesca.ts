@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import {
-  searchCasaDosDados,
-  enrichWithPhoneAndDecisionMaker,
+  discoverBusinesses,
+  enrichBusinesses,
   loadExistingDedup,
   deduplicateLeads,
   savePescaToAirtable,
@@ -101,11 +101,11 @@ export function usePesca(): UsePescaReturn {
     startTimeRef.current = 0
 
     try {
-      // Fase 1: Buscar CNPJs na Casa dos Dados
+      // Fase 1: Descobrir empresas via Google Maps (Apify)
       setPhase('searching')
       setProgress({ ...INITIAL_PROGRESS })
 
-      const companies = await searchCasaDosDados(
+      const businesses = await discoverBusinesses(
         filters,
         150,
         (found) => setProgress(p => ({ ...p, found, total: found })),
@@ -113,19 +113,19 @@ export function usePesca(): UsePescaReturn {
       )
 
       if (signal.aborted) return
-      if (companies.length === 0) {
+      if (businesses.length === 0) {
         setError('Nenhuma empresa encontrada com esses filtros. Tente ampliar a busca.')
         setPhase('error')
         return
       }
 
-      setProgress(p => ({ ...p, found: companies.length, total: companies.length }))
+      setProgress(p => ({ ...p, found: businesses.length, total: businesses.length }))
 
-      // Fase 2: Enriquecer com telefone + decisor
+      // Fase 2: Enriquecer com CNPJ + telefone + decisor (APIs publicas)
       setPhase('enriching')
 
-      const enrichedLeads = await enrichWithPhoneAndDecisionMaker(
-        companies,
+      const enrichedLeads = await enrichBusinesses(
+        businesses,
         (enriched) => setProgress(p => ({ ...p, enriched })),
         signal,
       )
