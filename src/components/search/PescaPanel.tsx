@@ -10,15 +10,15 @@ import type { PescaFilters, PescaPhase, PescaLead } from '../../types'
 
 const RECOMMENDED_STATES = ['SP', 'RJ', 'MG', 'RS', 'SC', 'PR']
 const ALL_STATES = [
-  { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapa' },
-  { uf: 'AM', name: 'Amazonas' }, { uf: 'BA', name: 'Bahia' }, { uf: 'CE', name: 'Ceara' },
-  { uf: 'DF', name: 'Distrito Federal' }, { uf: 'ES', name: 'Espirito Santo' }, { uf: 'GO', name: 'Goias' },
-  { uf: 'MA', name: 'Maranhao' }, { uf: 'MT', name: 'Mato Grosso' }, { uf: 'MS', name: 'Mato Grosso do Sul' },
-  { uf: 'MG', name: 'Minas Gerais' }, { uf: 'PA', name: 'Para' }, { uf: 'PB', name: 'Paraiba' },
-  { uf: 'PR', name: 'Parana' }, { uf: 'PE', name: 'Pernambuco' }, { uf: 'PI', name: 'Piaui' },
+  { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapá' },
+  { uf: 'AM', name: 'Amazonas' }, { uf: 'BA', name: 'Bahia' }, { uf: 'CE', name: 'Ceará' },
+  { uf: 'DF', name: 'Distrito Federal' }, { uf: 'ES', name: 'Espírito Santo' }, { uf: 'GO', name: 'Goiás' },
+  { uf: 'MA', name: 'Maranhão' }, { uf: 'MT', name: 'Mato Grosso' }, { uf: 'MS', name: 'Mato Grosso do Sul' },
+  { uf: 'MG', name: 'Minas Gerais' }, { uf: 'PA', name: 'Pará' }, { uf: 'PB', name: 'Paraíba' },
+  { uf: 'PR', name: 'Paraná' }, { uf: 'PE', name: 'Pernambuco' }, { uf: 'PI', name: 'Piauí' },
   { uf: 'RJ', name: 'Rio de Janeiro' }, { uf: 'RN', name: 'Rio Grande do Norte' },
-  { uf: 'RS', name: 'Rio Grande do Sul' }, { uf: 'RO', name: 'Rondonia' }, { uf: 'RR', name: 'Roraima' },
-  { uf: 'SC', name: 'Santa Catarina' }, { uf: 'SP', name: 'Sao Paulo' }, { uf: 'SE', name: 'Sergipe' },
+  { uf: 'RS', name: 'Rio Grande do Sul' }, { uf: 'RO', name: 'Rondônia' }, { uf: 'RR', name: 'Roraima' },
+  { uf: 'SC', name: 'Santa Catarina' }, { uf: 'SP', name: 'São Paulo' }, { uf: 'SE', name: 'Sergipe' },
   { uf: 'TO', name: 'Tocantins' },
 ]
 
@@ -47,8 +47,8 @@ const PHASE_LABELS: Record<PescaPhase, string> = {
   enriching: 'Extraindo telefone e decisor...',
   deduplicating: 'Removendo duplicatas...',
   saving: 'Salvando no sistema...',
-  done: 'Concluido!',
-  error: 'Erro na extracao',
+  done: 'Concluído!',
+  error: 'Erro na extração',
 }
 
 const PHASE_STEPS: PescaPhase[] = ['searching', 'enriching', 'deduplicating', 'saving']
@@ -85,7 +85,7 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).then(() => toast.success('Copiado!')).catch(() => {})
 }
 
-// Classificacao de qualidade do lead para priorizacao visual
+// Classificação de qualidade do lead para priorização visual
 function getLeadQuality(lead: PescaLead): 'gold' | 'silver' | 'bronze' {
   const hasWhatsapp = !!lead.whatsapp
   const hasDecisor = !!lead.decisorName
@@ -99,7 +99,7 @@ function getLeadQuality(lead: PescaLead): 'gold' | 'silver' | 'bronze' {
 const QUALITY_CONFIG = {
   gold: { label: 'Pronto', color: 'text-success', bg: 'bg-success/10', border: 'border-success/20', dot: 'bg-success' },
   silver: { label: 'Parcial', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', dot: 'bg-warning' },
-  bronze: { label: 'Basico', color: 'text-text-muted', bg: 'bg-white/[0.03]', border: 'border-border', dot: 'bg-text-muted' },
+  bronze: { label: 'Básico', color: 'text-text-muted', bg: 'bg-white/[0.03]', border: 'border-border', dot: 'bg-text-muted' },
 }
 
 export function PescaPanel() {
@@ -209,9 +209,9 @@ export function PescaPanel() {
             <Fish className="h-5 w-5 text-red" />
           </div>
           <div>
-            <CardTitle>PESCA — Extracao em massa</CardTitle>
+            <CardTitle>PESCA — Extração em massa</CardTitle>
             <p className="text-xs text-text-muted mt-0.5">
-              Extrai 100+ empresas com CNPJ, decisor e WhatsApp de fontes publicas
+              Extrai 100+ empresas com CNPJ, decisor e WhatsApp de fontes públicas
             </p>
           </div>
         </div>
@@ -343,7 +343,7 @@ export function PescaPanel() {
         </Button>
 
         <p className="text-[10px] text-text-muted text-center mt-2">
-          Dados extraidos de APIs publicas (Receita Federal, OpenCNPJ, BrasilAPI)
+          Dados extraídos de APIs públicas (Receita Federal, OpenCNPJ, BrasilAPI)
         </p>
       </Card>
     )
@@ -391,7 +391,7 @@ export function PescaPanel() {
                 <span className="text-xs font-mono text-text-muted shrink-0">
                   {step === 'searching' && progress.found > 0 && `${progress.found}`}
                   {step === 'enriching' && progress.enriched > 0 && `${progress.enriched}/${progress.found}`}
-                  {step === 'deduplicating' && progress.deduped > 0 && `${progress.deduped} unicos`}
+                  {step === 'deduplicating' && progress.deduped > 0 && `${progress.deduped} únicos`}
                   {step === 'saving' && progress.saved > 0 && `${progress.saved}/${progress.deduped}`}
                 </span>
               </div>
@@ -451,7 +451,7 @@ export function PescaPanel() {
             </div>
             <div>
               <h2 className="text-lg font-bold font-heading text-text-primary">{leads.length} leads extraidos</h2>
-              <p className="text-xs text-text-muted">{formatElapsed(elapsed)} de extracao via APIs publicas</p>
+              <p className="text-xs text-text-muted">{formatElapsed(elapsed)} de extração via APIs públicas</p>
             </div>
           </div>
           <button onClick={reset} className="px-3 py-1.5 text-xs text-text-muted hover:text-text-secondary border border-border hover:border-border-strong rounded-lg cursor-pointer transition-all">
@@ -500,7 +500,7 @@ export function PescaPanel() {
         <div className="flex gap-4 mt-2">
           <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-success" /> Pronto ({qualityCounts.gold})</span>
           <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-warning" /> Parcial ({qualityCounts.silver})</span>
-          <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-text-muted/30" /> Basico ({qualityCounts.bronze})</span>
+          <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-text-muted/30" /> Básico ({qualityCounts.bronze})</span>
         </div>
       </Card>
 

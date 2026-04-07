@@ -160,7 +160,7 @@ export async function matchProspects(companyName: string, domain?: string): Prom
 }
 
 /**
- * Busca empresas com filtros (industria, localizacao, tamanho).
+ * Busca empresas com filtros (indústria, localização, tamanho).
  * Retorna ~10 resultados amostrais.
  */
 export async function fetchEntities(filters: {

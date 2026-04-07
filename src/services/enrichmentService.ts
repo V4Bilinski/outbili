@@ -955,9 +955,9 @@ export async function enrichLead(
 
   const steps: EnrichmentStep[] = [
     { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && leadData.tradeName) ? 'skipped' : 'pending', label: 'Receita Federal (CNPJ)', estimatedMs: 3000 },
-    { source: 'tax_regime', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && (leadData as any).taxRegime) ? 'skipped' : 'pending', label: 'Regime Tributario (Simples/MEI)', estimatedMs: 2000 },
-    { source: 'geolocation', status: (alreadyEnriched && hasGeo) ? 'skipped' : 'pending', label: 'Geolocalizacao (CEP)', estimatedMs: 2000 },
-    { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Dominio .br (Registro.br)', estimatedMs: 2000 },
+    { source: 'tax_regime', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && (leadData as any).taxRegime) ? 'skipped' : 'pending', label: 'Regime Tributário (Simples/MEI)', estimatedMs: 2000 },
+    { source: 'geolocation', status: (alreadyEnriched && hasGeo) ? 'skipped' : 'pending', label: 'Geolocalização (CEP)', estimatedMs: 2000 },
+    { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Domínio .br (Registro.br)', estimatedMs: 2000 },
     { source: 'google_search', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
     { source: 'rag_browser', status: 'pending', label: 'RAG Web Browser (pesquisa profunda)', estimatedMs: 60000 },
     { source: 'google_maps', status: (alreadyEnriched && hasGoogleData) ? 'skipped' : 'pending', label: 'Google Maps / Perfil Comercial', estimatedMs: 30000 },

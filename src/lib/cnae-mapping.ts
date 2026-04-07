@@ -51,7 +51,7 @@ export const SEGMENT_CNAE_MAP: Record<string, string[]> = {
     '6201-5/01', // Desenvolvimento de programas de computador sob encomenda
     '6202-3/00', // Desenvolvimento e licenciamento de programas de computador customizaveis
     '6203-1/00', // Desenvolvimento e licenciamento de programas de computador nao-customizaveis
-    '6204-0/00', // Consultoria em tecnologia da informacao
+    '6204-0/00', // Consultoria em tecnologia da informação
   ],
   automotivo: [
     '4520-0/01', // Servicos de manutencao e reparacao mecanica de veiculos automotores

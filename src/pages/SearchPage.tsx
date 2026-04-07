@@ -973,7 +973,7 @@ export function SearchPage() {
                 </span>
               </div>
 
-              {/* FASE 1: APIs Publicas */}
+              {/* FASE 1: APIs Públicas */}
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-3 w-3 text-text-muted" />
@@ -1011,7 +1011,7 @@ export function SearchPage() {
               {/* Divider */}
               <div className="border-t border-border my-3" />
 
-              {/* FASE 2: Inteligencia de Mercado */}
+              {/* FASE 2: Inteligência de Mercado */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-3 w-3 text-text-muted" />
@@ -1169,7 +1169,7 @@ export function SearchPage() {
               </p>
             )}
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-keywords') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clinica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonizacao', 'manipulacao', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultorio']} suggestionsLabel="Sugestões" />
+              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clínica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonização', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']} suggestionsLabel="Sugestões" />
             </div>
           </div>
 

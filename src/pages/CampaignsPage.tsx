@@ -65,7 +65,7 @@ function CampaignRow({ campaign, onView }: { campaign: ZapCampaign; onView: () =
         <Badge variant={status.variant} size="sm">{status.label}</Badge>
       </td>
 
-      {/* Destinatarios */}
+      {/* Destinatários */}
       <td className="py-4 px-4 text-center">
         <span className="text-sm font-mono text-text-primary">{campaign.recipients}</span>
       </td>
@@ -1050,7 +1050,7 @@ export function CampaignsPage() {
               <option value="recent">Mais recentes</option>
               <option value="delivery">Melhor entrega</option>
               <option value="read">Melhor leitura</option>
-              <option value="recipients">Mais destinatarios</option>
+              <option value="recipients">Mais destinatários</option>
               <option value="name">Nome (A-Z)</option>
             </select>
           </div>
@@ -1071,7 +1071,7 @@ export function CampaignsPage() {
                     <tr className="border-b border-border">
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Nome</th>
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Status</th>
-                      <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Destinatarios</th>
+                      <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Destinatários</th>
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Entrega</th>
                       <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Envio</th>
                       <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Criado em</th>
