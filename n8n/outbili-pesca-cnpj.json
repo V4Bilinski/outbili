@@ -36,21 +36,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.casadosdados.com.br/v2/public/cnpj/search",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json.requestPayload) }}",
-        "options": { "timeout": 15000 }
+        "jsCode": "// Buscar CNPJs via Apify Web Scraper (contorna Cloudflare da Casa dos Dados)\nconst data = $input.first().json;\nconst payload = data.requestPayload;\nconst APIFY_TOKEN = 'apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf';\n\ntry {\n  // Iniciar Apify actor que faz POST via browser headless\n  const startRes = await fetch(\n    'https://api.apify.com/v2/acts/apify~web-scraper/runs?token=' + APIFY_TOKEN,\n    {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        startUrls: [{ url: 'https://casadosdados.com.br/solucao/cnpj' }],\n        pageFunction: `async function pageFunction(context) {\n          const payload = ${JSON.stringify(payload)};\n          const res = await fetch('https://api.casadosdados.com.br/v2/public/cnpj/search', {\n            method: 'POST',\n            headers: { 'Content-Type': 'application/json' },\n            body: JSON.stringify(payload)\n          });\n          if (!res.ok) return { error: res.status, data: { cnpj: [] } };\n          return await res.json();\n        }`,\n        proxyConfiguration: { useApifyProxy: true },\n        maxRequestsPerCrawl: 1\n      })\n    }\n  );\n  const run = await startRes.json();\n  const runId = run.data.id;\n\n  // Poll ate completar\n  let status = 'RUNNING';\n  let datasetId = '';\n  for (let i = 0; i < 30; i++) {\n    await new Promise(r => setTimeout(r, 3000));\n    const pollRes = await fetch('https://api.apify.com/v2/acts/apify~web-scraper/runs/' + runId + '?token=' + APIFY_TOKEN);\n    const pollData = await pollRes.json();\n    status = pollData.data.status;\n    datasetId = pollData.data.defaultDatasetId;\n    if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'ABORTED') break;\n  }\n\n  if (status !== 'SUCCEEDED') return [{ json: { data: { cnpj: [] } } }];\n\n  // Pegar resultado\n  const itemsRes = await fetch('https://api.apify.com/v2/datasets/' + datasetId + '/items?token=' + APIFY_TOKEN);\n  const items = await itemsRes.json();\n  return [{ json: items[0] || { data: { cnpj: [] } } }];\n} catch (err) {\n  return [{ json: { data: { cnpj: [] } } }];\n}"
       },
       "id": "http-casa-dos-dados",
-      "name": "4. HTTP Casa dos Dados",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [780, 300],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "name": "4. Buscar via Apify (Casa dos Dados)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 300]
     },
     {
       "parameters": {
@@ -168,9 +160,9 @@
       "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
     },
     "3. Montar Query CNAE": {
-      "main": [[{ "node": "4. HTTP Casa dos Dados", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "4. Buscar via Apify (Casa dos Dados)", "type": "main", "index": 0 }]]
     },
-    "4. HTTP Casa dos Dados": {
+    "4. Buscar via Apify (Casa dos Dados)": {
       "main": [[{ "node": "5. Processar Resultados", "type": "main", "index": 0 }]]
     },
     "5. Processar Resultados": {
