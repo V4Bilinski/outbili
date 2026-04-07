@@ -1,120 +1,160 @@
 {
-  "name": "OUTBILI - Pesquisa de Leads Outbound",
+  "name": "OUTBILI - Pesquisa em Massa (CNPJ-First)",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "outbili-search",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "webhook-trigger",
-      "name": "Webhook OUTBILI",
+      "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
+      "typeVersion": 2.1,
       "position": [0, 0]
     },
     {
       "parameters": {
-        "jsCode": "// Extract search params from webhook\nconst body = $input.first().json.body || $input.first().json;\nconst segments = body.segments || [];\nconst states = body.states || [];\nconst city = body.city || '';\nconst keywords = body.keywords || [];\nconst revenueMin = parseInt(body.revenueMin) || 70000;\nconst revenueMax = parseInt(body.revenueMax) || 2000000;\n\n// Build Google Maps queries — one per segment for better results\nconst stateNames = { AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins' };\n\n// Build search queries: use first segment + keywords (not all segments joined)\nconst primarySegment = segments[0] || '';\nconst searchTerms = [primarySegment, ...keywords].filter(Boolean);\nconst query = searchTerms.join(' ') || 'empresas';\n\n// Build location: use all selected states for broader coverage\nconst stateNamesList = states.map(s => stateNames[s] || s).filter(Boolean);\nconst location = city\n  ? `${city}, ${stateNamesList[0] || 'Brasil'}`\n  : stateNamesList.length > 0\n    ? stateNamesList[0]\n    : 'Brasil';\n\n// Build additional search strings for multi-segment queries\nconst searchStrings = segments.length > 1\n  ? segments.slice(0, 3).map(seg => [seg, ...keywords].filter(Boolean).join(' '))\n  : [query];\n\nreturn [{\n  json: {\n    query,\n    searchStrings,\n    location,\n    segments,\n    states,\n    stateNamesList,\n    city,\n    keywords,\n    revenueMin,\n    revenueMax,\n    searchId: Date.now().toString()\n  }\n}];"
+        "jsCode": "// Parse filtros do frontend e mapear segmentos → CNAE codes\nconst body = $input.first().json.body || $input.first().json;\nconst segments = body.segments || [];\nconst states = body.states || [];\nconst city = body.city || '';\nconst keywords = body.keywords || [];\nconst revenueMin = parseInt(body.revenueMin) || 70000;\nconst revenueMax = parseInt(body.revenueMax) || 2000000;\n\n// Segmento (pt-BR) → slug\nconst SLUG_MAP = {\n  'Estética': 'estetica', 'Odontologia': 'odontologia', 'Varejo': 'varejo',\n  'Farmácia': 'farmacia', 'Movelaria': 'movelaria', 'Serviços': 'servicos',\n  'Alimentação': 'alimentacao', 'Saúde': 'saude', 'Educação': 'educacao',\n  'Tecnologia': 'tecnologia', 'Automotivo': 'automotivo', 'Pet Shop': 'petshop',\n  'Fitness': 'fitness', 'Beleza': 'beleza', 'Imobiliário': 'imobiliario',\n  'Construção': 'construcao', 'Moda': 'moda', 'Decoração': 'decoracao',\n  'Agronegócio': 'agronegocio', 'Logística': 'logistica',\n};\n\n// Slug → CNAE codes (espelhado de src/lib/cnae-mapping.ts)\nconst CNAE_MAP = {\n  estetica: ['9602-5/01','9602-5/02','8690-9/01'],\n  odontologia: ['8630-5/04'],\n  varejo: ['4711-3/02','4712-1/00','4789-0/99'],\n  farmacia: ['4771-7/01','4771-7/02'],\n  movelaria: ['3101-2/00','4754-7/01'],\n  servicos: ['6920-6/01','6911-7/01','7020-4/00','7311-4/00'],\n  alimentacao: ['5611-2/01','5611-2/03','1091-1/02'],\n  saude: ['8630-5/01','8630-5/02','8630-5/03','8650-0/04','8650-0/02'],\n  educacao: ['8512-1/00','8531-7/00','8599-6/04','8599-6/05'],\n  tecnologia: ['6201-5/01','6202-3/00','6203-1/00','6204-0/00'],\n  automotivo: ['4520-0/01','4520-0/04','4530-7/03'],\n  petshop: ['4789-0/04','7500-1/00'],\n  fitness: ['9313-1/00','9319-1/01'],\n  beleza: ['9602-5/01','9602-5/02'],\n  imobiliario: ['6821-8/01','6821-8/02','4110-7/00'],\n  construcao: ['4120-4/00','4399-1/03','4330-4/01'],\n  moda: ['4781-4/00','4782-2/01'],\n  decoracao: ['4754-7/01','4759-8/01'],\n  agronegocio: ['0111-3/01','4683-4/00','0161-0/01'],\n  logistica: ['4930-2/02','5250-8/01','5320-2/02'],\n};\n\nconst slugs = segments.map(s => SLUG_MAP[s] || s.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, ''));\nconst cnaeCodes = [...new Set(slugs.flatMap(s => CNAE_MAP[s] || []))];\n\nif (cnaeCodes.length === 0) {\n  return [{ json: { error: true, message: 'Nenhum CNAE encontrado para os segmentos selecionados' } }];\n}\n\n// Revenue → capital social range\nconst capitalMin = Math.max(0, Math.round(revenueMin * 0.5));\nconst capitalMax = Math.round(revenueMax * 5);\n\nreturn [{\n  json: {\n    cnaeCodes, states, city, keywords, segments, slugs,\n    revenueMin, revenueMax, capitalMin, capitalMax,\n    segment: segments[0] || 'Varejo',\n    searchId: Date.now().toString(),\n    targetCount: 30,\n    currentCnaeIndex: 0, currentPage: 1,\n    allCompanies: [], seenCnpjs: []\n  }\n}];"
       },
-      "id": "parse-params",
-      "name": "Parse Params",
+      "id": "parse-filtros",
+      "name": "2. Parse Filtros & Map CNAE",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 0]
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Montar payload para Casa dos Dados API\nconst data = $input.first().json;\nconst cnae = data.cnaeCodes[data.currentCnaeIndex];\n\nconst payload = {\n  query: {\n    termo: [],\n    atividade_principal: [cnae],\n    natureza_juridica: [],\n    uf: data.states.length > 0 ? data.states : [],\n    municipio: data.city ? [data.city.toUpperCase()] : [],\n    situacao_cadastral: 'ATIVA'\n  },\n  range_query: {\n    capital_social: { gte: data.capitalMin, lte: data.capitalMax }\n  },\n  extras: {\n    somente_mei: false,\n    excluir_mei: true,\n    com_email: false,\n    incluir_atividade_secundaria: false,\n    com_contato_telefonico: true\n  },\n  page: data.currentPage\n};\n\nreturn [{ json: { ...data, currentCnae: cnae, requestPayload: payload } }];"
+      },
+      "id": "build-query",
+      "name": "3. Montar Query CNAE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs?token=apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf",
+        "url": "https://api.casadosdados.com.br/v2/public/cnpj/search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"searchStringsArray\": {{ JSON.stringify($json.searchStrings) }},\n  \"locationQuery\": \"{{ $json.location }}\",\n  \"maxCrawledPlacesPerSearch\": 50,\n  \"language\": \"pt-BR\",\n  \"scrapeContacts\": true,\n  \"scrapeEmails\": true\n}",
-        "options": {}
+        "jsonBody": "={{ JSON.stringify($json.requestPayload) }}",
+        "options": { "timeout": 15000 }
       },
-      "id": "apify-maps",
-      "name": "Google Maps Search",
+      "id": "http-casa-dados",
+      "name": "4. HTTP Casa dos Dados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 0]
+      "position": [780, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
-        "jsCode": "// Wait for Apify run to complete\nconst runId = $input.first().json.data.id;\nconst token = 'apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf';\nlet status = 'RUNNING';\nlet datasetId = '';\n\nwhile (status === 'RUNNING' || status === 'READY') {\n  await new Promise(r => setTimeout(r, 5000));\n  const resp = await fetch(`https://api.apify.com/v2/acts/compass~crawler-google-places/runs/${runId}?token=${token}`);\n  const data = await resp.json();\n  status = data.data.status;\n  datasetId = data.data.defaultDatasetId;\n}\n\nif (status !== 'SUCCEEDED') throw new Error(`Apify run failed: ${status}`);\n\n// Get results\nconst itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=100`);\nconst items = await itemsResp.json();\n\nreturn [{ json: { items, count: items.length, datasetId } }];"
+        "jsCode": "// Processar resultados e decidir se continua buscando\nconst prev = $('3. Montar Query CNAE').first().json;\nconst response = $input.first().json;\n\nconst companies = response?.data?.cnpj || [];\nconst allCompanies = [...(prev.allCompanies || [])];\nconst seenCnpjs = new Set(prev.seenCnpjs || []);\n\nlet newCount = 0;\nfor (const c of companies) {\n  const cleanCnpj = (c.cnpj || '').replace(/\\D/g, '');\n  if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n  seenCnpjs.add(cleanCnpj);\n  newCount++;\n  allCompanies.push({\n    cnpj: cleanCnpj,\n    razao_social: c.razao_social || '',\n    nome_fantasia: c.nome_fantasia || '',\n    cnae_fiscal_descricao: c.cnae_fiscal_descricao || '',\n    cnae_fiscal: c.cnae_fiscal || '',\n    uf: c.uf || '',\n    municipio: c.municipio || '',\n    logradouro: c.logradouro || '',\n    numero: c.numero || '',\n    bairro: c.bairro || '',\n    capital_social: c.capital_social || 0,\n    porte: c.porte || '',\n    data_inicio_atividade: c.data_inicio_atividade || '',\n    telefone1: c.ddd_telefone_1 || c.telefone1 || '',\n    telefone2: c.ddd_telefone_2 || c.telefone2 || '',\n    email: c.correio_eletronico || c.email || '',\n    qsa: (c.qsa || []).map(s => ({\n      nome_socio: s.nome_socio || s.nome || '',\n      qualificacao_socio: s.qualificacao_socio || s.qual || ''\n    }))\n  });\n}\n\nconst hasMorePages = newCount > 0 && prev.currentPage < 5;\nconst needsMore = allCompanies.length < prev.targetCount;\nconst hasMoreCnaes = prev.currentCnaeIndex < prev.cnaeCodes.length - 1;\n\nlet nextPage = prev.currentPage;\nlet nextCnaeIndex = prev.currentCnaeIndex;\nlet continueLoop = false;\n\nif (needsMore && hasMorePages) {\n  nextPage = prev.currentPage + 1;\n  continueLoop = true;\n} else if (needsMore && hasMoreCnaes) {\n  nextCnaeIndex = prev.currentCnaeIndex + 1;\n  nextPage = 1;\n  continueLoop = true;\n}\n\nreturn [{ json: {\n  ...prev,\n  allCompanies,\n  seenCnpjs: Array.from(seenCnpjs),\n  currentPage: nextPage,\n  currentCnaeIndex: nextCnaeIndex,\n  continueLoop,\n  totalFound: allCompanies.length\n} }];"
       },
-      "id": "poll-maps",
-      "name": "Poll & Get Results",
+      "id": "process-results",
+      "name": "5. Processar Resultados",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 0]
+      "position": [1040, 0]
     },
     {
       "parameters": {
-        "jsCode": "// Process Google Maps results: filter, score, enrich\nconst items = $input.first().json.items;\nconst params = $('Parse Params').first().json;\nconst revenueMin = params.revenueMin;\nconst revenueMax = params.revenueMax;\nconst MAX_LEADS = 15;\n\nconst leads = items\n  .filter(item => item.title)\n  .map((item, index) => {\n    // Phone validation\n    const rawPhone = item.phone || '';\n    const digits = rawPhone.replace(/\\D/g, '').replace(/^0+/, '');\n    const fullPhone = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : '';\n    const isMobile = fullPhone.length >= 12 && fullPhone.charAt(4) === '9';\n    \n    // Revenue estimation (improved: also considers category and website)\n    const reviews = item.reviewsCount || 0;\n    let revenue = 70000;\n    if (reviews >= 200) revenue = 500000;\n    else if (reviews >= 100) revenue = 300000;\n    else if (reviews >= 50) revenue = 200000;\n    else if (reviews >= 30) revenue = 150000;\n    else if (reviews >= 15) revenue = 100000;\n    else if (reviews >= 5) revenue = 80000;\n    if (item.website && !item.website.includes('instagram.com')) revenue = Math.round(revenue * 1.2);\n    const cityLower = (item.city || params.city || '').toLowerCase();\n    if (['são paulo', 'rio de janeiro', 'belo horizonte'].some(c => cityLower.includes(c))) revenue = Math.round(revenue * 1.3);\n    \n    // SPICED\n    const hasWebsite = item.website && !item.website.includes('instagram.com');\n    const hasIG = item.socialProfiles?.instagram;\n    const rating = item.totalScore || 0;\n    const presence = (hasWebsite ? 3 : 0) + (hasIG ? 2 : 0) + (rating >= 4 ? 1 : 0) + (reviews >= 30 ? 1 : 0);\n    \n    const spicedS = Math.min(1 + (hasWebsite ? 1 : 0) + (rating >= 4 ? 1 : 0) + (reviews >= 20 ? 1 : 0) + (presence >= 5 ? 1 : 0), 5);\n    const spicedP = Math.max(5 - (hasWebsite ? 1 : 0) - (presence >= 5 ? 1 : 0) - (reviews >= 50 ? 1 : 0), 1);\n    const spicedI = presence <= 2 ? 5 : presence <= 4 ? 4 : 3;\n    const spicedC = presence <= 3 ? 4 : 3;\n    const spicedD = Math.min(2 + (item.website || hasIG ? 1 : 0), 5);\n    const score = Math.round((spicedS*0.25 + spicedP*0.25 + spicedI*0.20 + spicedC*0.15 + spicedD*0.15) * 10) / 10;\n    const temperatura = score >= 4 ? 'Quente' : score >= 3 ? 'Morno' : 'Frio';\n    \n    // Employees & years estimate\n    const employees = revenue >= 120000 ? 8 : revenue >= 70000 ? 5 : 3;\n    const yearsInMarket = revenue >= 120000 ? 7 : revenue >= 70000 ? 5 : 3;\n    const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+';\n    \n    // Trap\n    let trap = 'T1 - Aquisição de clientes';\n    if (hasWebsite && presence <= 5) trap = 'T6 - Posicionamento de marca';\n    else if (reviews < 15) trap = 'T2 - Conversão de vendas';\n    \n    return {\n      companyName: item.title,\n      segment: params.segments[0] || item.categoryName || '',\n      tier,\n      monthlyRevenue: revenue,\n      employees,\n      yearsInMarket,\n      status: 'Novo',\n      score,\n      temperatura,\n      spicedS, spicedP, spicedI, spicedC, spicedD,\n      hypotheticalTrap: trap,\n      website: item.website || '',\n      instagram: item.socialProfiles?.instagram || '',\n      linkedin: item.socialProfiles?.linkedin || '',\n      facebook: item.socialProfiles?.facebook || '',\n      address: item.address || '',\n      city: item.city || params.city || '',\n      state: item.state || params.states[0] || '',\n      googleRating: rating,\n      googleReviewsCount: reviews,\n      businessSummary: `${item.categoryName || ''} · ${reviews} avaliações (${rating}★) · Presença digital: ${presence}/10`,\n      enrichmentStatus: 'pending',\n      // Campos para Contact (não salvos no Lead)\n      _whatsapp: isMobile ? fullPhone : '',\n      _phone: rawPhone,\n      _email: (item.emails || [])[0] || '',\n      _ownerName: item.title,\n      _isMobile: isMobile,\n      _estimatedRevenue: revenue\n    };\n  })\n  // FILTER: Revenue in range (wider tolerance — enrichment will refine later)\n  .filter(lead => lead._estimatedRevenue >= revenueMin * 0.5 && lead._estimatedRevenue <= revenueMax * 1.5);\n\n// SORT: Prioritize leads with WhatsApp, then by score (best first)\nleads.sort((a, b) => {\n  if (a._isMobile && !b._isMobile) return -1;\n  if (!a._isMobile && b._isMobile) return 1;\n  return b.score - a.score;\n});\n\n// LIMIT: Return up to MAX_LEADS (10-15 target)\nconst finalLeads = leads.slice(0, MAX_LEADS);\n\nreturn finalLeads.map(lead => ({ json: lead }));"
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "id": "loop", "leftValue": "={{ $json.continueLoop }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }
       },
-      "id": "process-filter",
-      "name": "Process & Filter",
+      "id": "check-continue",
+      "name": "6. Mais Resultados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1300, 0]
+    },
+    {
+      "parameters": { "amount": 0.5 },
+      "id": "wait-rate",
+      "name": "7. Rate Limit (0.5s)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1300, 240],
+      "webhookId": "rate-limit-wait"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enriquecer cada CNPJ via BrasilAPI (sem rate limit) + OpenCNPJ fallback\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\n\nfor (let i = 0; i < companies.length; i++) {\n  const c = companies[i];\n  try {\n    // BrasilAPI — sem rate limit, retorna QSA, telefone, email\n    const res = await fetch('https://brasilapi.com.br/api/cnpj/v1/' + c.cnpj, { signal: AbortSignal.timeout(8000) });\n    if (res.ok) {\n      const d = await res.json();\n      const socios = (d.qsa || []).map(s => ({\n        nome_socio: s.nome_socio || s.nome || '',\n        qualificacao_socio: s.qualificacao_socio || s.qual || ''\n      }));\n      const phones = [d.ddd_telefone_1, d.ddd_telefone_2].filter(Boolean)\n        .flatMap(p => p.split(/[\\/;,]/))\n        .map(p => p.trim().replace(/\\D/g, ''))\n        .filter(p => p.length >= 10);\n      if (socios.length > 0) c.qsa = socios;\n      if (phones[0]) c.telefone1 = phones[0];\n      if (phones[1]) c.telefone2 = phones[1];\n      c.email = d.email || d.correio_eletronico || c.email;\n      c.capital_social = d.capital_social || c.capital_social;\n      c.nome_fantasia = d.nome_fantasia || c.nome_fantasia;\n      c.porte = d.descricao_porte || c.porte;\n    }\n  } catch {}\n  // Small delay to be respectful\n  if (i < companies.length - 1 && i % 8 === 7) await new Promise(r => setTimeout(r, 500));\n}\n\nreturn [{ json: { ...data, allCompanies: companies } }];"
+      },
+      "id": "enrich-brasilapi",
+      "name": "8. Enriquecer BrasilAPI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 0]
+      "position": [1560, 0]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://api.airtable.com/v0/{{$env.AIRTABLE_BASE_ID}}/Leads",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"companyName\": \"{{ $json.companyName }}\",\n      \"segment\": \"{{ $json.segment }}\",\n      \"tier\": \"{{ $json.tier }}\",\n      \"monthlyRevenue\": {{ $json.monthlyRevenue }},\n      \"employees\": {{ $json.employees }},\n      \"yearsInMarket\": {{ $json.yearsInMarket }},\n      \"status\": \"Novo\",\n      \"score\": {{ $json.score }},\n      \"temperatura\": \"{{ $json.temperatura }}\",\n      \"spicedS\": {{ $json.spicedS }},\n      \"spicedP\": {{ $json.spicedP }},\n      \"spicedI\": {{ $json.spicedI }},\n      \"spicedC\": {{ $json.spicedC }},\n      \"spicedD\": {{ $json.spicedD }},\n      \"hypotheticalTrap\": \"{{ $json.hypotheticalTrap }}\",\n      \"website\": \"{{ $json.website }}\",\n      \"instagram\": \"{{ $json.instagram }}\",\n      \"linkedin\": \"{{ $json.linkedin }}\",\n      \"facebook\": \"{{ $json.facebook }}\",\n      \"address\": \"{{ $json.address }}\",\n      \"city\": \"{{ $json.city }}\",\n      \"state\": \"{{ $json.state }}\",\n      \"googleRating\": {{ $json.googleRating || 0 }},\n      \"googleReviewsCount\": {{ $json.googleReviewsCount || 0 }},\n      \"businessSummary\": \"{{ $json.businessSummary }}\",\n      \"enrichmentStatus\": \"pending\"\n    }\n  }]\n}",
-        "options": {}
+        "jsCode": "// Classificar telefones, extrair decisor, scoring, filtrar top 15\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\nconst MAX_LEADS = 15;\n\nfunction classifyPhone(phone) {\n  const d = phone.replace(/\\D/g, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 11 && w[2] === '9') return 'mobile';\n  if (w.length === 10 && w[2] === '9') return 'mobile';\n  return 'landline';\n}\n\nfunction formatPhone(phone) {\n  let d = phone.replace(/\\D/g, '').replace(/^0+/, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 10 && w[2] === '9') {\n    d = w.slice(0, 2) + '9' + w.slice(2);\n    return '55' + d;\n  }\n  return d.length >= 10 ? (d.startsWith('55') ? d : '55' + d) : d;\n}\n\nconst leads = companies.map(c => {\n  const socios = c.qsa || [];\n  const decisor = socios.find(s =>\n    (s.qualificacao_socio||'').toLowerCase().match(/administrador|diretor|presidente|s[oó]cio/)\n  ) || socios[0];\n\n  const phones = [c.telefone1, c.telefone2].filter(Boolean)\n    .flatMap(p => p.split(/[\\/;,]/))\n    .map(p => p.trim().replace(/\\D/g, ''))\n    .filter(p => p.length >= 10);\n  const mobile = phones.find(p => classifyPhone(p) === 'mobile');\n  const whatsapp = mobile ? formatPhone(mobile) : '';\n  const mainPhone = phones[0] ? formatPhone(phones[0]) : '';\n\n  const capital = c.capital_social || 0;\n  const revenue = capital > 0 ? Math.round(capital * 1.5) : 70000;\n  const tier = revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+';\n  const yearsInMarket = c.data_inicio_atividade\n    ? Math.max(1, new Date().getFullYear() - new Date(c.data_inicio_atividade).getFullYear())\n    : 5;\n  const employees = c.porte === 'DEMAIS' ? 20 : c.porte === 'PEQUENO' ? 10 : 5;\n\n  // Pre-SPICED scoring\n  const hasDecisor = !!(decisor?.nome_socio);\n  const hasMobile = !!mobile;\n  const hasEmail = !!c.email;\n  const spicedS = Math.min(1 + (yearsInMarket >= 5 ? 1 : 0) + (capital >= 100000 ? 1 : 0) + (employees >= 8 ? 1 : 0), 5);\n  const spicedP = Math.max(5 - (capital >= 500000 ? 1 : 0) - (employees >= 10 ? 1 : 0), 1);\n  const spicedI = hasMobile ? 4 : hasEmail ? 3 : 2;\n  const spicedC = hasDecisor ? 4 : 3;\n  const spicedD = hasEmail ? 4 : mainPhone ? 3 : 2;\n  const score = Math.round((spicedS*0.25 + spicedP*0.25 + spicedI*0.20 + spicedC*0.15 + spicedD*0.15) * 10) / 10;\n  const temperatura = score >= 4 ? 'Quente' : score >= 3 ? 'Morno' : 'Frio';\n\n  let trap = 'T1 - Aquisição de clientes';\n  if (capital >= 200000) trap = 'T6 - Posicionamento de marca';\n  else if (!hasMobile && !hasEmail) trap = 'T2 - Conversão de vendas';\n\n  return {\n    companyName: c.nome_fantasia || c.razao_social,\n    tradeName: c.nome_fantasia,\n    cnpj: c.cnpj,\n    segment: data.segment || c.cnae_fiscal_descricao,\n    tier, monthlyRevenue: revenue, employees, yearsInMarket,\n    status: 'Novo', score, temperatura,\n    spicedS, spicedP, spicedI, spicedC, spicedD,\n    hypotheticalTrap: trap,\n    website: '', instagram: '', linkedin: '', facebook: '',\n    address: [c.logradouro, c.numero, c.bairro].filter(Boolean).join(', '),\n    city: c.municipio, state: c.uf,\n    googleRating: 0, googleReviewsCount: 0,\n    capitalSocial: capital, foundingDate: c.data_inicio_atividade || '',\n    cnaePrimary: c.cnae_fiscal, partners: JSON.stringify(c.qsa || []),\n    rfEmail: c.email || '', rfPhone: mainPhone,\n    businessSummary: `${data.segment || c.cnae_fiscal_descricao} · CNPJ: ${c.cnpj} · Capital: R$ ${(capital/1000).toFixed(0)}k · ${hasDecisor ? 'Decisor: ' + decisor.nome_socio : 'Sem decisor'}`,\n    enrichmentStatus: 'pending',\n    // Dados para Contact (prefixo _)\n    _whatsapp: whatsapp,\n    _phone: mainPhone,\n    _email: c.email || '',\n    _ownerName: decisor?.nome_socio || c.razao_social,\n    _ownerRole: decisor?.qualificacao_socio || 'Sócio',\n    _isMobile: !!mobile,\n    // Dados internos para Claude (rating/reviews do Google Maps = 0 neste pipeline)\n    rating: 0, reviews: 0, revenue: revenue,\n  };\n}).filter(l => l.monthlyRevenue >= data.revenueMin * 0.5 && l.monthlyRevenue <= data.revenueMax * 1.5);\n\n// Sort: WhatsApp first, then by score\nleads.sort((a, b) => {\n  if (a._isMobile && !b._isMobile) return -1;\n  if (!a._isMobile && b._isMobile) return 1;\n  return b.score - a.score;\n});\n\nconst finalLeads = leads.slice(0, MAX_LEADS);\n\nif (finalLeads.length === 0) {\n  return [{ json: { success: true, leadsCreated: 0, totalFound: companies.length, message: 'Nenhum lead na faixa de faturamento' } }];\n}\n\nreturn finalLeads.map(lead => ({ json: lead }));"
       },
-      "id": "save-lead",
-      "name": "Save Lead to Airtable",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1100, 0]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://api.airtable.com/v0/{{$env.AIRTABLE_BASE_ID}}/Contacts",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"name\": \"{{ $json._ownerName }}\",\n      \"role\": \"Proprietário(a) / Decisor\",\n      \"contactType\": \"decisor\",\n      \"whatsapp\": \"{{ $json._whatsapp }}\",\n      \"email\": \"{{ $json._email }}\",\n      \"leadId\": \"{{ $('Save Lead to Airtable').first().json.records[0].id }}\"\n    }\n  }]\n}",
-        "options": {}
-      },
-      "id": "save-contact",
-      "name": "Save Contact to Airtable",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1320, 0]
+      "id": "score-filter",
+      "name": "9. Score & Filtrar Top 15",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1820, 0]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"leadsCreated\": {{ $('Process & Filter').all().length }},\n  \"searchId\": \"{{ $('Parse Params').first().json.searchId }}\"\n}"
+        "responseBody": "={\n  \"success\": true,\n  \"leadsCreated\": {{ $('9. Score & Filtrar Top 15').all().length }},\n  \"searchId\": \"{{ $('2. Parse Filtros & Map CNAE').first().json.searchId }}\"\n}"
       },
       "id": "respond",
-      "name": "Respond to OUTBILI",
+      "name": "10. Responder Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1540, 0]
+      "position": [2080, 0]
     }
   ],
   "connections": {
-    "Webhook OUTBILI": { "main": [[{ "node": "Parse Params", "type": "main", "index": 0 }]] },
-    "Parse Params": { "main": [[{ "node": "Google Maps Search", "type": "main", "index": 0 }]] },
-    "Google Maps Search": { "main": [[{ "node": "Poll & Get Results", "type": "main", "index": 0 }]] },
-    "Poll & Get Results": { "main": [[{ "node": "Process & Filter", "type": "main", "index": 0 }]] },
-    "Process & Filter": { "main": [[{ "node": "Save Lead to Airtable", "type": "main", "index": 0 }]] },
-    "Save Lead to Airtable": { "main": [[{ "node": "Save Contact to Airtable", "type": "main", "index": 0 }]] },
-    "Save Contact to Airtable": { "main": [[{ "node": "Respond to OUTBILI", "type": "main", "index": 0 }]] }
+    "Webhook": {
+      "main": [[{ "node": "2. Parse Filtros & Map CNAE", "type": "main", "index": 0 }]]
+    },
+    "2. Parse Filtros & Map CNAE": {
+      "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
+    },
+    "3. Montar Query CNAE": {
+      "main": [[{ "node": "4. HTTP Casa dos Dados", "type": "main", "index": 0 }]]
+    },
+    "4. HTTP Casa dos Dados": {
+      "main": [[{ "node": "5. Processar Resultados", "type": "main", "index": 0 }]]
+    },
+    "5. Processar Resultados": {
+      "main": [[{ "node": "6. Mais Resultados?", "type": "main", "index": 0 }]]
+    },
+    "6. Mais Resultados?": {
+      "main": [
+        [{ "node": "7. Rate Limit (0.5s)", "type": "main", "index": 0 }],
+        [{ "node": "8. Enriquecer BrasilAPI", "type": "main", "index": 0 }]
+      ]
+    },
+    "7. Rate Limit (0.5s)": {
+      "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
+    },
+    "8. Enriquecer BrasilAPI": {
+      "main": [[{ "node": "9. Score & Filtrar Top 15", "type": "main", "index": 0 }]]
+    },
+    "9. Score & Filtrar Top 15": {
+      "main": [[{ "node": "10. Responder Webhook", "type": "main", "index": 0 }]]
+    }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "executionTimeout": 600,
+    "timezone": "America/Sao_Paulo"
   }
 }

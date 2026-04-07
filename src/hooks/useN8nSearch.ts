@@ -90,7 +90,7 @@ export function useN8nSearch() {
 
       let lastNewCount = 0
       let stableChecks = 0
-      const maxWait = 240_000 // 4 min (increased for 15+ leads)
+      const maxWait = 360_000 // 6 min (CNPJ-First pipeline: Casa dos Dados + BrasilAPI + enrichment)
       while (!resolved && Date.now() - startTime < maxWait) {
         await new Promise((r) => setTimeout(r, 8_000))
         if (resolved) break
