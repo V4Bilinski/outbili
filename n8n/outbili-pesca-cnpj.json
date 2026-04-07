@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Validar e extrair filtros do request\nconst body = $input.first().json.body || $input.first().json;\n\nconst cnaeCodes = body.cnaeCodes || [];\nconst states = body.states || [];\nconst capitalMin = parseInt(body.capitalMin) || 0;\nconst capitalMax = parseInt(body.capitalMax) || 10000000;\nconst excludeMei = body.excludeMei !== false;\nconst targetCount = parseInt(body.targetCount) || 150;\n\nif (cnaeCodes.length === 0) {\n  throw new Error('Nenhum codigo CNAE informado. Selecione pelo menos um segmento.');\n}\n\nreturn [{\n  json: {\n    cnaeCodes,\n    states,\n    capitalMin,\n    capitalMax,\n    excludeMei,\n    targetCount,\n    totalCnaes: cnaeCodes.length,\n    currentCnaeIndex: 0,\n    currentPage: 1,\n    allCompanies: [],\n    seenCnpjs: []\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst cnaeCodes = body.cnaeCodes || [];\nconst states = body.states || [];\nconst capitalMin = parseInt(body.capitalMin) || 0;\nconst capitalMax = parseInt(body.capitalMax) || 10000000;\nconst excludeMei = body.excludeMei !== false;\nconst targetCount = parseInt(body.targetCount) || 150;\n\nif (cnaeCodes.length === 0) {\n  throw new Error('Nenhum codigo CNAE informado.');\n}\n\nreturn [{\n  json: {\n    cnaeCodes,\n    states,\n    capitalMin,\n    capitalMax,\n    excludeMei,\n    targetCount,\n    totalCnaes: cnaeCodes.length,\n    currentCnaeIndex: 0,\n    currentPage: 1,\n    allCompanies: [],\n    seenCnpjs: []\n  }\n}];"
       },
       "id": "validate-filters",
       "name": "2. Validar Filtros",
@@ -26,7 +26,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Construir payload para Casa dos Dados API\nconst data = $input.first().json;\nconst cnae = data.cnaeCodes[data.currentCnaeIndex];\n\nconst payload = {\n  query: {\n    termo: [],\n    atividade_principal: [cnae],\n    natureza_juridica: [],\n    uf: data.states.length > 0 ? data.states : [],\n    municipio: [],\n    situacao_cadastral: 'ATIVA'\n  },\n  range_query: {\n    capital_social: {\n      gte: data.capitalMin,\n      lte: data.capitalMax\n    }\n  },\n  extras: {\n    somente_mei: false,\n    excluir_mei: data.excludeMei,\n    com_email: false,\n    incluir_atividade_secundaria: false,\n    com_contato_telefonico: true\n  },\n  page: data.currentPage\n};\n\nreturn [{\n  json: {\n    ...data,\n    currentCnae: cnae,\n    requestPayload: payload\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst cnae = data.cnaeCodes[data.currentCnaeIndex];\n\nconst payload = {\n  query: {\n    termo: [],\n    atividade_principal: [cnae],\n    natureza_juridica: [],\n    uf: data.states.length > 0 ? data.states : [],\n    municipio: [],\n    situacao_cadastral: 'ATIVA'\n  },\n  range_query: {\n    capital_social: { gte: data.capitalMin, lte: data.capitalMax }\n  },\n  extras: {\n    somente_mei: false,\n    excluir_mei: data.excludeMei,\n    com_email: false,\n    incluir_atividade_secundaria: false,\n    com_contato_telefonico: true\n  },\n  page: data.currentPage\n};\n\nreturn [{ json: { ...data, currentCnae: cnae, requestPayload: payload } }];"
       },
       "id": "build-query",
       "name": "3. Montar Query CNAE",
@@ -41,10 +41,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.requestPayload) }}",
-        "options": {
-          "timeout": 15000,
-          "allowUnauthorizedCerts": true
-        }
+        "options": { "timeout": 15000 }
       },
       "id": "http-casa-dos-dados",
       "name": "4. HTTP Casa dos Dados",
@@ -57,7 +54,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Processar resposta e acumular empresas\nconst prev = $('3. Montar Query CNAE').first().json;\nconst response = $input.first().json;\n\nconst companies = response?.data?.cnpj || [];\nconst allCompanies = [...(prev.allCompanies || [])];\nconst seenCnpjs = new Set(prev.seenCnpjs || []);\n\nlet newCount = 0;\nfor (const company of companies) {\n  const cleanCnpj = (company.cnpj || '').replace(/\\D/g, '');\n  if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n  seenCnpjs.add(cleanCnpj);\n  newCount++;\n\n  allCompanies.push({\n    cnpj: cleanCnpj,\n    razao_social: company.razao_social || '',\n    nome_fantasia: company.nome_fantasia || '',\n    cnae_fiscal_descricao: company.cnae_fiscal_descricao || '',\n    cnae_fiscal: company.cnae_fiscal || '',\n    uf: company.uf || '',\n    municipio: company.municipio || '',\n    logradouro: company.logradouro || '',\n    numero: company.numero || '',\n    bairro: company.bairro || '',\n    capital_social: company.capital_social || 0,\n    porte: company.porte || '',\n    data_inicio_atividade: company.data_inicio_atividade || '',\n    telefone1: company.ddd_telefone_1 || company.telefone1 || '',\n    telefone2: company.ddd_telefone_2 || company.telefone2 || '',\n    email: company.correio_eletronico || company.email || '',\n    qsa: (company.qsa || []).map(s => ({\n      nome_socio: s.nome_socio || s.nome || '',\n      qualificacao_socio: s.qualificacao_socio || s.qual || ''\n    }))\n  });\n}\n\n// Decidir proxima acao\nconst hasMorePages = newCount > 0 && prev.currentPage < 10;\nconst needsMoreResults = allCompanies.length < prev.targetCount;\nconst hasMoreCnaes = prev.currentCnaeIndex < prev.totalCnaes - 1;\n\nlet nextPage = prev.currentPage;\nlet nextCnaeIndex = prev.currentCnaeIndex;\nlet continueLoop = false;\n\nif (needsMoreResults && hasMorePages) {\n  // Mais paginas do mesmo CNAE\n  nextPage = prev.currentPage + 1;\n  continueLoop = true;\n} else if (needsMoreResults && hasMoreCnaes) {\n  // Proximo CNAE\n  nextCnaeIndex = prev.currentCnaeIndex + 1;\n  nextPage = 1;\n  continueLoop = true;\n}\n\nreturn [{\n  json: {\n    ...prev,\n    allCompanies,\n    seenCnpjs: Array.from(seenCnpjs),\n    currentPage: nextPage,\n    currentCnaeIndex: nextCnaeIndex,\n    continueLoop,\n    totalFound: allCompanies.length,\n    lastBatchSize: newCount\n  }\n}];"
+        "jsCode": "const prev = $('3. Montar Query CNAE').first().json;\nconst response = $input.first().json;\n\nconst companies = response?.data?.cnpj || [];\nconst allCompanies = [...(prev.allCompanies || [])];\nconst seenCnpjs = new Set(prev.seenCnpjs || []);\n\nlet newCount = 0;\nfor (const c of companies) {\n  const cleanCnpj = (c.cnpj || '').replace(/\\D/g, '');\n  if (!cleanCnpj || seenCnpjs.has(cleanCnpj)) continue;\n  seenCnpjs.add(cleanCnpj);\n  newCount++;\n  allCompanies.push({\n    cnpj: cleanCnpj,\n    razao_social: c.razao_social || '',\n    nome_fantasia: c.nome_fantasia || '',\n    cnae_fiscal_descricao: c.cnae_fiscal_descricao || '',\n    cnae_fiscal: c.cnae_fiscal || '',\n    uf: c.uf || '',\n    municipio: c.municipio || '',\n    logradouro: c.logradouro || '',\n    numero: c.numero || '',\n    bairro: c.bairro || '',\n    capital_social: c.capital_social || 0,\n    porte: c.porte || '',\n    data_inicio_atividade: c.data_inicio_atividade || '',\n    telefone1: c.ddd_telefone_1 || c.telefone1 || '',\n    telefone2: c.ddd_telefone_2 || c.telefone2 || '',\n    email: c.correio_eletronico || c.email || '',\n    qsa: (c.qsa || []).map(s => ({ nome_socio: s.nome_socio || s.nome || '', qualificacao_socio: s.qualificacao_socio || s.qual || '' }))\n  });\n}\n\nconst hasMorePages = newCount > 0 && prev.currentPage < 10;\nconst needsMore = allCompanies.length < prev.targetCount;\nconst hasMoreCnaes = prev.currentCnaeIndex < prev.totalCnaes - 1;\n\nlet nextPage = prev.currentPage;\nlet nextCnaeIndex = prev.currentCnaeIndex;\nlet continueLoop = false;\n\nif (needsMore && hasMorePages) {\n  nextPage = prev.currentPage + 1;\n  continueLoop = true;\n} else if (needsMore && hasMoreCnaes) {\n  nextCnaeIndex = prev.currentCnaeIndex + 1;\n  nextPage = 1;\n  continueLoop = true;\n}\n\nreturn [{ json: { ...prev, allCompanies, seenCnpjs: Array.from(seenCnpjs), currentPage: nextPage, currentCnaeIndex: nextCnaeIndex, continueLoop, totalFound: allCompanies.length } }];"
       },
       "id": "process-results",
       "name": "5. Processar Resultados",
@@ -69,14 +66,7 @@
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "continue-check",
-              "leftValue": "={{ $json.continueLoop }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
-            }
-          ],
+          "conditions": [{ "id": "loop", "leftValue": "={{ $json.continueLoop }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
           "combinator": "and"
         }
       },
@@ -87,28 +77,26 @@
       "position": [1300, 300]
     },
     {
-      "parameters": {
-        "amount": 0.5
-      },
-      "id": "wait-rate-limit",
-      "name": "7. Rate Limit (500ms)",
+      "parameters": { "amount": 0.5 },
+      "id": "wait-rate",
+      "name": "7. Rate Limit",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [1300, 520]
+      "position": [1300, 540]
     },
     {
       "parameters": {
-        "jsCode": "// Enriquecer cada empresa com OpenCNPJ para obter socios e telefones\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\nconst enriched = [];\n\nfor (let i = 0; i < companies.length; i++) {\n  const company = companies[i];\n  const cnpj = company.cnpj.replace(/\\D/g, '');\n\n  try {\n    const res = await fetch('https://api.opencnpj.org/' + cnpj);\n    if (res.ok) {\n      const d = await res.json();\n\n      // Extrair socios (QSA)\n      const socios = (d.qsa || []).map(s => ({\n        nome_socio: s.nome_socio || s.nome || '',\n        qualificacao_socio: s.qualificacao_socio || s.qual || ''\n      }));\n\n      // Extrair telefones\n      const phones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone]\n        .filter(Boolean)\n        .flatMap(p => p.split(/[\\/;,]/))\n        .map(p => p.trim().replace(/\\D/g, ''))\n        .filter(p => p.length >= 10);\n\n      company.qsa = socios.length > 0 ? socios : company.qsa;\n      company.telefone1 = phones[0] || company.telefone1;\n      company.telefone2 = phones[1] || company.telefone2;\n      company.email = d.email || d.correio_eletronico || company.email;\n      company.capital_social = d.capital_social || company.capital_social;\n      company.nome_fantasia = d.nome_fantasia || company.nome_fantasia;\n    }\n  } catch (err) {\n    // OpenCNPJ falhou — manter dados originais\n  }\n\n  enriched.push(company);\n\n  // Rate limit: 200ms entre requests\n  if (i < companies.length - 1) {\n    await new Promise(r => setTimeout(r, 200));\n  }\n}\n\nreturn [{ json: { companies: enriched, total: enriched.length } }];"
+        "jsCode": "// Enriquecer cada CNPJ com OpenCNPJ para socios e telefones\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\n\nfor (let i = 0; i < companies.length; i++) {\n  const c = companies[i];\n  try {\n    const res = await fetch('https://api.opencnpj.org/' + c.cnpj);\n    if (res.ok) {\n      const d = await res.json();\n      const socios = (d.qsa || []).map(s => ({ nome_socio: s.nome_socio || s.nome || '', qualificacao_socio: s.qualificacao_socio || s.qual || '' }));\n      const phones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone].filter(Boolean).flatMap(p => p.split(/[\\/;,]/)).map(p => p.trim().replace(/\\D/g, '')).filter(p => p.length >= 10);\n      if (socios.length > 0) c.qsa = socios;\n      if (phones[0]) c.telefone1 = phones[0];\n      if (phones[1]) c.telefone2 = phones[1];\n      c.email = d.email || d.correio_eletronico || c.email;\n      c.capital_social = d.capital_social || c.capital_social;\n      c.nome_fantasia = d.nome_fantasia || c.nome_fantasia;\n    }\n  } catch {}\n  if (i < companies.length - 1) await new Promise(r => setTimeout(r, 200));\n}\n\nreturn [{ json: { ...data, allCompanies: companies } }];"
       },
       "id": "enrich-opencnpj",
-      "name": "8. Enriquecer via OpenCNPJ",
+      "name": "8. Enriquecer OpenCNPJ",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1560, 300]
     },
     {
       "parameters": {
-        "jsCode": "// Classificar telefones e extrair decisor de cada empresa\nconst data = $input.first().json;\nconst companies = data.companies || [];\n\nfunction classifyPhone(phone) {\n  const digits = phone.replace(/\\D/g, '');\n  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits;\n  if (withoutCountry.length === 11 && withoutCountry[2] === '9') return 'mobile';\n  if (withoutCountry.length === 10 && withoutCountry[2] === '9') return 'mobile';\n  return 'landline';\n}\n\nfunction formatPhone(phone) {\n  let digits = phone.replace(/\\D/g, '').replace(/^0+/, '');\n  const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits;\n  if (withoutCountry.length === 10 && withoutCountry[2] === '9') {\n    digits = withoutCountry.slice(0, 2) + '9' + withoutCountry.slice(2);\n    return '55' + digits;\n  }\n  if (digits.length >= 10) return digits.startsWith('55') ? digits : '55' + digits;\n  return digits;\n}\n\nconst results = companies.map(company => {\n  // Encontrar decisor no QSA\n  const socios = company.qsa || [];\n  const decisor = socios.find(s =>\n    (s.qualificacao_socio || '').toLowerCase().includes('administrador') ||\n    (s.qualificacao_socio || '').toLowerCase().includes('diretor') ||\n    (s.qualificacao_socio || '').toLowerCase().includes('presidente')\n  ) || socios[0];\n\n  // Classificar telefones\n  const phones = [company.telefone1, company.telefone2]\n    .filter(Boolean)\n    .flatMap(p => p.split(/[\\/;,]/))\n    .map(p => p.trim().replace(/\\D/g, ''))\n    .filter(p => p.length >= 10);\n\n  const mobilePhone = phones.find(p => classifyPhone(p) === 'mobile');\n  const whatsapp = mobilePhone ? formatPhone(mobilePhone) : '';\n  const mainPhone = phones[0] ? formatPhone(phones[0]) : '';\n\n  return {\n    cnpj: company.cnpj,\n    razao_social: company.razao_social,\n    nome_fantasia: company.nome_fantasia,\n    cnae_fiscal_descricao: company.cnae_fiscal_descricao,\n    cnae_fiscal: company.cnae_fiscal,\n    uf: company.uf,\n    municipio: company.municipio,\n    logradouro: company.logradouro,\n    numero: company.numero,\n    bairro: company.bairro,\n    capital_social: company.capital_social,\n    porte: company.porte,\n    data_inicio_atividade: company.data_inicio_atividade,\n    telefone1: mainPhone,\n    telefone2: company.telefone2 || '',\n    email: company.email,\n    qsa: company.qsa,\n    // Campos extraidos\n    decisor_nome: decisor?.nome_socio || '',\n    decisor_cargo: decisor?.qualificacao_socio || '',\n    whatsapp: whatsapp,\n    tem_whatsapp: !!whatsapp,\n    tem_decisor: !!(decisor?.nome_socio),\n    qualidade: (!!whatsapp && !!decisor?.nome_socio) ? 'gold' : (!!whatsapp || !!decisor?.nome_socio) ? 'silver' : 'bronze'\n  };\n});\n\n// Ordenar: gold primeiro, depois silver, depois bronze\nresults.sort((a, b) => {\n  const order = { gold: 0, silver: 1, bronze: 2 };\n  return order[a.qualidade] - order[b.qualidade];\n});\n\nreturn [{ json: { companies: results, total: results.length, stats: {\n  total: results.length,\n  com_whatsapp: results.filter(r => r.tem_whatsapp).length,\n  com_decisor: results.filter(r => r.tem_decisor).length,\n  gold: results.filter(r => r.qualidade === 'gold').length,\n  silver: results.filter(r => r.qualidade === 'silver').length,\n  bronze: results.filter(r => r.qualidade === 'bronze').length\n} } }];"
+        "jsCode": "// Classificar telefones, extrair decisor, preparar itens individuais para Airtable\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\n\nfunction classifyPhone(phone) {\n  const d = phone.replace(/\\D/g, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 11 && w[2] === '9') return 'mobile';\n  if (w.length === 10 && w[2] === '9') return 'mobile';\n  return 'landline';\n}\n\nfunction formatPhone(phone) {\n  let d = phone.replace(/\\D/g, '').replace(/^0+/, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 10 && w[2] === '9') {\n    d = w.slice(0, 2) + '9' + w.slice(2);\n    return '55' + d;\n  }\n  return d.length >= 10 ? (d.startsWith('55') ? d : '55' + d) : d;\n}\n\n// Mapear cada empresa como item individual para o SplitInBatches\nconst items = companies.map(c => {\n  const socios = c.qsa || [];\n  const decisor = socios.find(s => (s.qualificacao_socio||'').toLowerCase().includes('administrador') || (s.qualificacao_socio||'').toLowerCase().includes('diretor') || (s.qualificacao_socio||'').toLowerCase().includes('presidente')) || socios[0];\n\n  const phones = [c.telefone1, c.telefone2].filter(Boolean).flatMap(p => p.split(/[\\/;,]/)).map(p => p.trim().replace(/\\D/g, '')).filter(p => p.length >= 10);\n  const mobile = phones.find(p => classifyPhone(p) === 'mobile');\n  const whatsapp = mobile ? formatPhone(mobile) : '';\n  const mainPhone = phones[0] ? formatPhone(phones[0]) : '';\n\n  const capital = c.capital_social || 0;\n  const tier = capital >= 830000 ? 'Medium=' : capital >= 200000 ? 'Medium-' : capital >= 100000 ? 'Small' : 'Micro+';\n\n  return {\n    json: {\n      companyName: c.razao_social,\n      tradeName: c.nome_fantasia,\n      cnpj: c.cnpj,\n      segment: c.cnae_fiscal_descricao,\n      tier: tier,\n      status: 'Novo',\n      score: 0,\n      temperatura: 'Frio',\n      address: [c.logradouro, c.numero, c.bairro].filter(Boolean).join(', '),\n      city: c.municipio,\n      state: c.uf,\n      capitalSocial: capital,\n      rfPhone: mainPhone,\n      rfEmail: c.email,\n      cnaePrimary: c.cnae_fiscal,\n      foundingDate: c.data_inicio_atividade,\n      enrichmentStatus: 'basic',\n      partners: JSON.stringify(c.qsa || []),\n      // Campos para Contact\n      _decisorName: decisor?.nome_socio || '',\n      _decisorRole: decisor?.qualificacao_socio || '',\n      _whatsapp: whatsapp,\n      _hasWhatsapp: !!whatsapp,\n      _hasDecisor: !!(decisor?.nome_socio)\n    }\n  };\n});\n\nreturn items;"
       },
       "id": "extract-decisor",
       "name": "9. Extrair Decisor + WhatsApp",
@@ -118,14 +106,58 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/appKh4qQ5JN94dQHv/Leads",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer patXXXXXXXX" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"companyName\": \"{{ $json.companyName }}\",\n      \"tradeName\": \"{{ $json.tradeName }}\",\n      \"cnpj\": \"{{ $json.cnpj }}\",\n      \"segment\": \"{{ $json.segment }}\",\n      \"tier\": \"{{ $json.tier }}\",\n      \"status\": \"Novo\",\n      \"score\": {{ $json.score }},\n      \"temperatura\": \"{{ $json.temperatura }}\",\n      \"address\": \"{{ $json.address }}\",\n      \"city\": \"{{ $json.city }}\",\n      \"state\": \"{{ $json.state }}\",\n      \"capitalSocial\": {{ $json.capitalSocial || 0 }},\n      \"rfPhone\": \"{{ $json.rfPhone }}\",\n      \"rfEmail\": \"{{ $json.rfEmail }}\",\n      \"cnaePrimary\": \"{{ $json.cnaePrimary }}\",\n      \"foundingDate\": \"{{ $json.foundingDate }}\",\n      \"enrichmentStatus\": \"basic\",\n      \"partners\": \"{{ $json.partners }}\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "save-lead",
+      "name": "10. Salvar Lead Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2080, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/appKh4qQ5JN94dQHv/Contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer patXXXXXXXX" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"name\": \"{{ $json._decisorName }}\",\n      \"role\": \"{{ $json._decisorRole }}\",\n      \"contactType\": \"decisor\",\n      \"whatsapp\": \"{{ $json._whatsapp }}\",\n      \"leadId\": \"{{ $('10. Salvar Lead Airtable').first().json.records[0].id }}\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "save-contact",
+      "name": "11. Salvar Contact Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2340, 300]
+    },
+    {
+      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($input.first().json) }}"
+        "responseBody": "={\n  \"success\": true,\n  \"leadsCreated\": {{ $('9. Extrair Decisor + WhatsApp').all().length }},\n  \"companies\": {{ JSON.stringify($('9. Extrair Decisor + WhatsApp').all().map(i => i.json)) }}\n}"
       },
       "id": "respond-webhook",
-      "name": "10. Responder ao Sistema",
+      "name": "12. Responder ao Sistema",
       "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [2080, 300]
+      "typeVersion": 1.1,
+      "position": [2600, 300]
     }
   ],
   "connections": {
@@ -146,25 +178,31 @@
     },
     "6. Mais Resultados?": {
       "main": [
-        [{ "node": "7. Rate Limit (500ms)", "type": "main", "index": 0 }],
-        [{ "node": "8. Enriquecer via OpenCNPJ", "type": "main", "index": 0 }]
+        [{ "node": "7. Rate Limit", "type": "main", "index": 0 }],
+        [{ "node": "8. Enriquecer OpenCNPJ", "type": "main", "index": 0 }]
       ]
     },
-    "7. Rate Limit (500ms)": {
+    "7. Rate Limit": {
       "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
     },
-    "8. Enriquecer via OpenCNPJ": {
+    "8. Enriquecer OpenCNPJ": {
       "main": [[{ "node": "9. Extrair Decisor + WhatsApp", "type": "main", "index": 0 }]]
     },
     "9. Extrair Decisor + WhatsApp": {
-      "main": [[{ "node": "10. Responder ao Sistema", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "10. Salvar Lead Airtable", "type": "main", "index": 0 }]]
+    },
+    "10. Salvar Lead Airtable": {
+      "main": [[{ "node": "11. Salvar Contact Airtable", "type": "main", "index": 0 }]]
+    },
+    "11. Salvar Contact Airtable": {
+      "main": [[{ "node": "12. Responder ao Sistema", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "saveManualExecutions": true,
     "callerPolicy": "workflowsFromSameOwner",
-    "executionTimeout": 300
+    "executionTimeout": 600
   },
   "tags": [{ "name": "OUTBILI" }, { "name": "PESCA" }]
 }
