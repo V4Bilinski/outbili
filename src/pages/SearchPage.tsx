@@ -1,5 +1,6 @@
 import { Card, CardTitle } from '../components/ui/Card'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2, Fish } from 'lucide-react'
+import { PescaPanel } from '../components/search/PescaPanel'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '../lib/cn'
@@ -170,7 +171,7 @@ export function SearchPage() {
   const [revenueMin, setRevenueMin] = useState('70000')
   const [revenueMax, setRevenueMax] = useState('2000000')
   const [history, setHistory] = useState<SearchHistory[]>(loadHistory)
-  const [searchMode, setSearchMode] = useState<'mass' | 'specific'>('mass')
+  const [searchMode, setSearchMode] = useState<'mass' | 'specific' | 'pesca'>('mass')
 
   // Specific lead fields
   const [specificName, setSpecificName] = useState('')
@@ -531,8 +532,21 @@ export function SearchPage() {
               <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'specific' ? 'text-white/70' : 'text-text-muted')}>Cadastro manual</span>
             </div>
           </button>
+          <button
+            onClick={() => setSearchMode('pesca')}
+            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer', searchMode === 'pesca' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary hover:bg-white/[0.03]')}
+          >
+            <Fish className="h-3.5 w-3.5" />
+            <div className="text-left">
+              <span className="block leading-tight">PESCA</span>
+              <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'pesca' ? 'text-white/70' : 'text-text-muted')}>100+ leads</span>
+            </div>
+          </button>
         </div>
       </div>
+
+      {/* PESCA panel */}
+      {searchMode === 'pesca' && <PescaPanel />}
 
       {/* Specific lead form */}
       {searchMode === 'specific' && (

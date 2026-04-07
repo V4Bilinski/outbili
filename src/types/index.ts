@@ -203,3 +203,43 @@ export interface NextAction {
   actionType: 'whatsapp' | 'view' | 'import' | 'meeting'
   status: string
 }
+
+// --- PESCA (busca em massa via APIs publicas) ---
+
+export interface PescaFilters {
+  segments: string[]
+  states: string[]
+  revenueMin: number
+  revenueMax: number
+  excludeMei: boolean
+}
+
+export interface PescaLead {
+  companyName: string
+  tradeName?: string
+  cnpj: string
+  segment?: string
+  state?: string
+  city?: string
+  address?: string
+  decisorName?: string
+  decisorRole?: string
+  whatsapp?: string
+  phone?: string
+  capitalSocial?: number
+  porte?: string
+  cnaePrimary?: string
+  foundingDate?: string
+  email?: string
+  source: 'pesca'
+}
+
+export interface PescaProgress {
+  found: number
+  enriched: number
+  deduped: number
+  saved: number
+  total: number
+}
+
+export type PescaPhase = 'idle' | 'searching' | 'enriching' | 'deduplicating' | 'saving' | 'done' | 'error'

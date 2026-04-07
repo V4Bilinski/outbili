@@ -208,7 +208,7 @@ async function fetchReceitaWs(cnpj: string): Promise<{ lead: Partial<Lead>; phon
 }
 
 // Classify phone: mobile (starts with 9 after DDD) = likely WhatsApp
-function classifyPhone(phone: string): 'mobile' | 'landline' {
+export function classifyPhone(phone: string): 'mobile' | 'landline' {
   const digits = phone.replace(/\D/g, '')
   const withoutCountry = digits.startsWith('55') ? digits.slice(2) : digits
   // Brazilian mobile formats:
@@ -219,7 +219,7 @@ function classifyPhone(phone: string): 'mobile' | 'landline' {
   return 'landline'
 }
 
-function parseCnpjResponse(d: any): Partial<Lead> {
+export function parseCnpjResponse(d: any): Partial<Lead> {
   const socios = d.qsa || []
   const socioAdmin = socios.find((s: any) =>
     s.qual_socio?.toLowerCase().includes('administrador') ||
@@ -1810,7 +1810,7 @@ export async function enrichLead(
 
 // --- Utility functions ---
 
-function formatPhone(phone: string): string {
+export function formatPhone(phone: string): string {
   if (!phone) return ''
   let digits = phone.replace(/\D/g, '').replace(/^0+/, '')
   // Remove country code for normalization
