@@ -141,7 +141,7 @@ export function PescaPanel() {
       return
     }
     if (revenueMin > 0 && revenueMax > 0 && revenueMin > revenueMax) {
-      toast.error('Capital social minimo nao pode ser maior que o maximo')
+      toast.error('Capital social mínimo não pode ser maior que o máximo')
       return
     }
 

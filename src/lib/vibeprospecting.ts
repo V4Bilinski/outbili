@@ -204,7 +204,7 @@ export async function fetchEntities(filters: {
 }
 
 /**
- * Verifica se o servico esta disponivel e autenticado.
+ * Verifica se o serviço está disponível e autenticado.
  */
 export async function isAvailable(): Promise<boolean> {
   try {

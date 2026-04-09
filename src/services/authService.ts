@@ -64,7 +64,7 @@ export async function createUser(data: {
   fullName: string
 }): Promise<User> {
   const existing = await getUserByEmail(data.email)
-  if (existing) throw new Error('Email ja cadastrado')
+  if (existing) throw new Error('Email já cadastrado')
 
   const passwordHash = await hashPassword(data.password)
   const records = await createRecords(TABLE, [{
@@ -93,8 +93,8 @@ export async function changePassword(userId: string, newPassword: string): Promi
 
 export async function login(email: string, password: string): Promise<User> {
   const user = await getUserByEmail(email)
-  if (!user) throw new Error('Email nao encontrado')
-  if (!user.isActive) throw new Error('Usuario desativado. Contate o administrador.')
+  if (!user) throw new Error('Email não encontrado')
+  if (!user.isActive) throw new Error('Usuário desativado. Contate o administrador.')
 
   const valid = await verifyPassword(password, user.passwordHash)
   if (!valid) throw new Error('Senha incorreta')

@@ -545,7 +545,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
   }
 
   if (companies.length === 0 && (rows.length > 0 || rawText)) {
-    errors.push('Nenhuma empresa identificada. O sistema analisou o documento por CNPJs, nomes de empresas, telefones e emails mas nao encontrou dados estruturados.')
+    errors.push('Nenhuma empresa identificada. O sistema analisou o documento por CNPJs, nomes de empresas, telefones e emails mas não encontrou dados estruturados.')
   }
 
   return {

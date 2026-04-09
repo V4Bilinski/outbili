@@ -142,7 +142,7 @@ export function usePesca(): UsePescaReturn {
       setProgress(p => ({ ...p, deduped: uniqueLeads.length }))
 
       if (uniqueLeads.length === 0) {
-        setError('Todas as empresas encontradas ja existem no sistema. Tente outros filtros.')
+        setError('Todas as empresas encontradas já existem no sistema. Tente outros filtros.')
         setPhase('error')
         return
       }

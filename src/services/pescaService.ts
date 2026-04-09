@@ -19,7 +19,7 @@ export async function searchCnpjsViaN8n(
   const cnaeCodes = getCnaeCodesForSegments(filters.segments)
 
   if (!N8N_PESCA_URL) {
-    throw new Error('Webhook PESCA nao configurado. Configure VITE_N8N_WEBHOOK_URL.')
+    throw new Error('Webhook PESCA não configurado. Configure VITE_N8N_WEBHOOK_URL.')
   }
 
   const payload = {
@@ -176,13 +176,13 @@ export async function enrichCnpjRecords(
 
         const cnpj = record.cnpj.replace(/\D/g, '')
 
-        // Extrair dados do QSA que ja veio do n8n
+        // Extrair dados do QSA que já veio do n8n
         let decisorName = undefined as string | undefined
         let decisorRole = undefined as string | undefined
         let allPhones: string[] = []
         let mobilePhone: string | undefined
 
-        // Dados basicos do registro n8n
+        // Dados básicos do registro n8n
         if (record.qsa?.length) {
           const decisor = findDecisor(record.qsa.map(s => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio })))
           decisorName = decisor?.nome
@@ -310,7 +310,7 @@ export async function loadExistingDedup(signal?: AbortSignal): Promise<{ cnpjs: 
   }
 
   if (leadsFailed && contactsFailed) {
-    throw new Error('Nao foi possivel verificar duplicatas. Verifique sua conexao e tente novamente.')
+    throw new Error('Não foi possível verificar duplicatas. Verifique sua conexão e tente novamente.')
   }
 
   return { cnpjs, phones }
@@ -326,7 +326,7 @@ export function deduplicateLeads(
   const result: PescaLead[] = []
 
   for (const lead of leads) {
-    // Dedup por CNPJ se disponivel
+    // Dedup por CNPJ se disponível
     if (lead.cnpj) {
       const cnpj = lead.cnpj.replace(/\D/g, '')
       if (seenCnpjs.has(cnpj) || existingCnpjs.has(cnpj)) continue

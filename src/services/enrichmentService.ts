@@ -132,7 +132,7 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
     cnaePrimary: d.cnae_fiscal_descricao || undefined,
     partners: apifySocios.length ? JSON.stringify(apifySocios.map((s: any) => ({
       nome: s.nome_socio || s.nome,
-      qualificacao: s.qual_socio || s.qualificacao_socio || 'Socio',
+      qualificacao: s.qual_socio || s.qualificacao_socio || 'Sócio',
     }))) : undefined,
     rfEmail: d.email || undefined,
     rfPhone: d.telefone ? String(d.telefone).replace(/\D/g, '') : undefined,
@@ -967,7 +967,7 @@ export async function enrichLead(
     { source: 'linkedin', status: (alreadyEnriched && hasLinkedinData) ? 'skipped' : 'pending', label: 'LinkedIn', estimatedMs: 25000 },
     { source: 'decisor', status: 'pending', label: 'Contato do Decisor (CEO/Fundador)', estimatedMs: 30000 },
     { source: 'inpi', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'INPI (Marcas e Patentes)', estimatedMs: 30000 },
-    { source: 'strategic', status: 'pending', label: 'Analise Estrategica Personalizada', estimatedMs: 500 },
+    { source: 'strategic', status: 'pending', label: 'Análise Estratégica Personalizada', estimatedMs: 500 },
   ]
 
   const notify = () => {
@@ -1088,7 +1088,7 @@ export async function enrichLead(
         // PRIORITY 3: Any phone without decisor name
         else if (allPhones.length > 0) {
           newContacts.push({
-            name: rfDecisionMaker?.nome || 'Decisor nao identificado',
+            name: rfDecisionMaker?.nome || 'Decisor não identificado',
             whatsapp: formatPhone(allPhones[0]),
             source: 'receita_federal',
           })
@@ -1103,8 +1103,8 @@ export async function enrichLead(
       // Detail: summarize what was found
       const partnerCount = cnpjData?.partners ? JSON.parse(cnpjData.partners).length : 0
       const cnpjDetails = [
-        cnpjData?.companyName ? 'Razao social' : null,
-        partnerCount > 0 ? `${partnerCount} socio${partnerCount > 1 ? 's' : ''}` : null,
+        cnpjData?.companyName ? 'Razão social' : null,
+        partnerCount > 0 ? `${partnerCount} sócio${partnerCount > 1 ? 's' : ''}` : null,
         cnpjData?.capitalSocial ? `Capital R$ ${Number(cnpjData.capitalSocial).toLocaleString('pt-BR')}` : null,
         cnpjData?.cnaePrimary ? 'CNAE' : null,
       ].filter(Boolean)
@@ -1127,7 +1127,7 @@ export async function enrichLead(
       }
       step('tax_regime').status = 'done'
       if (taxData?.taxRegime) {
-        const regimeLabels: Record<string, string> = { simples: 'Simples Nacional', mei: 'MEI', lucro_presumido: 'Lucro Presumido', lucro_real: 'Lucro Real', nao_optante: 'Nao optante' }
+        const regimeLabels: Record<string, string> = { simples: 'Simples Nacional', mei: 'MEI', lucro_presumido: 'Lucro Presumido', lucro_real: 'Lucro Real', nao_optante: 'Não optante' }
         step('tax_regime').detail = regimeLabels[taxData.taxRegime] || taxData.taxRegime
       }
     } catch {
@@ -1446,7 +1446,7 @@ export async function enrichLead(
     notify()
   } else {
     step('instagram').status = 'skipped'
-    step('instagram').detail = 'Perfil nao encontrado'
+    step('instagram').detail = 'Perfil não encontrado'
     notify()
   }
 
@@ -1526,7 +1526,7 @@ export async function enrichLead(
     notify()
   } else {
     step('website').status = 'skipped'
-    step('website').detail = 'Site nao encontrado'
+    step('website').detail = 'Site não encontrado'
     notify()
   }
 
@@ -1534,7 +1534,7 @@ export async function enrichLead(
   let linkedinUrl = leadData.linkedin || merged.linkedin
   if (!linkedinUrl) {
     step('linkedin').status = 'running'
-    step('linkedin').detail = 'Buscando pagina via Google...'
+    step('linkedin').detail = 'Buscando página via Google...'
     notify()
     const liCity = leadData.city || merged.city || ''
 
@@ -1552,7 +1552,7 @@ export async function enrichLead(
 
     // Strategy 2: Google general search (fallback)
     if (!linkedinUrl) {
-      step('linkedin').detail = 'Buscando pagina via pesquisa ampla...'
+      step('linkedin').detail = 'Buscando página via pesquisa ampla...'
       notify()
       try {
         const foundLi = await searchLinkedInByName(leadData.companyName || '', liCity)
@@ -1577,7 +1577,7 @@ export async function enrichLead(
       step('linkedin').status = 'done'
       if (liData) {
         const liDetails = [
-          liData.employees ? `${liData.employees} funcionarios` : null,
+          liData.employees ? `${liData.employees} funcionários` : null,
           liData.segment ? liData.segment : null,
         ].filter(Boolean)
         if (liDetails.length > 0) step('linkedin').detail = liDetails.join(' · ')
@@ -1588,7 +1588,7 @@ export async function enrichLead(
     notify()
   } else {
     step('linkedin').status = 'skipped'
-    step('linkedin').detail = 'Pagina nao encontrada'
+    step('linkedin').detail = 'Página não encontrada'
     notify()
   }
 
@@ -1722,8 +1722,8 @@ export async function enrichLead(
     if (!leadData.productPortfolio) merged.productPortfolio = strategic.productPortfolio
     step('strategic').status = 'done'
     step('strategic').detail = realCompetitors.length > 0
-      ? `Reuniao + Discovery + ${realCompetitors.length} concorrentes reais`
-      : 'Reuniao + Discovery + Vulnerabilidades + Argumentos'
+      ? `Reunião + Discovery + ${realCompetitors.length} concorrentes reais`
+      : 'Reunião + Discovery + Vulnerabilidades + Argumentos'
   } catch {
     step('strategic').status = 'error'
   }
@@ -1782,7 +1782,7 @@ export async function enrichLead(
         )
         if (!isDup && (c.email || c.whatsapp)) {
           await createContact({
-            name: c.name || 'Decisor nao identificado',
+            name: c.name || 'Decisor não identificado',
             role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'vibeprospecting' ? 'Decisor (VibeProspecting)' : c.source === 'google_search_decisor' ? 'CEO/Fundador (Google)' : c.source === 'linkedin_profile' ? 'CEO/Fundador (LinkedIn)' : `Via ${c.source}`,
             contactType: 'stakeholder',
             whatsapp: c.whatsapp || '',
