@@ -11,6 +11,9 @@ import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
+import { getPartners } from '../services/partnerService'
+import { getEnrichmentLog } from '../services/enrichmentLogService'
+import { useQuery } from '@tanstack/react-query'
 import { generateDiscoveryQuestions, generateEligibilityChecklist } from '../services/strategicAnalysisService'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -105,6 +108,8 @@ export function CompanyPage() {
   const navigate = useNavigate()
   const { data: lead, isLoading } = useLead(id)
   const { data: contacts } = useContacts(id)
+  const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
+  const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
   const [showAddContact, setShowAddContact] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -435,6 +440,112 @@ export function CompanyPage() {
                 </div>
               )}
             </div>
+
+            {/* Dados cadastrais CNPJa */}
+            {(lead.capitalSocial || lead.legalNature || lead.registrationStatus || lead.taxRegime || lead.simplesOptant !== undefined || lead.isHeadquarters !== undefined) && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Dados Cadastrais</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {lead.registrationStatus && (
+                    <div className="text-xs"><span className="text-text-muted">Situacao: </span><span className={cn('font-medium', lead.registrationStatus === 'Ativa' ? 'text-success' : 'text-error')}>{lead.registrationStatus}</span></div>
+                  )}
+                  {lead.capitalSocial && (
+                    <div className="text-xs"><span className="text-text-muted">Capital: </span><span className="font-mono text-text-primary">R$ {Number(lead.capitalSocial).toLocaleString('pt-BR')}</span></div>
+                  )}
+                  {lead.legalNature && (
+                    <div className="text-xs col-span-2"><span className="text-text-muted">Natureza: </span><span className="text-text-primary">{lead.legalNature}</span></div>
+                  )}
+                  {lead.cnaePrimary && (
+                    <div className="text-xs col-span-2"><span className="text-text-muted">CNAE: </span><span className="text-text-primary">{lead.cnaePrimary}</span></div>
+                  )}
+                  {lead.foundingDate && (
+                    <div className="text-xs"><span className="text-text-muted">Abertura: </span><span className="text-text-primary">{lead.foundingDate}</span></div>
+                  )}
+                  {lead.taxRegime && (
+                    <div className="text-xs"><span className="text-text-muted">Regime: </span><span className="text-text-primary">{lead.taxRegime}</span></div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {lead.isHeadquarters !== undefined && (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.isHeadquarters ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-surface-md border-border text-text-muted')}>{lead.isHeadquarters ? 'Matriz' : 'Filial'}</span>
+                  )}
+                  {lead.simplesOptant && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">Simples Nacional</span>
+                  )}
+                  {lead.phoneType && (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.phoneType === 'MOBILE' ? 'bg-whatsapp/10 border-whatsapp/20 text-whatsapp' : 'bg-surface-md border-border text-text-muted')}>{lead.phoneType === 'MOBILE' ? 'Celular' : 'Fixo'}</span>
+                  )}
+                  {lead.emailDomain && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-md border border-border text-text-muted">{lead.emailDomain}</span>
+                  )}
+                </div>
+                {(lead.zipCode || lead.district) && (
+                  <div className="text-xs"><span className="text-text-muted">Bairro/CEP: </span><span className="text-text-primary">{[lead.district, lead.zipCode].filter(Boolean).join(' · ')}</span></div>
+                )}
+                {lead.cnpjaLastUpdate && (
+                  <div className="text-[10px] text-text-muted">Atualizado: {new Date(lead.cnpjaLastUpdate).toLocaleDateString('pt-BR')}</div>
+                )}
+              </div>
+            )}
+
+            {/* Socios (Partners table) */}
+            {(partners && partners.length > 0) && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({partners.length})</p>
+                <div className="space-y-1.5">
+                  {partners.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
+                      <div>
+                        <span className="text-text-primary font-medium">{p.name}</span>
+                        {p.qualification && <span className="text-text-muted ml-1.5">· {p.qualification}</span>}
+                      </div>
+                      {p.personType && (
+                        <span className={cn('text-[9px] px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-blue-500/10 text-blue-400' : p.personType === 'LEGAL' ? 'bg-purple-500/10 text-purple-400' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contatos com badges Assertiva */}
+            {contacts && contacts.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Contatos ({contacts.length})</p>
+                <div className="space-y-1.5">
+                  {contacts.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-text-primary font-medium truncate">{c.name}</span>
+                        {c.role && <span className="text-text-muted shrink-0">· {c.role}</span>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {c.whatsappConfirmed && <span className="text-[9px] px-1.5 py-0.5 rounded bg-whatsapp/15 text-whatsapp font-medium">WA</span>}
+                        {c.phoneIsHot && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-medium">Hot</span>}
+                        {c.source && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-md text-text-muted">{c.source}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Timeline de Enriquecimento */}
+            {enrichmentLog && enrichmentLog.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Enriquecimento ({enrichmentLog.length} etapas)</p>
+                <div className="space-y-1">
+                  {enrichmentLog.map((entry) => (
+                    <div key={entry.id} className="flex items-center gap-2 text-[11px]">
+                      <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', entry.status === 'done' ? 'bg-success' : entry.status === 'error' ? 'bg-error' : 'bg-text-muted')} />
+                      <span className={cn('font-medium', entry.source?.includes('cnpja') ? 'text-cyan-400' : entry.source?.includes('assertiva') ? 'text-purple-400' : entry.source?.includes('apify') ? 'text-orange-400' : 'text-text-secondary')}>{entry.source}</span>
+                      <span className="text-text-muted truncate">{entry.detail}</span>
+                      {entry.timestamp && <span className="text-text-muted ml-auto shrink-0">{new Date(entry.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Social links (red bordered pills) */}
             <div className="flex flex-wrap gap-2">

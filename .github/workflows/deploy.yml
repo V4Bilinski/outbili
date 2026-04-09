@@ -34,6 +34,9 @@ jobs:
           VITE_VIBEPROSPECTING_URL: ${{ secrets.VITE_VIBEPROSPECTING_URL }}
           VITE_VIBEPROSPECTING_TOKEN: ${{ secrets.VITE_VIBEPROSPECTING_TOKEN }}
           VITE_N8N_WEBHOOK_URL: ${{ secrets.VITE_N8N_WEBHOOK_URL }}
+          VITE_CNPJA_API_KEY: ${{ secrets.VITE_CNPJA_API_KEY }}
+          VITE_ASSERTIVA_CLIENT_ID: ${{ secrets.VITE_ASSERTIVA_CLIENT_ID }}
+          VITE_ASSERTIVA_CLIENT_SECRET: ${{ secrets.VITE_ASSERTIVA_CLIENT_SECRET }}
       - run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
