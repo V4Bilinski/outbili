@@ -127,7 +127,8 @@ const PORTE_OPTIONS = [
 export function PescaPanel() {
   const [segments, setSegments] = useState<string[]>([])
   const [states, setStates] = useState<string[]>([])
-  const [city, setCity] = useState('')
+  const [cities, setCities] = useState<string[]>([])
+  const toggleCity = (c: string) => setCities(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   const [selectedPorte, setSelectedPorte] = useState('qualquer')
   const [revenueMin, setRevenueMin] = useState(0)
   const [revenueMax, setRevenueMax] = useState(10000000)
@@ -351,30 +352,29 @@ export function PescaPanel() {
                 ))}
               </div>
             )}
-            {/* Cidade — aparece quando estado esta selecionado */}
-            {states.length > 0 && (
+            {/* Cidades — multi-select pills (aparece quando estado selecionado) */}
+            {states.length > 0 && availableCities.length > 0 && (
               <div className="animate-[fade-in_0.2s_ease-out]">
-                <label className="text-[11px] font-medium text-text-muted mb-1.5 block">Cidade (opcional — refina a busca)</label>
-                {availableCities.length > 0 ? (
-                  <select
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
-                  >
-                    <option value="">Todas as cidades</option>
-                    {availableCities.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    placeholder="Digite o nome da cidade..."
-                    className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
-                  />
-                )}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-medium text-text-muted">Cidades (opcional)</label>
+                  {cities.length > 0 && <span className="text-[10px] text-success font-medium">{cities.length} selecionada{cities.length > 1 ? 's' : ''}</span>}
+                </div>
+                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-border">
+                  {availableCities.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => toggleCity(c)}
+                      className={cn(
+                        'px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
+                        cities.includes(c)
+                          ? 'bg-red/15 text-red border-red/30 ring-1 ring-red/20'
+                          : 'bg-white/[0.03] text-text-muted border-transparent hover:border-border hover:text-text-secondary',
+                      )}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -436,7 +436,7 @@ export function PescaPanel() {
             {canStart ? (
               <>
                 <ArrowRight className="h-4 w-4" />
-                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {city || (states.length ? states.join(', ') : 'todos os estados')}
+                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {cities.length > 0 ? cities.slice(0, 2).join(', ') + (cities.length > 2 ? ` +${cities.length - 2}` : '') : states.length ? states.join(', ') : 'todos os estados'}
               </>
             ) : (
               <>
