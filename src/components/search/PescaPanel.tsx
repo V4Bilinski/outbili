@@ -479,11 +479,11 @@ export function PescaPanel() {
 
           {/* Footer — fontes de dados */}
           <div className="flex items-center justify-center gap-3 mt-3">
-            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa</span>
-            <span className="text-[10px] text-text-muted">+</span>
-            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva</span>
-            <span className="text-[10px] text-text-muted">|</span>
-            <span className="text-[10px] text-text-muted">CNPJ + Decisor + WhatsApp</span>
+            <span className="text-[10px] text-text-muted">Pesquisa CNPJ</span>
+            <span className="text-[10px] text-text-muted/40">→</span>
+            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa (enriquecimento)</span>
+            <span className="text-[10px] text-text-muted/40">→</span>
+            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva (telefones)</span>
           </div>
         </Card>
       </div>

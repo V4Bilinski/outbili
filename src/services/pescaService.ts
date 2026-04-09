@@ -1,11 +1,13 @@
 import { listAllRecords, createRecords } from '../lib/airtable'
 import { getCnaeCodesForSegments } from '../lib/cnae-mapping'
 import { classifyPhone, formatPhone } from './enrichmentService'
-import { searchOffices } from './cnpjaService'
 import { TIERS } from '../lib/constants'
-import type { Lead, Contact, PescaFilters, PescaLead, CnpjaSearchParams } from '../types'
+import type { Lead, Contact, PescaFilters, PescaLead } from '../types'
 
-// --- Fase 1: Busca em massa via CNPJa (primario) com fallback n8n ---
+// --- Fase 1: Busca em massa via n8n webhook ---
+// NOTA: CNPJa GET /office nao suporta filtros (CNAE, estado, porte).
+// A busca filtrada e feita pelo n8n server-side.
+// CNPJa e usado para enriquecimento individual (GET /office/{cnpj}).
 
 const N8N_PESCA_URL = import.meta.env.VITE_N8N_WEBHOOK_URL
   ? import.meta.env.VITE_N8N_WEBHOOK_URL.replace('/outbili-search', '/outbili-pesca')
@@ -19,50 +21,8 @@ export async function searchCnpjsViaN8n(
 ): Promise<CnpjRecord[]> {
   const cnaeCodes = getCnaeCodesForSegments(filters.segments)
 
-  // Tentar CNPJa primeiro (pesquisa avancada)
-  try {
-    const params: CnpjaSearchParams = {
-      'mainActivity.id': Number(cnaeCodes[0]) || undefined, // CNAE primario
-      'address.state': filters.states[0],
-      'status.id': 2, // Ativa
-      limit: Math.min(targetCount, 100),
-    }
-
-    const offices = await searchOffices(params)
-    if (offices.length > 0) {
-      const companies: CnpjRecord[] = offices.map((office) => {
-        return {
-          cnpj: office.taxId,
-          razao_social: office.company?.name || '',
-          nome_fantasia: office.alias || undefined,
-          uf: office.address?.state,
-          municipio: office.address?.city,
-          logradouro: office.address?.street,
-          numero: office.address?.number,
-          bairro: office.address?.district,
-          cep: office.address?.zip,
-          capital_social: office.company?.equity,
-          porte: office.company?.size?.text,
-          cnae_fiscal_descricao: office.mainActivity?.text,
-          data_inicio_atividade: office.founded,
-          email: office.emails?.[0]?.address,
-          telefone: office.phones?.[0] ? `${office.phones[0].area}${office.phones[0].number}` : undefined,
-          qsa: (office.company?.members || []).map((m) => ({
-            nome_socio: m.person.name,
-            qualificacao_socio: m.role.text,
-          })),
-        }
-      })
-      onProgress?.(companies.length)
-      return companies
-    }
-  } catch (cnpjaError) {
-    console.warn('CNPJa search falhou, usando fallback n8n:', cnpjaError)
-  }
-
-  // Fallback: n8n webhook (mesma API CNPJa, server-side)
   if (!N8N_PESCA_URL) {
-    throw new Error('CNPJa e webhook PESCA indisponiveis. Configure VITE_CNPJA_API_KEY ou VITE_N8N_WEBHOOK_URL.')
+    throw new Error('Webhook PESCA nao configurado. Configure VITE_N8N_WEBHOOK_URL.')
   }
 
   const payload = {
@@ -83,14 +43,14 @@ export async function searchCnpjsViaN8n(
   })
 
   if (!res.ok) {
-    throw new Error(`Erro no fallback n8n: ${res.status}. Verifique o webhook.`)
+    throw new Error(`Erro na busca: ${res.status}. Verifique o webhook n8n.`)
   }
 
   const data = await res.json()
   const companies: CnpjRecord[] = data.companies || data.results || data || []
 
   if (!Array.isArray(companies)) {
-    throw new Error('Resposta invalida do webhook n8n.')
+    throw new Error('Resposta invalida do webhook. Verifique o formato de saida do n8n.')
   }
 
   onProgress?.(companies.length)
