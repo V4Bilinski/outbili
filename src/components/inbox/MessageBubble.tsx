@@ -19,11 +19,24 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function linkify(text: string): string {
-  return text.replace(
+function formatWhatsAppText(text: string): string {
+  let html = text
+    // Escape HTML first
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  // WhatsApp formatting (order matters: monospace first, then single-char)
+  html = html
+    .replace(/```([^`]+)```/g, '<code class="px-1 py-0.5 rounded bg-black/20 font-mono text-[0.9em]">$1</code>')
+    .replace(/\*([^*]+)\*/g, '<strong class="font-semibold">$1</strong>')
+    .replace(/_([^_]+)_/g, '<em class="italic">$1</em>')
+    .replace(/~([^~]+)~/g, '<s class="line-through">$1</s>')
+  // Linkify URLs
+  html = html.replace(
     /(https?:\/\/[^\s]+)/g,
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">$1</a>',
   )
+  return html
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -107,7 +120,7 @@ export const MessageBubble = memo(function MessageBubble({
         {(message.message_type === 'text' || message.message_type === 'template' || message.message_type === 'interactive') && (
           <p
             className="text-[14.2px] leading-[19px] text-[var(--wa-text)] whitespace-pre-wrap break-words"
-            dangerouslySetInnerHTML={{ __html: linkify(message.content) }}
+            dangerouslySetInnerHTML={{ __html: formatWhatsAppText(message.content) }}
           />
         )}
 
