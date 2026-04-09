@@ -10,6 +10,7 @@ import { SearchPage } from './pages/SearchPage'
 import { PipelinePage } from './pages/PipelinePage'
 import { CampaignsPage } from './pages/CampaignsPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { InboxPage } from './pages/InboxPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AdminPage } from './pages/AdminPage'
 
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="search" element={<SearchPage />} />
               <Route path="campaigns" element={<CampaignsPage />} />
+              <Route path="inbox" element={<InboxPage />} />
               <Route path="campaigns/new" element={<CampaignsPage />} />
               <Route path="campaigns/:id" element={<CampaignsPage />} />
               <Route path="reports" element={<ReportsPage />} />

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Users, Columns3, Smartphone, BarChart3, Settings, Shield, LogOut, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { LayoutDashboard, Search, Users, Columns3, MessageSquare, Smartphone, BarChart3, Settings, Shield, LogOut, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useSidebar } from '../../lib/sidebar-context'
 import { useAuth } from '../../lib/auth-context'
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/search', icon: Search, label: 'Pesquisa' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
+  { to: '/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/campaigns', icon: Smartphone, label: 'Campanhas' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]

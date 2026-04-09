@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Users, Columns3, Settings } from 'lucide-react'
+import { LayoutDashboard, Search, Users, MessageSquare, Columns3 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useEffect, useRef, useState } from 'react'
 
@@ -8,7 +8,7 @@ const items = [
   { to: '/search', icon: Search, label: 'Busca' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
-  { to: '/settings', icon: Settings, label: 'Config' },
+  { to: '/inbox', icon: MessageSquare, label: 'Inbox' },
 ]
 
 export function BottomNav() {

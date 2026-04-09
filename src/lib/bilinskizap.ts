@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_BILINSKIZAP_URL || 'https://bilinskizap.vercel.app'
 const API_KEY = import.meta.env.VITE_BILINSKIZAP_API_KEY || ''
 
-async function zapFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+export async function zapFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {

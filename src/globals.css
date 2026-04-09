@@ -203,3 +203,90 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== WhatsApp Inbox — Dark Mode (default) ===== */
+.wa-inbox {
+  --wa-bg: #0B141A;
+  --wa-panel: #111B21;
+  --wa-panel-header: #202C33;
+  --wa-incoming: #202C33;
+  --wa-outgoing: #005C4B;
+  --wa-input-bg: #2A3942;
+  --wa-hover: #182229;
+  --wa-border: rgba(134,150,160,0.15);
+  --wa-text: #E9EDEF;
+  --wa-text-secondary: #8696A0;
+  --wa-timestamp: rgba(255,255,255,0.45);
+  --wa-unread-badge: #00A884;
+  --wa-check-read: #53BDEB;
+  --wa-search-bg: #202C33;
+  --wa-selected: #2A3942;
+  --wa-wallpaper: #0B141A;
+  --wa-wallpaper-pattern: rgba(255,255,255,0.02);
+  --wa-bubble-shadow: rgba(0,0,0,0.13);
+  --wa-system-bubble: rgba(255,255,255,0.05);
+}
+
+/* ===== WhatsApp Inbox — Light Mode ===== */
+.wa-inbox.wa-light {
+  --wa-bg: #F0F2F5;
+  --wa-panel: #FFFFFF;
+  --wa-panel-header: #F0F2F5;
+  --wa-incoming: #FFFFFF;
+  --wa-outgoing: #D9FDD3;
+  --wa-input-bg: #F0F2F5;
+  --wa-hover: #F5F6F6;
+  --wa-border: #E9EDEF;
+  --wa-text: #111B21;
+  --wa-text-secondary: #667781;
+  --wa-timestamp: #667781;
+  --wa-unread-badge: #25D366;
+  --wa-check-read: #53BDEB;
+  --wa-search-bg: #F0F2F5;
+  --wa-selected: #F0F2F5;
+  --wa-wallpaper: #EFEAE2;
+  --wa-wallpaper-pattern: rgba(0,0,0,0.04);
+  --wa-bubble-shadow: rgba(0,0,0,0.06);
+  --wa-system-bubble: rgba(0,0,0,0.04);
+}
+
+/* WhatsApp chat wallpaper pattern */
+.wa-wallpaper {
+  background-color: var(--wa-wallpaper);
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wa-light .wa-wallpaper {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* WhatsApp message bubble tail */
+.wa-bubble-tail-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid var(--wa-incoming);
+  border-left: 8px solid transparent;
+}
+
+.wa-bubble-tail-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid var(--wa-outgoing);
+  border-right: 8px solid transparent;
+}
+
+.wa-light .wa-bubble-tail-left::before {
+  border-top-color: var(--wa-incoming);
+}
+
+.wa-light .wa-bubble-tail-right::before {
+  border-top-color: var(--wa-outgoing);
+}
