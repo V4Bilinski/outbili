@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardTitle } from '../ui/Card'
 import { Button } from '../ui/Button'
-import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, SortAsc, SortDesc, Copy, ExternalLink } from 'lucide-react'
+import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, SortAsc, SortDesc, Copy, ExternalLink, MapPin } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { SEGMENTS } from '../../lib/constants'
 import { usePesca } from '../../hooks/usePesca'
@@ -22,24 +22,7 @@ const ALL_STATES = [
   { uf: 'TO', name: 'Tocantins' },
 ]
 
-const REVENUE_MIN_OPTIONS = [
-  { value: 0, label: 'Qualquer' },
-  { value: 10000, label: 'R$ 10k' },
-  { value: 50000, label: 'R$ 50k' },
-  { value: 70000, label: 'R$ 70k' },
-  { value: 100000, label: 'R$ 100k' },
-  { value: 200000, label: 'R$ 200k' },
-  { value: 500000, label: 'R$ 500k' },
-]
-
-const REVENUE_MAX_OPTIONS = [
-  { value: 200000, label: 'R$ 200k' },
-  { value: 500000, label: 'R$ 500k' },
-  { value: 1000000, label: 'R$ 1M' },
-  { value: 2000000, label: 'R$ 2M' },
-  { value: 5000000, label: 'R$ 5M' },
-  { value: 10000000, label: 'R$ 10M+' },
-]
+// Revenue options removidos — substituidos por PORTE_OPTIONS cards visuais
 
 const PHASE_LABELS: Record<PescaPhase, string> = {
   idle: '',
@@ -102,11 +85,52 @@ const QUALITY_CONFIG = {
   bronze: { label: 'Básico', color: 'text-text-muted', bg: 'bg-white/[0.03]', border: 'border-border', dot: 'bg-text-muted' },
 }
 
+// Cidades principais por estado
+const STATE_CITIES: Record<string, string[]> = {
+  SP: ['Sao Paulo', 'Campinas', 'Santos', 'Ribeirao Preto', 'Sorocaba', 'Osasco', 'Guarulhos'],
+  RJ: ['Rio de Janeiro', 'Niteroi', 'Petropolis', 'Volta Redonda', 'Campos dos Goytacazes'],
+  MG: ['Belo Horizonte', 'Uberlandia', 'Juiz de Fora', 'Contagem', 'Betim'],
+  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas', 'Santa Maria'],
+  SC: ['Florianopolis', 'Joinville', 'Blumenau', 'Chapeco', 'Criciuma'],
+  PR: ['Curitiba', 'Londrina', 'Maringa', 'Ponta Grossa', 'Cascavel'],
+  BA: ['Salvador', 'Feira de Santana', 'Vitoria da Conquista', 'Camacari'],
+  PE: ['Recife', 'Jaboatao dos Guararapes', 'Olinda', 'Caruaru'],
+  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanau'],
+  GO: ['Goiania', 'Aparecida de Goiania', 'Anapolis'],
+  DF: ['Brasilia'],
+  ES: ['Vitoria', 'Vila Velha', 'Serra', 'Cariacica'],
+  PA: ['Belem', 'Ananindeua', 'Santarem'],
+  AM: ['Manaus'],
+  MA: ['Sao Luis'],
+  MT: ['Cuiaba', 'Varzea Grande', 'Rondonopolis'],
+  MS: ['Campo Grande', 'Dourados'],
+  PB: ['Joao Pessoa', 'Campina Grande'],
+  RN: ['Natal', 'Mossoro'],
+  AL: ['Maceio'],
+  PI: ['Teresina'],
+  SE: ['Aracaju'],
+  RO: ['Porto Velho'],
+  TO: ['Palmas'],
+  AC: ['Rio Branco'],
+  AP: ['Macapa'],
+  RR: ['Boa Vista'],
+}
+
+const PORTE_OPTIONS = [
+  { id: 'micro', label: 'Micro', desc: 'Ate R$ 100k', min: 0, max: 100000, icon: '🏪' },
+  { id: 'pequena', label: 'Pequena', desc: 'R$ 100k - 500k', min: 100000, max: 500000, icon: '🏢' },
+  { id: 'media', label: 'Media', desc: 'R$ 500k - 2M', min: 500000, max: 2000000, icon: '🏗' },
+  { id: 'grande', label: 'Grande', desc: 'Acima de R$ 2M', min: 2000000, max: 10000000, icon: '🏛' },
+  { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, icon: '🔍' },
+]
+
 export function PescaPanel() {
   const [segments, setSegments] = useState<string[]>([])
   const [states, setStates] = useState<string[]>([])
+  const [city, setCity] = useState('')
+  const [selectedPorte, setSelectedPorte] = useState('qualquer')
   const [revenueMin, setRevenueMin] = useState(0)
-  const [revenueMax, setRevenueMax] = useState(2000000)
+  const [revenueMax, setRevenueMax] = useState(10000000)
   const [excludeMei, setExcludeMei] = useState(true)
   const [showAllStates, setShowAllStates] = useState(false)
 
@@ -135,13 +159,18 @@ export function PescaPanel() {
     }
   }
 
+  const handleSelectPorte = (id: string) => {
+    setSelectedPorte(id)
+    const porte = PORTE_OPTIONS.find(p => p.id === id)
+    if (porte) {
+      setRevenueMin(porte.min)
+      setRevenueMax(porte.max)
+    }
+  }
+
   const handleStart = async () => {
     if (segments.length === 0) {
       toast.error('Selecione pelo menos um segmento')
-      return
-    }
-    if (revenueMin > 0 && revenueMax > 0 && revenueMin > revenueMax) {
-      toast.error('Capital social mínimo não pode ser maior que o máximo')
       return
     }
 
@@ -161,6 +190,9 @@ export function PescaPanel() {
     setSearchQuery('')
     await startPesca(filters)
   }
+
+  // Cidades disponiveis baseadas nos estados selecionados
+  const availableCities = states.flatMap(uf => (STATE_CITIES[uf] || []))
 
   // Leads filtrados e ordenados para o painel de resultados
   const filteredLeads = useMemo(() => {
@@ -225,7 +257,7 @@ export function PescaPanel() {
             </div>
           </div>
 
-          {/* Step 1: Segmento — "Quem voce quer encontrar?" */}
+          {/* Step 1: Segmento — grid de cards */}
           <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 0 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : segments.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border')}>
             <div className="flex items-center gap-2.5 mb-3">
               <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', segments.length > 0 ? 'bg-success text-white' : wizardStep === 0 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
@@ -233,85 +265,121 @@ export function PescaPanel() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-text-primary">Qual segmento?</p>
-                {segments.length > 0 && <p className="text-[11px] text-success">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</p>}
+                <p className="text-[11px] text-text-muted">Selecione um ou mais setores de atuacao</p>
               </div>
+              {segments.length > 0 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</span>}
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {SEGMENTS.map(seg => (
                 <button
                   key={seg.slug}
                   onClick={() => toggleSegment(seg.name)}
                   aria-pressed={segments.includes(seg.name)}
                   className={cn(
-                    'px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer border',
+                    'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
                     segments.includes(seg.name)
-                      ? 'bg-red text-white border-red shadow-md shadow-red/20 scale-[1.02]'
-                      : 'bg-white/[0.03] text-text-muted border-border hover:border-red/30 hover:text-text-secondary hover:bg-red/[0.03]',
+                      ? 'bg-red/15 text-red border-red/40 shadow-md shadow-red/10 ring-1 ring-red/20'
+                      : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
                   )}
                 >
-                  {seg.name}
+                  <span className="text-lg">{seg.slug === 'estetica' ? '💆' : seg.slug === 'odontologia' ? '🦷' : seg.slug === 'varejo' ? '🛒' : seg.slug === 'farmacia' ? '💊' : seg.slug === 'movelaria' ? '🛋' : seg.slug === 'servicos' ? '⚙' : seg.slug === 'alimentacao' ? '🍽' : seg.slug === 'saude' ? '🏥' : seg.slug === 'educacao' ? '📚' : seg.slug === 'tecnologia' ? '💻' : seg.slug === 'automotivo' ? '🚗' : seg.slug === 'petshop' ? '🐾' : seg.slug === 'fitness' ? '💪' : seg.slug === 'beleza' ? '💅' : seg.slug === 'imobiliario' ? '🏠' : seg.slug === 'construcao' ? '🔨' : seg.slug === 'moda' ? '👗' : seg.slug === 'decoracao' ? '🎨' : seg.slug === 'agronegocio' ? '🌾' : seg.slug === 'logistica' ? '📦' : '🏢'}</span>
+                  <span className="text-[11px] font-medium leading-tight">{seg.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Step 2: Estado — "Onde buscar?" */}
+          {/* Step 2: Estado + Cidade — nome completo */}
           <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 1 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : states.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border opacity-60', segments.length === 0 && 'opacity-40 pointer-events-none')}>
             <div className="flex items-center gap-2.5 mb-3">
               <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', states.length > 0 ? 'bg-success text-white' : wizardStep === 1 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
                 {states.length > 0 ? <CheckCircle className="h-4 w-4" /> : '2'}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-text-primary">Em quais estados?</p>
-                {states.length > 0 && <p className="text-[11px] text-success">{states.join(', ')}</p>}
+                <p className="text-sm font-semibold text-text-primary">Onde buscar?</p>
+                <p className="text-[11px] text-text-muted">Estado e cidade (opcional)</p>
               </div>
+              {states.length > 0 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{states.length} estado{states.length > 1 ? 's' : ''}</span>}
             </div>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {RECOMMENDED_STATES.map(uf => (
-                <button
-                  key={uf}
-                  onClick={() => toggleState(uf)}
-                  aria-pressed={states.includes(uf)}
-                  className={cn(
-                    'px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border',
-                    states.includes(uf)
-                      ? 'bg-red text-white border-red shadow-md shadow-red/20'
-                      : 'bg-white/[0.03] text-text-muted border-border hover:border-red/30 hover:text-text-secondary',
-                  )}
-                >
-                  {uf}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowAllStates(!showAllStates)}
-                aria-expanded={showAllStates}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs text-text-muted hover:text-text-secondary cursor-pointer border border-dashed border-border hover:border-border-strong"
-              >
-                {showAllStates ? 'Menos' : '+21 estados'} <ChevronDown className={cn('h-3 w-3 transition-transform', showAllStates && 'rotate-180')} />
-              </button>
+            {/* Estados principais — nome completo */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+              {RECOMMENDED_STATES.map(uf => {
+                const stateObj = ALL_STATES.find(s => s.uf === uf)
+                return (
+                  <button
+                    key={uf}
+                    onClick={() => toggleState(uf)}
+                    aria-pressed={states.includes(uf)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border',
+                      states.includes(uf)
+                        ? 'bg-red/15 text-red border-red/40 ring-1 ring-red/20'
+                        : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
+                    )}
+                  >
+                    <MapPin className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    <span>{stateObj?.name || uf}</span>
+                    <span className="text-[10px] opacity-50 ml-auto">{uf}</span>
+                  </button>
+                )
+              })}
             </div>
+            <button
+              onClick={() => setShowAllStates(!showAllStates)}
+              aria-expanded={showAllStates}
+              className="flex items-center gap-1.5 w-full justify-center px-3 py-2 rounded-xl text-xs text-text-muted hover:text-text-secondary cursor-pointer border border-dashed border-border hover:border-border-strong mb-2 transition-colors"
+            >
+              {showAllStates ? 'Mostrar menos' : `+${ALL_STATES.length - RECOMMENDED_STATES.length} outros estados`} <ChevronDown className={cn('h-3 w-3 transition-transform', showAllStates && 'rotate-180')} />
+            </button>
             {showAllStates && (
-              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out] mb-3">
                 {ALL_STATES.filter(s => !RECOMMENDED_STATES.includes(s.uf)).map(s => (
                   <button
                     key={s.uf}
                     onClick={() => toggleState(s.uf)}
                     aria-pressed={states.includes(s.uf)}
                     className={cn(
-                      'px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
+                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
                       states.includes(s.uf)
-                        ? 'bg-red text-white border-red'
-                        : 'bg-white/[0.03] text-text-muted border-border hover:text-text-secondary',
+                        ? 'bg-red/15 text-red border-red/30'
+                        : 'bg-white/[0.02] text-text-muted border-border hover:text-text-secondary',
                     )}
                   >
-                    {s.name}
+                    <span>{s.name}</span>
+                    <span className="text-[9px] opacity-40 ml-auto">{s.uf}</span>
                   </button>
                 ))}
               </div>
             )}
+            {/* Cidade — aparece quando estado esta selecionado */}
+            {states.length > 0 && (
+              <div className="animate-[fade-in_0.2s_ease-out]">
+                <label className="text-[11px] font-medium text-text-muted mb-1.5 block">Cidade (opcional — refina a busca)</label>
+                {availableCities.length > 0 ? (
+                  <select
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
+                  >
+                    <option value="">Todas as cidades</option>
+                    {availableCities.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    placeholder="Digite o nome da cidade..."
+                    className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
+                  />
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Step 3: Porte — "Qual tamanho?" */}
+          {/* Step 3: Porte — cards visuais */}
           <div className={cn('rounded-xl border p-4 mb-4 transition-all', wizardStep === 2 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : 'border-border', (segments.length === 0 || states.length === 0) && 'opacity-40 pointer-events-none')}>
             <div className="flex items-center gap-2.5 mb-3">
               <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', wizardStep === 2 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
@@ -319,43 +387,38 @@ export function PescaPanel() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-text-primary">Qual porte?</p>
-                <p className="text-[11px] text-text-muted">Capital social e tipo de empresa</p>
+                <p className="text-[11px] text-text-muted">Tamanho das empresas que quer encontrar</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="text-[11px] font-medium text-text-muted mb-1 block">Capital minimo</label>
-                <select
-                  value={revenueMin}
-                  onChange={e => setRevenueMin(Number(e.target.value))}
-                  className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
+            <div className="grid grid-cols-5 gap-2 mb-3">
+              {PORTE_OPTIONS.map(porte => (
+                <button
+                  key={porte.id}
+                  onClick={() => handleSelectPorte(porte.id)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
+                    selectedPorte === porte.id
+                      ? 'bg-red/15 text-red border-red/40 ring-1 ring-red/20'
+                      : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
+                  )}
                 >
-                  {REVENUE_MIN_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-text-muted mb-1 block">Capital maximo</label>
-                <select
-                  value={revenueMax}
-                  onChange={e => setRevenueMax(Number(e.target.value))}
-                  className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
-                >
-                  {REVENUE_MAX_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
+                  <span className="text-lg">{porte.icon}</span>
+                  <span className="text-[11px] font-semibold">{porte.label}</span>
+                  <span className="text-[9px] opacity-60">{porte.desc}</span>
+                </button>
+              ))}
             </div>
-            <label className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg hover:bg-white/[0.02] transition-colors">
+            <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-white/[0.02] transition-colors border border-border">
               <input
                 type="checkbox"
                 checked={excludeMei}
                 onChange={e => setExcludeMei(e.target.checked)}
                 className="rounded border-border accent-red w-4 h-4"
               />
-              <span className="text-xs text-text-secondary">Excluir MEI (microempreendedor individual)</span>
+              <div>
+                <span className="text-xs text-text-secondary font-medium">Excluir MEI</span>
+                <span className="text-[10px] text-text-muted block">Microempreendedor individual (faturamento ate R$ 81k/ano)</span>
+              </div>
             </label>
           </div>
 
@@ -373,7 +436,7 @@ export function PescaPanel() {
             {canStart ? (
               <>
                 <ArrowRight className="h-4 w-4" />
-                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {states.length || 'todos os'} estado{states.length !== 1 ? 's' : ''}
+                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {city || (states.length ? states.join(', ') : 'todos os estados')}
               </>
             ) : (
               <>
