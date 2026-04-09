@@ -63,7 +63,8 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   return (
-    <div className={cn('flex mb-0.5 px-[7%]', isOutbound ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex mb-0.5 px-[7%] group/bubble', isOutbound ? 'justify-end' : 'justify-start')}>
+      <div className="relative">
       <div
         className={cn(
           'relative max-w-[65%] rounded-lg px-2.5 py-1.5',
@@ -178,6 +179,18 @@ export const MessageBubble = memo(function MessageBubble({
           </span>
           {isOutbound && <DeliveryIcon status={message.delivery_status} />}
         </div>
+      </div>
+      {/* Reaction picker - appears on hover */}
+      <div className={cn(
+        'absolute -top-3 opacity-0 group-hover/bubble:opacity-100 transition-opacity flex gap-0.5 px-1 py-0.5 rounded-full shadow-lg',
+        isOutbound ? 'left-0' : 'right-0',
+      )} style={{ backgroundColor: 'var(--wa-panel)', border: '1px solid var(--wa-border)' }}>
+        {['👍', '❤️', '😂', '😢', '🙏', '🔥'].map(emoji => (
+          <button key={emoji} className="w-6 h-6 text-sm hover:scale-125 transition-transform" title={`Reagir com ${emoji}`}>
+            {emoji}
+          </button>
+        ))}
+      </div>
       </div>
     </div>
   )

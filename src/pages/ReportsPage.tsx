@@ -49,6 +49,13 @@ export function ReportsPage() {
   const totalSent = campaigns.reduce((a, c) => a + c.sent, 0)
   const totalDelivered = campaigns.reduce((a, c) => a + c.delivered, 0)
   const totalRead = campaigns.reduce((a, c) => a + c.read, 0)
+  const totalFailed = campaigns.reduce((a, c) => a + c.failed, 0)
+
+  // ROI estimado (custo por categoria)
+  const completedCampaigns = campaigns.filter(c => c.status === 'COMPLETED')
+  const estimatedCost = completedCampaigns.reduce((a, c) => a + (c.sent * 0.15), 0) // Media ponderada Utility/Marketing
+  const costPerDelivery = totalDelivered > 0 ? (estimatedCost / totalDelivered) : 0
+  const costPerRead = totalRead > 0 ? (estimatedCost / totalRead) : 0
 
   // --- Conversion rates ---
   const contactRate = totalLeads > 0 ? Math.round((contactados / totalLeads) * 100) : 0
@@ -158,10 +165,25 @@ export function ReportsPage() {
               {totalDelivered > 0 && <p className="text-[11px] font-mono text-info">{Math.round((totalRead / totalDelivered) * 100)}%</p>}
             </div>
           </div>
+          {/* ROI estimado */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-2xl font-bold font-mono text-warning">R$ {estimatedCost.toFixed(0)}</p>
+              <p className="text-[10px] text-text-muted uppercase">Custo estimado</p>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-2xl font-bold font-mono text-text-primary">R$ {costPerDelivery.toFixed(2)}</p>
+              <p className="text-[10px] text-text-muted uppercase">Custo/entrega</p>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-2xl font-bold font-mono text-text-primary">R$ {costPerRead.toFixed(2)}</p>
+              <p className="text-[10px] text-text-muted uppercase">Custo/leitura</p>
+            </div>
+          </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
             <p className="text-[11px] text-text-muted mb-1">Campanhas</p>
             <p className="text-sm text-text-secondary">
-              {campaigns.length} campanhas · {campaigns.filter((c) => c.status === 'COMPLETED').length} concluídas · {campaigns.filter((c) => c.status === 'SENDING').length} em envio
+              {campaigns.length} campanhas · {completedCampaigns.length} concluídas · {campaigns.filter((c) => c.status === 'SENDING').length} em envio · {totalFailed} falhas
             </p>
           </div>
         </Card>

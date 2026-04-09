@@ -517,6 +517,9 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
   const [precheckResult, setPrecheckResult] = useState<{ ok: boolean; totals: { total: number; valid: number; skipped: number } } | null>(null)
   const [precheckLoading, setPrecheckLoading] = useState(false)
   const [isCadence, setIsCadence] = useState(false)
+  const [isABTest, setIsABTest] = useState(false)
+  const [templateNameB, setTemplateNameB] = useState('')
+  const [abSplit, setAbSplit] = useState(50)
   const [cadenceSteps, setCadenceSteps] = useState<CadenceStep[]>([
     { id: 'step-1', templateName: '', delayHours: 0, condition: 'always' as const },
   ])
@@ -801,8 +804,43 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
             </div>
           </div>
           )}
+
+          {/* A/B Test toggle */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+            <label className="flex items-center gap-2 text-[12px] text-text-primary cursor-pointer">
+              <input type="checkbox" checked={isABTest} onChange={(e) => setIsABTest(e.target.checked)} className="accent-red w-3.5 h-3.5" />
+              Teste A/B
+            </label>
+            {isABTest && (
+              <span className="text-[10px] text-text-muted">Divide o público em dois grupos com templates diferentes</span>
+            )}
+          </div>
+
+          {/* A/B Template B selector */}
+          {isABTest && (
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-text-primary">Variante B</span>
+                <div className="flex items-center gap-2 text-[10px]">
+                  <span className="text-text-muted">A: {abSplit}%</span>
+                  <input type="range" min={20} max={80} step={10} value={abSplit} onChange={(e) => setAbSplit(Number(e.target.value))} className="w-20 accent-red" />
+                  <span className="text-text-muted">B: {100 - abSplit}%</span>
+                </div>
+              </div>
+              <select
+                value={templateNameB}
+                onChange={(e) => setTemplateNameB(e.target.value)}
+                className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
+              >
+                <option value="">Selecionar template B...</option>
+                {filteredTemplates.filter(t => t.name !== templateName).map(t => (
+                  <option key={t.name} value={t.name}>{t.name} ({t.category})</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex justify-end">
-            <Button onClick={() => setStep(2)} disabled={!name || (!isCadence && !templateName) || (isCadence && cadenceSteps.some(s => !s.templateName))} icon={<ArrowRight className="h-4 w-4" />}>
+            <Button onClick={() => setStep(2)} disabled={!name || (!isCadence && !templateName) || (isCadence && cadenceSteps.some(s => !s.templateName)) || (isABTest && !templateNameB)} icon={<ArrowRight className="h-4 w-4" />}>
               Selecionar público
             </Button>
           </div>
