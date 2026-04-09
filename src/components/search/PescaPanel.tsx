@@ -198,154 +198,201 @@ export function PescaPanel() {
   const isRunning = phase !== 'idle' && phase !== 'done' && phase !== 'error'
   const canStart = segments.length > 0 && !isRunning
 
+  // Wizard step tracker
+  const wizardStep = segments.length === 0 ? 0 : states.length === 0 ? 1 : 2
+  const completionPct = segments.length > 0 && states.length > 0 ? 100 : segments.length > 0 ? 50 : 0
+
   // ========================================
-  // IDLE: Formulario de busca
+  // IDLE: Formulario gamificado (wizard)
   // ========================================
   if (phase === 'idle') {
     return (
-      <Card>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-red/10 border border-red/20">
-            <Fish className="h-5 w-5 text-red" />
+      <div className="space-y-4">
+        {/* Header com progress bar */}
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-lg font-bold text-text-primary font-heading">Encontrar empresas</h2>
+              <p className="text-xs text-text-muted mt-0.5">3 passos para leads qualificados com telefone e decisor</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className={cn('h-2 w-8 rounded-full transition-all duration-500', i <= wizardStep ? 'bg-red shadow-sm shadow-red/30' : 'bg-white/[0.06]')} />
+                ))}
+              </div>
+              {completionPct === 100 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Pronto</span>}
+            </div>
           </div>
-          <div>
-            <CardTitle>Pesquisa em massa</CardTitle>
-            <p className="text-xs text-text-muted mt-0.5">
-              CNPJa + Assertiva: empresas com CNPJ, decisor e WhatsApp confirmado
-            </p>
-          </div>
-        </div>
 
-        {/* Segmentos */}
-        <div className="mb-4">
-          <label className="text-xs font-medium text-text-secondary mb-2 block">Segmento *</label>
-          <div className="flex flex-wrap gap-1.5">
-            {SEGMENTS.map(seg => (
-              <button
-                key={seg.slug}
-                onClick={() => toggleSegment(seg.name)}
-                aria-pressed={segments.includes(seg.name)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border',
-                  segments.includes(seg.name)
-                    ? 'bg-red/20 text-red border-red/30'
-                    : 'bg-white/[0.03] text-text-muted border-border hover:border-border-strong hover:text-text-secondary',
-                )}
-              >
-                {seg.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Estados */}
-        <div className="mb-4">
-          <label className="text-xs font-medium text-text-secondary mb-2 block">
-            Estados {states.length > 0 && <span className="text-text-muted">({states.length} selecionados)</span>}
-          </label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {RECOMMENDED_STATES.map(uf => (
-              <button
-                key={uf}
-                onClick={() => toggleState(uf)}
-                aria-pressed={states.includes(uf)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border',
-                  states.includes(uf)
-                    ? 'bg-red/20 text-red border-red/30'
-                    : 'bg-white/[0.03] text-text-muted border-border hover:border-border-strong hover:text-text-secondary',
-                )}
-              >
-                {uf}
-              </button>
-            ))}
-            <button
-              onClick={() => setShowAllStates(!showAllStates)}
-              aria-expanded={showAllStates}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-text-muted hover:text-text-secondary cursor-pointer"
-            >
-              {showAllStates ? 'Menos' : 'Mais'} <ChevronDown className={cn('h-3 w-3 transition-transform', showAllStates && 'rotate-180')} />
-            </button>
-          </div>
-          {showAllStates && (
-            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-white/[0.02] border border-border">
-              {ALL_STATES.filter(s => !RECOMMENDED_STATES.includes(s.uf)).map(s => (
+          {/* Step 1: Segmento — "Quem voce quer encontrar?" */}
+          <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 0 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : segments.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border')}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', segments.length > 0 ? 'bg-success text-white' : wizardStep === 0 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+                {segments.length > 0 ? <CheckCircle className="h-4 w-4" /> : '1'}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-text-primary">Qual segmento?</p>
+                {segments.length > 0 && <p className="text-[11px] text-success">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</p>}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SEGMENTS.map(seg => (
                 <button
-                  key={s.uf}
-                  onClick={() => toggleState(s.uf)}
-                  aria-pressed={states.includes(s.uf)}
+                  key={seg.slug}
+                  onClick={() => toggleSegment(seg.name)}
+                  aria-pressed={segments.includes(seg.name)}
                   className={cn(
-                    'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer border',
-                    states.includes(s.uf)
-                      ? 'bg-red/20 text-red border-red/30'
-                      : 'bg-white/[0.03] text-text-muted border-border hover:text-text-secondary',
+                    'px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer border',
+                    segments.includes(seg.name)
+                      ? 'bg-red text-white border-red shadow-md shadow-red/20 scale-[1.02]'
+                      : 'bg-white/[0.03] text-text-muted border-border hover:border-red/30 hover:text-text-secondary hover:bg-red/[0.03]',
                   )}
                 >
-                  {s.uf}
+                  {seg.name}
                 </button>
               ))}
             </div>
-          )}
-          {states.length === 0 && (
-            <p className="text-[10px] text-text-muted mt-1">Nenhum selecionado = busca em todos os estados</p>
-          )}
-        </div>
-
-        {/* Faixa de Capital */}
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-medium text-text-secondary mb-1.5 block">Capital Social Min</label>
-            <select
-              value={revenueMin}
-              onChange={e => setRevenueMin(Number(e.target.value))}
-              className="w-full bg-white/[0.03] border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-red/50 focus:outline-none"
-            >
-              {REVENUE_MIN_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
           </div>
-          <div>
-            <label className="text-xs font-medium text-text-secondary mb-1.5 block">Capital Social Max</label>
-            <select
-              value={revenueMax}
-              onChange={e => setRevenueMax(Number(e.target.value))}
-              className="w-full bg-white/[0.03] border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-red/50 focus:outline-none"
-            >
-              {REVENUE_MAX_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+
+          {/* Step 2: Estado — "Onde buscar?" */}
+          <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 1 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : states.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border opacity-60', segments.length === 0 && 'opacity-40 pointer-events-none')}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', states.length > 0 ? 'bg-success text-white' : wizardStep === 1 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+                {states.length > 0 ? <CheckCircle className="h-4 w-4" /> : '2'}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-text-primary">Em quais estados?</p>
+                {states.length > 0 && <p className="text-[11px] text-success">{states.join(', ')}</p>}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {RECOMMENDED_STATES.map(uf => (
+                <button
+                  key={uf}
+                  onClick={() => toggleState(uf)}
+                  aria-pressed={states.includes(uf)}
+                  className={cn(
+                    'px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border',
+                    states.includes(uf)
+                      ? 'bg-red text-white border-red shadow-md shadow-red/20'
+                      : 'bg-white/[0.03] text-text-muted border-border hover:border-red/30 hover:text-text-secondary',
+                  )}
+                >
+                  {uf}
+                </button>
               ))}
-            </select>
+              <button
+                onClick={() => setShowAllStates(!showAllStates)}
+                aria-expanded={showAllStates}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs text-text-muted hover:text-text-secondary cursor-pointer border border-dashed border-border hover:border-border-strong"
+              >
+                {showAllStates ? 'Menos' : '+21 estados'} <ChevronDown className={cn('h-3 w-3 transition-transform', showAllStates && 'rotate-180')} />
+              </button>
+            </div>
+            {showAllStates && (
+              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out]">
+                {ALL_STATES.filter(s => !RECOMMENDED_STATES.includes(s.uf)).map(s => (
+                  <button
+                    key={s.uf}
+                    onClick={() => toggleState(s.uf)}
+                    aria-pressed={states.includes(s.uf)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
+                      states.includes(s.uf)
+                        ? 'bg-red text-white border-red'
+                        : 'bg-white/[0.03] text-text-muted border-border hover:text-text-secondary',
+                    )}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Excluir MEI */}
-        <div className="mb-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={excludeMei}
-              onChange={e => setExcludeMei(e.target.checked)}
-              className="rounded border-border accent-red"
-            />
-            <span className="text-xs text-text-secondary">Excluir MEI (microempreendedor individual)</span>
-          </label>
-        </div>
+          {/* Step 3: Porte — "Qual tamanho?" */}
+          <div className={cn('rounded-xl border p-4 mb-4 transition-all', wizardStep === 2 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : 'border-border', (segments.length === 0 || states.length === 0) && 'opacity-40 pointer-events-none')}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', wizardStep === 2 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+                3
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Qual porte?</p>
+                <p className="text-[11px] text-text-muted">Capital social e tipo de empresa</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="text-[11px] font-medium text-text-muted mb-1 block">Capital minimo</label>
+                <select
+                  value={revenueMin}
+                  onChange={e => setRevenueMin(Number(e.target.value))}
+                  className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
+                >
+                  {REVENUE_MIN_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-text-muted mb-1 block">Capital maximo</label>
+                <select
+                  value={revenueMax}
+                  onChange={e => setRevenueMax(Number(e.target.value))}
+                  className="w-full bg-white/[0.04] border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-red/50 focus:outline-none focus:ring-1 focus:ring-red/20 transition-all"
+                >
+                  {REVENUE_MAX_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <label className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg hover:bg-white/[0.02] transition-colors">
+              <input
+                type="checkbox"
+                checked={excludeMei}
+                onChange={e => setExcludeMei(e.target.checked)}
+                className="rounded border-border accent-red w-4 h-4"
+              />
+              <span className="text-xs text-text-secondary">Excluir MEI (microempreendedor individual)</span>
+            </label>
+          </div>
 
-        {/* CTA */}
-        <Button
-          onClick={handleStart}
-          disabled={!canStart}
-          className="w-full py-3 text-sm font-bold bg-red hover:bg-red-vivid text-white rounded-xl transition-all shadow-lg shadow-red/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          <Search className="h-4 w-4" />
-          Pesquisar empresas
-        </Button>
+          {/* CTA — destaque maximo quando pronto */}
+          <Button
+            onClick={handleStart}
+            disabled={!canStart}
+            className={cn(
+              'w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2.5',
+              canStart
+                ? 'bg-red hover:bg-red-vivid text-white shadow-xl shadow-red/30 hover:shadow-red/40 hover:scale-[1.01]'
+                : 'bg-white/[0.04] text-text-muted border border-border cursor-not-allowed',
+            )}
+          >
+            {canStart ? (
+              <>
+                <ArrowRight className="h-4 w-4" />
+                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {states.length || 'todos os'} estado{states.length !== 1 ? 's' : ''}
+              </>
+            ) : (
+              <>
+                <Search className="h-4 w-4" />
+                {segments.length === 0 ? 'Selecione um segmento para comecar' : 'Selecione pelo menos um estado'}
+              </>
+            )}
+          </Button>
 
-        <p className="text-[10px] text-text-muted text-center mt-2">
-          Pesquisa via CNPJa (dados cadastrais) + Assertiva (telefones e decisores)
-        </p>
-      </Card>
+          {/* Footer — fontes de dados */}
+          <div className="flex items-center justify-center gap-3 mt-3">
+            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa</span>
+            <span className="text-[10px] text-text-muted">+</span>
+            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva</span>
+            <span className="text-[10px] text-text-muted">|</span>
+            <span className="text-[10px] text-text-muted">CNPJ + Decisor + WhatsApp</span>
+          </div>
+        </Card>
+      </div>
     )
   }
 
@@ -363,7 +410,7 @@ export function PescaPanel() {
               <Fish className="h-5 w-5 text-red" />
             </div>
             <div>
-              <CardTitle>PESCA em andamento</CardTitle>
+              <CardTitle>Pesquisando...</CardTitle>
               <p className="text-xs text-text-muted mt-0.5">{PHASE_LABELS[phase]}</p>
             </div>
           </div>
