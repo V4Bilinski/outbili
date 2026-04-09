@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { Send, Mic, Sparkles, Loader2 } from 'lucide-react'
+import { Send, Mic, Sparkles, Loader2, FileText, Paperclip } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import type { InboxQuickReply } from '../../types/inbox'
 
@@ -88,6 +88,24 @@ export function ChatInput({
 
       {/* Input bar */}
       <div className="flex items-end gap-2 px-3 py-2.5 bg-[var(--wa-panel-header)]">
+        {/* Attachment placeholder */}
+        <button
+          className="shrink-0 p-2 rounded-full text-[var(--wa-text-secondary)] hover:text-[var(--wa-text)] hover:bg-[var(--wa-hover)] transition-colors"
+          title="Anexar arquivo"
+          onClick={() => {}}
+        >
+          <Paperclip className="h-5 w-5" />
+        </button>
+
+        {/* Template button */}
+        <button
+          className="shrink-0 p-2 rounded-full text-[var(--wa-text-secondary)] hover:text-[var(--wa-unread-badge)] hover:bg-[var(--wa-hover)] transition-colors"
+          title="Enviar template"
+          onClick={() => window.open('/#/campaigns', '_self')}
+        >
+          <FileText className="h-5 w-5" />
+        </button>
+
         {/* AI suggest */}
         <button
           onClick={handleSuggest}
