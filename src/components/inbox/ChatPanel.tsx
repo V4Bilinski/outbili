@@ -1,7 +1,7 @@
 import { ChatHeader } from './ChatHeader'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
-import type { InboxConversation, InboxMessage, InboxQuickReply } from '../../types/inbox'
+import type { InboxConversation, InboxMessage, InboxQuickReply, ConversationPriority } from '../../types/inbox'
 
 export function ChatPanel({
   conversation,
@@ -19,6 +19,9 @@ export function ChatPanel({
   onReturnToBot,
   onPause,
   onResume,
+  onClose,
+  onReopen,
+  onSetPriority,
   theme,
   onToggleTheme,
 }: {
@@ -37,6 +40,9 @@ export function ChatPanel({
   onReturnToBot: () => void
   onPause: () => void
   onResume: () => void
+  onClose: () => void
+  onReopen: () => void
+  onSetPriority: (p: ConversationPriority) => void
   theme: 'dark' | 'light'
   onToggleTheme: () => void
 }) {
@@ -49,6 +55,9 @@ export function ChatPanel({
         onReturnToBot={onReturnToBot}
         onPause={onPause}
         onResume={onResume}
+        onClose={onClose}
+        onReopen={onReopen}
+        onSetPriority={onSetPriority}
         theme={theme}
         onToggleTheme={onToggleTheme}
       />

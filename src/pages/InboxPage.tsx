@@ -9,12 +9,12 @@ import { useSidebar } from '../lib/sidebar-context'
 export function InboxPage() {
   const inbox = useInbox()
   const { collapsed } = useSidebar()
-  const [showChat, setShowChat] = useState(false) // mobile panel toggle
+  const [showChat, setShowChat] = useState(false)
   const [unreadOnly, setUnreadOnly] = useState(false)
 
   const handleSelectConversation = (id: string) => {
     inbox.setSelectedId(id)
-    setShowChat(true) // mobile: show chat panel
+    setShowChat(true)
   }
 
   const handleBack = () => {
@@ -27,12 +27,11 @@ export function InboxPage() {
       className={cn(
         'wa-inbox fixed inset-0 flex',
         inbox.theme === 'light' && 'wa-light',
-        // Offset for sidebar
         collapsed ? 'md:left-[72px]' : 'md:left-[260px]',
       )}
       style={{ transition: 'left 0.3s ease-in-out' }}
     >
-      {/* Conversation List — hidden on mobile when chat is open */}
+      {/* Conversation List */}
       <div className={cn(
         'w-full md:w-[380px] md:min-w-[380px] shrink-0 h-full',
         showChat ? 'hidden md:block' : 'block',
@@ -48,6 +47,9 @@ export function InboxPage() {
           onModeFilterChange={inbox.setModeFilter}
           unreadOnly={unreadOnly}
           onUnreadFilterChange={setUnreadOnly}
+          replyStatusFilter={inbox.replyStatusFilter}
+          onReplyStatusChange={inbox.setReplyStatusFilter}
+          replyCounts={inbox.replyCounts}
         />
       </div>
 
@@ -73,6 +75,9 @@ export function InboxPage() {
             onReturnToBot={inbox.returnToBot}
             onPause={() => inbox.pause(30)}
             onResume={inbox.resume}
+            onClose={inbox.close}
+            onReopen={inbox.reopen}
+            onSetPriority={inbox.setPriority}
             theme={inbox.theme}
             onToggleTheme={inbox.toggleTheme}
           />

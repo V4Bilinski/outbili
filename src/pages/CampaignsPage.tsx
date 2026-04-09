@@ -431,7 +431,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
 // ============================================================
 // TEMPLATE PREVIEW
 // ============================================================
-function TemplatePreview({ template }: { template: ZapTemplate | null }) {
+function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | null; sampleLead?: { decisorContact?: { name: string }; companyName: string; segment?: string; city?: string } }) {
   if (!template) {
     return (
       <div className="p-4 rounded-xl bg-white/[0.02] border border-border text-center">
@@ -463,7 +463,16 @@ function TemplatePreview({ template }: { template: ZapTemplate | null }) {
         {header?.format === 'IMAGE' && <div className="h-32 rounded-lg bg-white/5 flex items-center justify-center text-text-muted text-xs">Imagem</div>}
         {body?.text && (
           <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-            {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => `[Variável ${n}]`)}
+            {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => {
+              if (!sampleLead) return `[Variável ${n}]`
+              const map: Record<string, string> = {
+                '1': sampleLead.decisorContact?.name || '[Nome do decisor]',
+                '2': sampleLead.companyName || '[Empresa]',
+                '3': sampleLead.segment || '[Segmento]',
+                '4': sampleLead.city || '[Cidade]',
+              }
+              return map[n] || `[Variável ${n}]`
+            })}
           </p>
         )}
         {footer?.text && <p className="text-[11px] text-text-muted italic">{footer.text}</p>}
@@ -496,6 +505,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
   const [templateName, setTemplateName] = useState(initialTemplate || '')
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [scheduledAt, setScheduledAt] = useState('')
+  const [timezone, setTimezone] = useState('America/Sao_Paulo')
   const [templateSearch, setTemplateSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [tempFilter, setTempFilter] = useState<string>('all')
@@ -508,9 +518,17 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
 
   const { data: leads } = useLeads()
   const { data: templates } = useZapTemplates()
+  const { data: recentCampaignsData } = useZapCampaigns()
   const createCampaign = useCreateZapCampaign()
   const dispatch = useDispatchZapCampaign()
   const importZapContacts = useImportZapContacts()
+
+  // Cooldown: check if recent campaigns exist (for warning display)
+  const hasRecentCampaigns = useMemo(() => {
+    const campaigns = recentCampaignsData?.data || []
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000
+    return campaigns.some(c => c.status === 'COMPLETED' && c.completedAt && new Date(c.completedAt).getTime() > cutoff)
+  }, [recentCampaignsData])
 
   const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
 
@@ -671,7 +689,22 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Agendar para (opcional)</label>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className={inputClass} />
+            <div className="flex gap-2">
+              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className={cn(inputClass, 'flex-1')} />
+              <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={cn(inputClass, 'w-auto min-w-[200px]')}>
+                <option value="America/Sao_Paulo">Brasilia (GMT-3)</option>
+                <option value="America/Manaus">Manaus (GMT-4)</option>
+                <option value="America/Belem">Belem (GMT-3)</option>
+                <option value="America/Recife">Recife (GMT-3)</option>
+                <option value="America/Cuiaba">Cuiaba (GMT-4)</option>
+                <option value="America/Rio_Branco">Rio Branco (GMT-5)</option>
+              </select>
+            </div>
+            {scheduledAt && (
+              <p className="text-[10px] text-text-muted mt-1">
+                Destinatarios receberao no horario de {timezone.split('/')[1].replace('_', ' ')}
+              </p>
+            )}
           </div>
           <div className="grid md:grid-cols-[1fr,320px] gap-4">
             <div className="space-y-3">
@@ -721,7 +754,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-3 block">Preview</label>
-              <TemplatePreview template={selectedTemplate} />
+              <TemplatePreview template={selectedTemplate} sampleLead={selectedLeadIds.length > 0 ? leadsWithContacts.find(l => l.id === selectedLeadIds[0]) : undefined} />
               {selectedTemplate && variableCount > 0 && (
                 <div className="mt-2 p-2 rounded-lg bg-info/5 border border-info/15">
                   <p className="text-[10px] text-info font-medium">
@@ -777,6 +810,15 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               <button onClick={() => setSelectedLeadIds([])} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhum</button>
             </div>
           </div>
+          {/* Cooldown warning */}
+          {hasRecentCampaigns && (
+            <div className="p-2.5 rounded-lg bg-warning/5 border border-warning/15">
+              <p className="text-[10px] text-warning">
+                <Clock className="inline h-3 w-3 mr-1" />
+                Campanhas concluidas nas ultimas 24h detectadas. Contatos duplicados serao filtrados no Precheck para evitar spam.
+              </p>
+            </div>
+          )}
           {loadingContacts ? (
             <div className="flex items-center justify-center py-12 gap-2 text-text-muted">
               <Loader2 className="h-5 w-5 animate-spin" />

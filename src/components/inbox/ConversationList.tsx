@@ -2,7 +2,54 @@ import { ConversationSearch } from './ConversationSearch'
 import { ConversationItem } from './ConversationItem'
 import { Skeleton } from '../ui/Skeleton'
 import { MessageSquare } from 'lucide-react'
-import type { InboxConversation, ConversationMode } from '../../types/inbox'
+import { cn } from '../../lib/cn'
+import type { InboxConversation, ConversationMode, ReplyStatusCounts } from '../../types/inbox'
+
+function ReplyStatusTabs({
+  active,
+  onChange,
+  counts,
+}: {
+  active: 'all' | 'replied' | 'unreplied'
+  onChange: (v: 'all' | 'replied' | 'unreplied') => void
+  counts: ReplyStatusCounts
+}) {
+  const tabs = [
+    { id: 'all' as const, label: 'Todas', count: counts.all },
+    { id: 'unreplied' as const, label: 'Pendentes', count: counts.unreplied },
+    { id: 'replied' as const, label: 'Respondidas', count: counts.replied },
+  ]
+
+  return (
+    <div className="flex border-b" style={{ borderColor: 'var(--wa-border)' }}>
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={cn(
+            'flex-1 py-2.5 text-[12px] font-medium transition-colors relative',
+            active === tab.id
+              ? 'text-[var(--wa-unread-badge)]'
+              : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text)]',
+          )}
+        >
+          {tab.label}
+          {tab.count > 0 && (
+            <span className={cn(
+              'ml-1 text-[10px] font-bold',
+              active === tab.id ? 'text-[var(--wa-unread-badge)]' : 'text-[var(--wa-text-secondary)]',
+            )}>
+              {tab.count}
+            </span>
+          )}
+          {active === tab.id && (
+            <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-[var(--wa-unread-badge)]" />
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export function ConversationList({
   conversations,
@@ -15,6 +62,9 @@ export function ConversationList({
   onModeFilterChange,
   unreadOnly,
   onUnreadFilterChange,
+  replyStatusFilter,
+  onReplyStatusChange,
+  replyCounts,
 }: {
   conversations: InboxConversation[]
   selectedId: string | null
@@ -26,6 +76,9 @@ export function ConversationList({
   onModeFilterChange: (v: ConversationMode | null) => void
   unreadOnly: boolean
   onUnreadFilterChange: (v: boolean) => void
+  replyStatusFilter: 'all' | 'replied' | 'unreplied'
+  onReplyStatusChange: (v: 'all' | 'replied' | 'unreplied') => void
+  replyCounts: ReplyStatusCounts
 }) {
   const filtered = unreadOnly
     ? conversations.filter(c => c.unread_count > 0)
@@ -43,7 +96,10 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Search + Tabs */}
+      {/* Reply Status Tabs */}
+      <ReplyStatusTabs active={replyStatusFilter} onChange={onReplyStatusChange} counts={replyCounts} />
+
+      {/* Search + Mode Tabs */}
       <ConversationSearch
         search={search}
         onSearchChange={onSearchChange}

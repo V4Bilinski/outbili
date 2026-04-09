@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { MessageBubble } from './MessageBubble'
 import { Skeleton } from '../ui/Skeleton'
-import { Lock } from 'lucide-react'
+import { Lock, ChevronDown } from 'lucide-react'
 import type { InboxMessage } from '../../types/inbox'
 
 function DateSeparator({ date }: { date: string }) {
@@ -53,6 +53,7 @@ export function MessageList({
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -70,10 +71,12 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto wa-wallpaper"
+      className="flex-1 overflow-y-auto wa-wallpaper relative"
       onScroll={() => {
-        if (!containerRef.current || !hasMore) return
-        if (containerRef.current.scrollTop < 100) onLoadMore()
+        if (!containerRef.current) return
+        if (hasMore && containerRef.current.scrollTop < 100) onLoadMore()
+        const { scrollTop, scrollHeight, clientHeight } = containerRef.current
+        setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 200)
       }}
     >
       <div className="min-h-full flex flex-col justify-end py-3">
@@ -108,6 +111,17 @@ export function MessageList({
 
         <div ref={bottomRef} />
       </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollBtn && (
+        <button
+          onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="absolute bottom-4 right-6 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105"
+          style={{ backgroundColor: 'var(--wa-panel)', border: '1px solid var(--wa-border)' }}
+        >
+          <ChevronDown className="h-5 w-5 text-[var(--wa-text-secondary)]" />
+        </button>
+      )}
     </div>
   )
 }

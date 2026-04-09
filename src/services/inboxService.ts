@@ -56,6 +56,18 @@ export async function sendMessage(conversationId: string, data: { content: strin
   })
 }
 
+export async function closeConversation(id: string): Promise<InboxConversation> {
+  return updateConversation(id, { status: 'closed' })
+}
+
+export async function reopenConversation(id: string): Promise<InboxConversation> {
+  return updateConversation(id, { status: 'open' })
+}
+
+export async function setPriority(id: string, priority: ConversationPriority): Promise<InboxConversation> {
+  return updateConversation(id, { priority })
+}
+
 // === Actions ===
 
 export async function handoffConversation(id: string, data?: { reason?: string; summary?: string }): Promise<void> {

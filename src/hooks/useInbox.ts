@@ -10,12 +10,15 @@ import {
   returnToBot,
   pauseAutomation,
   resumeAutomation,
+  closeConversation,
+  reopenConversation,
+  setPriority as setPriorityApi,
   listLabels,
   listQuickReplies,
   suggestReply,
   getReplyStatusCounts,
 } from '../services/inboxService'
-import type { ConversationMode, ConversationStatus, InboxMessage } from '../types/inbox'
+import type { ConversationMode, ConversationStatus, ConversationPriority, InboxMessage } from '../types/inbox'
 import { toast } from 'sonner'
 
 export function useInbox() {
@@ -112,6 +115,13 @@ export function useInbox() {
       })
     },
     onSuccess: () => {
+      // Auto-switch to human mode when operator sends manually
+      const conv = conversationQuery.data
+      if (conv?.mode === 'bot') {
+        handoffConversation(selectedId!).catch(() => {})
+        qc.invalidateQueries({ queryKey: ['inbox-conversation', selectedId] })
+        toast.info('Modo alterado para humano automaticamente')
+      }
       qc.invalidateQueries({ queryKey: ['inbox-messages', selectedId] })
       qc.invalidateQueries({ queryKey: ['inbox-conversations'] })
     },
@@ -150,6 +160,35 @@ export function useInbox() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inbox-conversation', selectedId] })
       toast.success('Automacao retomada')
+    },
+  })
+
+  // Close/Reopen
+  const closeMutation = useMutation({
+    mutationFn: () => closeConversation(selectedId!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inbox-conversation', selectedId] })
+      qc.invalidateQueries({ queryKey: ['inbox-conversations'] })
+      toast.success('Conversa fechada')
+    },
+  })
+
+  const reopenMutation = useMutation({
+    mutationFn: () => reopenConversation(selectedId!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inbox-conversation', selectedId] })
+      qc.invalidateQueries({ queryKey: ['inbox-conversations'] })
+      toast.success('Conversa reaberta')
+    },
+  })
+
+  // Priority
+  const priorityMutation = useMutation({
+    mutationFn: (priority: ConversationPriority) => setPriorityApi(selectedId!, priority),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inbox-conversation', selectedId] })
+      qc.invalidateQueries({ queryKey: ['inbox-conversations'] })
+      toast.success('Prioridade atualizada')
     },
   })
 
@@ -206,6 +245,9 @@ export function useInbox() {
     returnToBot: () => returnToBotMutation.mutate(),
     pause: (minutes: number) => pauseMutation.mutate(minutes),
     resume: () => resumeMutation.mutate(),
+    close: () => closeMutation.mutate(),
+    reopen: () => reopenMutation.mutate(),
+    setPriority: (p: ConversationPriority) => priorityMutation.mutate(p),
 
     // AI
     suggest: () => suggestMutation.mutateAsync(),
