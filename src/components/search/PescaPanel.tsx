@@ -128,6 +128,7 @@ export function PescaPanel() {
   const [segments, setSegments] = useState<string[]>([])
   const [states, setStates] = useState<string[]>([])
   const [cities, setCities] = useState<string[]>([])
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false)
   const toggleCity = (c: string) => setCities(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   const [selectedPorte, setSelectedPorte] = useState('qualquer')
   const [revenueMin, setRevenueMin] = useState(0)
@@ -352,29 +353,59 @@ export function PescaPanel() {
                 ))}
               </div>
             )}
-            {/* Cidades — multi-select pills (aparece quando estado selecionado) */}
+            {/* Cidades — dropdown multi-select compacto */}
             {states.length > 0 && availableCities.length > 0 && (
-              <div className="animate-[fade-in_0.2s_ease-out]">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-medium text-text-muted">Cidades (opcional)</label>
-                  {cities.length > 0 && <span className="text-[10px] text-success font-medium">{cities.length} selecionada{cities.length > 1 ? 's' : ''}</span>}
-                </div>
-                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-border">
-                  {availableCities.map(c => (
-                    <button
-                      key={c}
-                      onClick={() => toggleCity(c)}
-                      className={cn(
-                        'px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
-                        cities.includes(c)
-                          ? 'bg-red/15 text-red border-red/30 ring-1 ring-red/20'
-                          : 'bg-white/[0.03] text-text-muted border-transparent hover:border-border hover:text-text-secondary',
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
+              <div className="relative animate-[fade-in_0.2s_ease-out]">
+                <label className="text-[11px] font-medium text-text-muted mb-1.5 block">Cidades (opcional)</label>
+                {/* Trigger */}
+                <button
+                  onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
+                  className={cn(
+                    'w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer',
+                    cityDropdownOpen ? 'border-red/40 ring-1 ring-red/20 bg-red/[0.03]' : 'border-border bg-white/[0.04] hover:border-border-strong',
+                  )}
+                >
+                  <MapPin className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                  {cities.length === 0 ? (
+                    <span className="text-xs text-text-muted flex-1">Todas as cidades</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 flex-1">
+                      {cities.map(c => (
+                        <span key={c} className="text-[10px] font-medium bg-red/15 text-red px-2 py-0.5 rounded-full flex items-center gap-1">
+                          {c}
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleCity(c) }}
+                            className="hover:text-white transition-colors"
+                          >
+                            <AlertCircle className="h-2.5 w-2.5 rotate-45" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <ChevronDown className={cn('h-3.5 w-3.5 text-text-muted shrink-0 transition-transform', cityDropdownOpen && 'rotate-180')} />
+                </button>
+                {/* Dropdown */}
+                {cityDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 py-1 rounded-xl border border-border bg-surface shadow-xl shadow-black/30 max-h-48 overflow-y-auto animate-[fade-in_0.15s_ease-out]">
+                    {availableCities.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => toggleCity(c)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer',
+                          cities.includes(c) ? 'bg-red/10 text-red' : 'text-text-secondary hover:bg-white/[0.04]',
+                        )}
+                      >
+                        <div className={cn('w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all', cities.includes(c) ? 'bg-red border-red' : 'border-border')}>
+                          {cities.includes(c) && <CheckCircle className="h-3 w-3 text-white" />}
+                        </div>
+                        <span className="flex-1">{c}</span>
+                        <span className="text-[10px] text-text-muted">{states.find(uf => (STATE_CITIES[uf] || []).includes(c))}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
