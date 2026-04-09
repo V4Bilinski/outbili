@@ -335,7 +335,7 @@ export function SearchPage() {
           ...(company.city && { city: company.city }),
           ...(company.state && { state: company.state }),
           businessSummary: `${company.segment || 'Importado'} · Upload manual`,
-          enrichmentStatus: 'pending',
+          enrichmentStatus: 'none',
           sourceHtmlReport: 'upload_manual',
         }
 
@@ -428,7 +428,7 @@ export function SearchPage() {
         ...(specificCity && { city: specificCity }),
         ...(specificState && { state: specificState }),
         businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente${revenue ? ` · R$ ${Math.round(revenue / 1000)}k/mes` : ''}`,
-        enrichmentStatus: 'pending',
+        enrichmentStatus: 'none',
       }
 
       // 1. Verificar duplicados por CNPJ (mais confiável) ou nome

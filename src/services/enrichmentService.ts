@@ -2,6 +2,10 @@ import { updateLead } from './leadService'
 import { createContact, getContacts } from './contactService'
 import { generateStrategicAnalysis } from './strategicAnalysisService'
 import { matchBusiness, matchProspects } from '../lib/vibeprospecting'
+import { searchOffice, mapCnpjaToLead, extractPartners } from './cnpjaService'
+import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone } from './assertivaService'
+import { createPartners } from './partnerService'
+import { logEnrichmentStep } from './enrichmentLogService'
 import type { Lead } from '../types'
 
 const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN || ''
@@ -60,11 +64,37 @@ async function runActor<T = any>(actorId: string, input: Record<string, any>, ti
 
 // --- Individual enrichment actors ---
 
-// --- Public API: OpenCNPJ (primary, 50 req/s, free, no auth) ---
+// --- CNPJa (fonte central unica) ---
 
-async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> | null> {
+async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> & { _partners?: any[]; _cnpjaOffice?: any } | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
+
+  try {
+    // CNPJa como fonte unica
+    const office = await searchOffice(clean)
+    const leadFields = mapCnpjaToLead(office)
+    const partners = extractPartners(office)
+
+    // Extrair CEP para geolocalização
+    const cep = office.address?.zip || ''
+
+    return {
+      ...leadFields,
+      _cep: cep,
+      _partners: partners,
+      _cnpjaOffice: office,
+    } as any
+  } catch (cnpjaError) {
+    // Fallback: APIs legadas (serao removidas na Fase 6)
+    console.warn('CNPJa falhou, usando fallback legado:', cnpjaError)
+    return enrichByCnpjLegacy(clean)
+  }
+}
+
+// Fallback legado — sera removido na Fase 6 quando n8n assumir
+async function enrichByCnpjLegacy(cnpj: string): Promise<Partial<Lead> | null> {
+  const clean = cnpj.replace(/\D/g, '')
 
   // Query ALL 3 APIs in parallel and merge results
   const [openCnpjData, brasilApiData, receitaWsData] = await Promise.all([
@@ -280,7 +310,7 @@ async function fetchTaxRegime(cnpj: string): Promise<Partial<Lead> | null> {
     if (d.company?.naturezaJuridica?.id && String(d.company.naturezaJuridica.id).startsWith('2')) taxRegime = 'lucro_presumido'
 
     return {
-      taxRegime,
+      taxRegime: taxRegime as Lead['taxRegime'],
       ...(d.company?.equity ? { capitalSocial: d.company.equity } : {}),
       ...(d.registrations?.length ? {
         registrationStatus: d.status?.text || d.registrations[0]?.state?.name || undefined,
@@ -920,7 +950,7 @@ function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): {
   if (data.enrichmentStatus === 'complete') spicedC++
   if (data.googleRating !== undefined && data.googleRating >= 4.5) spicedC++
   // Bonus: empresa recém-cadastrada = momento de decisão
-  if (data.registrationStatus === 'ATIVA' && data.yearsInMarket && data.yearsInMarket < 1) spicedC++
+  if (data.registrationStatus === 'Ativa' && data.yearsInMarket && data.yearsInMarket < 1) spicedC++
 
   // D (Decision) — acesso ao decisor
   let spicedD = 1
@@ -946,7 +976,7 @@ export async function enrichLead(
   onProgress?: (progress: EnrichmentProgress) => void,
 ): Promise<Partial<Lead>> {
   // Smart skip: if lead was already enriched, skip steps that have data
-  const alreadyEnriched = leadData.enrichmentStatus === 'complete' || leadData.enrichmentStatus === 'basic'
+  const alreadyEnriched = leadData.enrichmentStatus === 'complete' || leadData.enrichmentStatus === 'assertiva' || leadData.enrichmentStatus === 'cnpja'
   const hasGeo = !!(leadData.city && leadData.state)
   const hasGoogleData = !!(leadData.googleRating || leadData.googleReviewsCount)
   const hasWebsite = !!leadData.website
@@ -954,8 +984,9 @@ export async function enrichLead(
   const hasLinkedinData = !!(leadData.linkedinEmployeeCount || leadData.businessSummary)
 
   const steps: EnrichmentStep[] = [
-    { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && leadData.tradeName) ? 'skipped' : 'pending', label: 'Receita Federal (CNPJ)', estimatedMs: 3000 },
-    { source: 'tax_regime', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && (leadData as any).taxRegime) ? 'skipped' : 'pending', label: 'Regime Tributário (Simples/MEI)', estimatedMs: 2000 },
+    { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && leadData.tradeName) ? 'skipped' : 'pending', label: 'CNPJa (dados cadastrais)', estimatedMs: 3000 },
+    { source: 'assertiva', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'Assertiva (telefones + decisores)', estimatedMs: 5000 },
+    { source: 'tax_regime', status: 'skipped', label: 'Regime Tributario (via CNPJa)', estimatedMs: 0 },
     { source: 'geolocation', status: (alreadyEnriched && hasGeo) ? 'skipped' : 'pending', label: 'Geolocalização (CEP)', estimatedMs: 2000 },
     { source: 'domain_check', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Domínio .br (Registro.br)', estimatedMs: 2000 },
     { source: 'google_search', status: (alreadyEnriched && hasWebsite) ? 'skipped' : 'pending', label: 'Pesquisa Google', estimatedMs: 30000 },
@@ -1017,9 +1048,9 @@ export async function enrichLead(
     }
   }
 
-  // ========== FASE 1: APIs PÚBLICAS (gratuitas, sem token) ==========
+  // ========== FASE 1: CNPJa (fonte central unica) ==========
 
-  // Step 1: Receita Federal via OpenCNPJ/BrasilAPI
+  // Step 1: CNPJa — dados cadastrais + socios + CNAE + endereço
   let cnpjCep = ''
   if (leadData.cnpj) {
     step('cnpj').status = 'running'
@@ -1027,90 +1058,100 @@ export async function enrichLead(
     try {
       const cnpjData = await enrichByCnpj(leadData.cnpj)
       if (cnpjData) {
-        mergeField('tradeName', cnpjData.tradeName)
-        mergeField('companyName', cnpjData.companyName)
-        mergeField('segment', cnpjData.segment)
-        mergeField('address', cnpjData.address)
-        mergeField('city', cnpjData.city)
-        mergeField('state', cnpjData.state)
-        mergeField('employees', cnpjData.employees)
-        mergeField('yearsInMarket', cnpjData.yearsInMarket)
-        mergeField('businessSummary', cnpjData.businessSummary)
-        // Campos estruturados da RF
-        mergeField('capitalSocial', cnpjData.capitalSocial)
-        mergeField('legalNature', cnpjData.legalNature)
-        mergeField('registrationStatus', cnpjData.registrationStatus)
-        mergeField('foundingDate', cnpjData.foundingDate)
-        mergeField('cnaePrimary', cnpjData.cnaePrimary)
-        mergeField('cnaeSecondary', cnpjData.cnaeSecondary)
-        mergeField('partners', cnpjData.partners)
-        mergeField('rfEmail', cnpjData.rfEmail)
-        mergeField('rfPhone', cnpjData.rfPhone)
-        // CEP para geolocalização
-        cnpjCep = (cnpjData as any)._cep || ''
-        // Extrair decisor dos sócios da RF (Administrador > Sócio > primeiro da lista)
+        // Merge todos os campos CNPJa
+        const cnpjaFields: (keyof Lead)[] = [
+          'tradeName', 'companyName', 'segment', 'address', 'city', 'state',
+          'employees', 'yearsInMarket', 'capitalSocial', 'legalNature',
+          'registrationStatus', 'foundingDate', 'cnaePrimary', 'cnaeSecondary',
+          'rfEmail', 'rfPhone', 'taxRegime', 'zipCode', 'district',
+          'municipalityCode', 'phoneType', 'simplesOptant', 'simplesSince',
+          'isHeadquarters', 'cnpjaLastUpdate', 'statusDate', 'emailDomain',
+        ]
+        for (const key of cnpjaFields) {
+          mergeField(key, (cnpjData as any)[key])
+        }
+
+        cnpjCep = (cnpjData as any)._cep || (cnpjData as any).zipCode || ''
+
+        // Criar Partners na tabela relacional (se CNPJa retornou socios)
+        const partnersData = (cnpjData as any)._partners
+        if (partnersData?.length) {
+          try {
+            await createPartners(leadId, partnersData)
+          } catch { /* silencioso — partners sao complementares */ }
+        }
+
+        // Contato do decisor via CNPJa (RF)
         const rfDecisionMaker = extractDecisionMaker(cnpjData.partners)
-        const decisorName = (cnpjData as any)._receitaWsDecisor || rfDecisionMaker?.nome
-
-        // Collect ALL available phones
-        const receitaWsPhones: string[] = (cnpjData as any)._receitaWsPhones || []
-        const rfPhoneClean = cnpjData.rfPhone ? cnpjData.rfPhone.replace(/\D/g, '') : ''
-
-        // Add rfPhone to the pool if not already there
-        const allPhones = [...receitaWsPhones]
-        if (rfPhoneClean && rfPhoneClean.length >= 10 && !allPhones.includes(rfPhoneClean)) {
-          allPhones.push(rfPhoneClean)
-        }
-
-        // Classify and sort: CELULAR (WhatsApp) first, FIXO second
-        const mobilePhones = allPhones.filter(p => classifyPhone(p) === 'mobile')
-        const landlinePhones = allPhones.filter(p => classifyPhone(p) === 'landline')
-
-        // PRIORITY 1: Celular/WhatsApp do decisor (MOST IMPORTANT)
-        if (mobilePhones.length > 0 && decisorName) {
-          const whatsappNumber = formatPhone(mobilePhones[0])
+        const decisorName = rfDecisionMaker?.nome
+        if (decisorName && cnpjData.rfPhone) {
           newContacts.push({
             name: decisorName,
-            whatsapp: whatsappNumber,
-            source: 'receita_federal_whatsapp',
-          })
-          // Also update rfPhone on the lead to the mobile number
-          merged.rfPhone = whatsappNumber
-        }
-        // PRIORITY 2: If no mobile, use landline as fallback
-        else if (landlinePhones.length > 0 && decisorName) {
-          newContacts.push({
-            name: decisorName,
-            whatsapp: formatPhone(landlinePhones[0]),
-            source: 'receita_federal',
+            whatsapp: formatPhone(cnpjData.rfPhone),
+            source: 'cnpja',
           })
         }
-        // PRIORITY 3: Any phone without decisor name
-        else if (allPhones.length > 0) {
-          newContacts.push({
-            name: rfDecisionMaker?.nome || 'Decisor não identificado',
-            whatsapp: formatPhone(allPhones[0]),
-            source: 'receita_federal',
-          })
-        }
-
-        // Email contact (separate entry for dedup)
         if (cnpjData.rfEmail && cnpjData.rfEmail.includes('@') && decisorName) {
-          newContacts.push({ name: decisorName, email: cnpjData.rfEmail, source: 'receita_federal' })
+          newContacts.push({ name: decisorName, email: cnpjData.rfEmail, source: 'cnpja' })
         }
+
+        // Log no EnrichmentLog
+        const partnerCount = partnersData?.length || 0
+        const cnpjDetails = [
+          cnpjData.companyName ? 'Razao social' : null,
+          partnerCount > 0 ? `${partnerCount} socio${partnerCount > 1 ? 's' : ''}` : null,
+          cnpjData.capitalSocial ? `Capital R$ ${Number(cnpjData.capitalSocial).toLocaleString('pt-BR')}` : null,
+          cnpjData.cnaePrimary ? 'CNAE' : null,
+        ].filter(Boolean)
+        step('cnpj').detail = cnpjDetails.join(' + ')
+        await logEnrichmentStep(leadId, 'cnpja', 'done', step('cnpj').detail || 'OK').catch(() => {})
       }
       step('cnpj').status = 'done'
-      // Detail: summarize what was found
-      const partnerCount = cnpjData?.partners ? JSON.parse(cnpjData.partners).length : 0
-      const cnpjDetails = [
-        cnpjData?.companyName ? 'Razão social' : null,
-        partnerCount > 0 ? `${partnerCount} sócio${partnerCount > 1 ? 's' : ''}` : null,
-        cnpjData?.capitalSocial ? `Capital R$ ${Number(cnpjData.capitalSocial).toLocaleString('pt-BR')}` : null,
-        cnpjData?.cnaePrimary ? 'CNAE' : null,
-      ].filter(Boolean)
-      if (cnpjDetails.length > 0) step('cnpj').detail = cnpjDetails.join(' + ')
     } catch {
       step('cnpj').status = 'error'
+      await logEnrichmentStep(leadId, 'cnpja', 'error', 'Falha na consulta CNPJa').catch(() => {})
+    }
+    notify()
+  }
+
+  // Step 1b: Assertiva Localize — telefones, emails, decisores com WhatsApp confirmado
+  if (leadData.cnpj) {
+    step('assertiva').status = 'running'
+    notify()
+    try {
+      // Consulta CNPJ no Assertiva
+      const assertivaData = await assertivaLookupCnpj(leadData.cnpj)
+      if (assertivaData?.telefones?.length) {
+        const bestPhone = extractBestPhone(assertivaData.telefones)
+        if (bestPhone.whatsapp) {
+          merged.rfPhone = bestPhone.whatsapp
+          ;(merged as any).phoneType = 'MOBILE'
+        }
+      }
+
+      // Buscar decisores via Assertiva
+      const decisores = await getDecisionMakers(leadData.cnpj)
+      for (const decisor of decisores) {
+        const phones = extractBestPhone(decisor.telefones || [])
+        newContacts.push({
+          name: decisor.nome,
+          whatsapp: phones.whatsapp,
+          email: decisor.emails?.[0]?.endereco,
+          source: 'assertiva',
+        })
+      }
+
+      const assertivaDetails = [
+        assertivaData?.telefones?.length ? `${assertivaData.telefones.length} tel` : null,
+        decisores.length ? `${decisores.length} decisor${decisores.length > 1 ? 'es' : ''}` : null,
+      ].filter(Boolean)
+      step('assertiva').detail = assertivaDetails.join(' + ') || 'Sem dados'
+      step('assertiva').status = 'done'
+      merged.enrichmentStatus = 'assertiva' as any
+      await logEnrichmentStep(leadId, 'assertiva', 'done', step('assertiva').detail || 'OK').catch(() => {})
+    } catch {
+      step('assertiva').status = 'error'
+      await logEnrichmentStep(leadId, 'assertiva', 'error', 'Falha ou endpoint indisponivel').catch(() => {})
     }
     notify()
   }
@@ -1735,7 +1776,7 @@ export async function enrichLead(
   // Score = media ponderada SPICED (S*25% + P*25% + I*20% + C*15% + D*15%) = escala 1 a 5
   updateFields.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
   const successSteps = steps.filter((s) => s.status === 'done').length
-  updateFields.enrichmentStatus = successSteps >= 3 ? 'complete' : successSteps > 0 ? 'basic' : 'pending'
+  updateFields.enrichmentStatus = successSteps >= 3 ? 'complete' : successSteps > 0 ? 'cnpja' : 'none'
 
   // Build business summary from enrichment sources
   if (!leadData.businessSummary && !merged.businessSummary) {

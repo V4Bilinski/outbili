@@ -37,7 +37,7 @@ export interface Lead {
   discoveryQuestions?: string
   eligibilityChecklist?: string
   sourceHtmlReport?: string
-  enrichmentStatus?: 'none' | 'basic' | 'pending' | 'complete'
+  enrichmentStatus?: 'none' | 'cnpja' | 'cnpja_n8n' | 'assertiva' | 'complete'
   // --- Presença Digital (estruturado) ---
   googleRating?: number
   googleReviewsCount?: number
@@ -48,16 +48,27 @@ export interface Lead {
   instagramBio?: string
   linkedinEmployeeCount?: number
   // --- Dados Receita Federal (estruturado) ---
-  taxRegime?: string              // 'simples' | 'mei' | 'lucro_presumido' | 'lucro_real' | 'nao_optante'
+  taxRegime?: 'simples' | 'mei' | 'lucro_presumido' | 'lucro_real' | 'nao_optante'
   capitalSocial?: number
   legalNature?: string
-  registrationStatus?: string     // 'Ativa' | 'Baixada' | 'Suspensa' etc.
-  foundingDate?: string           // ISO date
-  cnaePrimary?: string            // código + descrição
-  cnaeSecondary?: string          // JSON array
-  partners?: string               // JSON array: [{nome, qualificacao}]
-  rfEmail?: string                // Email cadastrado na Receita Federal
-  rfPhone?: string                // Telefone cadastrado na RF
+  registrationStatus?: 'Ativa' | 'Baixada' | 'Suspensa' | 'Inapta' | 'Nula'
+  foundingDate?: string           // ISO date (campo date no Airtable)
+  cnaePrimary?: string
+  cnaeSecondary?: string          // texto separado por \n
+  partners?: string               // JSON array: [{nome, qualificacao}] — migra para tabela Partners
+  rfEmail?: string
+  rfPhone?: string
+  // --- CNPJá (novos campos) ---
+  zipCode?: string
+  district?: string
+  municipalityCode?: number
+  phoneType?: 'MOBILE' | 'LANDLINE'
+  simplesOptant?: boolean
+  simplesSince?: string           // ISO date
+  isHeadquarters?: boolean
+  cnpjaLastUpdate?: string        // ISO datetime
+  statusDate?: string             // ISO date
+  emailDomain?: string
   // --- Geolocalização ---
   latitude?: number
   longitude?: number
@@ -83,6 +94,10 @@ export interface Contact {
   contactType: 'decisor' | 'stakeholder' | 'influenciador'
   whatsapp: string
   email?: string
+  cpf?: string
+  whatsappConfirmed?: boolean
+  phoneIsHot?: boolean
+  source?: 'cnpja' | 'assertiva' | 'manual' | 'pesca' | 'apify'
   bilinskizapContactId?: string
   createdAt?: string
 }
@@ -243,3 +258,138 @@ export interface PescaProgress {
 }
 
 export type PescaPhase = 'idle' | 'searching' | 'enriching' | 'deduplicating' | 'saving' | 'done' | 'error'
+
+// --- Novas Tabelas (decomposicao JSON) ---
+
+export interface Partner {
+  id: string
+  name: string
+  qualification?: string
+  since?: string
+  ageRange?: string
+  personType?: 'NATURAL' | 'LEGAL' | 'FOREIGN'
+  cpf?: string
+  leadId?: string
+  createdAt?: string
+}
+
+export interface Trademark {
+  id: string
+  marca: string
+  numero?: string
+  status?: string
+  classe?: string
+  leadId?: string
+  createdAt?: string
+}
+
+export interface EnrichmentLogEntry {
+  id: string
+  detail: string
+  source: string
+  status: 'done' | 'error' | 'skipped'
+  timestamp?: string
+  leadId?: string
+  createdAt?: string
+}
+
+// --- CNPJá API Types ---
+
+export interface CnpjaOffice {
+  updated: string
+  taxId: string
+  alias?: string
+  founded: string
+  head: boolean
+  statusDate: string
+  status: { id: number; text: string }
+  address: {
+    municipality: number
+    street: string
+    number: string
+    district: string
+    city: string
+    state: string
+    details?: string
+    zip: string
+    country: { id: number; name: string }
+  }
+  mainActivity: { id: number; text: string }
+  sideActivities: Array<{ id: number; text: string }>
+  phones: Array<{ type: 'MOBILE' | 'LANDLINE'; area: string; number: string }>
+  emails: Array<{ ownership: string; address: string; domain: string }>
+  registrations: Array<{
+    number: string
+    state: string
+    enabled: boolean
+    statusDate: string
+    status: { id: number; text: string }
+    type: { id: number; text: string }
+  }>
+  company: {
+    id: number
+    name: string
+    equity: number
+    nature: { id: number; text: string }
+    size: { id: number; acronym: string; text: string }
+    simples: { optant: boolean; since: string | null }
+    simei: { optant: boolean; since: string | null }
+    members: Array<{
+      since: string
+      person: {
+        id: string
+        type: 'NATURAL' | 'LEGAL' | 'FOREIGN'
+        name: string
+        taxId: string
+        age: string
+        country?: { id: number; name: string }
+      }
+      role: { id: number; text: string }
+    }>
+  }
+}
+
+export interface CnpjaSearchParams {
+  'mainActivity.id'?: number
+  'address.state'?: string
+  'address.city'?: string
+  'company.size.id'?: number
+  'status.id'?: number
+  page?: number
+  limit?: number
+}
+
+// --- Assertiva API Types ---
+
+export interface AssertivaToken {
+  access_token: string
+  token_type: string
+  expires_in: number
+  scope: string
+}
+
+export interface AssertivaPhone {
+  numero: string
+  tipo: 'celular' | 'fixo'
+  operadora?: string
+  whatsapp?: boolean
+  hotphone?: boolean
+  plus?: boolean
+}
+
+export interface AssertivaDecisionMaker {
+  nome: string
+  cpf?: string
+  cargo?: string
+  telefones: AssertivaPhone[]
+  emails: Array<{ endereco: string }>
+}
+
+export interface AssertivaCompanyResult {
+  razaoSocial?: string
+  nomeFantasia?: string
+  cnpj: string
+  telefones: AssertivaPhone[]
+  emails: Array<{ endereco: string }>
+  socios: Array<{ nome: string; cpf?: string; qualificacao?: string }>
+}

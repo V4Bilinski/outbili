@@ -4,7 +4,9 @@ import type { Contact } from '../types'
 const TABLE = 'Contacts'
 
 export async function getContacts(leadId?: string): Promise<Contact[]> {
-  const filter = leadId ? `{leadId} = "${leadId}"` : undefined
+  const filter = leadId
+    ? `OR({leadId} = "${leadId}", FIND("${leadId}", ARRAYJOIN({Lead})) > 0)`
+    : undefined
   const records = await listAllRecords(TABLE, { filterByFormula: filter })
   return mapRecords<Contact>(records)
 }

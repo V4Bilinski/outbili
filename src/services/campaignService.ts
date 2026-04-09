@@ -17,7 +17,7 @@ export async function getCampaign(id: string): Promise<Campaign> {
 
 export async function createCampaign(data: Partial<Campaign>): Promise<Campaign> {
   const { id, createdAt, leadIds, ...fields } = data as any
-  if (leadIds) fields.Leads = leadIds
+  if (leadIds) fields.LeadLinks = leadIds
   const records = await createRecords(TABLE, [{ fields }])
   return mapRecord<Campaign>(records[0])
 }

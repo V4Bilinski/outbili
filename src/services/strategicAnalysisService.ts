@@ -114,7 +114,7 @@ function generateEligibilityChecklist(lead: Partial<Lead>): Array<{ label: strin
   return [
     { label: `Faturamento acima de R$50k/mês`, value: revenue >= 50000 || revenue === 0 },
     { label: `Decisor identificado com contato`, value: hasContact },
-    { label: `Empresa ativa na Receita Federal`, value: lead.registrationStatus === 'ATIVA' || !lead.registrationStatus },
+    { label: `Empresa ativa na Receita Federal`, value: lead.registrationStatus === 'Ativa' || !lead.registrationStatus },
     { label: `Score SPICED >= 2.5`, value: score >= 2.5 || score === 0 },
     { label: `Segmento compatível com ICP`, value: !!lead.segment },
     { label: `Presença digital mapeada`, value: !!(lead.website || lead.instagram || lead.linkedin) },

@@ -186,6 +186,10 @@ const SINGLE_SELECT_VALUES: Record<string, Record<string, string>> = {
   temperatura: { HOT: 'Quente', WARM: 'Morno', COLD: 'Frio', Quente: 'Quente', Morno: 'Morno', Frio: 'Frio' },
   tier: { 'Micro+': 'Micro+', Small: 'Small', 'Medium-': 'Medium-', 'Medium=': 'Medium=' },
   status: { Novo: 'Novo', Qualificado: 'Qualificado', Contactado: 'Contactado', Respondeu: 'Respondeu', 'Reunião': 'Reunião', Proposta: 'Proposta', Fechado: 'Fechado', Perdido: 'Perdido', Pesquisado: 'Pesquisado' },
+  enrichmentStatus: { none: 'none', cnpja: 'cnpja', cnpja_n8n: 'cnpja_n8n', assertiva: 'assertiva', complete: 'complete', basic: 'cnpja', pending: 'cnpja' },
+  registrationStatus: { Ativa: 'Ativa', Baixada: 'Baixada', Suspensa: 'Suspensa', Inapta: 'Inapta', Nula: 'Nula' },
+  taxRegime: { simples: 'simples', mei: 'mei', lucro_presumido: 'lucro_presumido', lucro_real: 'lucro_real', nao_optante: 'nao_optante' },
+  phoneType: { MOBILE: 'MOBILE', LANDLINE: 'LANDLINE' },
 }
 
 // Fields that do NOT exist in the Leads table — strip before sending to avoid 422
@@ -195,12 +199,38 @@ const INVALID_LEAD_FIELDS = new Set([
   '_whatsapp', '_email', '_ownerName', '_phone', '_isMobile', '_estimatedRevenue',
 ])
 
+// Linked record fields: code field → Airtable linked field name
+// When writing: wrap string ID as array ["recXXX"]
+// When reading: unwrap array ["recXXX"] to string "recXXX"
+const LINKED_RECORD_WRITE: Record<string, string> = {
+  leadId: 'Lead',
+  campaignId: 'Campaign',
+  contactId: 'Contact',
+}
+const LINKED_RECORD_READ: Record<string, string> = {
+  Lead: 'leadId',
+  LeadActivity: 'leadId',
+  ContactActivity: 'contactId',
+  LeadLink: 'leadId',
+  Campaign: 'campaignId',
+  Contact: 'contactId',
+  User: 'userId',
+}
+// Multi-link fields: these return arrays and should stay as arrays (not unwrap)
+const LINKED_RECORD_MULTI: Set<string> = new Set(['LeadLinks'])
+
 // Map fields before sending to Airtable (code → Airtable names + sanitize)
 function mapFieldsToAirtable(fields: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {}
   for (const [key, value] of Object.entries(fields)) {
     if (value === undefined || value === null) continue
     if (INVALID_LEAD_FIELDS.has(key)) continue
+    // Linked record: wrap string as array for Airtable
+    const linkedField = LINKED_RECORD_WRITE[key]
+    if (linkedField && typeof value === 'string' && value.startsWith('rec')) {
+      mapped[linkedField] = [value]
+      continue
+    }
     const airtableKey = FIELD_TO_AIRTABLE[key] || key
     // Normalize SingleSelect values
     const selectMap = SINGLE_SELECT_VALUES[airtableKey]
@@ -221,6 +251,17 @@ function mapFieldsToAirtable(fields: Record<string, any>): Record<string, any> {
 function mapFieldsFromAirtable(fields: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {}
   for (const [key, value] of Object.entries(fields)) {
+    // Multi-link fields: keep as array (e.g., LeadLinks → leadIds)
+    if (LINKED_RECORD_MULTI.has(key) && Array.isArray(value)) {
+      mapped['leadIds'] = value
+      continue
+    }
+    // Linked record: unwrap array to single string ID
+    const codeField = LINKED_RECORD_READ[key]
+    if (codeField && Array.isArray(value) && value.length > 0) {
+      mapped[codeField] = value[0]
+      continue
+    }
     const codeKey = AIRTABLE_TO_FIELD[key] || key
     mapped[codeKey] = value
   }

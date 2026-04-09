@@ -5,7 +5,7 @@ const TABLE = 'Activities'
 
 export async function getActivities(leadId: string): Promise<Activity[]> {
   const records = await listAllRecords(TABLE, {
-    filterByFormula: `{leadId} = "${leadId}"`,
+    filterByFormula: `OR({leadId} = "${leadId}", FIND("${leadId}", ARRAYJOIN({LeadActivity})) > 0)`,
   })
   // Sort by createdTime descending (use record metadata, not field)
   const mapped = mapRecords<Activity>(records)

@@ -73,7 +73,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
                     {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">IA</span>}
-                    {lead.enrichmentStatus === 'pending' && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">...</span>}
+                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">...</span>}
                   </div>
                   <p className="text-[11px] text-text-muted mt-0.5">
                     {lead.segment || 'Sem segmento'}
