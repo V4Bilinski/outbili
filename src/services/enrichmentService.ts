@@ -1120,7 +1120,7 @@ export async function enrichLead(
     notify()
     try {
       // Consulta CNPJ no Assertiva
-      const assertivaData = await assertivaLookupCnpj(leadData.cnpj)
+      const assertivaData = await assertivaLookupCnpj(leadData.cnpj) as any
       if (assertivaData?.telefones?.length) {
         const bestPhone = extractBestPhone(assertivaData.telefones)
         if (bestPhone.whatsapp) {
@@ -1129,8 +1129,9 @@ export async function enrichLead(
         }
       }
 
-      // Buscar decisores via Assertiva
-      const decisores = await getDecisionMakers(leadData.cnpj)
+      // Buscar decisores via Assertiva (requer protocolo da consulta CNPJ)
+      const protocolo = assertivaData?._protocolo
+      const decisores = await getDecisionMakers(leadData.cnpj, protocolo)
       for (const decisor of decisores) {
         const phones = extractBestPhone(decisor.telefones || [])
         newContacts.push({

@@ -78,22 +78,76 @@ async function assertivaFetch<T>(path: string): Promise<T> {
 
 export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> {
   const cleanCnpj = cnpj.replace(/\D/g, '')
-  return assertivaFetch<AssertivaCompanyResult>(
+  const raw = await assertivaFetch<any>(
     `/localize/v3/cnpj?cnpj=${cleanCnpj}&idFinalidade=5`,
   )
+
+  // Mapear resposta real da Assertiva para nosso tipo
+  const resp = raw.resposta || {}
+  const cadastro = resp.dadosCadastrais || {}
+  const celulares = (resp.telefones?.celulares || []).map((t: any) => ({
+    numero: t.numero?.replace(/\D/g, '') || '',
+    tipo: 'celular' as const,
+    operadora: t.operadora,
+    whatsapp: t.aplicativos?.whatsApp || false,
+    hotphone: t.hotphone || false,
+    plus: t.plus || false,
+  }))
+  const fixos = (resp.telefones?.fixos || []).map((t: any) => ({
+    numero: t.numero?.replace(/\D/g, '') || '',
+    tipo: 'fixo' as const,
+    operadora: t.operadora,
+    whatsapp: t.aplicativos?.whatsAppBusiness || false,
+    hotphone: false,
+    plus: false,
+  }))
+  const emails = (resp.emails || []).map((e: any) => ({
+    endereco: e.email || e.endereco || '',
+  }))
+  const socios = (resp.quadroSocietario || []).map((s: any) => ({
+    nome: s.nome || '',
+    cpf: s.cpf,
+    qualificacao: s.qualificacao || s.cargo || '',
+  }))
+
+  return {
+    razaoSocial: cadastro.razaoSocial,
+    nomeFantasia: cadastro.nomeFantasia,
+    cnpj: cleanCnpj,
+    telefones: [...celulares, ...fixos],
+    emails,
+    socios,
+    _protocolo: raw.cabecalho?.protocolo,
+    _site: cadastro.site,
+    _cnaeDescricao: cadastro.cnaeDescricao,
+    _idadeEmpresa: cadastro.idadeEmpresa,
+    _quantidadeFuncionarios: cadastro.quantidadeFuncionarios,
+  } as any
 }
 
-// --- Possiveis decisores ---
+// --- Possiveis decisores (requer protocolo da consulta CNPJ) ---
 
-export async function getDecisionMakers(cnpj: string): Promise<AssertivaDecisionMaker[]> {
+export async function getDecisionMakers(cnpj: string, protocolo?: string): Promise<AssertivaDecisionMaker[]> {
+  if (!protocolo) return [] // Protocolo obrigatorio
   const cleanCnpj = cnpj.replace(/\D/g, '')
   try {
-    const result = await assertivaFetch<{ decisores?: AssertivaDecisionMaker[] }>(
-      `/localize/v3/possiveis-decisores?cnpj=${cleanCnpj}&idFinalidade=5`,
+    const result = await assertivaFetch<any>(
+      `/localize/v3/possiveis-decisores?cnpj=${cleanCnpj}&idFinalidade=5&protocolo=${protocolo}`,
     )
-    return result.decisores || []
+    const decisores = result.resposta?.decisores || result.decisores || []
+    return decisores.map((d: any) => ({
+      nome: d.nome || '',
+      cpf: d.cpf,
+      cargo: d.cargo || d.qualificacao || '',
+      telefones: (d.telefones || []).map((t: any) => ({
+        numero: t.numero?.replace(/\D/g, '') || '',
+        tipo: t.tipo || 'celular',
+        whatsapp: t.aplicativos?.whatsApp || false,
+        hotphone: t.hotphone || false,
+      })),
+      emails: (d.emails || []).map((e: any) => ({ endereco: e.email || e.endereco || '' })),
+    }))
   } catch {
-    // Endpoint pode nao estar disponivel no plano
     return []
   }
 }
