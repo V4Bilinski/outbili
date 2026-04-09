@@ -3,6 +3,7 @@ import { useInbox } from '../hooks/useInbox'
 import { ConversationList } from '../components/inbox/ConversationList'
 import { ChatPanel } from '../components/inbox/ChatPanel'
 import { EmptyChat } from '../components/inbox/EmptyChat'
+import { ContactPanel } from '../components/inbox/ContactPanel'
 import { cn } from '../lib/cn'
 import { useSidebar } from '../lib/sidebar-context'
 
@@ -10,6 +11,7 @@ export function InboxPage() {
   const inbox = useInbox()
   const { collapsed } = useSidebar()
   const [showChat, setShowChat] = useState(false)
+  const [showContact, setShowContact] = useState(false)
   const [unreadOnly, setUnreadOnly] = useState(false)
 
   const handleSelectConversation = (id: string) => {
@@ -19,6 +21,7 @@ export function InboxPage() {
 
   const handleBack = () => {
     setShowChat(false)
+    setShowContact(false)
     inbox.setSelectedId(null)
   }
 
@@ -80,11 +83,22 @@ export function InboxPage() {
             onSetPriority={inbox.setPriority}
             theme={inbox.theme}
             onToggleTheme={inbox.toggleTheme}
+            onToggleContactPanel={() => setShowContact(!showContact)}
           />
         ) : (
           <EmptyChat />
         )}
       </div>
+
+      {/* Contact Panel (desktop only, collapsible) */}
+      {showContact && inbox.selectedConversation && (
+        <div className="hidden md:block h-full">
+          <ContactPanel
+            conversation={inbox.selectedConversation}
+            onClose={() => setShowContact(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

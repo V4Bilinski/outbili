@@ -117,11 +117,55 @@ export const MessageBubble = memo(function MessageBubble({
         )}
 
         {/* Text content */}
-        {(message.message_type === 'text' || message.message_type === 'template' || message.message_type === 'interactive') && (
+        {(message.message_type === 'text' || message.message_type === 'template') && (
           <p
             className="text-[14.2px] leading-[19px] text-[var(--wa-text)] whitespace-pre-wrap break-words"
             dangerouslySetInnerHTML={{ __html: formatWhatsAppText(message.content) }}
           />
+        )}
+
+        {/* Interactive message with buttons */}
+        {message.message_type === 'interactive' && (
+          <div>
+            <p
+              className="text-[14.2px] leading-[19px] text-[var(--wa-text)] whitespace-pre-wrap break-words mb-2"
+              dangerouslySetInnerHTML={{ __html: formatWhatsAppText(message.content) }}
+            />
+            {/* Render interactive buttons/sections from payload */}
+            {(() => {
+              const p = message.payload || {}
+              const buttons = Array.isArray(p.buttons) ? (p.buttons as Array<Record<string, string>>) : []
+              const sections = Array.isArray(p.sections) ? (p.sections as Array<Record<string, unknown>>) : []
+              return (
+                <>
+                  {buttons.length > 0 && (
+                    <div className="space-y-1 pt-1 border-t" style={{ borderColor: 'var(--wa-border)' }}>
+                      {buttons.map((btn, i) => (
+                        <div key={i} className="text-center py-1.5 rounded-lg text-[13px] font-medium" style={{ backgroundColor: 'var(--wa-panel)', color: 'var(--wa-unread-badge)' }}>
+                          {String(btn.title || btn.text || `Opcao ${i + 1}`)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {sections.length > 0 && (
+                    <div className="space-y-1 pt-1 border-t" style={{ borderColor: 'var(--wa-border)' }}>
+                      {sections.map((section, si) => (
+                        <div key={si}>
+                          {typeof section.title === 'string' && <p className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] px-2 py-1">{section.title}</p>}
+                          {Array.isArray(section.rows) && (section.rows as Array<Record<string, string>>).map((row, ri) => (
+                            <div key={ri} className="px-2 py-1.5 rounded-lg text-[12px]" style={{ color: 'var(--wa-text)' }}>
+                              <span className="font-medium">{String(row.title || '')}</span>
+                              {row.description && <span className="text-[var(--wa-text-secondary)] ml-1">{String(row.description)}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
         )}
 
         {/* Timestamp + delivery status */}

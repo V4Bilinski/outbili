@@ -92,6 +92,13 @@ export async function resumeAutomation(id: string): Promise<void> {
   await zapFetch(`/api/inbox/conversations/${id}/resume`, { method: 'POST' })
 }
 
+export async function assignConversation(id: string, assignedTo: string | null): Promise<InboxConversation> {
+  return zapFetch(`/api/inbox/conversations/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ assigned_to: assignedTo }),
+  })
+}
+
 // === Labels ===
 
 export async function listLabels(): Promise<InboxLabel[]> {

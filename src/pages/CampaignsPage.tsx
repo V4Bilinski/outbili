@@ -11,6 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { cn } from '../lib/cn'
 import { SEGMENTS, TEMPERATURES } from '../lib/constants'
 import type { Lead, Contact } from '../types'
+import { CadenceBuilder, type CadenceStep } from '../components/campaigns/CadenceBuilder'
 import {
   Smartphone, Plus, Send, Pause, Play, X, CheckCircle, AlertTriangle,
   Filter, Users, Zap, Search, Shield, ArrowRight, Download,
@@ -515,6 +516,10 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [precheckResult, setPrecheckResult] = useState<{ ok: boolean; totals: { total: number; valid: number; skipped: number } } | null>(null)
   const [precheckLoading, setPrecheckLoading] = useState(false)
+  const [isCadence, setIsCadence] = useState(false)
+  const [cadenceSteps, setCadenceSteps] = useState<CadenceStep[]>([
+    { id: 'step-1', templateName: '', delayHours: 0, condition: 'always' as const },
+  ])
 
   const { data: leads } = useLeads()
   const { data: templates } = useZapTemplates()
@@ -706,6 +711,37 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               </p>
             )}
           </div>
+          {/* Campaign mode toggle */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+            <span className="text-[11px] text-text-muted">Tipo:</span>
+            <button
+              onClick={() => setIsCadence(false)}
+              className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors', !isCadence ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary')}
+            >
+              Campanha simples
+            </button>
+            <button
+              onClick={() => setIsCadence(true)}
+              className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors', isCadence ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary')}
+            >
+              Cadencia (multi-step)
+            </button>
+          </div>
+
+          {/* Cadence builder (when cadence mode is active) */}
+          {isCadence && (
+            <CadenceBuilder
+              steps={cadenceSteps}
+              onStepsChange={(newSteps) => {
+                setCadenceSteps(newSteps)
+                if (newSteps.length > 0 && newSteps[0].templateName) setTemplateName(newSteps[0].templateName)
+              }}
+              templates={templates || []}
+            />
+          )}
+
+          {/* Simple campaign template selector (when not cadence) */}
+          {!isCadence && (
           <div className="grid md:grid-cols-[1fr,320px] gap-4">
             <div className="space-y-3">
               <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium block">Selecionar template</label>
@@ -764,8 +800,9 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               )}
             </div>
           </div>
+          )}
           <div className="flex justify-end">
-            <Button onClick={() => setStep(2)} disabled={!name || !templateName} icon={<ArrowRight className="h-4 w-4" />}>
+            <Button onClick={() => setStep(2)} disabled={!name || (!isCadence && !templateName) || (isCadence && cadenceSteps.some(s => !s.templateName))} icon={<ArrowRight className="h-4 w-4" />}>
               Selecionar público
             </Button>
           </div>

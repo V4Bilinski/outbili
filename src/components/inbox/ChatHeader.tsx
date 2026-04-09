@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Bot, User, Pause, Play, ArrowRightLeft, Sun, Moon, X, RotateCcw, Flag, MoreVertical } from 'lucide-react'
+import { ArrowLeft, Bot, User, Pause, Play, ArrowRightLeft, Sun, Moon, X, RotateCcw, Flag, MoreVertical, UserCircle } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import type { InboxConversation, ConversationPriority } from '../../types/inbox'
 
@@ -22,6 +22,7 @@ export function ChatHeader({
   onSetPriority,
   theme,
   onToggleTheme,
+  onToggleContactPanel,
 }: {
   conversation: InboxConversation
   onBack?: () => void
@@ -34,6 +35,7 @@ export function ChatHeader({
   onSetPriority: (p: ConversationPriority) => void
   theme: 'dark' | 'light'
   onToggleTheme: () => void
+  onToggleContactPanel?: () => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
   const displayName = conversation.contact?.name || conversation.phone
@@ -92,6 +94,11 @@ export function ChatHeader({
 
       {/* Quick actions */}
       <div className="flex items-center gap-0.5">
+        {onToggleContactPanel && (
+          <button onClick={onToggleContactPanel} className="p-2 rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-unread-badge)] hover:bg-[var(--wa-hover)] transition-colors" title="Dados do contato">
+            <UserCircle className="h-4 w-4" />
+          </button>
+        )}
         <button onClick={onToggleTheme} className="p-2 rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text)] hover:bg-[var(--wa-hover)] transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>

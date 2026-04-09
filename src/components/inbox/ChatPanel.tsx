@@ -24,6 +24,7 @@ export function ChatPanel({
   onSetPriority,
   theme,
   onToggleTheme,
+  onToggleContactPanel,
 }: {
   conversation: InboxConversation
   messages: InboxMessage[]
@@ -45,6 +46,7 @@ export function ChatPanel({
   onSetPriority: (p: ConversationPriority) => void
   theme: 'dark' | 'light'
   onToggleTheme: () => void
+  onToggleContactPanel?: () => void
 }) {
   return (
     <div className="flex flex-col h-full bg-[var(--wa-bg)]">
@@ -60,6 +62,7 @@ export function ChatPanel({
         onSetPriority={onSetPriority}
         theme={theme}
         onToggleTheme={onToggleTheme}
+        onToggleContactPanel={onToggleContactPanel}
       />
       <MessageList
         messages={messages}
