@@ -43,12 +43,12 @@ const REVENUE_MAX_OPTIONS = [
 
 const PHASE_LABELS: Record<PescaPhase, string> = {
   idle: '',
-  searching: 'Buscando empresas na base de CNPJ...',
-  enriching: 'Extraindo telefone e decisor...',
+  searching: 'Pesquisando empresas via CNPJa...',
+  enriching: 'Enriquecendo com Assertiva (telefones + decisores)...',
   deduplicating: 'Removendo duplicatas...',
   saving: 'Salvando no sistema...',
-  done: 'Concluído!',
-  error: 'Erro na extração',
+  done: 'Concluido!',
+  error: 'Erro na pesquisa',
 }
 
 const PHASE_STEPS: PescaPhase[] = ['searching', 'enriching', 'deduplicating', 'saving']
@@ -209,9 +209,9 @@ export function PescaPanel() {
             <Fish className="h-5 w-5 text-red" />
           </div>
           <div>
-            <CardTitle>PESCA — Extração em massa</CardTitle>
+            <CardTitle>Pesquisa em massa</CardTitle>
             <p className="text-xs text-text-muted mt-0.5">
-              Extrai 100+ empresas com CNPJ, decisor e WhatsApp de fontes públicas
+              CNPJa + Assertiva: empresas com CNPJ, decisor e WhatsApp confirmado
             </p>
           </div>
         </div>
@@ -338,12 +338,12 @@ export function PescaPanel() {
           disabled={!canStart}
           className="w-full py-3 text-sm font-bold bg-red hover:bg-red-vivid text-white rounded-xl transition-all shadow-lg shadow-red/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          <Fish className="h-4 w-4" />
-          PESCAR 100+ Leads
+          <Search className="h-4 w-4" />
+          Pesquisar empresas
         </Button>
 
         <p className="text-[10px] text-text-muted text-center mt-2">
-          Dados extraídos de APIs públicas (Receita Federal, OpenCNPJ, BrasilAPI)
+          Pesquisa via CNPJa (dados cadastrais) + Assertiva (telefones e decisores)
         </p>
       </Card>
     )
