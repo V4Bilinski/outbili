@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useZapCampaigns, useZapCampaignMessages, useZapTemplates, useCreateZapCampaign, useDispatchZapCampaign, usePauseZapCampaign, useCancelZapCampaign, useImportZapContacts } from '../hooks/useBilinskiZap'
+import { useZapCampaigns, useZapCampaignMessages, useZapTemplates, useCreateZapCampaign, useDispatchZapCampaign, usePauseZapCampaign, useResumeZapCampaign, useCancelZapCampaign, useImportZapContacts } from '../hooks/useBilinskiZap'
 import { useLeads } from '../hooks/useLeads'
 import { getContacts } from '../services/contactService'
 import { precheckCampaign, calculateDeliveryRate, calculateReadRate, type ZapCampaign, type ZapTemplate } from '../lib/bilinskizap'
@@ -12,8 +12,8 @@ import { cn } from '../lib/cn'
 import { SEGMENTS, TEMPERATURES } from '../lib/constants'
 import type { Lead, Contact } from '../types'
 import {
-  Smartphone, Plus, Send, Pause, X, CheckCircle, AlertTriangle,
-  Filter, Users, Zap, Search, Shield, ArrowRight,
+  Smartphone, Plus, Send, Pause, Play, X, CheckCircle, AlertTriangle,
+  Filter, Users, Zap, Search, Shield, ArrowRight, Download,
   Phone, Mail, Loader2, RefreshCw, Copy, Trash2, Clock, Eye,
   ArrowLeft, CircleAlert,
 } from 'lucide-react'
@@ -42,7 +42,7 @@ const MSG_STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'w
 // ============================================================
 // CAMPAIGN TABLE ROW
 // ============================================================
-function CampaignRow({ campaign, onView }: { campaign: ZapCampaign; onView: () => void }) {
+function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: ZapCampaign; onView: () => void; onDuplicate: () => void; onDelete: () => void }) {
   const status = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT
   const deliveryRate = calculateDeliveryRate(campaign)
   const sendTime = campaign.startedAt && campaign.completedAt
@@ -107,19 +107,21 @@ function CampaignRow({ campaign, onView }: { campaign: ZapCampaign; onView: () =
       <td className="py-4 px-4">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={(e) => { e.stopPropagation(); toast.info('Função de duplicar em breve') }}
+            onClick={(e) => { e.stopPropagation(); onDuplicate() }}
             className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
             title="Duplicar"
           >
             <Copy className="h-4 w-4" />
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); toast.info('Função de excluir em breve') }}
-            className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted hover:text-error transition-colors"
-            title="Excluir"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {['COMPLETED', 'FAILED', 'CANCELLED'].includes(campaign.status) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted hover:text-error transition-colors"
+              title="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -132,9 +134,12 @@ function CampaignRow({ campaign, onView }: { campaign: ZapCampaign; onView: () =
 function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: () => void }) {
   const { data: messagesData, isLoading: loadingMessages } = useZapCampaignMessages(campaign.id)
   const pause = usePauseZapCampaign()
+  const resume = useResumeZapCampaign()
   const cancel = useCancelZapCampaign()
   const [logSearch, setLogSearch] = useState('')
   const [logStatusFilter, setLogStatusFilter] = useState<string>('all')
+  const [logPage, setLogPage] = useState(1)
+  const LOG_PAGE_SIZE = 50
 
   const status = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT
   const deliveryRate = calculateDeliveryRate(campaign)
@@ -215,7 +220,12 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
               Pausar
             </Button>
           )}
-          {['DRAFT', 'SCHEDULED', 'SENDING'].includes(campaign.status) && (
+          {campaign.status === 'PAUSED' && (
+            <Button size="sm" variant="primary" icon={<Play className="h-3.5 w-3.5" />} onClick={() => resume.mutate(campaign.id)} loading={resume.isPending}>
+              Retomar
+            </Button>
+          )}
+          {['DRAFT', 'SCHEDULED', 'SENDING', 'PAUSED'].includes(campaign.status) && (
             <Button size="sm" variant="danger" icon={<X className="h-3.5 w-3.5" />} onClick={() => cancel.mutate(campaign.id)} loading={cancel.isPending}>
               Cancelar
             </Button>
@@ -306,6 +316,29 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
               <option value="skipped">Ignorado</option>
             </select>
             <button
+              onClick={() => {
+                if (messages.length === 0) { toast.error('Nenhum log para exportar'); return }
+                const header = 'Destinatário,Telefone,Status,Enviado em,Lido em,Erro\n'
+                const rows = filteredMessages.map((m) =>
+                  [m.contactName || '', m.contactPhone || '', m.status, m.sentAt || '', m.readAt || '', m.error || '']
+                    .map(v => `"${String(v).replace(/"/g, '""')}"`)
+                    .join(','),
+                ).join('\n')
+                const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `logs-${campaign.name.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+                toast.success(`${filteredMessages.length} registros exportados`)
+              }}
+              className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
+              title="Exportar CSV"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => toast.info('Logs atualizados automaticamente a cada 15s')}
               className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
             >
@@ -323,44 +356,72 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
             {messages.length === 0 ? 'Nenhum log de envio ainda' : 'Nenhum resultado com os filtros atuais'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatário</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Telefone</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Status</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horário</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Info</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMessages.map((msg) => {
-                  const msgStatus = MSG_STATUS_CONFIG[msg.status] || MSG_STATUS_CONFIG.pending
-                  return (
-                    <tr key={msg.id} className="border-b border-border/50 hover:bg-white/[0.01] transition-colors">
-                      <td className="py-3 px-4 text-sm text-text-primary">{msg.contactName || '-'}</td>
-                      <td className="py-3 px-4 text-sm font-mono text-text-secondary">{msg.contactPhone ? `+${msg.contactPhone}` : '-'}</td>
-                      <td className="py-3 px-4">
-                        <Badge variant={msgStatus.variant} size="sm">
-                          {msg.status === 'delivered' || msg.status === 'read' ? <CheckCircle className="h-2.5 w-2.5" /> : null}
-                          {msgStatus.label}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-text-secondary">
-                        {msg.sentAt ? new Date(msg.sentAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-text-muted">
-                        {msg.readAt ? `Lido ${new Date(msg.readAt).toLocaleTimeString('pt-BR')}` : msg.error || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-text-muted">-</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatário</th>
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Telefone</th>
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Status</th>
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horário</th>
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Info</th>
+                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMessages.slice((logPage - 1) * LOG_PAGE_SIZE, logPage * LOG_PAGE_SIZE).map((msg) => {
+                    const msgStatus = MSG_STATUS_CONFIG[msg.status] || MSG_STATUS_CONFIG.pending
+                    return (
+                      <tr key={msg.id} className="border-b border-border/50 hover:bg-white/[0.01] transition-colors">
+                        <td className="py-3 px-4 text-sm text-text-primary">{msg.contactName || '-'}</td>
+                        <td className="py-3 px-4 text-sm font-mono text-text-secondary">{msg.contactPhone ? `+${msg.contactPhone}` : '-'}</td>
+                        <td className="py-3 px-4">
+                          <Badge variant={msgStatus.variant} size="sm">
+                            {msg.status === 'delivered' || msg.status === 'read' ? <CheckCircle className="h-2.5 w-2.5" /> : null}
+                            {msgStatus.label}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-text-secondary">
+                          {msg.sentAt ? new Date(msg.sentAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-text-muted">
+                          {msg.readAt ? `Lido ${new Date(msg.readAt).toLocaleTimeString('pt-BR')}` : msg.error || '-'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-text-muted">-</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {filteredMessages.length > LOG_PAGE_SIZE && (
+              <div className="flex items-center justify-between pt-3 border-t border-border mt-3">
+                <span className="text-[11px] text-text-muted">
+                  {(logPage - 1) * LOG_PAGE_SIZE + 1}–{Math.min(logPage * LOG_PAGE_SIZE, filteredMessages.length)} de {filteredMessages.length}
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                    disabled={logPage === 1}
+                    className="px-3 py-1 rounded-lg text-xs bg-white/[0.03] border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] transition-colors"
+                  >
+                    Anterior
+                  </button>
+                  <span className="px-3 py-1 text-xs text-text-muted font-mono">
+                    {logPage}/{Math.ceil(filteredMessages.length / LOG_PAGE_SIZE)}
+                  </span>
+                  <button
+                    onClick={() => setLogPage(p => Math.min(Math.ceil(filteredMessages.length / LOG_PAGE_SIZE), p + 1))}
+                    disabled={logPage >= Math.ceil(filteredMessages.length / LOG_PAGE_SIZE)}
+                    className="px-3 py-1 rounded-lg text-xs bg-white/[0.03] border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] transition-colors"
+                  >
+                    Próximo
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
     </div>
@@ -429,10 +490,10 @@ type LeadWithContact = Lead & {
   allContacts: Contact[]
 }
 
-function NewCampaignWizard({ onClose }: { onClose: () => void }) {
+function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; initialTemplate?: string }) {
   const [step, setStep] = useState(1)
   const [name, setName] = useState(`Campanha ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')}`)
-  const [templateName, setTemplateName] = useState('')
+  const [templateName, setTemplateName] = useState(initialTemplate || '')
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [scheduledAt, setScheduledAt] = useState('')
   const [templateSearch, setTemplateSearch] = useState('')
@@ -699,6 +760,12 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
               Somente com WhatsApp
             </label>
           </div>
+          <div className="p-2.5 rounded-lg bg-info/5 border border-info/15">
+            <p className="text-[10px] text-info">
+              <Shield className="inline h-3 w-3 mr-1" />
+              Contatos com opt-out serão filtrados automaticamente na etapa de validação (Precheck).
+            </p>
+          </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-xs text-text-muted">
               <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {filteredLeads.length} leads disponíveis</span>
@@ -909,8 +976,11 @@ function NewCampaignWizard({ onClose }: { onClose: () => void }) {
 // ============================================================
 export function CampaignsPage() {
   const { data, isLoading, refetch } = useZapCampaigns()
+  const cancelCampaign = useCancelZapCampaign()
   const [showBuilder, setShowBuilder] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState<ZapCampaign | null>(null)
+  const [duplicateTemplate, setDuplicateTemplate] = useState<string>('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Filters
   const [search, setSearch] = useState('')
@@ -1000,7 +1070,7 @@ export function CampaignsPage() {
       </div>
 
       {/* Wizard */}
-      {showBuilder && <NewCampaignWizard onClose={() => setShowBuilder(false)} />}
+      {showBuilder && <NewCampaignWizard onClose={() => { setShowBuilder(false); setDuplicateTemplate('') }} initialTemplate={duplicateTemplate} />}
 
       {!showBuilder && (
         <>
@@ -1060,7 +1130,7 @@ export function CampaignsPage() {
             <EmptyState
               icon={Smartphone}
               title="Nenhuma campanha ainda"
-              description="Crie sua primeira cadencia WhatsApp para os leads qualificados."
+              description="Crie sua primeira cadência WhatsApp para os leads qualificados."
               action={{ label: 'Nova campanha', onClick: () => setShowBuilder(true) }}
             />
           ) : (
@@ -1091,6 +1161,12 @@ export function CampaignsPage() {
                           key={campaign.id}
                           campaign={campaign}
                           onView={() => setSelectedCampaign(campaign)}
+                          onDuplicate={() => {
+                            setDuplicateTemplate(campaign.templateName)
+                            setShowBuilder(true)
+                            toast.success(`Duplicando campanha "${campaign.name}"`)
+                          }}
+                          onDelete={() => setDeleteConfirmId(campaign.id)}
                         />
                       ))
                     )}
@@ -1102,8 +1178,8 @@ export function CampaignsPage() {
               <div className="border-t border-border px-4 py-3 flex items-center justify-between text-[11px] text-text-muted">
                 <span>{filteredCampaigns.length} de {campaigns.length} campanhas</span>
                 <div className="flex items-center gap-4">
-                  <span>Entrega media: <span className="font-mono font-semibold text-success">{globalStats.avgDelivery}%</span></span>
-                  <span>Leitura media: <span className="font-mono font-semibold text-info">{globalStats.avgRead}%</span></span>
+                  <span>Entrega média: <span className="font-mono font-semibold text-success">{globalStats.avgDelivery}%</span></span>
+                  <span>Leitura média: <span className="font-mono font-semibold text-info">{globalStats.avgRead}%</span></span>
                   <span>Total enviadas: <span className="font-mono font-semibold text-text-primary">{globalStats.totalSent}</span></span>
                   {globalStats.sending > 0 && (
                     <span className="text-warning font-semibold">{globalStats.sending} em andamento</span>
@@ -1113,6 +1189,45 @@ export function CampaignsPage() {
             </Card>
           )}
         </>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-gradient-to-br from-surface/95 to-surface-md/90 border border-border p-5 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-xl bg-error/10"><Trash2 className="h-5 w-5 text-error" /></div>
+              <div>
+                <p className="text-sm font-bold text-text-primary">Excluir campanha</p>
+                <p className="text-[11px] text-text-muted">Esta ação não pode ser desfeita</p>
+              </div>
+            </div>
+            <p className="text-sm text-text-secondary mb-4">
+              Tem certeza que deseja excluir a campanha <span className="font-semibold text-text-primary">"{campaigns.find(c => c.id === deleteConfirmId)?.name}"</span>?
+            </p>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setDeleteConfirmId(null)} className="flex-1">Cancelar</Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                icon={<Trash2 className="h-4 w-4" />}
+                loading={cancelCampaign.isPending}
+                onClick={() => {
+                  cancelCampaign.mutate(deleteConfirmId, {
+                    onSuccess: () => {
+                      toast.success('Campanha excluída')
+                      setDeleteConfirmId(null)
+                      refetch()
+                    },
+                  })
+                }}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

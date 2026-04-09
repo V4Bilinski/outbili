@@ -1,9 +1,11 @@
 import { useLeads } from '../hooks/useLeads'
+import { useZapCampaigns } from '../hooks/useBilinskiZap'
+// bilinskizap metrics are computed inline in CampaignStats
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Users, Flame, Calendar, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap } from 'lucide-react'
+import { Users, Flame, Calendar, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
 import { LEAD_STATUSES } from '../lib/constants'
@@ -181,6 +183,51 @@ function PipelineFunnel({ leads }: { leads: Lead[] }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+    </Card>
+  )
+}
+
+function CampaignStats() {
+  const navigate = useNavigate()
+  const { data: campaignsData } = useZapCampaigns()
+  const campaigns = campaignsData?.data || []
+
+  if (campaigns.length === 0) return null
+
+  const totalSent = campaigns.reduce((a, c) => a + c.sent, 0)
+  const totalDelivered = campaigns.reduce((a, c) => a + c.delivered, 0)
+  const totalRead = campaigns.reduce((a, c) => a + c.read, 0)
+  const sending = campaigns.filter((c) => c.status === 'SENDING').length
+  const avgDelivery = totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0
+  const avgRead = totalDelivered > 0 ? Math.round((totalRead / totalDelivered) * 100) : 0
+
+  const stats = [
+    { label: 'Campanhas', value: campaigns.length, icon: Smartphone, color: 'text-text-primary' },
+    { label: 'Enviadas', value: totalSent, icon: Send, color: 'text-info' },
+    { label: 'Entrega', value: `${avgDelivery}%`, icon: CheckCircle, color: 'text-success' },
+    { label: 'Leitura', value: `${avgRead}%`, icon: Eye, color: 'text-warning' },
+  ]
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <CardTitle>Campanhas WhatsApp</CardTitle>
+          {sending > 0 && <Badge variant="warning" size="sm">{sending} ativa{sending > 1 ? 's' : ''}</Badge>}
+        </div>
+        <Button size="sm" variant="ghost" onClick={() => navigate('/campaigns')}>
+          Ver todas
+        </Button>
+      </div>
+      <div className="grid grid-cols-4 gap-3">
+        {stats.map((s) => (
+          <div key={s.label} className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+            <s.icon className={`h-4 w-4 mx-auto mb-1.5 ${s.color} opacity-60`} />
+            <p className="text-lg font-bold font-mono text-text-primary">{s.value}</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">{s.label}</p>
+          </div>
+        ))}
+      </div>
     </Card>
   )
 }
@@ -383,6 +430,10 @@ export function DashboardPage() {
 
       <AnimateIn delay={100}>
         <NextActions leads={allLeads} />
+      </AnimateIn>
+
+      <AnimateIn delay={150}>
+        <CampaignStats />
       </AnimateIn>
 
       <div className="grid md:grid-cols-2 gap-5">

@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLead, useDeleteLead } from '../hooks/useLeads'
+import { useZapCampaigns } from '../hooks/useBilinskiZap'
+import { calculateDeliveryRate } from '../lib/bilinskizap'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, Send, CheckCircle, Eye } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
@@ -29,7 +31,74 @@ const TABS = [
   { id: 'competitiva', label: 'Competitiva' },
   { id: 'argumentos', label: 'Argumentos' },
   { id: 'ads-intel', label: 'SpyBili' },
+  { id: 'campanhas', label: 'Campanhas' },
 ] as const
+
+const STATUS_LABELS: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+  DRAFT: { label: 'Rascunho', variant: 'default' },
+  SCHEDULED: { label: 'Agendada', variant: 'info' },
+  SENDING: { label: 'Enviando', variant: 'warning' },
+  COMPLETED: { label: 'Concluída', variant: 'success' },
+  PAUSED: { label: 'Pausada', variant: 'default' },
+  FAILED: { label: 'Falhou', variant: 'error' },
+  CANCELLED: { label: 'Cancelada', variant: 'error' },
+}
+
+function TabCampanhas({ contacts }: { leadId: string; contacts: Array<{ whatsapp: string; name: string }> }) {
+  const { data: campaignsData, isLoading } = useZapCampaigns()
+  const campaigns = campaignsData?.data || []
+
+  if (isLoading) {
+    return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}</div>
+  }
+
+  if (campaigns.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Send className="h-8 w-8 text-text-muted mx-auto mb-3 opacity-40" />
+        <p className="text-sm text-text-muted">Nenhuma campanha criada ainda</p>
+        <p className="text-xs text-text-muted mt-1">Crie campanhas na aba Campanhas para acompanhar aqui</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-text-muted">
+        Campanhas recentes · {contacts.length} contato{contacts.length !== 1 ? 's' : ''} vinculado{contacts.length !== 1 ? 's' : ''}
+      </p>
+      {campaigns.map((campaign) => {
+        const st = STATUS_LABELS[campaign.status] || STATUS_LABELS.DRAFT
+        const deliveryRate = calculateDeliveryRate(campaign)
+        return (
+          <div key={campaign.id} className="p-4 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-colors">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="text-sm font-medium text-text-primary">{campaign.name}</p>
+                <p className="text-[11px] text-text-muted mt-0.5">Template: {campaign.templateName}</p>
+              </div>
+              <Badge variant={st.variant} size="sm">{st.label}</Badge>
+            </div>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span className="flex items-center gap-1 text-text-muted">
+                <Send className="h-3 w-3" /> {campaign.sent} enviadas
+              </span>
+              <span className="flex items-center gap-1 text-success">
+                <CheckCircle className="h-3 w-3" /> {deliveryRate}% entregues
+              </span>
+              <span className="flex items-center gap-1 text-info">
+                <Eye className="h-3 w-3" /> {campaign.read} lidas
+              </span>
+              <span className="text-text-muted ml-auto">
+                {new Date(campaign.createdAt).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export function CompanyPage() {
   const { id } = useParams()
@@ -546,6 +615,9 @@ export function CompanyPage() {
         {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
 
         {activeTab === 'ads-intel' && <TabAdsIntel lead={lead} />}
+
+        {/* Tab: Campanhas */}
+        {activeTab === 'campanhas' && <TabCampanhas leadId={lead.id} contacts={contacts || []} />}
 
         </div>
       </Card>
