@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, Send, CheckCircle, Eye } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, Send, CheckCircle, Eye, MoreVertical, ChevronRight } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
@@ -25,17 +25,22 @@ import { TabCompetitiva } from '../components/company/TabCompetitiva'
 import { TabArgumentos } from '../components/company/TabArgumentos'
 import { TabAdsIntel } from '../components/company/TabAdsIntel'
 
-const TABS = [
+const PRIMARY_TABS = [
   { id: 'resumo', label: 'Resumo' },
   { id: 'spiced', label: 'SPICED' },
-  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
-  { id: 'reuniao', label: 'Reunião' },
-  { id: 'projecao', label: 'Projeção' },
-  { id: 'competitiva', label: 'Competitiva' },
-  { id: 'argumentos', label: 'Argumentos' },
-  { id: 'ads-intel', label: 'SpyBili' },
+  { id: 'reuniao', label: 'Reuniao' },
   { id: 'campanhas', label: 'Campanhas' },
 ] as const
+
+const SECONDARY_TABS = [
+  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
+  { id: 'projecao', label: 'Projecao' },
+  { id: 'competitiva', label: 'Competitiva' },
+  { id: 'argumentos', label: 'Objecoes & Respostas' },
+  { id: 'ads-intel', label: 'Anuncios' },
+] as const
+
+const ALL_TABS = [...PRIMARY_TABS, ...SECONDARY_TABS]
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
   DRAFT: { label: 'Rascunho', variant: 'default' },
@@ -111,6 +116,8 @@ export function CompanyPage() {
   const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
+  const [showMoreTabs, setShowMoreTabs] = useState(false)
+  const [showActionMenu, setShowActionMenu] = useState(false)
   const [showAddContact, setShowAddContact] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const createContact = useCreateContact()
@@ -142,19 +149,44 @@ export function CompanyPage() {
 
   return (
     <div className="space-y-4 animate-[fade-in_0.4s_ease-out]">
-      {/* Back + Delete */}
+      {/* Breadcrumb + Actions menu */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Voltar
-        </button>
-        <Button
-          size="sm"
-          variant="danger"
-          icon={<Trash2 className="h-3.5 w-3.5" />}
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          Excluir lead
-        </Button>
+        <nav className="flex items-center gap-1.5 text-sm">
+          <button onClick={() => navigate('/leads')} className="text-text-muted hover:text-text-primary cursor-pointer transition-colors">
+            Leads
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-text-muted/50" />
+          <span className="text-text-primary font-medium truncate max-w-[200px]">{lead.companyName}</span>
+        </nav>
+        <div className="relative">
+          <button
+            onClick={() => setShowActionMenu(!showActionMenu)}
+            className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors cursor-pointer"
+            aria-label="Acoes do lead"
+          >
+            <MoreVertical className="h-4 w-4 text-text-muted" />
+          </button>
+          {showActionMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowActionMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
+                <button
+                  onClick={() => { setShowActionMenu(false); navigate(-1) }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text-secondary hover:bg-white/[0.04] cursor-pointer transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                </button>
+                <div className="border-t border-border my-1" />
+                <button
+                  onClick={() => { setShowActionMenu(false); setShowDeleteConfirm(true) }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-error hover:bg-error/5 cursor-pointer transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir lead
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Delete confirmation modal */}
@@ -337,40 +369,61 @@ export function CompanyPage() {
         </Card>
       )}
 
-      {/* Tabs navigation */}
+      {/* Tabs navigation — 4 primarias + dropdown "Mais" (Hick's Law) */}
       <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
         <div className="flex gap-0.5 min-w-max border-b border-border pb-0">
-          {TABS.map((tab) => (
+          {PRIMARY_TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
               className={cn(
                 'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
                 'hover:text-text-primary',
-                activeTab === tab.id
-                  ? 'text-red'
-                  : 'text-text-muted hover:bg-white/[0.02]',
+                activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-white/[0.02]',
               )}
             >
               {tab.label}
-              {/* Active indicator — animated underline */}
-              <span
-                className={cn(
-                  'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
-                  activeTab === tab.id
-                    ? 'bg-red scale-x-100 opacity-100'
-                    : 'bg-transparent scale-x-0 opacity-0',
-                )}
-              />
-              {/* Hover glow */}
-              <span
-                className={cn(
-                  'absolute inset-0 rounded-lg transition-all duration-200',
-                  activeTab !== tab.id && 'group-hover:bg-white/[0.02]',
-                )}
-              />
+              <span className={cn(
+                'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
+                activeTab === tab.id ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
+              )} />
             </button>
           ))}
+          {/* Dropdown "Mais" para tabs secundarias */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMoreTabs(!showMoreTabs)}
+              className={cn(
+                'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer hover:text-text-primary',
+                SECONDARY_TABS.some(t => t.id === activeTab) ? 'text-red' : 'text-text-muted',
+              )}
+            >
+              {SECONDARY_TABS.find(t => t.id === activeTab)?.label || 'Mais'}
+              <span className={cn(
+                'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
+                SECONDARY_TABS.some(t => t.id === activeTab) ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
+              )} />
+            </button>
+            {showMoreTabs && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMoreTabs(false)} />
+                <div className="absolute left-0 top-full mt-1 w-52 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
+                  {SECONDARY_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
+                      className={cn(
+                        'w-full flex items-center gap-2.5 px-3 py-2.5 text-xs cursor-pointer transition-colors text-left',
+                        activeTab === tab.id ? 'bg-red/10 text-red font-semibold' : 'text-text-secondary hover:bg-white/[0.04]',
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Users, Plus } from 'lucide-react'
+import { Users, Plus, Search, X, ChevronRight } from 'lucide-react'
 import { LEAD_STATUSES, TEMPERATURES, SEGMENTS } from '../lib/constants'
 import { formatCurrencyShort, calculateSpicedScore } from '../lib/utils'
 import type { Lead } from '../types'
@@ -15,26 +15,61 @@ import type { Lead } from '../types'
 // --- Filters ---
 function LeadFilters({
   segment, setSegment, temperature, setTemperature, status, setStatus,
+  searchQuery, setSearchQuery, hasActiveFilters, onClearFilters,
 }: {
   segment: string; setSegment: (v: string) => void
   temperature: string; setTemperature: (v: string) => void
   status: string; setStatus: (v: string) => void
+  searchQuery: string; setSearchQuery: (v: string) => void
+  hasActiveFilters: boolean; onClearFilters: () => void
 }) {
   const selectClass = 'h-9 rounded-xl bg-white/[0.03] border border-border text-xs text-text-secondary px-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors appearance-none cursor-pointer'
   return (
-    <div className="flex flex-wrap gap-2">
-      <select value={segment} onChange={(e) => setSegment(e.target.value)} className={selectClass}>
-        <option value="">Todos segmentos</option>
-        {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
-      </select>
-      <select value={temperature} onChange={(e) => setTemperature(e.target.value)} className={selectClass}>
-        <option value="">Temperatura</option>
-        {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
-      </select>
-      <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
-        <option value="">Status</option>
-        {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-      </select>
+    <div className="space-y-2">
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Buscar por empresa, segmento, cidade..."
+          className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary pl-10 pr-9 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer transition-colors"
+            aria-label="Limpar busca"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {/* Dropdown filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select value={segment} onChange={(e) => setSegment(e.target.value)} className={selectClass}>
+          <option value="">Todos segmentos</option>
+          {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
+        </select>
+        <select value={temperature} onChange={(e) => setTemperature(e.target.value)} className={selectClass}>
+          <option value="">Temperatura</option>
+          {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
+        </select>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
+          <option value="">Status</option>
+          {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+        {hasActiveFilters && (
+          <button
+            onClick={onClearFilters}
+            className="h-9 px-3 rounded-xl text-xs font-medium text-red hover:bg-red/10 border border-red/20 cursor-pointer transition-colors flex items-center gap-1.5"
+          >
+            <X className="h-3 w-3" />
+            Limpar filtros
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -50,6 +85,10 @@ function LeadTable({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="overflow-x-auto">
+      {/* Indicador mobile para colunas ocultas */}
+      <p className="text-[10px] text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
+        <ChevronRight className="h-3 w-3" /> Toque em um lead para ver detalhes completos
+      </p>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
@@ -67,7 +106,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
             const tempColors: Record<string, string> = { Quente: 'bg-red text-white', Morno: 'bg-warning text-black', Frio: 'bg-cold text-white' }
             const statusInfo = LEAD_STATUSES.find((s) => s.value === lead.status)
             return (
-              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${index * 50}ms` }}>
+              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}>
                 <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
@@ -85,7 +124,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-16 h-2 rounded-full bg-white/5 overflow-hidden">
-                      <div className={`h-full rounded-full ${barColor(score)} animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]`} style={{ width: `${(score / 5) * 100}%`, animationDelay: `${index * 50 + 200}ms` }} />
+                      <div className={`h-full rounded-full ${barColor(score)} animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]`} style={{ width: `${(score / 5) * 100}%`, animationDelay: `${Math.min(index, 20) * 30 + 200}ms` }} />
                     </div>
                     <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
                   </div>
@@ -118,22 +157,49 @@ export function LeadsPage() {
   const [segment, setSegment] = useState('')
   const [temperature, setTemperature] = useState('')
   const [status, setStatus] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const hasActiveFilters = !!segment || !!temperature || !!status || !!searchQuery
+
+  const clearFilters = () => {
+    setSegment('')
+    setTemperature('')
+    setStatus('')
+    setSearchQuery('')
+  }
 
   const filteredLeads = (leads || []).filter((l) => {
     if (segment && l.segment !== segment) return false
     if (temperature && l.temperature !== temperature) return false
     if (status && l.status !== status) return false
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      const matches = l.companyName?.toLowerCase().includes(q)
+        || l.segment?.toLowerCase().includes(q)
+        || l.city?.toLowerCase().includes(q)
+        || l.state?.toLowerCase().includes(q)
+        || l.tradeName?.toLowerCase().includes(q)
+        || l.cnpj?.includes(q)
+      if (!matches) return false
+    }
     return true
   })
 
   if (isLoading) {
     return (
       <div className="space-y-4">
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
+          <p className="text-xs text-text-muted mt-0.5">Carregando...</p>
+        </div>
         <Skeleton className="h-10 w-full" />
         {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16" />)}
       </div>
     )
   }
+
+  const totalLeads = leads?.length || 0
+  const isFilteredEmpty = filteredLeads.length === 0 && totalLeads > 0
 
   return (
     <div className="space-y-5">
@@ -141,7 +207,11 @@ export function LeadsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold font-heading gradient-text">Leads</h1>
-            <p className="text-xs text-text-muted mt-0.5">{filteredLeads.length} leads encontrados</p>
+            <p className="text-xs text-text-muted mt-0.5">
+              {hasActiveFilters
+                ? `${filteredLeads.length} de ${totalLeads} leads`
+                : `${totalLeads} leads encontrados`}
+            </p>
           </div>
           <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/search')}>
             Novo
@@ -150,16 +220,31 @@ export function LeadsPage() {
       </AnimateIn>
 
       <AnimateIn delay={80}>
-        <LeadFilters segment={segment} setSegment={setSegment} temperature={temperature} setTemperature={setTemperature} status={status} setStatus={setStatus} />
+        <LeadFilters
+          segment={segment} setSegment={setSegment}
+          temperature={temperature} setTemperature={setTemperature}
+          status={status} setStatus={setStatus}
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
+        />
       </AnimateIn>
 
-      {filteredLeads.length === 0 ? (
+      {totalLeads === 0 ? (
         <AnimateIn delay={120}>
           <EmptyState
             icon={Users}
             title="Nenhum lead encontrado"
-            description="Faça sua primeira pesquisa ou ajuste os filtros."
+            description="Faca sua primeira pesquisa para comecar a prospectar."
             action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
+          />
+        </AnimateIn>
+      ) : isFilteredEmpty ? (
+        <AnimateIn delay={120}>
+          <EmptyState
+            icon={Search}
+            title="Nenhum lead com esses filtros"
+            description={`${totalLeads} leads no sistema, mas nenhum corresponde aos filtros aplicados.`}
+            action={{ label: 'Limpar filtros', onClick: clearFilters }}
           />
         </AnimateIn>
       ) : (
