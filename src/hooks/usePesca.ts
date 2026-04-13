@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import {
-  searchCnpjsViaN8n,
-  enrichCnpjRecords,
+  searchViaCnpja,
+  enrichMissingPhones,
   loadExistingDedup,
   deduplicateLeads,
   savePescaToAirtable,
@@ -101,11 +101,11 @@ export function usePesca(): UsePescaReturn {
     startTimeRef.current = 0
 
     try {
-      // Fase 1: Buscar CNPJs via n8n webhook (APIs publicas de CNPJ)
+      // Fase 1: Buscar CNPJs via CNPJa API (retorna dados completos)
       setPhase('searching')
       setProgress({ ...INITIAL_PROGRESS })
 
-      const cnpjRecords = await searchCnpjsViaN8n(
+      const pescaLeads = await searchViaCnpja(
         filters,
         150,
         (found) => setProgress(p => ({ ...p, found, total: found })),
@@ -113,22 +113,26 @@ export function usePesca(): UsePescaReturn {
       )
 
       if (signal.aborted) return
-      if (cnpjRecords.length === 0) {
+      if (pescaLeads.length === 0) {
         setError('Nenhuma empresa encontrada com esses filtros. Tente ampliar a busca.')
         setPhase('error')
         return
       }
 
-      setProgress(p => ({ ...p, found: cnpjRecords.length, total: cnpjRecords.length }))
+      setProgress(p => ({ ...p, found: pescaLeads.length, total: pescaLeads.length }))
 
-      // Fase 2: Enriquecer com telefone + decisor (OpenCNPJ + ReceitaWS)
+      // Fase 2: Enriquecer leads sem celular (opcional, max 5 via ReceitaWS)
       setPhase('enriching')
+      const leadsWithoutMobile = pescaLeads.filter(l => !l.whatsapp).length
 
-      const enrichedLeads = await enrichCnpjRecords(
-        cnpjRecords,
-        (enriched) => setProgress(p => ({ ...p, enriched })),
-        signal,
-      )
+      if (leadsWithoutMobile > 0) {
+        await enrichMissingPhones(
+          pescaLeads,
+          (enriched) => setProgress(p => ({ ...p, enriched })),
+          signal,
+        )
+      }
+      setProgress(p => ({ ...p, enriched: pescaLeads.length }))
 
       if (signal.aborted) return
 
@@ -136,13 +140,13 @@ export function usePesca(): UsePescaReturn {
       setPhase('deduplicating')
 
       const { cnpjs: existingCnpjs, phones: existingPhones } = await loadExistingDedup(signal)
-      const uniqueLeads = deduplicateLeads(enrichedLeads, existingCnpjs, existingPhones)
+      const uniqueLeads = deduplicateLeads(pescaLeads, existingCnpjs, existingPhones)
 
       if (signal.aborted) return
       setProgress(p => ({ ...p, deduped: uniqueLeads.length }))
 
       if (uniqueLeads.length === 0) {
-        setError('Todas as empresas encontradas já existem no sistema. Tente outros filtros.')
+        setError('Todas as empresas encontradas ja existem no sistema. Tente outros filtros.')
         setPhase('error')
         return
       }

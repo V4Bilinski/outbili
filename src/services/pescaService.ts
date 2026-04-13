@@ -1,127 +1,145 @@
 import { listAllRecords, createRecords } from '../lib/airtable'
-import { getCnaeCodesForSegments } from '../lib/cnae-mapping'
+import { getCnaeCodesForCnpja } from '../lib/cnae-mapping'
 import { classifyPhone, formatPhone } from './enrichmentService'
+import { searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
 import { TIERS } from '../lib/constants'
-import type { Lead, Contact, PescaFilters, PescaLead } from '../types'
+import type { Lead, Contact, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
-// --- Fase 1: Busca em massa via n8n webhook ---
-// NOTA: CNPJa GET /office nao suporta filtros (CNAE, estado, porte).
-// A busca filtrada e feita pelo n8n server-side.
-// CNPJa e usado para enriquecimento individual (GET /office/{cnpj}).
+// --- Fase 1: Busca em massa via CNPJa API (GET /office) ---
+// CNPJa retorna dados completos: telefone (com tipo MOBILE/LANDLINE), email, socios, CNAE, endereco.
+// Isso elimina a necessidade de enriquecimento separado via OpenCNPJ/ReceitaWS.
 
-const N8N_PESCA_URL = import.meta.env.VITE_N8N_WEBHOOK_URL
-  ? import.meta.env.VITE_N8N_WEBHOOK_URL.replace('/outbili-search', '/outbili-pesca')
-  : ''
-
-export async function searchCnpjsViaN8n(
+export async function searchViaCnpja(
   filters: PescaFilters,
   targetCount: number = 150,
   onProgress?: (found: number) => void,
   signal?: AbortSignal,
-): Promise<CnpjRecord[]> {
-  const cnaeCodes = getCnaeCodesForSegments(filters.segments)
+): Promise<PescaLead[]> {
+  const cnaeCodes = getCnaeCodesForCnpja(filters.segments)
 
-  if (!N8N_PESCA_URL) {
-    throw new Error('Webhook PESCA nao configurado. Configure VITE_N8N_WEBHOOK_URL.')
+  if (cnaeCodes.length === 0) {
+    throw new Error('Nenhum codigo CNAE encontrado para os segmentos selecionados.')
   }
 
-  const payload = {
-    action: 'pesca',
-    cnaeCodes,
-    states: filters.states,
-    capitalMin: filters.revenueMin,
-    capitalMax: filters.revenueMax,
-    excludeMei: filters.excludeMei,
+  // Montar CnpjaSearchParams a partir dos filtros do usuario
+  const params: CnpjaSearchParams = {
+    'mainActivity.id.in': cnaeCodes.join(','),
+    'status.id.in': '2', // somente ativas
+    'phones.ex': true,    // exigir telefone
+  }
+
+  if (filters.states?.length) {
+    params['address.state.in'] = filters.states.join(',')
+  }
+  if (filters.cities?.length) {
+    params['address.municipality.in'] = filters.cities.map(c => c.ibgeCode).join(',')
+  }
+  if (filters.companySizes?.length) {
+    params['company.size.id.in'] = filters.companySizes.join(',')
+  }
+  if (filters.revenueMin) {
+    params['company.equity.gte'] = filters.revenueMin
+  }
+  if (filters.revenueMax && filters.revenueMax < 10000000) {
+    params['company.equity.lte'] = filters.revenueMax
+  }
+  if (filters.excludeMei) {
+    params['company.simei.optant.eq'] = false
+  }
+  if (filters.headOnly) {
+    params['head.eq'] = true
+  }
+
+  // Busca paginada via CNPJa
+  const { offices } = await searchOfficesPaginated(params, {
     targetCount,
-  }
-
-  const res = await fetch(N8N_PESCA_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    maxPages: 15,
     signal,
+    onProgress,
   })
 
-  if (!res.ok) {
-    throw new Error(`Erro na busca: ${res.status}. Verifique o webhook n8n.`)
-  }
+  // Mapear CnpjaOffice -> PescaLead (reutiliza mapCnpjaToLead + extractPartners existentes)
+  return offices.map(office => {
+    const lead = mapCnpjaToLead(office)
+    const partners = extractPartners(office)
+    const decisor = findDecisor(
+      partners.map(p => ({ nome: p.name, qualificacao: p.qualification })),
+    )
 
-  const data = await res.json()
-  const companies: CnpjRecord[] = data.companies || data.results || data || []
-
-  if (!Array.isArray(companies)) {
-    throw new Error('Resposta invalida do webhook. Verifique o formato de saida do n8n.')
-  }
-
-  onProgress?.(companies.length)
-  return companies
-}
-
-interface CnpjRecord {
-  cnpj: string
-  razao_social: string
-  nome_fantasia?: string
-  cnae_fiscal_descricao?: string
-  cnae_fiscal?: string
-  uf?: string
-  municipio?: string
-  logradouro?: string
-  numero?: string
-  bairro?: string
-  capital_social?: number
-  porte?: string
-  data_inicio_atividade?: string
-  telefone1?: string
-  telefone2?: string
-  email?: string
-  qsa?: Array<{ nome_socio: string; qualificacao_socio: string }>
-}
-
-// --- Fase 2: Enriquecimento de telefone + decisor via APIs publicas ---
-
-async function enrichFromOpenCnpj(cnpj: string): Promise<EnrichResult | null> {
-  try {
-    const res = await fetch(`https://api.opencnpj.org/${cnpj}`, { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
-    const d = await res.json()
-
-    const socios = (d.qsa || []).map((s: any) => ({
-      nome: s.nome_socio || s.nome || '',
-      qualificacao: s.qualificacao_socio || s.qual || '',
-    }))
-
-    const decisor = findDecisor(socios)
-
-    const rawPhones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone]
-      .filter(Boolean)
-      .flatMap((p: string) => p.split(/[\/;,]/))
-      .map((p: string) => p.trim().replace(/\D/g, ''))
-      .filter((p: string) => p.length >= 10)
+    // CNPJa ja classifica telefone como MOBILE/LANDLINE
+    const mobilePhone = office.phones?.find(p => p.type === 'MOBILE')
+    const anyPhone = office.phones?.[0]
 
     return {
-      phones: rawPhones,
+      companyName: lead.companyName || office.company?.name || '',
+      tradeName: lead.tradeName,
+      cnpj: lead.cnpj || office.taxId,
+      segment: lead.segment,
+      state: lead.state,
+      city: lead.city,
+      address: lead.address,
       decisorName: decisor?.nome,
       decisorRole: decisor?.qualificacao,
-      capitalSocial: d.capital_social ? Number(String(d.capital_social).replace(/\D/g, '')) : undefined,
-      state: d.uf,
-      city: d.municipio,
-      address: [d.logradouro, d.numero, d.bairro].filter(Boolean).join(', ') || undefined,
-      email: d.email || d.correio_eletronico,
-      tradeName: d.nome_fantasia,
-      companyName: d.razao_social,
-      foundingDate: d.data_inicio_atividade,
-      porte: d.porte || d.descricao_porte,
+      whatsapp: mobilePhone ? formatPhone(`${mobilePhone.area}${mobilePhone.number}`) : undefined,
+      phone: anyPhone ? formatPhone(`${anyPhone.area}${anyPhone.number}`) : undefined,
+      capitalSocial: lead.capitalSocial,
+      porte: office.company?.size?.text,
+      cnaePrimary: lead.cnaePrimary,
+      foundingDate: lead.foundingDate,
+      email: lead.rfEmail,
+      source: 'pesca' as const,
     }
-  } catch {
-    return null
-  }
+  })
 }
+
+// --- Fase 2 (opcional): Enriquecer leads sem celular via ReceitaWS ---
+
+export async function enrichMissingPhones(
+  leads: PescaLead[],
+  onProgress?: (enriched: number) => void,
+  signal?: AbortSignal,
+): Promise<PescaLead[]> {
+  const leadsWithoutMobile = leads.filter(l => !l.whatsapp)
+  const limit = Math.min(leadsWithoutMobile.length, 5)
+  let enrichedCount = 0
+
+  for (let i = 0; i < limit; i++) {
+    if (signal?.aborted) break
+    const lead = leadsWithoutMobile[i]
+
+    try {
+      const receitaData = await enrichFromReceitaWs(lead.cnpj)
+      if (receitaData?.phones?.length) {
+        const mobile = receitaData.phones.find(p => classifyPhone(p) === 'mobile')
+        if (mobile) lead.whatsapp = formatPhone(mobile)
+        if (!lead.phone) lead.phone = formatPhone(receitaData.phones[0])
+      }
+      if (!lead.decisorName && receitaData?.decisorName) {
+        lead.decisorName = receitaData.decisorName
+        lead.decisorRole = receitaData.decisorRole
+      }
+    } catch { /* non-blocking */ }
+
+    enrichedCount++
+    onProgress?.(enrichedCount)
+
+    // ReceitaWS rate limit: 3/min
+    if (i < limit - 1) await delay(20000)
+  }
+
+  return leads
+}
+
+// --- ReceitaWS fallback (apenas para leads sem celular) ---
 
 async function enrichFromReceitaWs(cnpj: string): Promise<EnrichResult | null> {
   try {
     const res = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return null
-    const d = await res.json()
+    const text = await res.text()
+    if (!text) return null
+    let d: any
+    try { d = JSON.parse(text) } catch { return null }
     if (d.status === 'ERROR') return null
 
     const rawPhones = (d.telefone || '').split(/[\/;,]/).map((p: string) => p.trim().replace(/\D/g, '')).filter((p: string) => p.length >= 10)
@@ -141,15 +159,6 @@ interface EnrichResult {
   phones: string[]
   decisorName?: string
   decisorRole?: string
-  capitalSocial?: number
-  state?: string
-  city?: string
-  address?: string
-  email?: string
-  tradeName?: string
-  companyName?: string
-  foundingDate?: string
-  porte?: string
 }
 
 function findDecisor(socios: Array<{ nome: string; qualificacao: string }>): { nome: string; qualificacao: string } | undefined {
@@ -158,124 +167,6 @@ function findDecisor(socios: Array<{ nome: string; qualificacao: string }>): { n
     s.qualificacao.toLowerCase().includes('diretor') ||
     s.qualificacao.toLowerCase().includes('presidente'),
   ) || socios[0]
-}
-
-export async function enrichCnpjRecords(
-  records: CnpjRecord[],
-  onProgress?: (enriched: number) => void,
-  signal?: AbortSignal,
-): Promise<PescaLead[]> {
-  const leads: PescaLead[] = []
-  const concurrency = 8
-  let enrichedCount = 0
-
-  for (let i = 0; i < records.length; i += concurrency) {
-    if (signal?.aborted) break
-
-    const batch = records.slice(i, i + concurrency)
-    const results = await Promise.allSettled(
-      batch.map(async (record) => {
-        if (signal?.aborted) return null
-
-        const cnpj = record.cnpj.replace(/\D/g, '')
-
-        // Extrair dados do QSA que já veio do n8n
-        let decisorName = undefined as string | undefined
-        let decisorRole = undefined as string | undefined
-        let allPhones: string[] = []
-        let mobilePhone: string | undefined
-
-        // Dados básicos do registro n8n
-        if (record.qsa?.length) {
-          const decisor = findDecisor(record.qsa.map(s => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio })))
-          decisorName = decisor?.nome
-          decisorRole = decisor?.qualificacao
-        }
-
-        // Telefones do registro
-        const regPhones = [record.telefone1, record.telefone2]
-          .filter((p): p is string => !!p)
-          .flatMap(p => p.split(/[\/;,]/))
-          .map(p => p.trim().replace(/\D/g, ''))
-          .filter(p => p.length >= 10)
-        allPhones.push(...regPhones)
-
-        // Tentar OpenCNPJ para dados extras (socios, telefones)
-        const openData = await enrichFromOpenCnpj(cnpj)
-        if (openData) {
-          if (openData.phones.length) allPhones = [...new Set([...allPhones, ...openData.phones])]
-          if (!decisorName && openData.decisorName) {
-            decisorName = openData.decisorName
-            decisorRole = openData.decisorRole
-          }
-        }
-
-        // Classificar telefone movel = WhatsApp
-        for (const p of allPhones) {
-          if (classifyPhone(p) === 'mobile') {
-            mobilePhone = formatPhone(p)
-            break
-          }
-        }
-
-        const lead: PescaLead = {
-          companyName: openData?.companyName || record.razao_social || '',
-          tradeName: openData?.tradeName || record.nome_fantasia || undefined,
-          cnpj,
-          segment: record.cnae_fiscal_descricao || undefined,
-          state: openData?.state || record.uf || undefined,
-          city: openData?.city || record.municipio || undefined,
-          address: openData?.address || [record.logradouro, record.numero, record.bairro].filter(Boolean).join(', ') || undefined,
-          decisorName,
-          decisorRole,
-          whatsapp: mobilePhone || undefined,
-          phone: allPhones[0] ? formatPhone(allPhones[0]) : undefined,
-          capitalSocial: openData?.capitalSocial || record.capital_social || undefined,
-          porte: openData?.porte || record.porte || undefined,
-          cnaePrimary: record.cnae_fiscal || undefined,
-          foundingDate: openData?.foundingDate || record.data_inicio_atividade || undefined,
-          email: openData?.email || record.email || undefined,
-          source: 'pesca',
-        }
-
-        return lead
-      }),
-    )
-
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        leads.push(result.value)
-        enrichedCount++
-      }
-    }
-
-    onProgress?.(enrichedCount)
-    await delay(200)
-  }
-
-  // ReceitaWS para leads sem celular (max 10, rate limit 3/min)
-  const leadsWithoutMobile = leads.filter(l => !l.whatsapp)
-  const receitaWsLimit = Math.min(leadsWithoutMobile.length, 10)
-
-  for (let i = 0; i < receitaWsLimit; i++) {
-    if (signal?.aborted) break
-    const lead = leadsWithoutMobile[i]
-    try {
-      const receitaData = await enrichFromReceitaWs(lead.cnpj)
-      if (receitaData?.phones?.length) {
-        const mobile = receitaData.phones.find(p => classifyPhone(p) === 'mobile')
-        if (mobile) lead.whatsapp = formatPhone(mobile)
-        if (!lead.phone) lead.phone = formatPhone(receitaData.phones[0])
-      }
-      if (!lead.decisorName && receitaData?.decisorName) {
-        lead.decisorName = receitaData.decisorName
-        lead.decisorRole = receitaData.decisorRole
-      }
-    } catch { /* non-blocking */ }
-    if (i < receitaWsLimit - 1) await delay(20000)
-  }
-
-  return leads
 }
 
 // --- Deduplicacao ---
@@ -313,7 +204,7 @@ export async function loadExistingDedup(signal?: AbortSignal): Promise<{ cnpjs: 
   }
 
   if (leadsFailed && contactsFailed) {
-    throw new Error('Não foi possível verificar duplicatas. Verifique sua conexão e tente novamente.')
+    throw new Error('Nao foi possivel verificar duplicatas. Verifique sua conexao e tente novamente.')
   }
 
   return { cnpjs, phones }
@@ -329,7 +220,7 @@ export function deduplicateLeads(
   const result: PescaLead[] = []
 
   for (const lead of leads) {
-    // Dedup por CNPJ se disponível
+    // Dedup por CNPJ se disponivel
     if (lead.cnpj) {
       const cnpj = lead.cnpj.replace(/\D/g, '')
       if (seenCnpjs.has(cnpj) || existingCnpjs.has(cnpj)) continue
@@ -400,7 +291,6 @@ export async function savePescaToAirtable(
         foundingDate: lead.foundingDate,
         cnaePrimary: lead.cnaePrimary,
         enrichmentStatus: 'cnpja',
-        googleRating: undefined, // Pode ser adicionado do Google Maps depois
         partners: lead.decisorName ? JSON.stringify([{ nome_socio: lead.decisorName, qualificacao_socio: lead.decisorRole || '' }]) : undefined,
       } as Partial<Lead>,
     }))

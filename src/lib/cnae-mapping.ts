@@ -112,3 +112,13 @@ export function getCnaeCodesForSegments(segmentSlugs: string[]): string[] {
   }
   return Array.from(codes)
 }
+
+/** Converte '9602-5/01' para 9602501 (formato numerico CNPJa) */
+export function formatCnaeForCnpja(code: string): number {
+  return parseInt(code.replace(/[-\/]/g, ''), 10)
+}
+
+/** Retorna CNAEs no formato numerico para a API CNPJa */
+export function getCnaeCodesForCnpja(segmentSlugs: string[]): number[] {
+  return getCnaeCodesForSegments(segmentSlugs).map(formatCnaeForCnpja)
+}

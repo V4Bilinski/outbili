@@ -27,7 +27,7 @@ const ALL_STATES = [
 const PHASE_LABELS: Record<PescaPhase, string> = {
   idle: '',
   searching: 'Pesquisando empresas via CNPJa...',
-  enriching: 'Enriquecendo com Assertiva (telefones + decisores)...',
+  enriching: 'Classificando telefones e decisores...',
   deduplicating: 'Removendo duplicatas...',
   saving: 'Salvando no sistema...',
   done: 'Concluido!',
@@ -85,43 +85,89 @@ const QUALITY_CONFIG = {
   bronze: { label: 'Básico', color: 'text-text-muted', bg: 'bg-white/[0.03]', border: 'border-border', dot: 'bg-text-muted' },
 }
 
-// Cidades principais por estado
-const STATE_CITIES: Record<string, string[]> = {
-  SP: ['Sao Paulo', 'Campinas', 'Santos', 'Ribeirao Preto', 'Sorocaba', 'Osasco', 'Guarulhos'],
-  RJ: ['Rio de Janeiro', 'Niteroi', 'Petropolis', 'Volta Redonda', 'Campos dos Goytacazes'],
-  MG: ['Belo Horizonte', 'Uberlandia', 'Juiz de Fora', 'Contagem', 'Betim'],
-  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas', 'Santa Maria'],
-  SC: ['Florianopolis', 'Joinville', 'Blumenau', 'Chapeco', 'Criciuma'],
-  PR: ['Curitiba', 'Londrina', 'Maringa', 'Ponta Grossa', 'Cascavel'],
-  BA: ['Salvador', 'Feira de Santana', 'Vitoria da Conquista', 'Camacari'],
-  PE: ['Recife', 'Jaboatao dos Guararapes', 'Olinda', 'Caruaru'],
-  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanau'],
-  GO: ['Goiania', 'Aparecida de Goiania', 'Anapolis'],
-  DF: ['Brasilia'],
-  ES: ['Vitoria', 'Vila Velha', 'Serra', 'Cariacica'],
-  PA: ['Belem', 'Ananindeua', 'Santarem'],
-  AM: ['Manaus'],
-  MA: ['Sao Luis'],
-  MT: ['Cuiaba', 'Varzea Grande', 'Rondonopolis'],
-  MS: ['Campo Grande', 'Dourados'],
-  PB: ['Joao Pessoa', 'Campina Grande'],
-  RN: ['Natal', 'Mossoro'],
-  AL: ['Maceio'],
-  PI: ['Teresina'],
-  SE: ['Aracaju'],
-  RO: ['Porto Velho'],
-  TO: ['Palmas'],
-  AC: ['Rio Branco'],
-  AP: ['Macapa'],
-  RR: ['Boa Vista'],
+// Cidades principais por estado (com codigos IBGE para CNPJa API)
+const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
+  SP: [
+    { name: 'Sao Paulo', ibge: 3550308 }, { name: 'Campinas', ibge: 3509502 },
+    { name: 'Santos', ibge: 3548500 }, { name: 'Ribeirao Preto', ibge: 3543402 },
+    { name: 'Sorocaba', ibge: 3552205 }, { name: 'Osasco', ibge: 3534401 },
+    { name: 'Guarulhos', ibge: 3518800 },
+  ],
+  RJ: [
+    { name: 'Rio de Janeiro', ibge: 3304557 }, { name: 'Niteroi', ibge: 3303302 },
+    { name: 'Petropolis', ibge: 3303906 }, { name: 'Volta Redonda', ibge: 3306305 },
+    { name: 'Campos dos Goytacazes', ibge: 3301009 },
+  ],
+  MG: [
+    { name: 'Belo Horizonte', ibge: 3106200 }, { name: 'Uberlandia', ibge: 3170206 },
+    { name: 'Juiz de Fora', ibge: 3136702 }, { name: 'Contagem', ibge: 3118601 },
+    { name: 'Betim', ibge: 3106705 },
+  ],
+  RS: [
+    { name: 'Porto Alegre', ibge: 4314902 }, { name: 'Caxias do Sul', ibge: 4305108 },
+    { name: 'Pelotas', ibge: 4314407 }, { name: 'Canoas', ibge: 4304606 },
+    { name: 'Santa Maria', ibge: 4316907 },
+  ],
+  SC: [
+    { name: 'Florianopolis', ibge: 4205407 }, { name: 'Joinville', ibge: 4209102 },
+    { name: 'Blumenau', ibge: 4202404 }, { name: 'Chapeco', ibge: 4204202 },
+    { name: 'Criciuma', ibge: 4204608 },
+  ],
+  PR: [
+    { name: 'Curitiba', ibge: 4106902 }, { name: 'Londrina', ibge: 4113700 },
+    { name: 'Maringa', ibge: 4115200 }, { name: 'Ponta Grossa', ibge: 4119905 },
+    { name: 'Cascavel', ibge: 4104808 },
+  ],
+  BA: [
+    { name: 'Salvador', ibge: 2927408 }, { name: 'Feira de Santana', ibge: 2910800 },
+    { name: 'Vitoria da Conquista', ibge: 2933307 }, { name: 'Camacari', ibge: 2905701 },
+  ],
+  PE: [
+    { name: 'Recife', ibge: 2611606 }, { name: 'Jaboatao dos Guararapes', ibge: 2607901 },
+    { name: 'Olinda', ibge: 2609600 }, { name: 'Caruaru', ibge: 2604106 },
+  ],
+  CE: [
+    { name: 'Fortaleza', ibge: 2304400 }, { name: 'Caucaia', ibge: 2303709 },
+    { name: 'Juazeiro do Norte', ibge: 2307304 }, { name: 'Maracanau', ibge: 2307650 },
+  ],
+  GO: [
+    { name: 'Goiania', ibge: 5208707 }, { name: 'Aparecida de Goiania', ibge: 5201405 },
+    { name: 'Anapolis', ibge: 5201108 },
+  ],
+  DF: [{ name: 'Brasilia', ibge: 5300108 }],
+  ES: [
+    { name: 'Vitoria', ibge: 3205309 }, { name: 'Vila Velha', ibge: 3205200 },
+    { name: 'Serra', ibge: 3205002 }, { name: 'Cariacica', ibge: 3201308 },
+  ],
+  PA: [
+    { name: 'Belem', ibge: 1501402 }, { name: 'Ananindeua', ibge: 1500800 },
+    { name: 'Santarem', ibge: 1506807 },
+  ],
+  AM: [{ name: 'Manaus', ibge: 1302603 }],
+  MA: [{ name: 'Sao Luis', ibge: 2111300 }],
+  MT: [
+    { name: 'Cuiaba', ibge: 5103403 }, { name: 'Varzea Grande', ibge: 5108402 },
+    { name: 'Rondonopolis', ibge: 5107602 },
+  ],
+  MS: [{ name: 'Campo Grande', ibge: 5002704 }, { name: 'Dourados', ibge: 5003702 }],
+  PB: [{ name: 'Joao Pessoa', ibge: 2507507 }, { name: 'Campina Grande', ibge: 2504009 }],
+  RN: [{ name: 'Natal', ibge: 2408102 }, { name: 'Mossoro', ibge: 2408003 }],
+  AL: [{ name: 'Maceio', ibge: 2704302 }],
+  PI: [{ name: 'Teresina', ibge: 2211001 }],
+  SE: [{ name: 'Aracaju', ibge: 2800308 }],
+  RO: [{ name: 'Porto Velho', ibge: 1100205 }],
+  TO: [{ name: 'Palmas', ibge: 1721000 }],
+  AC: [{ name: 'Rio Branco', ibge: 1200401 }],
+  AP: [{ name: 'Macapa', ibge: 1600303 }],
+  RR: [{ name: 'Boa Vista', ibge: 1400100 }],
 }
 
 const PORTE_OPTIONS = [
-  { id: 'micro', label: 'Micro', desc: 'Ate R$ 100k', min: 0, max: 100000, icon: '🏪' },
-  { id: 'pequena', label: 'Pequena', desc: 'R$ 100k - 500k', min: 100000, max: 500000, icon: '🏢' },
-  { id: 'media', label: 'Media', desc: 'R$ 500k - 2M', min: 500000, max: 2000000, icon: '🏗' },
-  { id: 'grande', label: 'Grande', desc: 'Acima de R$ 2M', min: 2000000, max: 10000000, icon: '🏛' },
-  { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, icon: '🔍' },
+  { id: 'micro', label: 'Micro', desc: 'Ate R$ 100k', min: 0, max: 100000, sizes: [1], icon: '🏪' },
+  { id: 'pequena', label: 'Pequena', desc: 'R$ 100k - 500k', min: 100000, max: 500000, sizes: [1, 3], icon: '🏢' },
+  { id: 'media', label: 'Media', desc: 'R$ 500k - 2M', min: 500000, max: 2000000, sizes: [3, 5], icon: '🏗' },
+  { id: 'grande', label: 'Grande', desc: 'Acima de R$ 2M', min: 2000000, max: 10000000, sizes: [5], icon: '🏛' },
+  { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, sizes: [] as number[], icon: '🔍' },
 ]
 
 export function PescaPanel() {
@@ -133,6 +179,7 @@ export function PescaPanel() {
   const [selectedPorte, setSelectedPorte] = useState('qualquer')
   const [revenueMin, setRevenueMin] = useState(0)
   const [revenueMax, setRevenueMax] = useState(10000000)
+  const [companySizes, setCompanySizes] = useState<number[]>([])
   const [excludeMei, setExcludeMei] = useState(true)
   const [showAllStates, setShowAllStates] = useState(false)
 
@@ -167,6 +214,7 @@ export function PescaPanel() {
     if (porte) {
       setRevenueMin(porte.min)
       setRevenueMax(porte.max)
+      setCompanySizes(porte.sizes)
     }
   }
 
@@ -186,6 +234,16 @@ export function PescaPanel() {
       revenueMin,
       revenueMax,
       excludeMei,
+      cities: cities.length > 0
+        ? cities.map(cityName => {
+            for (const uf of states) {
+              const match = (STATE_CITIES[uf] || []).find(c => c.name === cityName)
+              if (match) return { name: match.name, ibgeCode: match.ibge }
+            }
+            return null
+          }).filter((c): c is { name: string; ibgeCode: number } => c !== null)
+        : undefined,
+      companySizes: companySizes.length > 0 ? companySizes : undefined,
     }
 
     setDataFilter('all')
@@ -194,7 +252,7 @@ export function PescaPanel() {
   }
 
   // Cidades disponiveis baseadas nos estados selecionados
-  const availableCities = states.flatMap(uf => (STATE_CITIES[uf] || []))
+  const availableCities = states.flatMap(uf => (STATE_CITIES[uf] || []).map(c => c.name))
 
   // Leads filtrados e ordenados para o painel de resultados
   const filteredLeads = useMemo(() => {
@@ -401,7 +459,7 @@ export function PescaPanel() {
                           {cities.includes(c) && <CheckCircle className="h-3 w-3 text-white" />}
                         </div>
                         <span className="flex-1">{c}</span>
-                        <span className="text-[10px] text-text-muted">{states.find(uf => (STATE_CITIES[uf] || []).includes(c))}</span>
+                        <span className="text-[10px] text-text-muted">{states.find(uf => (STATE_CITIES[uf] || []).some(city => city.name === c))}</span>
                       </button>
                     ))}
                   </div>
@@ -479,11 +537,11 @@ export function PescaPanel() {
 
           {/* Footer — fontes de dados */}
           <div className="flex items-center justify-center gap-3 mt-3">
-            <span className="text-[10px] text-text-muted">Pesquisa CNPJ</span>
+            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa API</span>
             <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa (enriquecimento)</span>
+            <span className="text-[10px] text-text-muted">Busca + telefone + decisor</span>
             <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva (telefones)</span>
+            <span className="text-[10px] text-success/60 font-medium">Airtable</span>
           </div>
         </Card>
       </div>

@@ -4,7 +4,7 @@ const API_KEY = import.meta.env.VITE_CNPJA_API_KEY || ''
 const BASE_URL = 'https://api.cnpja.com'
 const OPEN_URL = 'https://open.cnpja.com'
 
-async function cnpjaFetch<T>(path: string, useOpen = false): Promise<T> {
+async function cnpjaFetch<T>(path: string, useOpen = false, retryCount = 0): Promise<T> {
   const base = useOpen ? OPEN_URL : BASE_URL
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -16,8 +16,12 @@ async function cnpjaFetch<T>(path: string, useOpen = false): Promise<T> {
   const res = await fetch(`${base}${path}`, { headers })
 
   if (res.status === 429) {
-    await new Promise((r) => setTimeout(r, 2000))
-    return cnpjaFetch<T>(path, useOpen)
+    if (retryCount >= 3) {
+      throw new Error('CNPJa: rate limit excedido apos 3 tentativas. Aguarde e tente novamente.')
+    }
+    const delay = 2000 * Math.pow(2, retryCount) // 2s, 4s, 8s
+    await new Promise((r) => setTimeout(r, delay))
+    return cnpjaFetch<T>(path, useOpen, retryCount + 1)
   }
 
   if (!res.ok) {
@@ -40,7 +44,7 @@ export async function searchOffice(cnpj: string): Promise<CnpjaOffice> {
   }
 }
 
-// --- Pesquisa avancada (massa) ---
+// --- Pesquisa avancada simples (legado, mantida para compatibilidade) ---
 
 export async function searchOffices(params: CnpjaSearchParams): Promise<CnpjaOffice[]> {
   const searchParams = new URLSearchParams()
@@ -54,6 +58,59 @@ export async function searchOffices(params: CnpjaSearchParams): Promise<CnpjaOff
     `/office?${qs}`,
   )
   return result.offices || []
+}
+
+// --- Pesquisa avancada paginada (nova — usada pelo PESCA) ---
+
+export async function searchOfficesPaginated(
+  params: CnpjaSearchParams,
+  options: {
+    targetCount: number
+    maxPages?: number
+    signal?: AbortSignal
+    onProgress?: (found: number) => void
+  },
+): Promise<{ offices: CnpjaOffice[]; totalCount: number }> {
+  const allOffices: CnpjaOffice[] = []
+  const maxPages = options.maxPages ?? 15
+  let currentToken: string | undefined
+
+  for (let page = 0; page < maxPages; page++) {
+    if (options.signal?.aborted) break
+    if (allOffices.length >= options.targetCount) break
+
+    const queryParams: Record<string, string | number | boolean> = { limit: 10 }
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && key !== 'token') {
+        queryParams[key] = value
+      }
+    }
+    if (currentToken) queryParams.token = currentToken
+
+    const qs = new URLSearchParams()
+    for (const [key, value] of Object.entries(queryParams)) {
+      qs.set(key, String(value))
+    }
+
+    const result = await cnpjaFetch<{ count: number; next?: string; offices: CnpjaOffice[] }>(
+      `/office?${qs}`,
+    )
+
+    if (!result.offices?.length) break
+    allOffices.push(...result.offices)
+    options.onProgress?.(allOffices.length)
+
+    currentToken = result.next
+    if (!currentToken) break
+  }
+
+  return { offices: allOffices, totalCount: allOffices.length }
+}
+
+// --- Consulta creditos ---
+
+export async function checkCredits(): Promise<{ used: number; limit: number; remaining: number }> {
+  return cnpjaFetch('/credit')
 }
 
 // --- Consulta empresa (socios + filiais, custo 0) ---

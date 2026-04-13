@@ -227,6 +227,10 @@ export interface PescaFilters {
   revenueMin: number
   revenueMax: number
   excludeMei: boolean
+  cities?: Array<{ name: string; ibgeCode: number }>
+  companySizes?: number[]   // 1=ME, 3=EPP, 5=DEMAIS
+  headOnly?: boolean
+  withPhone?: boolean
 }
 
 export interface PescaLead {
@@ -350,12 +354,18 @@ export interface CnpjaOffice {
 }
 
 export interface CnpjaSearchParams {
-  'mainActivity.id'?: number
-  'address.state'?: string
-  'address.city'?: string
-  'company.size.id'?: number
-  'status.id'?: number
-  page?: number
+  'mainActivity.id.in'?: string
+  'address.state.in'?: string
+  'address.municipality.in'?: string
+  'company.size.id.in'?: string
+  'company.equity.gte'?: number
+  'company.equity.lte'?: number
+  'company.simei.optant.eq'?: boolean
+  'status.id.in'?: string
+  'head.eq'?: boolean
+  'phones.ex'?: boolean
+  'emails.ex'?: boolean
+  token?: string
   limit?: number
 }
 
