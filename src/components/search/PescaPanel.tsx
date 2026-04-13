@@ -190,7 +190,7 @@ export function PescaPanel() {
   const [sortField, setSortField] = useState<SortField>('company')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const { phase, progress, leads, error, assertivaWarning, elapsed, startPesca, cancel, reset, resetExecution, retryFromError } = usePesca()
+  const { phase, progress, leads, error, assertivaWarning, elapsed, startPesca, cancel, reset, retryFromError } = usePesca()
 
   const toggleSegment = (name: string) => {
     setSegments(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name])

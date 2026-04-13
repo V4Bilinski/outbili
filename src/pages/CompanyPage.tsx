@@ -40,7 +40,6 @@ const SECONDARY_TABS = [
   { id: 'ads-intel', label: 'Anúncios' },
 ] as const
 
-const ALL_TABS = [...PRIMARY_TABS, ...SECONDARY_TABS]
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
   DRAFT: { label: 'Rascunho', variant: 'default' },
