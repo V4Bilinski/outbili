@@ -60,7 +60,11 @@ export async function searchViaCnpja(
   })
 
   // Mapear CnpjaOffice -> PescaLead (reutiliza mapCnpjaToLead + extractPartners existentes)
-  return offices.map(office => {
+  // REGRA OBRIGATÓRIA: todo lead DEVE ter decisor (nome) + telefone (celular ou fixo).
+  // Leads sem decisor ou sem telefone são DESCARTADOS — proibido salvar lead incompleto.
+  const allLeads: PescaLead[] = []
+
+  for (const office of offices) {
     const lead = mapCnpjaToLead(office)
     const partners = extractPartners(office)
     const decisor = findDecisor(
@@ -71,7 +75,12 @@ export async function searchViaCnpja(
     const mobilePhone = office.phones?.find(p => p.type === 'MOBILE')
     const anyPhone = office.phones?.[0]
 
-    return {
+    // VALIDAÇÃO OBRIGATÓRIA: decisor + telefone
+    const decisorName = decisor?.nome
+    const phone = anyPhone ? formatPhone(`${anyPhone.area}${anyPhone.number}`) : undefined
+    if (!decisorName || !phone) continue // DESCARTA — proibido lead sem decisor ou telefone
+
+    allLeads.push({
       companyName: lead.companyName || office.company?.name || '',
       tradeName: lead.tradeName,
       cnpj: lead.cnpj || office.taxId,
@@ -79,18 +88,20 @@ export async function searchViaCnpja(
       state: lead.state,
       city: lead.city,
       address: lead.address,
-      decisorName: decisor?.nome,
+      decisorName,
       decisorRole: decisor?.qualificacao,
       whatsapp: mobilePhone ? formatPhone(`${mobilePhone.area}${mobilePhone.number}`) : undefined,
-      phone: anyPhone ? formatPhone(`${anyPhone.area}${anyPhone.number}`) : undefined,
+      phone,
       capitalSocial: lead.capitalSocial,
       porte: office.company?.size?.text,
       cnaePrimary: lead.cnaePrimary,
       foundingDate: lead.foundingDate,
       email: lead.rfEmail,
       source: 'pesca' as const,
-    }
-  })
+    })
+  }
+
+  return allLeads
 }
 
 // --- Fase 2: Fallback cascata CNPJa + Assertiva para leads sem celular ---
@@ -420,13 +431,19 @@ export async function savePescaToAirtable(
   onProgress?: (saved: number) => void,
   signal?: AbortSignal,
 ): Promise<SaveResult> {
+  // GATE OBRIGATÓRIO: rejeitar leads sem decisor ou sem telefone
+  const validLeads = leads.filter(l => l.decisorName && (l.whatsapp || l.phone))
+  if (validLeads.length < leads.length) {
+    console.warn(`PESCA: ${leads.length - validLeads.length} leads descartados por falta de decisor ou telefone`)
+  }
+
   const leadIds: string[] = []
   const pendingContacts: Array<{ fields: Partial<Contact> }> = []
 
-  for (let i = 0; i < leads.length; i += 10) {
+  for (let i = 0; i < validLeads.length; i += 10) {
     if (signal?.aborted) break
 
-    const batch = leads.slice(i, i + 10)
+    const batch = validLeads.slice(i, i + 10)
     const records = batch.map((lead) => ({
       fields: {
         companyName: lead.companyName,

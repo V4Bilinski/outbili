@@ -87,27 +87,59 @@ npm run build
 npx tsc -b
 ```
 
+## Regras de Negócio Obrigatórias
+
+### Dados obrigatórios por lead (INEGOCIÁVEL)
+
+Todo lead salvo no sistema **DEVE** conter obrigatoriamente:
+
+| Campo | Obrigatório | Fonte | Descrição |
+|-------|:-----------:|-------|-----------|
+| Nome da empresa | **SIM** | CNPJa | Razão social completa |
+| CNPJ | **SIM** | CNPJa | Base de todo enriquecimento |
+| Nome do decisor | **SIM** | CNPJa (QSA) | Sócio-administrador ou diretor |
+| Telefone (celular ou fixo) | **SIM** | CNPJa | Pelo menos 1 telefone de contato |
+| Contact vinculado | **SIM** | Sistema | Registro na tabela Contacts com leadId |
+
+**Leads sem decisor ou sem telefone são DESCARTADOS automaticamente.**
+O sistema recusa salvar leads incompletos em qualquer fluxo (PESCA, cadastro manual, importação).
+
+### Hierarquia de telefone
+
+1. **WhatsApp (celular MOBILE)** — prioridade máxima, campo `whatsapp` do Contact
+2. **Telefone fixo** — fallback, campo `phone` do Contact
+3. **Telefone RF da empresa** — último recurso, campo `rfPhone` do Lead
+
+O campo `whatsapp` do Contact só é preenchido com celulares confirmados (tipo MOBILE do CNPJa).
+Telefones fixos são salvos no campo `phone` e exibidos com label "(fixo)" na interface.
+
+---
+
 ## Funcionalidades
 
-### Pesquisa de leads
-- **Em massa:** busca por segmento, estado, cidade, faturamento via n8n
-- **Lead especifico:** cadastro manual com enriquecimento automatico por IA
-- **Upload de arquivo:** importa CSV, Excel, PDF, TXT, MD com ate 15 leads por vez
+### Pesquisa de leads (PESCA)
+- **Em massa:** busca por segmento, estado, cidade e porte via CNPJa API
+- **Cadastro manual:** lead específico com enriquecimento automático
+- **Upload de arquivo:** importa CSV, Excel, PDF, TXT, MD com até 15 leads por vez
+- **Validação obrigatória:** leads sem decisor ou telefone são descartados antes de salvar
 
 ### Enriquecimento por IA
-Pipeline de enriquecimento em 2 fases:
-1. **APIs publicas:** Receita Federal (CNPJ), Google Maps, dominio
-2. **Inteligencia de mercado:** Apify (Instagram, LinkedIn, Google), analise competitiva
+Pipeline de enriquecimento em 3 fases:
+1. **CNPJa API:** dados cadastrais, sócios (QSA), telefones, emails, CNAE
+2. **Assertiva (via n8n proxy):** telefones validados, WhatsApp flag, CPF do decisor
+3. **Apify Actors:** presença digital (Instagram, LinkedIn, Google), análise competitiva
 
 ### Pipeline Kanban
-Gestao visual de leads com drag-and-drop:
-`Novo → Pesquisando → Contatado → Reuniao → Proposta → Fechado`
+Gestão visual de leads com drag-and-drop e stage gates:
+`Prospecção → Qualificação → Contactado → Respondeu → Reunião → Proposta → Fechado`
 
 ### Perfil da empresa
-Pagina completa com tabs: Projecao financeira, Argumentos de venda, Vulnerabilidades, Analise competitiva, Contatos, Reuniao, Ads Intel.
+Página completa com 4 tabs primárias + dropdown "Mais":
+- **Primárias:** Resumo, SPICED, Reunião, Campanhas
+- **Mais:** Vulnerabilidades, Projeção, Competitiva, Objeções & Respostas, Anúncios
 
 ### Campanhas WhatsApp
-Cadencias outbound automatizadas via BilinskiZap com tracking de entrega, leitura e resposta.
+Cadências outbound automatizadas via BilinskiZap com tracking de entrega, leitura e resposta.
 
 ## Repositorio
 
