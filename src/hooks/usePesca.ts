@@ -5,6 +5,7 @@ import {
   loadExistingDedup,
   deduplicateLeads,
   savePescaToAirtable,
+  enrichBatchWithAssertiva,
 } from '../services/pescaService'
 import type { PescaFilters, PescaLead, PescaPhase, PescaProgress } from '../types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -164,6 +165,22 @@ export function usePesca(): UsePescaReturn {
 
       setLeads(uniqueLeads)
       setProgress(p => ({ ...p, saved: result.savedLeads }))
+
+      // Fase 5: Enriquecer com Assertiva (automatico, telefones + WhatsApp validados)
+      setPhase('assertiva_enriching')
+
+      try {
+        await enrichBatchWithAssertiva(
+          result.leadIds,
+          (enriched) => setProgress(p => ({ ...p, enriched })),
+          signal,
+        )
+      } catch {
+        // Assertiva e non-blocking — se falhar, leads mantem dados CNPJa
+        console.warn('PESCA: enriquecimento Assertiva falhou, leads mantem dados CNPJa')
+      }
+
+      if (signal.aborted) return
       setPhase('done')
 
       // Invalidar cache de leads para refletir novos dados

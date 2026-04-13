@@ -30,11 +30,12 @@ const PHASE_LABELS: Record<PescaPhase, string> = {
   enriching: 'Classificando telefones e decisores...',
   deduplicating: 'Removendo duplicatas...',
   saving: 'Salvando no sistema...',
+  assertiva_enriching: 'Enriquecendo com Assertiva (telefones + WhatsApp)...',
   done: 'Concluido!',
   error: 'Erro na pesquisa',
 }
 
-const PHASE_STEPS: PescaPhase[] = ['searching', 'enriching', 'deduplicating', 'saving']
+const PHASE_STEPS: PescaPhase[] = ['searching', 'enriching', 'deduplicating', 'saving', 'assertiva_enriching']
 
 type DataFilter = 'all' | 'with-whatsapp' | 'with-decisor' | 'complete'
 type SortField = 'company' | 'capital' | 'state'
@@ -539,7 +540,7 @@ export function PescaPanel() {
           <div className="flex items-center justify-center gap-3 mt-3">
             <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa API</span>
             <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-text-muted">Busca + telefone + decisor</span>
+            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva</span>
             <span className="text-[10px] text-text-muted/40">→</span>
             <span className="text-[10px] text-success/60 font-medium">Airtable</span>
           </div>
@@ -592,6 +593,7 @@ export function PescaPanel() {
                   {step === 'enriching' && progress.enriched > 0 && `${progress.enriched}/${progress.found}`}
                   {step === 'deduplicating' && progress.deduped > 0 && `${progress.deduped} únicos`}
                   {step === 'saving' && progress.saved > 0 && `${progress.saved}/${progress.deduped}`}
+                  {step === 'assertiva_enriching' && progress.enriched > 0 && `${progress.enriched}/${progress.saved}`}
                 </span>
               </div>
             )

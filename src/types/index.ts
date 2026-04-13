@@ -79,6 +79,17 @@ export interface Lead {
   // --- Domínio ---
   domainActive?: boolean
   domainExpiry?: string
+  // --- Assertiva Localize (enriquecimento profundo) ---
+  assertivaPhoneValidated?: string
+  assertivaWhatsappFlag?: boolean
+  assertivaEmailValidated?: string
+  assertivaCpfDecisor?: string
+  assertivaIncomeEstimate?: number
+  assertivaCreditScore?: number
+  assertivaSocialMedia?: string       // JSON: perfis de redes sociais
+  assertivaBehavioralData?: string    // JSON: dados comportamentais
+  assertivaEnrichDate?: string
+  assertivaTier?: 'Identificacao' | 'Conexoes' | 'Estrategico'
   // --- Fonte de dados ---
   enrichmentSources?: string  // JSON: quais fontes retornaram dados
   enrichmentLog?: string      // JSON: log de cada etapa
@@ -98,6 +109,9 @@ export interface Contact {
   whatsappConfirmed?: boolean
   phoneIsHot?: boolean
   source?: 'cnpja' | 'assertiva' | 'manual' | 'pesca' | 'apify'
+  assertivaPhoneValidated?: boolean
+  assertivaWhatsappValidated?: boolean
+  assertivaEmailValidated?: boolean
   bilinskizapContactId?: string
   createdAt?: string
 }
@@ -261,7 +275,7 @@ export interface PescaProgress {
   total: number
 }
 
-export type PescaPhase = 'idle' | 'searching' | 'enriching' | 'deduplicating' | 'saving' | 'done' | 'error'
+export type PescaPhase = 'idle' | 'searching' | 'enriching' | 'deduplicating' | 'saving' | 'assertiva_enriching' | 'done' | 'error'
 
 // --- Novas Tabelas (decomposicao JSON) ---
 

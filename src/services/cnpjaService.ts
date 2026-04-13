@@ -79,7 +79,11 @@ export async function searchOfficesPaginated(
     if (options.signal?.aborted) break
     if (allOffices.length >= options.targetCount) break
 
-    const queryParams: Record<string, string | number | boolean> = { limit: 10 }
+    const queryParams: Record<string, string | number | boolean> = {
+      limit: 10,
+      strategy: 'CACHE_IF_FRESH',
+      maxAge: 30,
+    }
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && key !== 'token') {
         queryParams[key] = value

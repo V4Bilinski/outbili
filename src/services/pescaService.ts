@@ -1,7 +1,8 @@
-import { listAllRecords, createRecords } from '../lib/airtable'
+import { listAllRecords, createRecords, getRecord, updateRecords } from '../lib/airtable'
 import { getCnaeCodesForCnpja } from '../lib/cnae-mapping'
 import { classifyPhone, formatPhone } from './enrichmentService'
 import { searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
+import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone } from './assertivaService'
 import { TIERS } from '../lib/constants'
 import type { Lead, Contact, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
@@ -167,6 +168,115 @@ function findDecisor(socios: Array<{ nome: string; qualificacao: string }>): { n
     s.qualificacao.toLowerCase().includes('diretor') ||
     s.qualificacao.toLowerCase().includes('presidente'),
   ) || socios[0]
+}
+
+// --- Fase 5: Enriquecimento Assertiva em batch (automatico apos salvar) ---
+
+export async function enrichBatchWithAssertiva(
+  leadIds: string[],
+  onProgress?: (enriched: number) => void,
+  signal?: AbortSignal,
+): Promise<{ enriched: number; failed: number }> {
+  let enrichedCount = 0
+  let failedCount = 0
+  const batchSize = 5
+
+  for (let i = 0; i < leadIds.length; i += batchSize) {
+    if (signal?.aborted) break
+
+    const batch = leadIds.slice(i, i + batchSize)
+    await Promise.allSettled(
+      batch.map(async (leadId) => {
+        if (signal?.aborted) return
+
+        // Buscar lead do Airtable para obter CNPJ
+        const leadRecord = await getRecord<Lead>('Leads', leadId)
+        const cnpj = leadRecord.fields.cnpj?.replace(/\D/g, '')
+        if (!cnpj) return
+
+        try {
+          // Consulta Assertiva CNPJ — telefones, emails, socios
+          const assertivaData = await assertivaLookupCnpj(cnpj) as any
+          const leadUpdate: Partial<Lead> = {
+            assertivaEnrichDate: new Date().toISOString(),
+          }
+
+          // Telefone validado
+          if (assertivaData?.telefones?.length) {
+            const bestPhone = extractBestPhone(assertivaData.telefones)
+            if (bestPhone.whatsapp) {
+              leadUpdate.assertivaPhoneValidated = bestPhone.whatsapp
+              leadUpdate.assertivaWhatsappFlag = true
+            } else if (bestPhone.landline) {
+              leadUpdate.assertivaPhoneValidated = bestPhone.landline
+              leadUpdate.assertivaWhatsappFlag = false
+            }
+          }
+
+          // Email validado
+          if (assertivaData?.emails?.length) {
+            leadUpdate.assertivaEmailValidated = assertivaData.emails[0].endereco
+          }
+
+          // CPF do decisor (do QSA Assertiva)
+          if (assertivaData?.socios?.length) {
+            const decisor = assertivaData.socios.find((s: any) =>
+              (s.qualificacao || '').toLowerCase().includes('administrador') ||
+              (s.qualificacao || '').toLowerCase().includes('diretor'),
+            ) || assertivaData.socios[0]
+            if (decisor?.cpf) {
+              leadUpdate.assertivaCpfDecisor = decisor.cpf
+            }
+          }
+
+          leadUpdate.enrichmentStatus = 'assertiva' as any
+
+          // PATCH Lead no Airtable
+          await updateRecords<Lead>('Leads', [{ id: leadId, fields: leadUpdate }])
+
+          // Decisores com telefone/WhatsApp — atualizar Contacts
+          const protocolo = assertivaData?._protocolo
+          if (protocolo) {
+            try {
+              const decisores = await getDecisionMakers(cnpj, protocolo)
+              if (decisores.length > 0) {
+                const decisor = decisores[0]
+                const phones = extractBestPhone(decisor.telefones || [])
+                if (phones.whatsapp || decisor.emails?.[0]?.endereco) {
+                  await createRecords<Contact>('Contacts', [{
+                    fields: {
+                      leadId,
+                      name: decisor.nome,
+                      role: decisor.cargo,
+                      contactType: 'decisor',
+                      whatsapp: phones.whatsapp || '',
+                      email: decisor.emails?.[0]?.endereco,
+                      source: 'assertiva',
+                      assertivaPhoneValidated: true,
+                      assertivaWhatsappValidated: !!phones.whatsapp,
+                    } as Partial<Contact>,
+                  }])
+                }
+              }
+            } catch { /* decisores sao complementares */ }
+          }
+
+          enrichedCount++
+        } catch {
+          failedCount++
+        }
+      }),
+    )
+
+    onProgress?.(enrichedCount)
+
+    // Rate limit Assertiva: 1s entre batches
+    if (i + batchSize < leadIds.length) {
+      await delay(1000)
+    }
+  }
+
+  return { enriched: enrichedCount, failed: failedCount }
 }
 
 // --- Deduplicacao ---
