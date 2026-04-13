@@ -54,10 +54,10 @@ export async function searchOffices(params: CnpjaSearchParams): Promise<CnpjaOff
     }
   }
   const qs = searchParams.toString()
-  const result = await cnpjaFetch<{ count: number; offices: CnpjaOffice[] }>(
+  const result = await cnpjaFetch<{ count: number; records: CnpjaOffice[] }>(
     `/office?${qs}`,
   )
-  return result.offices || []
+  return result.records || []
 }
 
 // --- Pesquisa avancada paginada (nova — usada pelo PESCA) ---
@@ -79,29 +79,29 @@ export async function searchOfficesPaginated(
     if (options.signal?.aborted) break
     if (allOffices.length >= options.targetCount) break
 
-    const queryParams: Record<string, string | number | boolean> = {
-      limit: 10,
-      strategy: 'CACHE_IF_FRESH',
-      maxAge: 30,
-    }
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && key !== 'token') {
-        queryParams[key] = value
+    // CNPJa: token is mutually exclusive with other params
+    const queryParams: Record<string, string | number | boolean> = { limit: 10 }
+    if (currentToken) {
+      queryParams.token = currentToken
+    } else {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null) {
+          queryParams[key] = value
+        }
       }
     }
-    if (currentToken) queryParams.token = currentToken
 
     const qs = new URLSearchParams()
     for (const [key, value] of Object.entries(queryParams)) {
       qs.set(key, String(value))
     }
 
-    const result = await cnpjaFetch<{ count: number; next?: string; offices: CnpjaOffice[] }>(
+    const result = await cnpjaFetch<{ count: number; next?: string; records: CnpjaOffice[] }>(
       `/office?${qs}`,
     )
 
-    if (!result.offices?.length) break
-    allOffices.push(...result.offices)
+    if (!result.records?.length) break
+    allOffices.push(...result.records)
     options.onProgress?.(allOffices.length)
 
     currentToken = result.next
