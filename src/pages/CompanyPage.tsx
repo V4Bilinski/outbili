@@ -28,16 +28,16 @@ import { TabAdsIntel } from '../components/company/TabAdsIntel'
 const PRIMARY_TABS = [
   { id: 'resumo', label: 'Resumo' },
   { id: 'spiced', label: 'SPICED' },
-  { id: 'reuniao', label: 'Reuniao' },
+  { id: 'reuniao', label: 'Reunião' },
   { id: 'campanhas', label: 'Campanhas' },
 ] as const
 
 const SECONDARY_TABS = [
   { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
-  { id: 'projecao', label: 'Projecao' },
+  { id: 'projecao', label: 'Projeção' },
   { id: 'competitiva', label: 'Competitiva' },
-  { id: 'argumentos', label: 'Objecoes & Respostas' },
-  { id: 'ads-intel', label: 'Anuncios' },
+  { id: 'argumentos', label: 'Objeções & Respostas' },
+  { id: 'ads-intel', label: 'Anúncios' },
 ] as const
 
 const ALL_TABS = [...PRIMARY_TABS, ...SECONDARY_TABS]

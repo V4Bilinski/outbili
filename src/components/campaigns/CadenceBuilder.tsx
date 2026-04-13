@@ -21,8 +21,8 @@ const DELAY_OPTIONS = [
 
 const CONDITION_OPTIONS = [
   { value: 'always', label: 'Sempre enviar' },
-  { value: 'if_no_reply', label: 'Se nao respondeu' },
-  { value: 'if_no_read', label: 'Se nao leu' },
+  { value: 'if_no_reply', label: 'Se não respondeu' },
+  { value: 'if_no_read', label: 'Se não leu' },
 ]
 
 export function CadenceBuilder({
@@ -62,8 +62,8 @@ export function CadenceBuilder({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">Cadencia de mensagens</h3>
-          <p className="text-[11px] text-text-muted mt-0.5">Configure a sequencia de follow-ups automaticos</p>
+          <h3 className="text-sm font-semibold text-text-primary">Cadência de mensagens</h3>
+          <p className="text-[11px] text-text-muted mt-0.5">Configure a sequência de follow-ups automáticos</p>
         </div>
         <Badge variant="info" size="sm">{steps.length} step{steps.length !== 1 ? 's' : ''}</Badge>
       </div>
@@ -183,7 +183,7 @@ export function CadenceBuilder({
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-border">
           <p className="text-[10px] text-text-muted">
             <MessageSquare className="inline h-3 w-3 mr-1" />
-            Cadencia: {steps.length} mensagens ao longo de{' '}
+            Cadência: {steps.length} mensagens ao longo de{' '}
             {Math.max(...steps.map(s => s.delayHours))} horas.
             Follow-ups condicionais baseados em resposta/leitura.
           </p>

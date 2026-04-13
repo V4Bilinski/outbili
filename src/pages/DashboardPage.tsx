@@ -237,7 +237,7 @@ function QuickActions() {
   const actions = [
     { label: 'Nova pesquisa', desc: 'Encontrar empresas por segmento e estado via CNPJa', icon: Search, onClick: () => navigate('/search') },
     { label: 'Importar relatório', desc: 'Upload de planilha ou HTML com lista de empresas', icon: FileDown, onClick: () => navigate('/search') },
-    { label: 'Nova cadência', desc: 'Criar sequencia WhatsApp com template aprovado', icon: Plus, onClick: () => navigate('/campaigns/new') },
+    { label: 'Nova cadência', desc: 'Criar sequência WhatsApp com template aprovado', icon: Plus, onClick: () => navigate('/campaigns/new') },
     { label: 'Ver pipeline', desc: 'Gerenciar leads no funil de vendas (arrastar e soltar)', icon: Target, onClick: () => navigate('/pipeline') },
   ]
 

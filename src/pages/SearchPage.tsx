@@ -775,7 +775,7 @@ export function SearchPage() {
               <div className={cn('grid md:grid-cols-3 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('location') ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
                 <div>
                   <label htmlFor="specific-city" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-                  <input id="specific-city" type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: Sao Paulo" className={inputClass} />
+                  <input id="specific-city" type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: São Paulo" className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="specific-state" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado</label>
@@ -1138,7 +1138,7 @@ export function SearchPage() {
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-location') ? 'max-h-[200px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
               <div>
                 <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-                <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: Sao Paulo, Campinas, Curitiba" className={inputClass} />
+                <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: São Paulo, Campinas, Curitiba" className={inputClass} />
               </div>
             </div>
           </div>

@@ -234,7 +234,7 @@ export function LeadsPage() {
           <EmptyState
             icon={Users}
             title="Nenhum lead encontrado"
-            description="Faca sua primeira pesquisa para comecar a prospectar."
+            description="Faça sua primeira pesquisa para começar a prospectar."
             action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
           />
         </AnimateIn>

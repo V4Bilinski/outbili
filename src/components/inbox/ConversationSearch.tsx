@@ -36,8 +36,8 @@ export function ConversationSearch({
 
   const tabs: { id: Tab; label: string; icon: typeof Inbox }[] = [
     { id: 'all', label: 'Todas', icon: Inbox },
-    { id: 'unread', label: 'Nao lidas', icon: Bell },
-    { id: 'bot', label: 'Automatico', icon: Bot },
+    { id: 'unread', label: 'Não lidas', icon: Bell },
+    { id: 'bot', label: 'Automático', icon: Bot },
     { id: 'human', label: 'Manual', icon: User },
   ]
 
@@ -49,7 +49,7 @@ export function ConversationSearch({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Pesquisar ou comecar uma nova conversa"
+          placeholder="Pesquisar ou começar uma nova conversa"
           className="w-full h-[35px] rounded-lg pl-10 pr-3 text-[13px] placeholder:text-[var(--wa-text-secondary)] text-[var(--wa-text)] bg-[var(--wa-search-bg)] border-none outline-none focus:ring-1 focus:ring-[var(--wa-unread-badge)]/30 transition-all"
         />
       </div>

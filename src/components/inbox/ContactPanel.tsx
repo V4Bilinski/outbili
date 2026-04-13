@@ -99,7 +99,7 @@ export function ContactPanel({
             </div>
             <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--wa-search-bg)' }}>
               <p className="text-[16px] font-bold text-[var(--wa-text)]">{conversation.unread_count}</p>
-              <p className="text-[10px] text-[var(--wa-text-secondary)]">Nao lidas</p>
+              <p className="text-[10px] text-[var(--wa-text-secondary)]">Não lidas</p>
             </div>
           </div>
           <div className="flex justify-between text-[11px]">

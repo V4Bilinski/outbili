@@ -61,9 +61,9 @@ export function SettingsPage() {
       desc: 'API WhatsApp oficial',
       connected: zapHealthy === true,
       loading: healthLoading,
-      status: zapHealthy ? 'Conectado' : bilinskizapKey ? 'Erro de conexao' : 'API key pendente',
+      status: zapHealthy ? 'Conectado' : bilinskizapKey ? 'Erro de conexão' : 'API key pendente',
       details: contactStats ? `${contactStats.total} contatos · ${contactStats.optIn} opt-in` : bilinskizapUrl || undefined,
-      errorHint: !bilinskizapKey ? 'Adicione VITE_BILINSKIZAP_API_KEY no .env.local' : !zapHealthy ? `Verifique se ${bilinskizapUrl} esta acessivel` : undefined,
+      errorHint: !bilinskizapKey ? 'Adicione VITE_BILINSKIZAP_API_KEY no .env.local' : !zapHealthy ? `Verifique se ${bilinskizapUrl} está acessível` : undefined,
     },
     {
       name: 'Apify',
@@ -78,12 +78,12 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
       <div>
-        <h1 className="text-xl font-bold font-heading gradient-text">Configuracoes</h1>
-        <p className="text-xs text-text-muted mt-0.5">Gerencie conexoes, segmentos e templates</p>
+        <h1 className="text-xl font-bold font-heading gradient-text">Configurações</h1>
+        <p className="text-xs text-text-muted mt-0.5">Gerencie conexões, segmentos e templates</p>
       </div>
 
       <Card>
-        <CardTitle className="mb-5">Conexoes API</CardTitle>
+        <CardTitle className="mb-5">Conexões API</CardTitle>
         <div className="space-y-3">
           {connections.map((conn) => (
             <div key={conn.name} className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">

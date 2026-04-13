@@ -25,7 +25,7 @@ const PIPELINE_COLUMNS = [
   { value: 'Fechado', label: 'Fechado', color: '#10B981', accent: 'border-l-emerald-500' },
 ]
 
-// --- Stage gate checklists (required: true = obrigatorio, false = opcional) ---
+// --- Stage gate checklists (required: true = obrigatório, false = opcional) ---
 interface GateCheck { text: string; required: boolean }
 const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
   Qualificado: {
@@ -148,7 +148,7 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
                   {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
                 </p>
                 <span className="text-[10px] text-text-muted">
-                  {requiredChecked}/{requiredCount} obrigatorios
+                  {requiredChecked}/{requiredCount} obrigatórios
                 </span>
               </div>
               <div className="space-y-1.5">
@@ -189,7 +189,7 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
           )}
 
           {/* Notes */}
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observacoes (opcional)..." rows={2}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
             className="w-full rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
 
           {/* Actions */}
@@ -197,7 +197,7 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
             <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
             <Button onClick={() => onConfirm(notes)} disabled={!allRequiredDone} className="flex-1"
               icon={isCelebration ? <Trophy className="h-4 w-4" /> : allRequiredDone ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
-              {isCelebration ? 'Fechar negocio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatorio${requiredCount - requiredChecked > 1 ? 's' : ''}`}
+              {isCelebration ? 'Fechar negócio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatório${requiredCount - requiredChecked > 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>

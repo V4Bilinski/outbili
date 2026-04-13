@@ -133,10 +133,10 @@ export function ReportsPage() {
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold font-heading gradient-text">Relatorios de performance</h1>
+          <h1 className="text-xl font-bold font-heading gradient-text">Relatórios de performance</h1>
           <p className="text-xs text-text-muted mt-0.5">
-            Metricas estrategicas de prospeccao outbound
-            {periodDays > 0 ? ` · Ultimos ${periodDays} dias` : ' · Todos os dados'}
+            Métricas estratégicas de prospecção outbound
+            {periodDays > 0 ? ` · Últimos ${periodDays} dias` : ' · Todos os dados'}
           </p>
         </div>
         <div className="flex items-center gap-2">

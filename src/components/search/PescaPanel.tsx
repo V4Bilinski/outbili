@@ -89,14 +89,14 @@ const QUALITY_CONFIG = {
 // Cidades principais por estado (com codigos IBGE para CNPJa API)
 const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
   SP: [
-    { name: 'Sao Paulo', ibge: 3550308 }, { name: 'Campinas', ibge: 3509502 },
-    { name: 'Santos', ibge: 3548500 }, { name: 'Ribeirao Preto', ibge: 3543402 },
+    { name: 'São Paulo', ibge: 3550308 }, { name: 'Campinas', ibge: 3509502 },
+    { name: 'Santos', ibge: 3548500 }, { name: 'Ribeirão Preto', ibge: 3543402 },
     { name: 'Sorocaba', ibge: 3552205 }, { name: 'Osasco', ibge: 3534401 },
     { name: 'Guarulhos', ibge: 3518800 },
   ],
   RJ: [
-    { name: 'Rio de Janeiro', ibge: 3304557 }, { name: 'Niteroi', ibge: 3303302 },
-    { name: 'Petropolis', ibge: 3303906 }, { name: 'Volta Redonda', ibge: 3306305 },
+    { name: 'Rio de Janeiro', ibge: 3304557 }, { name: 'Niterói', ibge: 3303302 },
+    { name: 'Petrópolis', ibge: 3303906 }, { name: 'Volta Redonda', ibge: 3306305 },
     { name: 'Campos dos Goytacazes', ibge: 3301009 },
   ],
   MG: [
@@ -110,13 +110,13 @@ const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
     { name: 'Santa Maria', ibge: 4316907 },
   ],
   SC: [
-    { name: 'Florianopolis', ibge: 4205407 }, { name: 'Joinville', ibge: 4209102 },
-    { name: 'Blumenau', ibge: 4202404 }, { name: 'Chapeco', ibge: 4204202 },
-    { name: 'Criciuma', ibge: 4204608 },
+    { name: 'Florianópolis', ibge: 4205407 }, { name: 'Joinville', ibge: 4209102 },
+    { name: 'Blumenau', ibge: 4202404 }, { name: 'Chapecó', ibge: 4204202 },
+    { name: 'Criciúma', ibge: 4204608 },
   ],
   PR: [
     { name: 'Curitiba', ibge: 4106902 }, { name: 'Londrina', ibge: 4113700 },
-    { name: 'Maringa', ibge: 4115200 }, { name: 'Ponta Grossa', ibge: 4119905 },
+    { name: 'Maringá', ibge: 4115200 }, { name: 'Ponta Grossa', ibge: 4119905 },
     { name: 'Cascavel', ibge: 4104808 },
   ],
   BA: [
@@ -132,8 +132,8 @@ const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
     { name: 'Juazeiro do Norte', ibge: 2307304 }, { name: 'Maracanau', ibge: 2307650 },
   ],
   GO: [
-    { name: 'Goiania', ibge: 5208707 }, { name: 'Aparecida de Goiania', ibge: 5201405 },
-    { name: 'Anapolis', ibge: 5201108 },
+    { name: 'Goiânia', ibge: 5208707 }, { name: 'Aparecida de Goiania', ibge: 5201405 },
+    { name: 'Anápolis', ibge: 5201108 },
   ],
   DF: [{ name: 'Brasilia', ibge: 5300108 }],
   ES: [
@@ -141,25 +141,25 @@ const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
     { name: 'Serra', ibge: 3205002 }, { name: 'Cariacica', ibge: 3201308 },
   ],
   PA: [
-    { name: 'Belem', ibge: 1501402 }, { name: 'Ananindeua', ibge: 1500800 },
-    { name: 'Santarem', ibge: 1506807 },
+    { name: 'Belém', ibge: 1501402 }, { name: 'Ananindeua', ibge: 1500800 },
+    { name: 'Santarém', ibge: 1506807 },
   ],
   AM: [{ name: 'Manaus', ibge: 1302603 }],
-  MA: [{ name: 'Sao Luis', ibge: 2111300 }],
+  MA: [{ name: 'São Luís', ibge: 2111300 }],
   MT: [
-    { name: 'Cuiaba', ibge: 5103403 }, { name: 'Varzea Grande', ibge: 5108402 },
-    { name: 'Rondonopolis', ibge: 5107602 },
+    { name: 'Cuiabá', ibge: 5103403 }, { name: 'Várzea Grande', ibge: 5108402 },
+    { name: 'Rondonópolis', ibge: 5107602 },
   ],
   MS: [{ name: 'Campo Grande', ibge: 5002704 }, { name: 'Dourados', ibge: 5003702 }],
-  PB: [{ name: 'Joao Pessoa', ibge: 2507507 }, { name: 'Campina Grande', ibge: 2504009 }],
-  RN: [{ name: 'Natal', ibge: 2408102 }, { name: 'Mossoro', ibge: 2408003 }],
-  AL: [{ name: 'Maceio', ibge: 2704302 }],
+  PB: [{ name: 'João Pessoa', ibge: 2507507 }, { name: 'Campina Grande', ibge: 2504009 }],
+  RN: [{ name: 'Natal', ibge: 2408102 }, { name: 'Mossoró', ibge: 2408003 }],
+  AL: [{ name: 'Maceió', ibge: 2704302 }],
   PI: [{ name: 'Teresina', ibge: 2211001 }],
-  SE: [{ name: 'Aracaju', ibge: 2800308 }],
+  SE: [{ name: 'Aracajú', ibge: 2800308 }],
   RO: [{ name: 'Porto Velho', ibge: 1100205 }],
   TO: [{ name: 'Palmas', ibge: 1721000 }],
   AC: [{ name: 'Rio Branco', ibge: 1200401 }],
-  AP: [{ name: 'Macapa', ibge: 1600303 }],
+  AP: [{ name: 'Macapá', ibge: 1600303 }],
   RR: [{ name: 'Boa Vista', ibge: 1400100 }],
 }
 
@@ -326,7 +326,7 @@ export function PescaPanel() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-text-primary">Qual segmento?</p>
-                <p className="text-[11px] text-text-muted">Selecione um ou mais setores de atuacao</p>
+                <p className="text-[11px] text-text-muted">Selecione um ou mais setores de atuação</p>
               </div>
               {segments.length > 0 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</span>}
             </div>
@@ -551,7 +551,7 @@ export function PescaPanel() {
             ) : (
               <>
                 <Search className="h-4 w-4" />
-                {segments.length === 0 ? 'Selecione um segmento para comecar' : 'Selecione pelo menos um estado'}
+                {segments.length === 0 ? 'Selecione um segmento para começar' : 'Selecione pelo menos um estado'}
               </>
             )}
           </Button>
@@ -649,13 +649,13 @@ export function PescaPanel() {
     const isNetwork = error?.toLowerCase().includes('network') || error?.toLowerCase().includes('fetch') || error?.toLowerCase().includes('failed to')
     const isRateLimit = error?.toLowerCase().includes('rate limit') || error?.toLowerCase().includes('429')
 
-    const errorTitle = isNoResults ? 'Nenhuma empresa encontrada' : isRateLimit ? 'Limite de requisicoes atingido' : isNetwork ? 'Erro de conexao' : 'Erro na PESCA'
+    const errorTitle = isNoResults ? 'Nenhuma empresa encontrada' : isRateLimit ? 'Limite de requisições atingido' : isNetwork ? 'Erro de conexão' : 'Erro na PESCA'
     const errorHint = isNoResults
       ? 'Tente ampliar a busca: adicione mais segmentos, estados ou mude o porte.'
       : isRateLimit
         ? 'A API CNPJa atingiu o limite. Aguarde 1 minuto e tente novamente.'
         : isNetwork
-          ? 'Verifique sua conexao com a internet e tente novamente.'
+          ? 'Verifique sua conexão com a internet e tente novamente.'
           : 'Algo inesperado aconteceu. Tente com filtros diferentes.'
 
     return (
