@@ -4,7 +4,10 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { SEGMENTS } from '../lib/constants'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
-import { TrendingUp, Target, Zap, AlertTriangle, Trophy, Activity } from 'lucide-react'
+import { TrendingUp, Target, Zap, AlertTriangle, Trophy, Activity, Download, Calendar } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { cn } from '../lib/cn'
+import { useState } from 'react'
 
 const chartTooltipStyle = {
   contentStyle: {
@@ -18,9 +21,33 @@ const chartTooltipStyle = {
   },
 }
 
+const PERIOD_OPTIONS = [
+  { label: '7 dias', days: 7 },
+  { label: '30 dias', days: 30 },
+  { label: '90 dias', days: 90 },
+  { label: 'Tudo', days: 0 },
+]
+
+function exportLeadsCsv(leads: any[]) {
+  const headers = ['Empresa', 'CNPJ', 'Segmento', 'Temperatura', 'Status', 'Score', 'Cidade', 'UF', 'Tier']
+  const rows = leads.map(l => [
+    l.companyName || '', l.cnpj || '', l.segment || '', l.temperature || '',
+    l.status || '', l.score || 0, l.city || '', l.state || '', l.tier || '',
+  ])
+  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `outbili-leads-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function ReportsPage() {
   const { data: leads, isLoading: leadsLoading } = useLeads()
   const { data: campaignsData, isLoading: campaignsLoading } = useZapCampaigns()
+  const [periodDays, setPeriodDays] = useState(0)
 
   if (leadsLoading || campaignsLoading) {
     return (
@@ -32,7 +59,8 @@ export function ReportsPage() {
     )
   }
 
-  const allLeads = leads || []
+  const cutoff = periodDays > 0 ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString() : ''
+  const allLeads = (leads || []).filter(l => !cutoff || (l.createdAt && l.createdAt >= cutoff))
   const campaigns = campaignsData?.data || []
 
   // --- KPIs ---
@@ -103,9 +131,35 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
-      <div>
-        <h1 className="text-xl font-bold font-heading gradient-text">Relatórios de performance</h1>
-        <p className="text-xs text-text-muted mt-0.5">Métricas estratégicas de prospecção outbound · Dados em tempo real</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Relatorios de performance</h1>
+          <p className="text-xs text-text-muted mt-0.5">
+            Metricas estrategicas de prospeccao outbound
+            {periodDays > 0 ? ` · Ultimos ${periodDays} dias` : ' · Todos os dados'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Period selector */}
+          <div className="flex items-center gap-1 p-0.5 rounded-xl bg-white/[0.03] border border-border">
+            {PERIOD_OPTIONS.map(opt => (
+              <button
+                key={opt.days}
+                onClick={() => setPeriodDays(opt.days)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer',
+                  periodDays === opt.days ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary',
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {/* Export CSV */}
+          <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={() => exportLeadsCsv(allLeads)}>
+            CSV
+          </Button>
+        </div>
       </div>
 
       {/* Strategic KPIs */}

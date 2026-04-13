@@ -665,27 +665,32 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
         <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-1.5 mb-6">
-        {stepLabels.map((_label, i) => {
+      {/* Step indicator — labels visiveis em cada step */}
+      <div className="flex items-center mb-6">
+        {stepLabels.map((label, i) => {
           const s = i + 1
+          const isActive = step === s
+          const isDone = step > s
           return (
-            <div key={s} className="flex items-center gap-1.5">
-              <button
-                onClick={() => s < step && setStep(s)}
-                className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                  step >= s ? 'bg-red text-white' : 'bg-white/5 text-text-muted',
-                  s < step && 'cursor-pointer hover:bg-red/80',
-                )}
-              >
-                {step > s ? <CheckCircle className="h-4 w-4" /> : s}
-              </button>
-              {i < 3 && <div className={cn('w-6 h-0.5 rounded', step > s ? 'bg-red' : 'bg-white/5')} />}
+            <div key={s} className="flex items-center flex-1 last:flex-initial">
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={() => s < step && setStep(s)}
+                  className={cn(
+                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                    isDone ? 'bg-success text-white cursor-pointer hover:bg-success/80' : isActive ? 'bg-red text-white ring-2 ring-red/30' : 'bg-white/5 text-text-muted',
+                  )}
+                >
+                  {isDone ? <CheckCircle className="h-4 w-4" /> : s}
+                </button>
+                <span className={cn('text-[10px] font-medium transition-colors whitespace-nowrap', isActive ? 'text-red' : isDone ? 'text-success' : 'text-text-muted')}>
+                  {label}
+                </span>
+              </div>
+              {i < stepLabels.length - 1 && <div className={cn('h-0.5 flex-1 rounded mx-2 mt-[-14px]', isDone ? 'bg-success' : 'bg-white/5')} />}
             </div>
           )
         })}
-        <span className="text-xs text-text-muted ml-2">{stepLabels[step - 1]}</span>
       </div>
 
       {/* STEP 1: Template Selection */}
