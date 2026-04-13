@@ -15,6 +15,7 @@ interface UsePescaReturn {
   progress: PescaProgress
   leads: PescaLead[]
   error: string | null
+  assertivaWarning: string | null
   elapsed: number
   startPesca: (filters: PescaFilters) => Promise<void>
   cancel: () => void
@@ -30,6 +31,7 @@ export function usePesca(): UsePescaReturn {
   const [progress, setProgress] = useState<PescaProgress>(INITIAL_PROGRESS)
   const [leads, setLeads] = useState<PescaLead[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [assertivaWarning, setAssertivaWarning] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -79,6 +81,7 @@ export function usePesca(): UsePescaReturn {
     setProgress(INITIAL_PROGRESS)
     setLeads([])
     setError(null)
+    setAssertivaWarning(null)
     setElapsed(0)
     startTimeRef.current = 0
   }, [])
@@ -184,8 +187,12 @@ export function usePesca(): UsePescaReturn {
           (enriched) => setProgress(p => ({ ...p, enriched })),
           signal,
         )
-      } catch {
+      } catch (assertivaErr) {
         // Assertiva e non-blocking — se falhar, leads mantem dados CNPJa
+        const msg = assertivaErr instanceof Error ? assertivaErr.message : 'Falha no enriquecimento Assertiva'
+        setAssertivaWarning(msg.includes('CORS') || msg.includes('Failed to fetch')
+          ? 'Assertiva indisponivel (CORS). Leads salvos com dados CNPJa.'
+          : `Assertiva parcial: ${msg}`)
         console.warn('PESCA: enriquecimento Assertiva falhou, leads mantem dados CNPJa')
       }
 
@@ -201,5 +208,5 @@ export function usePesca(): UsePescaReturn {
     }
   }, [queryClient])
 
-  return { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution, retryFromError }
+  return { phase, progress, leads, error, assertivaWarning, elapsed, startPesca, cancel, reset, resetExecution, retryFromError }
 }

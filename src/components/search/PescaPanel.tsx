@@ -190,7 +190,7 @@ export function PescaPanel() {
   const [sortField, setSortField] = useState<SortField>('company')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution, retryFromError } = usePesca()
+  const { phase, progress, leads, error, assertivaWarning, elapsed, startPesca, cancel, reset, resetExecution, retryFromError } = usePesca()
 
   const toggleSegment = (name: string) => {
     setSegments(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name])
@@ -498,19 +498,39 @@ export function PescaPanel() {
                 </button>
               ))}
             </div>
-            <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-white/[0.02] transition-colors border border-border">
+            <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-white/[0.02] transition-colors border border-border group/mei">
               <input
                 type="checkbox"
                 checked={excludeMei}
                 onChange={e => setExcludeMei(e.target.checked)}
                 className="rounded border-border accent-red w-4 h-4"
               />
-              <div>
+              <div className="flex-1">
                 <span className="text-xs text-text-secondary font-medium">Excluir MEI</span>
                 <span className="text-[10px] text-text-muted block">Microempreendedor individual (faturamento ate R$ 81k/ano)</span>
               </div>
+              <div className="relative">
+                <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center text-text-muted hover:text-text-secondary transition-colors cursor-help" aria-label="O que e MEI?">
+                  <span className="text-[10px] font-bold">?</span>
+                </div>
+                <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 rounded-lg bg-surface border border-border shadow-xl shadow-black/30 text-[10px] text-text-secondary opacity-0 invisible group-hover/mei:opacity-100 group-hover/mei:visible transition-all z-30 pointer-events-none">
+                  <p className="font-semibold text-text-primary mb-1">MEI = Microempreendedor Individual</p>
+                  <p>Empresas com faturamento ate R$ 81.000/ano. Geralmente sao profissionais autonomos sem estrutura para investir em marketing digital.</p>
+                </div>
+              </div>
             </label>
           </div>
+
+          {/* Estimativa pre-busca */}
+          {canStart && (
+            <div className="text-center py-1.5 animate-[fade-in_0.3s_ease-out]">
+              <p className="text-[10px] text-text-muted">
+                Estimativa: <span className="font-semibold text-text-secondary">~50-150 empresas</span> com telefone
+                {states.length === 1 ? ` em ${states[0]}` : states.length > 1 ? ` em ${states.length} estados` : ''}
+                {' · '}Tempo: ~2-4 min
+              </p>
+            </div>
+          )}
 
           {/* CTA — destaque maximo quando pronto */}
           <Button
@@ -580,14 +600,25 @@ export function PescaPanel() {
             const isActive = step === phase
             const isCompleted = currentStepIndex > i
             const isPending = currentStepIndex < i
+            const hasWarning = step === 'assertiva_enriching' && assertivaWarning && (isCompleted || isActive)
             return (
-              <div key={step} className={cn('flex items-center gap-3 p-2.5 rounded-lg border transition-all', isActive ? 'border-red/30 bg-red/5' : isCompleted ? 'border-success/20 bg-success/5' : 'border-border bg-white/[0.02]')}>
-                {isCompleted && <CheckCircle className="h-4 w-4 text-success shrink-0" />}
-                {isActive && <Loader2 className="h-4 w-4 text-red animate-spin shrink-0" />}
-                {isPending && <div className="h-4 w-4 rounded-full border border-border shrink-0" />}
-                <p className={cn('text-xs font-medium flex-1', isActive ? 'text-text-primary' : isCompleted ? 'text-success' : 'text-text-muted')}>
-                  {PHASE_LABELS[step]}
-                </p>
+              <div key={step} className={cn(
+                'flex items-center gap-3 p-2.5 rounded-lg border transition-all',
+                hasWarning ? 'border-warning/30 bg-warning/5'
+                  : isActive ? 'border-red/30 bg-red/5'
+                  : isCompleted ? 'border-success/20 bg-success/5'
+                  : 'border-border bg-white/[0.02]',
+              )}>
+                {hasWarning && <AlertCircle className="h-4 w-4 text-warning shrink-0" />}
+                {!hasWarning && isCompleted && <CheckCircle className="h-4 w-4 text-success shrink-0" />}
+                {!hasWarning && isActive && <Loader2 className="h-4 w-4 text-red animate-spin shrink-0" />}
+                {!hasWarning && isPending && <div className="h-4 w-4 rounded-full border border-border shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-xs font-medium', hasWarning ? 'text-warning' : isActive ? 'text-text-primary' : isCompleted ? 'text-success' : 'text-text-muted')}>
+                    {PHASE_LABELS[step]}
+                  </p>
+                  {hasWarning && <p className="text-[10px] text-warning/70 mt-0.5 truncate">{assertivaWarning}</p>}
+                </div>
                 <span className="text-xs font-mono text-text-muted shrink-0">
                   {step === 'searching' && progress.found > 0 && `${progress.found}`}
                   {step === 'enriching' && progress.enriched > 0 && `${progress.enriched}/${progress.found}`}
@@ -611,23 +642,68 @@ export function PescaPanel() {
   }
 
   // ========================================
-  // ERROR
+  // ERROR — contextual com filtros usados e acoes claras
   // ========================================
   if (phase === 'error') {
+    const isNoResults = error?.toLowerCase().includes('nenhum') || error?.toLowerCase().includes('0 empres')
+    const isNetwork = error?.toLowerCase().includes('network') || error?.toLowerCase().includes('fetch') || error?.toLowerCase().includes('failed to')
+    const isRateLimit = error?.toLowerCase().includes('rate limit') || error?.toLowerCase().includes('429')
+
+    const errorTitle = isNoResults ? 'Nenhuma empresa encontrada' : isRateLimit ? 'Limite de requisicoes atingido' : isNetwork ? 'Erro de conexao' : 'Erro na PESCA'
+    const errorHint = isNoResults
+      ? 'Tente ampliar a busca: adicione mais segmentos, estados ou mude o porte.'
+      : isRateLimit
+        ? 'A API CNPJa atingiu o limite. Aguarde 1 minuto e tente novamente.'
+        : isNetwork
+          ? 'Verifique sua conexao com a internet e tente novamente.'
+          : 'Algo inesperado aconteceu. Tente com filtros diferentes.'
+
     return (
       <Card>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-error/10 border border-error/20">
-            <AlertCircle className="h-5 w-5 text-error" />
+        <div className="flex items-center gap-3 mb-3">
+          <div className={cn('p-2.5 rounded-xl border', isNoResults ? 'bg-warning/10 border-warning/20' : 'bg-error/10 border-error/20')}>
+            {isNoResults ? <Search className="h-5 w-5 text-warning" /> : <AlertCircle className="h-5 w-5 text-error" />}
           </div>
           <div>
-            <CardTitle>Erro na PESCA</CardTitle>
-            <p className="text-xs text-error mt-0.5">{error}</p>
+            <CardTitle>{errorTitle}</CardTitle>
+            <p className="text-xs text-text-muted mt-0.5">{errorHint}</p>
           </div>
         </div>
-        <Button onClick={retryFromError} className="w-full py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border">
-          Tentar novamente
-        </Button>
+
+        {/* Resumo dos filtros usados */}
+        {(segments.length > 0 || states.length > 0) && (
+          <div className="rounded-lg bg-white/[0.03] border border-border p-3 mb-4 space-y-1.5">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Filtros usados</p>
+            <div className="flex flex-wrap gap-1.5">
+              {segments.map(s => (
+                <span key={s} className="text-[10px] font-medium bg-red/10 text-red px-2 py-0.5 rounded-full">{s}</span>
+              ))}
+              {states.map(s => (
+                <span key={s} className="text-[10px] font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">{s}</span>
+              ))}
+              {selectedPorte !== 'qualquer' && (
+                <span className="text-[10px] font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">
+                  {PORTE_OPTIONS.find(p => p.id === selectedPorte)?.label || selectedPorte}
+                </span>
+              )}
+              {excludeMei && <span className="text-[10px] font-medium bg-white/[0.06] text-text-muted px-2 py-0.5 rounded-full">Sem MEI</span>}
+            </div>
+            {!isNoResults && error && (
+              <p className="text-[10px] text-error/70 font-mono mt-1">{error}</p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button onClick={retryFromError} className="flex-1 py-2.5 text-sm bg-red hover:bg-red-vivid text-white rounded-xl font-semibold">
+            {isNoResults ? 'Mudar filtros' : 'Tentar novamente'}
+          </Button>
+          {!isNoResults && (
+            <Button onClick={() => { retryFromError() }} className="py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border px-4">
+              Mudar filtros
+            </Button>
+          )}
+        </div>
       </Card>
     )
   }
