@@ -397,42 +397,125 @@ export function SearchPage() {
     if (specificCnpj && specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ incompleto — preencha todos os 14 dígitos ou deixe em branco'); return }
     setIsCreatingSpecific(true)
     try {
-      // Format WhatsApp number
-      let whatsapp = ''
-      if (specificPhone) {
+      const cnpjClean = specificCnpj.replace(/\D/g, '')
+
+      // === FASE 1: Se tem CNPJ, enriquecer via CNPJa + Assertiva PRIMEIRO ===
+      let cnpjaData: any = null
+      let assertivaData: any = null
+      let decisorName = specificContact || ''
+      let decisorRole = specificContactRole || ''
+      let bestWhatsapp = ''
+      let bestPhone = ''
+
+      if (cnpjClean.length === 14) {
+        toast.info('Buscando dados via CNPJa...')
+
+        // CNPJa: dados cadastrais + sócios + telefones
+        try {
+          const { searchOffice } = await import('../services/cnpjaService')
+          const { mapCnpjaToLead, extractPartners } = await import('../services/cnpjaService')
+          const office = await searchOffice(cnpjClean)
+          cnpjaData = mapCnpjaToLead(office)
+
+          // Extrair decisor do QSA se não informado manualmente
+          if (!decisorName) {
+            const partners = extractPartners(office)
+            const decisor = partners.find(p =>
+              p.qualification.toLowerCase().includes('administrador') ||
+              p.qualification.toLowerCase().includes('diretor') ||
+              p.qualification.toLowerCase().includes('presidente')
+            ) || partners[0]
+            if (decisor) {
+              decisorName = decisor.name
+              decisorRole = decisor.qualification
+            }
+          }
+
+          // Telefones do CNPJa
+          const mobile = office.phones?.find((p: any) => p.type === 'MOBILE')
+          const anyPhone = office.phones?.[0]
+          if (mobile) bestWhatsapp = `55${mobile.area}${mobile.number}`
+          if (anyPhone) bestPhone = `55${anyPhone.area}${anyPhone.number}`
+
+          toast.success('CNPJa: dados cadastrais obtidos')
+        } catch (cnpjaErr) {
+          console.warn('CNPJa falhou para cadastro manual:', cnpjaErr)
+        }
+
+        // Assertiva: WhatsApp validado do decisor
+        try {
+          const { lookupCnpj } = await import('../services/assertivaService')
+          assertivaData = await lookupCnpj(cnpjClean)
+
+          // WhatsApp da Assertiva tem PRIORIDADE
+          const moveis = assertivaData?.telefones?.filter((t: any) => t.tipo === 'celular') || []
+          for (const t of moveis) {
+            if (t.whatsapp && t.numero) { bestWhatsapp = t.numero.startsWith('55') ? t.numero : `55${t.numero}`; break }
+          }
+          if (!bestWhatsapp) {
+            for (const t of moveis) {
+              if (t.numero) { bestWhatsapp = t.numero.startsWith('55') ? t.numero : `55${t.numero}`; break }
+            }
+          }
+
+          // Decisor da Assertiva se ainda não tem
+          if (!decisorName && assertivaData?.socios?.length) {
+            const s = assertivaData.socios.find((s: any) =>
+              (s.qualificacao || '').toLowerCase().includes('administrador') ||
+              (s.qualificacao || '').toLowerCase().includes('diretor')
+            ) || assertivaData.socios[0]
+            if (s?.nome) { decisorName = s.nome; decisorRole = s.qualificacao || 'Sócio' }
+          }
+
+          toast.success('Assertiva: telefones validados')
+        } catch (assertivaErr) {
+          console.warn('Assertiva falhou para cadastro manual:', assertivaErr)
+        }
+      }
+
+      // Format WhatsApp from manual input (se não veio do CNPJa/Assertiva)
+      if (!bestWhatsapp && specificPhone) {
         const digits = specificPhone.replace(/\D/g, '').replace(/^0+/, '')
-        whatsapp = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : ''
+        bestWhatsapp = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : ''
       }
 
       // Estimate revenue
       const revenue = specificRevenue ? parseInt(specificRevenue) : undefined
-      const tier = !revenue ? 'Small' : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
+      const tier = !revenue ? (cnpjaData?.tier || 'Small') : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
 
-      // Build lead data with ALL fields
+      // Build lead data — merge manual + CNPJa + Assertiva
       const leadData: Record<string, any> = {
         companyName: specificName,
-        cnpj: specificCnpj.replace(/\D/g, ''),
-        segment: specificSegment || 'Varejo',
+        cnpj: cnpjClean,
+        segment: specificSegment || cnpjaData?.segment || 'Varejo',
         tier,
         ...(revenue && { monthlyRevenue: revenue }),
-        employees: revenue && revenue >= 120000 ? 8 : 5,
-        yearsInMarket: revenue && revenue >= 120000 ? 7 : 5,
+        ...(cnpjaData?.capitalSocial && { capitalSocial: cnpjaData.capitalSocial }),
+        employees: cnpjaData?.employees || (revenue && revenue >= 120000 ? 8 : 5),
+        yearsInMarket: cnpjaData?.yearsInMarket || (revenue && revenue >= 120000 ? 7 : 5),
         status: 'Novo',
         score: 0,
         temperature: 'Morno',
-        ...(specificWebsite && { website: specificWebsite }),
+        ...(specificWebsite || cnpjaData?.website ? { website: specificWebsite || cnpjaData?.website } : {}),
         ...(specificInstagram && { instagram: specificInstagram }),
         ...(specificLinkedin && { linkedin: specificLinkedin }),
         ...(specificFacebook && { facebook: specificFacebook }),
-        ...(specificAddress && { address: specificAddress }),
-        ...(specificCity && { city: specificCity }),
-        ...(specificState && { state: specificState }),
-        businessSummary: `${specificSegment || 'Varejo'} · Inserido manualmente${revenue ? ` · R$ ${Math.round(revenue / 1000)}k/mes` : ''}`,
-        enrichmentStatus: 'none',
+        ...(specificAddress || cnpjaData?.address ? { address: specificAddress || cnpjaData?.address } : {}),
+        ...(specificCity || cnpjaData?.city ? { city: specificCity || cnpjaData?.city } : {}),
+        ...(specificState || cnpjaData?.state ? { state: specificState || cnpjaData?.state } : {}),
+        ...(cnpjaData?.zipCode && { zipCode: cnpjaData.zipCode }),
+        ...(cnpjaData?.district && { district: cnpjaData.district }),
+        ...(cnpjaData?.legalNature && { legalNature: cnpjaData.legalNature }),
+        ...(cnpjaData?.registrationStatus && { registrationStatus: cnpjaData.registrationStatus }),
+        ...(cnpjaData?.foundingDate && { foundingDate: cnpjaData.foundingDate }),
+        ...(cnpjaData?.cnaePrimary && { cnaePrimary: cnpjaData.cnaePrimary }),
+        ...(cnpjaData?.rfPhone && { rfPhone: cnpjaData.rfPhone }),
+        ...(cnpjaData?.rfEmail && { rfEmail: cnpjaData.rfEmail }),
+        ...(decisorName && { partners: JSON.stringify([{ nome_socio: decisorName, qualificacao_socio: decisorRole }]) }),
+        enrichmentStatus: assertivaData ? 'assertiva' : cnpjaData ? 'cnpja' : 'none',
       }
 
-      // 1. Verificar duplicados por CNPJ (mais confiável) ou nome
-      const cnpjClean = specificCnpj.replace(/\D/g, '')
+      // 1. Verificar duplicados
       if (cnpjClean) {
         const existingByCnpj = await getLeads(`{cnpj} = "${cnpjClean}"`)
         if (existingByCnpj.length > 0 && !dupOverride) {
@@ -451,47 +534,50 @@ export function SearchPage() {
           return
         }
       }
-      // Reset override for next use
       setDupOverride(false)
       setDupWarning(null)
 
-      // 2. Save lead to Airtable (safe fields only — no Single Select risk)
+      // 2. Salvar lead no Airtable
       let lead: any
       try {
         lead = await createLead(leadData as any)
-      } catch (saveErr: any) {
-        // If full save fails, retry with minimal fields (name + cnpj only)
-        const minimalData = {
-          companyName: specificName,
-          cnpj: specificCnpj.replace(/\D/g, ''),
-          score: 0,
-        }
+      } catch {
+        const minimalData = { companyName: specificName, cnpj: cnpjClean, score: 0 }
         lead = await createLead(minimalData as any)
-        toast.warning('Salvo com dados básicos — enriquecimento completará os demais campos')
+        toast.warning('Salvo com dados básicos — campos extras não suportados pelo Airtable')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
 
-      // 3. Save contact if we have decision maker data (non-blocking)
-      if (lead.id && specificContact && (whatsapp || specificEmail)) {
+      // 3. Criar Contact vinculado OBRIGATORIAMENTE (decisor + telefone)
+      if (lead.id && decisorName) {
         createContact({
-          name: specificContact,
-          role: specificContactRole || 'Decisor',
+          name: decisorName,
+          role: decisorRole || 'Decisor',
           contactType: 'decisor',
-          whatsapp: whatsapp,
-          email: specificEmail || '',
+          whatsapp: bestWhatsapp || '',
+          phone: bestPhone || '',
+          email: specificEmail || cnpjaData?.rfEmail || '',
           leadId: lead.id,
+          ...(assertivaData ? { source: 'assertiva', whatsappConfirmed: !!bestWhatsapp } : { source: 'cnpja' }),
         } as any).catch(() => {})
       }
 
-      toast.success(`${specificName} salvo! Iniciando enriquecimento...`)
+      const hasWa = !!bestWhatsapp
+      toast.success(
+        decisorName && hasWa
+          ? `${specificName} salvo com decisor + WhatsApp!`
+          : decisorName
+            ? `${specificName} salvo com decisor (sem WhatsApp celular)`
+            : `${specificName} salvo — adicione o decisor manualmente`
+      )
 
-      // 4. Trigger enrichment pipeline (runs in background, non-blocking)
-      enrichment.enrich(lead.id, leadData)
-
-      // Auto-scroll to enrichment progress
-      setTimeout(() => {
-        enrichmentProgressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 300)
+      // 4. Trigger enrichment antigo apenas se NÃO teve CNPJa (fallback para Apify)
+      if (!cnpjaData) {
+        enrichment.enrich(lead.id, leadData)
+        setTimeout(() => {
+          enrichmentProgressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 300)
+      }
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar lead')
     } finally {
