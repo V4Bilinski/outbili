@@ -484,8 +484,13 @@ export function SearchPage() {
       const tier = !revenue ? (cnpjaData?.tier || 'Small') : revenue >= 830000 ? 'Medium=' : revenue >= 200000 ? 'Medium-' : revenue >= 100000 ? 'Small' : 'Micro+'
 
       // Build lead data — merge manual + CNPJa + Assertiva
+      // Nome real do CNPJa tem PRIORIDADE sobre nome digitado manualmente
+      const realCompanyName = cnpjaData?.companyName || specificName
+      const tradeName = cnpjaData?.tradeName || ''
+
       const leadData: Record<string, any> = {
-        companyName: specificName,
+        companyName: realCompanyName,
+        ...(tradeName && { tradeName }),
         cnpj: cnpjClean,
         segment: specificSegment || cnpjaData?.segment || 'Varejo',
         tier,
@@ -542,7 +547,7 @@ export function SearchPage() {
       try {
         lead = await createLead(leadData as any)
       } catch {
-        const minimalData = { companyName: specificName, cnpj: cnpjClean, score: 0 }
+        const minimalData = { companyName: realCompanyName, cnpj: cnpjClean, score: 0 }
         lead = await createLead(minimalData as any)
         toast.warning('Salvo com dados básicos — campos extras não suportados pelo Airtable')
       }
@@ -565,10 +570,10 @@ export function SearchPage() {
       const hasWa = !!bestWhatsapp
       toast.success(
         decisorName && hasWa
-          ? `${specificName} salvo com decisor + WhatsApp!`
+          ? `${realCompanyName} salvo com decisor + WhatsApp!`
           : decisorName
-            ? `${specificName} salvo com decisor (sem WhatsApp celular)`
-            : `${specificName} salvo — adicione o decisor manualmente`
+            ? `${realCompanyName} salvo com decisor (sem WhatsApp celular)`
+            : `${realCompanyName} salvo — adicione o decisor manualmente`
       )
 
       // 4. Trigger enrichment antigo apenas se NÃO teve CNPJa (fallback para Apify)
