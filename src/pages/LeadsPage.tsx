@@ -248,11 +248,11 @@ export function LeadsPage() {
           />
         </AnimateIn>
       ) : (
-        <AnimateIn delay={120}>
+        <div className="animate-[fade-in_0.4s_ease-out]">
           <Card className="p-0 overflow-hidden">
             <LeadTable leads={filteredLeads} />
           </Card>
-        </AnimateIn>
+        </div>
       )}
     </div>
   )

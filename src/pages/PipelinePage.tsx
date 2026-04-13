@@ -336,7 +336,7 @@ export function PipelinePage() {
           />
         </AnimateIn>
       ) : (
-        <AnimateIn delay={80}>
+        <div className="animate-[fade-in_0.4s_ease-out]">
           <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none">
             {PIPELINE_COLUMNS.map((col) => {
               const colLeads = allLeads.filter((l) => (l.status || 'Novo') === col.value)
@@ -396,7 +396,7 @@ export function PipelinePage() {
               )
             })}
           </div>
-        </AnimateIn>
+        </div>
       )}
 
       {/* Stage gate slide-over */}
