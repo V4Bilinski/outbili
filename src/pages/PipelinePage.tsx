@@ -25,73 +25,76 @@ const PIPELINE_COLUMNS = [
   { value: 'Fechado', label: 'Fechado', color: '#10B981', accent: 'border-l-emerald-500' },
 ]
 
-// --- Stage gate checklists ---
-const STAGE_GATES: Record<string, { emoji: string; title: string; checks: string[] }> = {
+// --- Stage gate checklists (required: true = obrigatorio, false = opcional) ---
+interface GateCheck { text: string; required: boolean }
+const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
   Qualificado: {
     emoji: '🎯',
     title: 'Qualificar lead',
     checks: [
-      'CNPJ validado e empresa ativa',
-      'Faturamento estimado compatível com ICP',
-      'Decisor identificado (nome + cargo)',
-      'Score SPICED >= 3.0',
+      { text: 'CNPJ validado e empresa ativa', required: true },
+      { text: 'Faturamento estimado compatível com ICP', required: true },
+      { text: 'Decisor identificado (nome + cargo)', required: true },
+      { text: 'Score SPICED >= 3.0', required: false },
     ],
   },
   Contactado: {
     emoji: '📞',
     title: 'Marcar como contactado',
     checks: [
-      'Primeiro contato realizado (WhatsApp, email ou LinkedIn)',
-      'Mensagem personalizada enviada',
-      'Canal de contato registrado no lead',
+      { text: 'Primeiro contato realizado (WhatsApp, email ou LinkedIn)', required: true },
+      { text: 'Mensagem personalizada enviada', required: true },
+      { text: 'Canal de contato registrado no lead', required: false },
     ],
   },
   Respondeu: {
     emoji: '💬',
     title: 'Lead respondeu',
     checks: [
-      'Resposta recebida do decisor',
-      'Interesse confirmado ou objeção mapeada',
-      'Próximo passo definido (reunião, proposta, follow-up)',
+      { text: 'Resposta recebida do decisor', required: true },
+      { text: 'Interesse confirmado ou objeção mapeada', required: true },
+      { text: 'Próximo passo definido (reunião, proposta, follow-up)', required: false },
     ],
   },
   'Reunião': {
     emoji: '🤝',
     title: 'Reunião agendada',
     checks: [
-      'Data e horário da reunião confirmados',
-      'Pauta/diagnóstico preparado',
-      'Participantes definidos (quem do lado do cliente)',
+      { text: 'Data e horário da reunião confirmados', required: true },
+      { text: 'Pauta/diagnóstico preparado', required: true },
+      { text: 'Participantes definidos (quem do lado do cliente)', required: false },
     ],
   },
   Proposta: {
     emoji: '📋',
     title: 'Proposta enviada',
     checks: [
-      'Proposta comercial elaborada e enviada',
-      'Valor e escopo alinhados com o decisor',
-      'Prazo de resposta combinado',
+      { text: 'Proposta comercial elaborada e enviada', required: true },
+      { text: 'Valor e escopo alinhados com o decisor', required: true },
+      { text: 'Prazo de resposta combinado', required: false },
     ],
   },
   Fechado: {
     emoji: '🏆',
     title: 'Negócio fechado!',
     checks: [
-      'Contrato assinado ou aceite formal',
-      'Pagamento confirmado ou faturado',
-      'Onboarding iniciado',
+      { text: 'Contrato assinado ou aceite formal', required: true },
+      { text: 'Pagamento confirmado ou faturado', required: true },
+      { text: 'Onboarding iniciado', required: false },
     ],
   },
 }
 
-// --- Stage gate modal ---
-function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
+// --- Stage gate slide-over (painel lateral para nao bloquear visao do kanban) ---
+function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   lead: Lead; fromStatus: string; toStatus: string; onConfirm: (notes: string) => void; onCancel: () => void
 }) {
   const gate = STAGE_GATES[toStatus]
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState('')
-  const allChecked = gate ? checked.size === gate.checks.length : true
+  const requiredCount = gate?.checks.filter(c => c.required).length || 0
+  const requiredChecked = gate?.checks.filter((c, i) => c.required && checked.has(i)).length || 0
+  const allRequiredDone = requiredChecked >= requiredCount
   const fromLabel = PIPELINE_COLUMNS.find((s) => s.value === fromStatus)?.label || fromStatus
   const toLabel = PIPELINE_COLUMNS.find((s) => s.value === toStatus)?.label || toStatus
   const toColor = PIPELINE_COLUMNS.find((s) => s.value === toStatus)?.color || '#FF6B1A'
@@ -102,74 +105,101 @@ function StageGateModal({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+    <div className="fixed inset-0 z-[60] animate-[fade-in_0.15s_ease-out]">
+      {/* Backdrop semi-transparente — usuario ainda ve o kanban */}
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      {/* Slide-over lateral */}
       <div className={cn(
-        'relative w-full max-w-sm rounded-2xl border p-5 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]',
+        'absolute right-0 top-0 bottom-0 w-full max-w-sm border-l shadow-2xl shadow-black/40 overflow-y-auto animate-[slide-in-right_0.3s_cubic-bezier(0.16,1,0.3,1)]',
         isCelebration
-          ? 'bg-gradient-to-br from-amber-900/80 to-surface-md/90 border-amber-400/30'
-          : 'bg-gradient-to-br from-surface/95 to-surface-md/90 border-border',
+          ? 'bg-gradient-to-b from-amber-900/90 to-surface border-amber-400/20'
+          : 'bg-surface border-border',
       )}>
-        <button onClick={onCancel} className="absolute top-4 right-4 text-text-muted hover:text-text-primary cursor-pointer">
-          <X className="h-4 w-4" />
-        </button>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-xl">{gate?.emoji || '📋'}</span>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-text-primary">{gate?.title || `Mover para ${toLabel}`}</p>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-text-muted">{fromLabel}</span>
-              <ArrowRight className="h-3 w-3 text-text-muted" />
-              <span className="text-[11px] font-semibold" style={{ color: toColor }}>{toLabel}</span>
+        <div className="p-5 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{gate?.emoji || '📋'}</span>
+              <div>
+                <p className="text-sm font-bold text-text-primary">{gate?.title || `Mover para ${toLabel}`}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-text-muted">{fromLabel}</span>
+                  <ArrowRight className="h-3 w-3 text-text-muted" />
+                  <span className="text-[11px] font-semibold" style={{ color: toColor }}>{toLabel}</span>
+                </div>
+              </div>
             </div>
+            <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-white/[0.05] text-text-muted hover:text-text-primary cursor-pointer transition-colors">
+              <X className="h-4 w-4" />
+            </button>
           </div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-white/[0.03] border border-border mb-3">
-          <p className="text-xs font-semibold text-text-primary">{lead.companyName}</p>
-          <p className="text-[10px] text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
-        </div>
-        {gate && (
-          <div className="mb-3">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold mb-1.5">
-              {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
-            </p>
-            <div className="space-y-1.5">
-              {gate.checks.map((check, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => toggle(idx)}
-                  className={cn(
-                    'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border text-left cursor-pointer transition-all duration-200',
-                    checked.has(idx) ? 'bg-success/10 border-success/30' : 'bg-white/[0.02] border-border hover:border-border-strong',
-                  )}
-                >
-                  <div className={cn(
-                    'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
-                    checked.has(idx) ? 'bg-success border-success' : 'border-border',
-                  )}>
-                    {checked.has(idx) && <CheckCircle className="h-2.5 w-2.5 text-white" />}
-                  </div>
-                  <span className={cn('text-[11px] transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
-                    {check}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="h-1 w-full rounded-full bg-white/[0.05] overflow-hidden mt-2">
-              <div className="h-full bg-gradient-to-r from-red to-success rounded-full transition-all duration-500" style={{ width: `${(checked.size / gate.checks.length) * 100}%` }} />
-            </div>
+
+          {/* Lead info */}
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-border">
+            <p className="text-xs font-semibold text-text-primary">{lead.companyName}</p>
+            <p className="text-[10px] text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
           </div>
-        )}
-        <div className="mb-3">
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
+
+          {/* Checklist com prioridade visual */}
+          {gate && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">
+                  {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
+                </p>
+                <span className="text-[10px] text-text-muted">
+                  {requiredChecked}/{requiredCount} obrigatorios
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {gate.checks.map((check, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => toggle(idx)}
+                    className={cn(
+                      'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all duration-200',
+                      checked.has(idx)
+                        ? 'bg-success/10 border-success/30'
+                        : check.required
+                          ? 'bg-white/[0.02] border-border hover:border-red/30'
+                          : 'bg-white/[0.01] border-border/50 hover:border-border opacity-70',
+                    )}
+                  >
+                    <div className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
+                      checked.has(idx) ? 'bg-success border-success' : check.required ? 'border-red/40' : 'border-border',
+                    )}>
+                      {checked.has(idx) && <CheckCircle className="h-2.5 w-2.5 text-white" />}
+                    </div>
+                    <span className={cn('text-[11px] flex-1 transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
+                      {check.text}
+                    </span>
+                    {check.required ? (
+                      <span className="text-[9px] text-red/60 font-bold shrink-0">*</span>
+                    ) : (
+                      <span className="text-[9px] text-text-muted/50 shrink-0">opcional</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="h-1 w-full rounded-full bg-white/[0.05] overflow-hidden mt-2">
+                <div className="h-full bg-gradient-to-r from-red to-success rounded-full transition-all duration-500" style={{ width: `${(checked.size / gate.checks.length) * 100}%` }} />
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observacoes (opcional)..." rows={2}
             className="w-full rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
-        </div>
-        <div className="flex gap-3">
-          <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
-          <Button onClick={() => onConfirm(notes)} disabled={!allChecked} className="flex-1"
-            icon={isCelebration ? <Trophy className="h-4 w-4" /> : allChecked ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
-            {isCelebration ? 'Fechar negócio!' : allChecked ? 'Confirmar' : `${gate ? gate.checks.length - checked.size : 0} pendente${gate && gate.checks.length - checked.size > 1 ? 's' : ''}`}
-          </Button>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
+            <Button onClick={() => onConfirm(notes)} disabled={!allRequiredDone} className="flex-1"
+              icon={isCelebration ? <Trophy className="h-4 w-4" /> : allRequiredDone ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
+              {isCelebration ? 'Fechar negocio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatorio${requiredCount - requiredChecked > 1 ? 's' : ''}`}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -369,9 +399,9 @@ export function PipelinePage() {
         </AnimateIn>
       )}
 
-      {/* Stage gate modal */}
+      {/* Stage gate slide-over */}
       {pendingMove && (
-        <StageGateModal
+        <StageGateSlideOver
           lead={pendingMove.lead}
           fromStatus={pendingMove.from}
           toStatus={pendingMove.to}
