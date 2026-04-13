@@ -49,7 +49,7 @@ class RateLimiter {
 
 const limiter = new RateLimiter()
 
-async function airtableFetch(path: string, options: RequestInit = {}): Promise<any> {
+async function airtableFetch(path: string, options: RequestInit = {}, retryCount = 0): Promise<any> {
   await limiter.acquire()
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -62,9 +62,12 @@ async function airtableFetch(path: string, options: RequestInit = {}): Promise<a
   })
 
   if (res.status === 429) {
-    // Rate limited — wait and retry once
-    await new Promise((r) => setTimeout(r, 1000))
-    return airtableFetch(path, options)
+    if (retryCount >= 3) {
+      throw new Error('Airtable: rate limit excedido apos 3 tentativas. Aguarde e tente novamente.')
+    }
+    const delay = 1000 * Math.pow(2, retryCount) // 1s, 2s, 4s
+    await new Promise((r) => setTimeout(r, delay))
+    return airtableFetch(path, options, retryCount + 1)
   }
 
   if (!res.ok) {

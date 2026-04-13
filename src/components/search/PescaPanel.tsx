@@ -190,7 +190,7 @@ export function PescaPanel() {
   const [sortField, setSortField] = useState<SortField>('company')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution } = usePesca()
+  const { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution, retryFromError } = usePesca()
 
   const toggleSegment = (name: string) => {
     setSegments(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name])
@@ -625,7 +625,7 @@ export function PescaPanel() {
             <p className="text-xs text-error mt-0.5">{error}</p>
           </div>
         </div>
-        <Button onClick={resetExecution} className="w-full py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border">
+        <Button onClick={retryFromError} className="w-full py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border">
           Tentar novamente
         </Button>
       </Card>

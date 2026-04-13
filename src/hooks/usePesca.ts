@@ -20,6 +20,7 @@ interface UsePescaReturn {
   cancel: () => void
   reset: () => void
   resetExecution: () => void
+  retryFromError: () => void
 }
 
 const INITIAL_PROGRESS: PescaProgress = { found: 0, enriched: 0, deduped: 0, saved: 0, total: 0 }
@@ -85,6 +86,14 @@ export function usePesca(): UsePescaReturn {
   const reset = useCallback(() => {
     resetExecution()
   }, [resetExecution])
+
+  // Retry from error: only clear phase/error, preserve form state
+  const retryFromError = useCallback(() => {
+    setPhase('idle')
+    setError(null)
+    setElapsed(0)
+    startTimeRef.current = 0
+  }, [])
 
   const startPesca = useCallback(async (filters: PescaFilters) => {
     // Guard contra double-click
@@ -192,5 +201,5 @@ export function usePesca(): UsePescaReturn {
     }
   }, [queryClient])
 
-  return { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution }
+  return { phase, progress, leads, error, elapsed, startPesca, cancel, reset, resetExecution, retryFromError }
 }

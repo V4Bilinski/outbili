@@ -1,13 +1,35 @@
-import type { AssertivaToken, AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone } from '../types'
+import type { AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone } from '../types'
 
+// Assertiva calls are proxied through n8n to avoid CORS issues.
+// The n8n workflow handles OAuth2 auth server-side (credentials secured).
+const PROXY_URL = import.meta.env.VITE_N8N_ASSERTIVA_PROXY || 'https://n8n.bilinski.cloud/webhook/assertiva-proxy'
+
+// Fallback: direct calls (only works from server/n8n, not browser)
+const DIRECT_BASE_URL = 'https://api.assertivasolucoes.com.br'
 const CLIENT_ID = import.meta.env.VITE_ASSERTIVA_CLIENT_ID || ''
 const CLIENT_SECRET = import.meta.env.VITE_ASSERTIVA_CLIENT_SECRET || ''
-const BASE_URL = 'https://api.assertivasolucoes.com.br'
 
-// Token cache (60s TTL)
+// Token cache for direct mode (used by n8n Code nodes, not browser)
 let tokenCache: { token: string; expiresAt: number } | null = null
 
-// --- Autenticacao OAuth2 ---
+// --- Proxy fetch (browser → n8n → Assertiva) ---
+
+async function assertivaViaProxy<T>(action: string, params: Record<string, string>): Promise<T> {
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...params }),
+  })
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(`Assertiva proxy ${res.status}: ${error.message || error.error || res.statusText}`)
+  }
+
+  return res.json()
+}
+
+// --- Direct auth (fallback, for server-side contexts) ---
 
 export async function getToken(): Promise<string> {
   if (tokenCache && Date.now() < tokenCache.expiresAt) {
@@ -15,7 +37,7 @@ export async function getToken(): Promise<string> {
   }
 
   const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)
-  const res = await fetch(`${BASE_URL}/oauth2/v3/token`, {
+  const res = await fetch(`${DIRECT_BASE_URL}/oauth2/v3/token`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -29,61 +51,23 @@ export async function getToken(): Promise<string> {
     throw new Error(`Assertiva auth ${res.status}: ${error.message || res.statusText}`)
   }
 
-  const data: AssertivaToken = await res.json()
+  const data = await res.json()
   tokenCache = {
     token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 5) * 1000, // 5s buffer
+    expiresAt: Date.now() + (data.expires_in - 5) * 1000,
   }
   return data.access_token
-}
-
-async function assertivaFetch<T>(path: string): Promise<T> {
-  const token = await getToken()
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  })
-
-  if (res.status === 401) {
-    // Token expirado, limpar cache e retry
-    tokenCache = null
-    const newToken = await getToken()
-    const retry = await fetch(`${BASE_URL}${path}`, {
-      headers: {
-        'Authorization': `Bearer ${newToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    if (!retry.ok) {
-      throw new Error(`Assertiva ${retry.status}: ${retry.statusText}`)
-    }
-    return retry.json()
-  }
-
-  if (res.status === 403) {
-    throw new Error('Assertiva: endpoint nao disponivel no seu plano')
-  }
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(`Assertiva ${res.status}: ${error.message || res.statusText}`)
-  }
-
-  return res.json()
 }
 
 // --- Consulta CNPJ (telefones, emails, socios) ---
 
 export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> {
   const cleanCnpj = cnpj.replace(/\D/g, '')
-  const raw = await assertivaFetch<any>(
-    `/localize/v3/cnpj?cnpj=${cleanCnpj}&idFinalidade=5`,
-  )
 
-  // Mapear resposta real da Assertiva para nosso tipo
-  const resp = raw.resposta || {}
+  const raw = await assertivaViaProxy<any>('lookup-cnpj', { cnpj: cleanCnpj })
+
+  // Mapear resposta — proxy retorna dados ja processados pelo n8n ou raw da Assertiva
+  const resp = raw.resposta || raw
   const cadastro = resp.dadosCadastrais || {}
   const celulares = (resp.telefones?.celulares || []).map((t: any) => ({
     numero: t.numero?.replace(/\D/g, '') || '',
@@ -117,7 +101,7 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     telefones: [...celulares, ...fixos],
     emails,
     socios,
-    _protocolo: raw.cabecalho?.protocolo,
+    _protocolo: raw.cabecalho?.protocolo || raw._protocolo,
     _site: cadastro.site,
     _cnaeDescricao: cadastro.cnaeDescricao,
     _idadeEmpresa: cadastro.idadeEmpresa,
@@ -128,12 +112,13 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
 // --- Possiveis decisores (requer protocolo da consulta CNPJ) ---
 
 export async function getDecisionMakers(cnpj: string, protocolo?: string): Promise<AssertivaDecisionMaker[]> {
-  if (!protocolo) return [] // Protocolo obrigatorio
+  if (!protocolo) return []
   const cleanCnpj = cnpj.replace(/\D/g, '')
   try {
-    const result = await assertivaFetch<any>(
-      `/localize/v3/possiveis-decisores?cnpj=${cleanCnpj}&idFinalidade=5&protocolo=${protocolo}`,
-    )
+    const result = await assertivaViaProxy<any>('get-decision-makers', {
+      cnpj: cleanCnpj,
+      protocolo,
+    })
     const decisores = result.resposta?.decisores || result.decisores || []
     return decisores.map((d: any) => ({
       nome: d.nome || '',
@@ -156,14 +141,14 @@ export async function getDecisionMakers(cnpj: string, protocolo?: string): Promi
 
 export async function lookupCpf(cpf: string): Promise<any> {
   const cleanCpf = cpf.replace(/\D/g, '')
-  return assertivaFetch(`/localize/v3/cpf?cpf=${cleanCpf}&idFinalidade=5`)
+  return assertivaViaProxy('lookup-cpf', { cpf: cleanCpf })
 }
 
 // --- Consulta telefone (validacao reversa) ---
 
 export async function lookupPhone(phone: string): Promise<any> {
   const cleanPhone = phone.replace(/\D/g, '')
-  return assertivaFetch(`/localize/v3/telefone?telefone=${cleanPhone}&idFinalidade=5`)
+  return assertivaViaProxy('lookup-phone', { phone: cleanPhone })
 }
 
 // --- Helpers ---
@@ -196,27 +181,10 @@ function formatPhone(phone: string): string {
 // --- Discovery: testar quais endpoints estao disponiveis ---
 
 export async function discoverEndpoints(): Promise<Record<string, boolean>> {
-  const endpoints: Record<string, string> = {
-    cnpj: '/localize/v3/cnpj?cnpj=00000000000191&idFinalidade=5',
-    decisores: '/localize/v3/possiveis-decisores?cnpj=00000000000191&idFinalidade=5',
-    cpf: '/localize/v3/cpf?cpf=00000000000&idFinalidade=5',
-    telefone: '/localize/v3/telefone?telefone=11999999999&idFinalidade=5',
-    email: '/localize/v3/email?email=test@test.com&idFinalidade=5',
+  try {
+    const result = await assertivaViaProxy<Record<string, boolean>>('discover-endpoints', {})
+    return result
+  } catch {
+    return { cnpj: false, decisores: false, cpf: false, telefone: false, email: false }
   }
-
-  const results: Record<string, boolean> = {}
-  const token = await getToken()
-
-  for (const [name, path] of Object.entries(endpoints)) {
-    try {
-      const res = await fetch(`${BASE_URL}${path}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-      results[name] = res.status !== 403
-    } catch {
-      results[name] = false
-    }
-  }
-
-  return results
 }
