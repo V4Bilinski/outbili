@@ -141,6 +141,8 @@ export function CompanyPage() {
 
   const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
   const whatsappLink = mainContact?.whatsapp ? `https://wa.me/${mainContact.whatsapp.replace(/\D/g, '')}` : null
+  const contactPhone = mainContact?.whatsapp || mainContact?.phone || lead.rfPhone || ''
+  const hasWhatsapp = !!mainContact?.whatsapp
 
   const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, generateDiscoveryQuestions(lead))
   const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, generateEligibilityChecklist(lead))
@@ -265,18 +267,23 @@ export function CompanyPage() {
           ))}
         </div>
 
-        {/* Quick action: WhatsApp decisor — compact */}
+        {/* Quick action: Decisor — WhatsApp ou telefone fixo */}
         {mainContact && (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-whatsapp/6 border border-whatsapp/15">
+          <div className={`flex items-center gap-3 p-3 rounded-xl ${hasWhatsapp ? 'bg-whatsapp/6 border border-whatsapp/15' : 'bg-white/[0.03] border border-border'}`}>
             <div className="flex-1 min-w-0 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-whatsapp/15 flex items-center justify-center shrink-0">
-                <WhatsAppIcon className="text-lg text-whatsapp" />
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${hasWhatsapp ? 'bg-whatsapp/15' : 'bg-white/[0.06]'}`}>
+                {hasWhatsapp ? <WhatsAppIcon className="text-lg text-whatsapp" /> : <Phone className="h-4 w-4 text-text-muted" />}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
                 <p className="text-[11px] text-text-muted truncate">
                   {mainContact.role || (mainContact.contactType === 'decisor' ? 'Decisor' : 'Stakeholder')}
-                  {mainContact.whatsapp && <span className="text-whatsapp font-mono ml-1.5">· {mainContact.whatsapp}</span>}
+                  {contactPhone && (
+                    <span className={`font-mono ml-1.5 ${hasWhatsapp ? 'text-whatsapp' : 'text-text-secondary'}`}>
+                      · {contactPhone}
+                      {!hasWhatsapp && contactPhone && <span className="text-[9px] text-text-muted ml-1">(fixo)</span>}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -286,9 +293,15 @@ export function CompanyPage() {
                   WhatsApp
                 </Button>
               </a>
+            ) : contactPhone ? (
+              <a href={`tel:+${contactPhone.replace(/\D/g, '')}`} className="shrink-0">
+                <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />}>
+                  Ligar
+                </Button>
+              </a>
             ) : (
               <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setShowAddContact(true)}>
-                Add WhatsApp
+                Add telefone
               </Button>
             )}
           </div>

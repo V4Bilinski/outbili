@@ -104,6 +104,7 @@ export interface Contact {
   role?: string
   contactType: 'decisor' | 'stakeholder' | 'influenciador'
   whatsapp: string
+  phone?: string
   email?: string
   cpf?: string
   whatsappConfirmed?: boolean

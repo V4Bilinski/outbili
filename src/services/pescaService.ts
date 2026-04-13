@@ -457,14 +457,17 @@ export async function savePescaToAirtable(
         const originalLead = batch[j]
         leadIds.push(createdLead.id)
 
-        if (originalLead.decisorName && (originalLead.whatsapp || originalLead.phone)) {
+        if (originalLead.decisorName) {
           pendingContacts.push({
             fields: {
               leadId: createdLead.id,
               name: originalLead.decisorName,
               role: originalLead.decisorRole,
               contactType: 'decisor',
-              whatsapp: originalLead.whatsapp || originalLead.phone || '',
+              // WhatsApp apenas se celular confirmado (MOBILE do CNPJa)
+              whatsapp: originalLead.whatsapp || '',
+              // Telefone fixo da empresa como fallback
+              phone: !originalLead.whatsapp && originalLead.phone ? originalLead.phone : '',
             } as Partial<Contact>,
           })
         }
