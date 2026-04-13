@@ -28,8 +28,8 @@ function detectTrap(lead: Partial<Lead>): string {
   const fewReviews = (lead.googleReviewsCount || 0) < 15
   const noDigital = !hasWebsite && !hasInstagram
   const lowFollowers = (lead.instagramFollowers || 0) < 500
-  const highRevenue = (lead.monthlyRevenue || 0) >= 200000
-  const lowEmployees = (lead.employees || 0) < 10
+  const highRevenue = (lead.monthlyRevenue || 0) >= 200000 || (lead.capitalSocial || 0) >= 300000
+  const lowEmployees = (lead.employees || 0) < 10 && (lead.employees || 0) > 0
   const segment = (lead.segment || '').toLowerCase()
 
   if (noDigital) return `T1 - Aquisição de clientes: ${lead.companyName} sem presença digital estruturada`

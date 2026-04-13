@@ -139,6 +139,12 @@ export function CompanyPage() {
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
 
+  // Anos no mercado: fallback dinâmico via foundingDate
+  const yearsInMarket = lead.yearsInMarket
+    ?? (lead.foundingDate
+      ? Math.floor((Date.now() - new Date(lead.foundingDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : undefined)
+
   const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
   const whatsappLink = mainContact?.whatsapp ? `https://wa.me/${mainContact.whatsapp.replace(/\D/g, '')}` : null
   const contactPhone = mainContact?.whatsapp || mainContact?.phone || lead.rfPhone || ''
@@ -255,9 +261,9 @@ export function CompanyPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Faturamento/ano', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : '-' },
+            { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-' },
             { label: 'Funcionários', value: lead.employees || '-' },
-            { label: 'Anos no mercado', value: lead.yearsInMarket || '-' },
+            { label: 'Anos no mercado', value: yearsInMarket ?? '-' },
             { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true },
           ].map((stat: any) => (
             <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`}>

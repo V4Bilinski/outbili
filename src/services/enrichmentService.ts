@@ -916,11 +916,17 @@ export type EnrichmentProgress = {
 function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): { spicedS: number; spicedP: number; spicedI: number; spicedC: number; spicedD: number } {
   const data = { ...leadData, ...merged }
 
+  // Fallback: calcular yearsInMarket a partir de foundingDate
+  const yearsInMarket = data.yearsInMarket
+    ?? (data.foundingDate
+      ? Math.floor((Date.now() - new Date(data.foundingDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : undefined)
+
   // S (Situation) — porte e contexto
   let spicedS = 1
   if (data.employees && data.employees > 5) spicedS++
   if (data.employees && data.employees > 20) spicedS++
-  if (data.yearsInMarket && data.yearsInMarket > 3) spicedS++
+  if (yearsInMarket && yearsInMarket > 3) spicedS++
   if (data.city && data.state) spicedS++
   // Bonus: capital social alto indica empresa consolidada
   if (data.capitalSocial && data.capitalSocial >= 100000) spicedS++
@@ -937,20 +943,27 @@ function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): {
   // I (Impact) — potencial de impacto
   let spicedI = 1
   const revenue = data.monthlyRevenue || 0
-  if (revenue >= 100000) spicedI++
-  if (revenue >= 200000) spicedI++
-  if (revenue >= 500000) spicedI++
+  if (revenue > 0) {
+    if (revenue >= 100000) spicedI++
+    if (revenue >= 200000) spicedI++
+    if (revenue >= 500000) spicedI++
+  } else if (data.capitalSocial) {
+    // Fallback: capitalSocial como proxy de porte/potencial
+    if (data.capitalSocial >= 50000) spicedI++
+    if (data.capitalSocial >= 200000) spicedI++
+    if (data.capitalSocial >= 500000) spicedI++
+  }
   if (data.instagramFollowers && data.instagramFollowers > 1000) spicedI++
   // Bonus: regime tributário indica porte real
   if (data.taxRegime === 'lucro_presumido' || data.taxRegime === 'lucro_real') spicedI++
 
   // C (Critical Event) — urgência
   let spicedC = 1
-  if (data.yearsInMarket !== undefined && data.yearsInMarket < 2) spicedC += 2
+  if (yearsInMarket !== undefined && yearsInMarket < 2) spicedC += 2
   if (data.enrichmentStatus === 'complete') spicedC++
   if (data.googleRating !== undefined && data.googleRating >= 4.5) spicedC++
   // Bonus: empresa recém-cadastrada = momento de decisão
-  if (data.registrationStatus === 'Ativa' && data.yearsInMarket && data.yearsInMarket < 1) spicedC++
+  if (data.registrationStatus === 'Ativa' && yearsInMarket && yearsInMarket < 1) spicedC++
 
   // D (Decision) — acesso ao decisor
   let spicedD = 1
@@ -1129,6 +1142,22 @@ export async function enrichLead(
         }
       }
 
+      // Mapear dados cadastrais da Assertiva (campos antes ignorados)
+      if (assertivaData?._quantidadeFuncionarios && !merged.employees) {
+        merged.employees = Number(assertivaData._quantidadeFuncionarios)
+      }
+      if (assertivaData?._cnaeDescricao && !merged.segment) {
+        merged.segment = assertivaData._cnaeDescricao
+      }
+      if (assertivaData?._cnaeDescricao && !merged.cnaePrimary) {
+        merged.cnaePrimary = assertivaData._cnaeDescricao
+      }
+      if (assertivaData?._site && !merged.website) {
+        merged.website = assertivaData._site.startsWith('http')
+          ? assertivaData._site
+          : `https://${assertivaData._site}`
+      }
+
       // Buscar decisores via Assertiva (requer protocolo da consulta CNPJ)
       const protocolo = assertivaData?._protocolo
       const decisores = await getDecisionMakers(leadData.cnpj, protocolo)
@@ -1145,6 +1174,8 @@ export async function enrichLead(
       const assertivaDetails = [
         assertivaData?.telefones?.length ? `${assertivaData.telefones.length} tel` : null,
         decisores.length ? `${decisores.length} decisor${decisores.length > 1 ? 'es' : ''}` : null,
+        assertivaData?._quantidadeFuncionarios ? `${assertivaData._quantidadeFuncionarios} func` : null,
+        assertivaData?._cnaeDescricao ? 'CNAE' : null,
       ].filter(Boolean)
       step('assertiva').detail = assertivaDetails.join(' + ') || 'Sem dados'
       step('assertiva').status = 'done'
