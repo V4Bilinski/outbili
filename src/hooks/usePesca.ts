@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   searchViaCnpja,
-  enrichMissingPhones,
+  fallbackEnrichLeads,
   loadExistingDedup,
   deduplicateLeads,
   savePescaToAirtable,
@@ -122,12 +122,12 @@ export function usePesca(): UsePescaReturn {
 
       setProgress(p => ({ ...p, found: pescaLeads.length, total: pescaLeads.length }))
 
-      // Fase 2: Enriquecer leads sem celular (opcional, max 5 via ReceitaWS)
+      // Fase 2: Fallback cascata CNPJa + Assertiva para leads sem celular
       setPhase('enriching')
       const leadsWithoutMobile = pescaLeads.filter(l => !l.whatsapp).length
 
       if (leadsWithoutMobile > 0) {
-        await enrichMissingPhones(
+        await fallbackEnrichLeads(
           pescaLeads,
           (enriched) => setProgress(p => ({ ...p, enriched })),
           signal,

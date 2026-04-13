@@ -1,8 +1,8 @@
 import { listAllRecords, createRecords, getRecord, updateRecords } from '../lib/airtable'
 import { getCnaeCodesForCnpja } from '../lib/cnae-mapping'
-import { classifyPhone, formatPhone } from './enrichmentService'
-import { searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
-import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone } from './assertivaService'
+import { formatPhone } from './enrichmentService'
+import { searchOffice, searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
+import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone, lookupCpf } from './assertivaService'
 import { TIERS } from '../lib/constants'
 import type { Lead, Contact, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
@@ -93,73 +93,118 @@ export async function searchViaCnpja(
   })
 }
 
-// --- Fase 2 (opcional): Enriquecer leads sem celular via ReceitaWS ---
+// --- Fase 2: Fallback cascata CNPJa + Assertiva para leads sem celular ---
+// Cascata de 3 niveis — foco no telefone do decisor/socio:
+//   Nivel 1: CNPJa Company Read (custo 0) — busca socios com CPF
+//   Nivel 2: Assertiva CNPJ — telefones validados da empresa + WhatsApp flag
+//   Nivel 3: Assertiva CPF do decisor — telefone pessoal do socio-administrador
 
-export async function enrichMissingPhones(
+export async function fallbackEnrichLeads(
   leads: PescaLead[],
   onProgress?: (enriched: number) => void,
   signal?: AbortSignal,
 ): Promise<PescaLead[]> {
   const leadsWithoutMobile = leads.filter(l => !l.whatsapp)
-  const limit = Math.min(leadsWithoutMobile.length, 5)
+  if (leadsWithoutMobile.length === 0) return leads
+
   let enrichedCount = 0
 
-  for (let i = 0; i < limit; i++) {
+  for (const lead of leadsWithoutMobile) {
     if (signal?.aborted) break
-    const lead = leadsWithoutMobile[i]
 
+    let decisorCpf: string | undefined
+
+    // NIVEL 1: CNPJa consulta individual (usa cache, custo 0 se em cache)
     try {
-      const receitaData = await enrichFromReceitaWs(lead.cnpj)
-      if (receitaData?.phones?.length) {
-        const mobile = receitaData.phones.find(p => classifyPhone(p) === 'mobile')
-        if (mobile) lead.whatsapp = formatPhone(mobile)
-        if (!lead.phone) lead.phone = formatPhone(receitaData.phones[0])
+      const cnpj = lead.cnpj.replace(/\D/g, '')
+      const office = await searchOffice(cnpj)
+
+      // Procurar celular nos telefones do office
+      const mobile = office.phones?.find(p => p.type === 'MOBILE')
+      if (mobile) {
+        lead.whatsapp = formatPhone(`${mobile.area}${mobile.number}`)
+        enrichedCount++
+        onProgress?.(enrichedCount)
+        continue
       }
-      if (!lead.decisorName && receitaData?.decisorName) {
-        lead.decisorName = receitaData.decisorName
-        lead.decisorRole = receitaData.decisorRole
+
+      // Guardar CPF do decisor para nivel 3
+      if (office.company?.members?.length) {
+        const decisor = office.company.members.find(m =>
+          m.role.text.toLowerCase().includes('administrador') ||
+          m.role.text.toLowerCase().includes('diretor') ||
+          m.role.text.toLowerCase().includes('presidente'),
+        ) || office.company.members[0]
+        if (decisor?.person?.taxId && decisor.person.type === 'NATURAL') {
+          decisorCpf = decisor.person.taxId.replace(/\D/g, '')
+          // Atualizar nome do decisor se nao tinha
+          if (!lead.decisorName && decisor.person.name) {
+            lead.decisorName = decisor.person.name
+            lead.decisorRole = decisor.role.text
+          }
+        }
       }
-    } catch { /* non-blocking */ }
+    } catch { /* nivel 1 falhou, tentar nivel 2 */ }
+
+    // NIVEL 2: Assertiva CNPJ (telefones empresa validados + WhatsApp flag)
+    try {
+      const assertivaData = await assertivaLookupCnpj(lead.cnpj) as any
+      if (assertivaData?.telefones?.length) {
+        const bestPhone = extractBestPhone(assertivaData.telefones)
+        if (bestPhone.whatsapp) {
+          lead.whatsapp = bestPhone.whatsapp
+          enrichedCount++
+          onProgress?.(enrichedCount)
+          continue
+        }
+        // Se achou telefone fixo mas nao celular, salvar como phone
+        if (bestPhone.landline && !lead.phone) {
+          lead.phone = bestPhone.landline
+        }
+      }
+      // Guardar CPF do decisor se nivel 1 nao encontrou
+      if (!decisorCpf && assertivaData?.socios?.length) {
+        const socio = assertivaData.socios.find((s: any) =>
+          (s.qualificacao || '').toLowerCase().includes('administrador') ||
+          (s.qualificacao || '').toLowerCase().includes('diretor'),
+        ) || assertivaData.socios[0]
+        if (socio?.cpf) {
+          decisorCpf = socio.cpf.replace(/\D/g, '')
+          if (!lead.decisorName && socio.nome) {
+            lead.decisorName = socio.nome
+            lead.decisorRole = socio.qualificacao
+          }
+        }
+      }
+    } catch { /* nivel 2 falhou, tentar nivel 3 */ }
+
+    // NIVEL 3: Assertiva CPF do decisor (telefone pessoal — melhor contato possivel)
+    if (decisorCpf && decisorCpf.length === 11) {
+      try {
+        const cpfData = await lookupCpf(decisorCpf) as any
+        const telefones = cpfData?.resposta?.telefones
+        if (telefones) {
+          const celulares = telefones.celulares || []
+          for (const cel of celulares) {
+            const num = cel.numero?.replace(/\D/g, '') || ''
+            if (num.length >= 10) {
+              lead.whatsapp = formatPhone(num)
+              // Atualizar nome do decisor se disponivel
+              if (!lead.decisorName && cpfData?.resposta?.dadosCadastrais?.nome) {
+                lead.decisorName = cpfData.resposta.dadosCadastrais.nome
+              }
+              break
+            }
+          }
+        }
+      } catch { /* nivel 3 falhou — lead fica sem celular */ }
+    }
 
     enrichedCount++
     onProgress?.(enrichedCount)
-
-    // ReceitaWS rate limit: 3/min
-    if (i < limit - 1) await delay(20000)
   }
 
   return leads
-}
-
-// --- ReceitaWS fallback (apenas para leads sem celular) ---
-
-async function enrichFromReceitaWs(cnpj: string): Promise<EnrichResult | null> {
-  try {
-    const res = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`, { signal: AbortSignal.timeout(10000) })
-    if (!res.ok) return null
-    const text = await res.text()
-    if (!text) return null
-    let d: any
-    try { d = JSON.parse(text) } catch { return null }
-    if (d.status === 'ERROR') return null
-
-    const rawPhones = (d.telefone || '').split(/[\/;,]/).map((p: string) => p.trim().replace(/\D/g, '')).filter((p: string) => p.length >= 10)
-    const socios = (d.qsa || []).map((s: any) => ({ nome: s.nome || '', qualificacao: s.qual || '' }))
-
-    return {
-      phones: rawPhones,
-      decisorName: findDecisor(socios)?.nome,
-      decisorRole: findDecisor(socios)?.qualificacao,
-    }
-  } catch {
-    return null
-  }
-}
-
-interface EnrichResult {
-  phones: string[]
-  decisorName?: string
-  decisorRole?: string
 }
 
 function findDecisor(socios: Array<{ nome: string; qualificacao: string }>): { nome: string; qualificacao: string } | undefined {
