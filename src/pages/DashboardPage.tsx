@@ -5,7 +5,7 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Users, Flame, Calendar, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle } from 'lucide-react'
+import { Users, Flame, Calendar, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle, Snowflake, MessageCircle } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
 import { LEAD_STATUSES } from '../lib/constants'
@@ -27,39 +27,111 @@ function CountUpValue({ end, color, isInView }: { end: number; color: string; is
 function KPICards({ leads }: { leads: Lead[] }) {
   const hotCount = leads.filter((l) => l.temperature === 'Quente').length
   const warmCount = leads.filter((l) => l.temperature === 'Morno').length
-  const meetingsToday = leads.filter((l) => l.status === 'Reunião').length
+  const coldCount = leads.filter((l) => l.temperature === 'Frio').length
+  const meetingsCount = leads.filter((l) => l.status === 'Reunião').length
+  const contactedCount = leads.filter((l) => l.status === 'Contactado' || l.status === 'Respondeu').length
+  const total = leads.length
   const { ref, isInView } = useInView({ threshold: 0.2 })
 
-  const cards = [
-    { label: 'Total leads', value: leads.length, icon: Users, color: 'text-text-primary', accent: 'from-white/5 to-transparent', pulse: false },
-    { label: 'Quentes', value: hotCount, icon: Flame, color: 'text-hot', accent: 'from-hot/8 to-transparent', pulse: true },
-    { label: 'Mornos', value: warmCount, icon: TrendingUp, color: 'text-warm', accent: 'from-warm/8 to-transparent', pulse: false },
-    { label: 'Reuniões', value: meetingsToday, icon: Calendar, color: 'text-success', accent: 'from-success/8 to-transparent', pulse: false },
+  const hotPct = total > 0 ? Math.round((hotCount / total) * 100) : 0
+  const warmPct = total > 0 ? Math.round((warmCount / total) * 100) : 0
+  const coldPct = total > 0 ? Math.round((coldCount / total) * 100) : 0
+
+  const tempCards = [
+    { label: 'Quentes', value: hotCount, pct: hotPct, icon: Flame, color: 'text-hot', barColor: 'bg-hot', accent: 'from-hot/8 to-transparent', pulse: hotCount > 0 },
+    { label: 'Mornos', value: warmCount, pct: warmPct, icon: TrendingUp, color: 'text-warm', barColor: 'bg-warm', accent: 'from-warm/8 to-transparent', pulse: false },
+    { label: 'Frios', value: coldCount, pct: coldPct, icon: Snowflake, color: 'text-text-muted', barColor: 'bg-text-muted', accent: 'from-white/5 to-transparent', pulse: false },
   ]
 
   return (
-    <div ref={ref} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card, i) => (
+    <div ref={ref} className="space-y-4">
+      {/* Linha principal: Total + Temperatura */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card Total */}
         <div
-          key={card.label}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.accent} backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 ${card.pulse ? 'animate-[pulse-glow_2.5s_ease-in-out_1.5s_infinite]' : ''}`}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
           style={{
             opacity: isInView ? 1 : 0,
             transform: isInView ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)',
-            transition: `all 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${i * 100 + 200}ms`,
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1) 200ms',
           }}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{card.label}</p>
-              <CountUpValue end={card.value} color={card.color} isInView={isInView} />
+              <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">Total leads</p>
+              <CountUpValue end={total} color="text-text-primary" isInView={isInView} />
+              <p className="text-[10px] text-text-muted mt-1">no pipeline</p>
             </div>
             <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              <card.icon className={`h-5 w-5 ${card.color} opacity-60`} />
+              <Users className="h-5 w-5 text-text-primary opacity-60" />
             </div>
           </div>
         </div>
-      ))}
+
+        {/* Cards de Temperatura (somam ao total) */}
+        {tempCards.map((card, i) => (
+          <div
+            key={card.label}
+            className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.accent} backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 ${card.pulse ? 'animate-[pulse-glow_2.5s_ease-in-out_1.5s_infinite]' : ''}`}
+            style={{
+              opacity: isInView ? 1 : 0,
+              transform: isInView ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)',
+              transition: `all 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${(i + 1) * 100 + 200}ms`,
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{card.label}</p>
+                <CountUpValue end={card.value} color={card.color} isInView={isInView} />
+                <p className={`text-[10px] mt-1 ${card.color} opacity-60`}>{card.pct}% do total</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <card.icon className={`h-5 w-5 ${card.color} opacity-60`} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Barra de distribuição visual */}
+      {total > 0 && (
+        <div
+          className="space-y-2"
+          style={{
+            opacity: isInView ? 1 : 0,
+            transition: 'opacity 0.5s ease 600ms',
+          }}
+        >
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium">Distribuição de temperatura</p>
+            <div className="flex items-center gap-4">
+              {meetingsCount > 0 && (
+                <span className="flex items-center gap-1.5 text-[10px] text-success">
+                  <Calendar className="h-3 w-3" />
+                  {meetingsCount} reuniões
+                </span>
+              )}
+              {contactedCount > 0 && (
+                <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                  <MessageCircle className="h-3 w-3" />
+                  {contactedCount} em contato
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
+            {hotCount > 0 && (
+              <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />
+            )}
+            {warmCount > 0 && (
+              <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />
+            )}
+            {coldCount > 0 && (
+              <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
