@@ -1,32 +1,53 @@
 import type { AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone } from '../types'
 
-// Assertiva calls are proxied through n8n to avoid CORS issues.
-// The n8n workflow handles OAuth2 auth server-side (credentials secured).
-const PROXY_URL = import.meta.env.VITE_N8N_ASSERTIVA_PROXY || 'https://n8n.bilinski.cloud/webhook/assertiva-proxy'
+// Assertiva proxy: Worker (primário) + n8n (fallback)
+// Worker Cloudflare elimina CORS server-side. Se falhar, tenta n8n.
+const WORKER_URL = import.meta.env.VITE_ASSERTIVA_WORKER_URL || ''
+const N8N_URL = import.meta.env.VITE_N8N_ASSERTIVA_PROXY || ''
 
-// Fallback: direct calls (only works from server/n8n, not browser)
+// Fallback: direct calls (only works from server contexts, not browser)
 const DIRECT_BASE_URL = 'https://api.assertivasolucoes.com.br'
 const CLIENT_ID = import.meta.env.VITE_ASSERTIVA_CLIENT_ID || ''
 const CLIENT_SECRET = import.meta.env.VITE_ASSERTIVA_CLIENT_SECRET || ''
 
-// Token cache for direct mode (used by n8n Code nodes, not browser)
+// Token cache for direct mode
 let tokenCache: { token: string; expiresAt: number } | null = null
 
-// --- Proxy fetch (browser → n8n → Assertiva) ---
+// --- Proxy fetch: Worker (primário) → n8n (fallback) ---
 
-async function assertivaViaProxy<T>(action: string, params: Record<string, string>): Promise<T> {
-  const res = await fetch(PROXY_URL, {
+async function proxyFetch(url: string, body: Record<string, string>): Promise<Response> {
+  return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...params }),
+    body: JSON.stringify(body),
   })
+}
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(`Assertiva proxy ${res.status}: ${error.message || error.error || res.statusText}`)
+async function assertivaViaProxy<T>(action: string, params: Record<string, string>): Promise<T> {
+  const payload = { action, ...params }
+
+  // Tentar Worker primeiro (primário — sem CORS, mais rápido)
+  if (WORKER_URL) {
+    try {
+      const res = await proxyFetch(WORKER_URL, payload)
+      if (res.ok) return res.json()
+    } catch { /* Worker falhou, tentar n8n */ }
   }
 
-  return res.json()
+  // Fallback: n8n webhook
+  if (N8N_URL) {
+    try {
+      const res = await proxyFetch(N8N_URL, payload)
+      if (res.ok) return res.json()
+      const error = await res.json().catch(() => ({ message: res.statusText }))
+      throw new Error(`Assertiva n8n ${res.status}: ${error.message || res.statusText}`)
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Assertiva n8n')) throw err
+      // n8n também falhou
+    }
+  }
+
+  throw new Error('Assertiva indisponível: nenhum proxy configurado (Worker ou n8n)')
 }
 
 // --- Direct auth (fallback, for server-side contexts) ---
