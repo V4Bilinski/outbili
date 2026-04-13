@@ -1,0 +1,70 @@
+{
+  "name": "Assertiva Proxy — OUTBILI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assertiva-proxy",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assertiva OAuth2 — obter token\nconst CLIENT_ID = 'abc9cjvp39LjlSplYpK0eeZMSPi0Z8/mgDDbwsl2IbJ/t7kaG7sxSDT9ZLQQNbGUXkj9yIJVVc1hoPGkHp/0bg==';\nconst CLIENT_SECRET = 'xtV0v08ohSMtusYbhwjN4F4qL9dSloV44Tdhuz7fOiwr7nHTpOsiPOrjfEyXOJK5dnE+j5YMaEFnQrw+kRI8Sg==';\nconst BASE_URL = 'https://api.assertivasolucoes.com.br';\n\nconst body = $input.first().json.body || $input.first().json;\nconst action = body.action;\nconst cnpj = body.cnpj || '';\nconst cpf = body.cpf || '';\nconst phone = body.phone || '';\nconst protocolo = body.protocolo || '';\n\n// Obter token OAuth2\nconst credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');\nconst tokenRes = await fetch(`${BASE_URL}/oauth2/v3/token`, {\n  method: 'POST',\n  headers: {\n    'Authorization': `Basic ${credentials}`,\n    'Content-Type': 'application/x-www-form-urlencoded',\n  },\n  body: 'grant_type=client_credentials',\n});\n\nif (!tokenRes.ok) {\n  return [{ json: { error: `Auth failed: ${tokenRes.status}`, message: await tokenRes.text() } }];\n}\n\nconst tokenData = await tokenRes.json();\nconst token = tokenData.access_token;\n\n// Montar path baseado na acao\nlet path = '';\nswitch (action) {\n  case 'lookup-cnpj':\n    path = `/localize/v3/cnpj?cnpj=${cnpj}&idFinalidade=5`;\n    break;\n  case 'get-decision-makers':\n    path = `/localize/v3/possiveis-decisores?cnpj=${cnpj}&idFinalidade=5${protocolo ? `&protocolo=${protocolo}` : ''}`;\n    break;\n  case 'lookup-cpf':\n    path = `/localize/v3/cpf?cpf=${cpf}&idFinalidade=5`;\n    break;\n  case 'lookup-phone':\n    path = `/localize/v3/telefone?telefone=${phone}&idFinalidade=5`;\n    break;\n  default:\n    return [{ json: { error: 'Unknown action', message: `Action '${action}' not supported` } }];\n}\n\n// Chamar Assertiva\nconst res = await fetch(`${BASE_URL}${path}`, {\n  headers: { 'Authorization': `Bearer ${token}` },\n});\n\nif (!res.ok) {\n  const errBody = await res.text();\n  return [{ json: { error: `Assertiva ${res.status}`, message: errBody } }];\n}\n\nconst data = await res.json();\nreturn [{ json: data }];"
+      },
+      "id": "assertiva-proxy-code",
+      "name": "Assertiva Proxy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "Content-Type" }
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Assertiva Proxy", "type": "main", "index": 0 }]
+      ]
+    },
+    "Assertiva Proxy": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    { "name": "outbili" },
+    { "name": "assertiva" },
+    { "name": "proxy" }
+  ]
+}

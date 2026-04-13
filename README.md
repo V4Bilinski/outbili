@@ -123,11 +123,20 @@ Telefones fixos são salvos no campo `phone` e exibidos com label "(fixo)" na in
 - **Upload de arquivo:** importa CSV, Excel, PDF, TXT, MD com até 15 leads por vez
 - **Validação obrigatória:** leads sem decisor ou telefone são descartados antes de salvar
 
-### Enriquecimento por IA
-Pipeline de enriquecimento em 3 fases:
-1. **CNPJa API:** dados cadastrais, sócios (QSA), telefones, emails, CNAE
+### Enriquecimento por IA (automático)
+Pipeline de enriquecimento em 3 fases — executa automaticamente após salvar:
+
+1. **CNPJa API (browser):** dados cadastrais, sócios (QSA), telefones, emails, CNAE
 2. **Assertiva (via n8n proxy):** telefones validados, WhatsApp flag, CPF do decisor
 3. **Apify Actors:** presença digital (Instagram, LinkedIn, Google), análise competitiva
+
+**Setup obrigatório do proxy Assertiva:**
+```
+1. No n8n (n8n.bilinski.cloud), importar: n8n/assertiva-proxy-workflow.json
+2. Ativar o workflow
+3. Endpoint criado: /webhook/assertiva-proxy (POST)
+4. O app chama automaticamente após salvar leads da PESCA
+```
 
 ### Pipeline Kanban
 Gestão visual de leads com drag-and-drop e stage gates:
