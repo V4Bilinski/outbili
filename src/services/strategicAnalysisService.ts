@@ -361,174 +361,191 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
   const empresa = lead.companyName || 'a empresa'
   const segmento = lead.segment || 'seu segmento'
   const revenue = lead.monthlyRevenue || 0
+  const employees = lead.employees || 0
+  const years = lead.yearsInMarket || 0
+  const capital = lead.capitalSocial || 0
   const revenueStr = revenue > 0 ? `R$ ${Math.round(revenue / 1000)}k/mês` : 'faturamento não informado'
+  const revenuePerEmp = employees > 0 && revenue > 0 ? Math.round(revenue / employees) : 0
 
-  // Produto DR baseado no tier
   const drProduto = lead.tier === 'Medium=' ? 'DR-E (Estratégico — R$ 350k/ano)'
     : lead.tier === 'Medium-' ? 'DR-T (Tático — R$ 150k/ano)'
     : lead.tier === 'Small' ? 'DR-O (Operacional — R$ 50k/ano)'
     : 'DR-X (Raio-X Diagnóstico — R$ 4.000, 45 dias)'
 
-  // T1 Cegueira
-  const t1Sinais: string[] = []
-  if (lead.enrichmentStatus !== 'complete') t1Sinais.push('Dados incompletos')
-  if (!revenue) t1Sinais.push('Faturamento desconhecido')
-  if (!lead.googleRating) t1Sinais.push('Sem avaliações Google')
-  if (t1Sinais.length >= 2) {
+  // ═══════════════════════════════════════════════════════
+  // T1 Cegueira — SOMENTE para leads genuinamente sem dados
+  // Lead com revenue OU employees OU capitalSocial NÃO é cego
+  // ═══════════════════════════════════════════════════════
+  if (!revenue && !employees && !capital && (!lead.enrichmentStatus || lead.enrichmentStatus === 'none')) {
     travas.push({
       codigo: 'T1', nome: 'Cegueira', severidade: 'CRITICA',
-      sinaisDetectados: t1Sinais,
+      sinaisDetectados: ['Sem dados financeiros', 'Sem dados operacionais', 'Enriquecimento pendente'],
       impactoEstimado: 'Impacto indireto em todas as decisões',
       step: {
-        situacao: `${empresa} opera sem visibilidade dos próprios números. Sem dados de faturamento, avaliações ou métricas digitais, decisões são tomadas por intuição.`,
+        situacao: `${empresa} não possui nenhum dado financeiro ou operacional disponível. Decisões são tomadas completamente no escuro.`,
         trava: `Sem diagnóstico estruturado, é impossível identificar onde a receita está travada. A cegueira alimenta todas as outras travas.`,
-        estrategia: `Diagnóstico completo com mapeamento das 8 travas de receita, auditoria digital e análise competitiva do segmento de ${segmento}.`,
+        estrategia: `Diagnóstico urgente: enriquecer dados via CNPJá + Assertiva, mapear as 8 travas de receita e auditar a presença digital do segmento de ${segmento}.`,
         produto: drProduto,
       },
-      acaoImediata: `Agendar reunião de diagnóstico — ${empresa} precisa de visibilidade antes de qualquer ação.`,
+      acaoImediata: `Enriquecer o lead urgentemente e agendar reunião de diagnóstico — ${empresa} precisa de visibilidade.`,
     })
   }
 
-  // T2 Exposição
+  // ═══════════════════════════════════════════════════════
+  // T5 Qualificação — receita baixa para o tamanho da equipe
+  // Prioridade: detecta ineficiência operacional concreta
+  // ═══════════════════════════════════════════════════════
+  const t5Sinais: string[] = []
+  if (employees > 15 && revenue > 0 && revenuePerEmp < 25000) t5Sinais.push(`${employees} func. com receita/func. de R$ ${Math.round(revenuePerEmp / 1000)}k (baixa)`)
+  if (employees > 30 && revenue < 200000) t5Sinais.push(`${employees} funcionários para ${revenueStr}`)
+  if (capital < 50000 && years > 5 && revenue > 0) t5Sinais.push(`Capital R$ ${Math.round(capital / 1000)}k após ${years} anos`)
+  if (t5Sinais.length >= 1) {
+    travas.push({
+      codigo: 'T5', nome: 'Qualificação', severidade: 'ALTA',
+      sinaisDetectados: t5Sinais,
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k–${Math.max(18, Math.round(revenue * 0.15 / 1000))}k/mês`,
+      step: {
+        situacao: `${empresa} tem ${employees} funcionários mas receita de ${revenueStr}${revenuePerEmp > 0 ? ` (R$ ${Math.round(revenuePerEmp / 1000)}k por funcionário)` : ''}. A equipe opera abaixo da capacidade produtiva.`,
+        trava: `A empresa investe em estrutura mas não converte proporcionalmente. Leads errados no pipeline ou processo comercial ineficiente desperdiçam o potencial da equipe.`,
+        estrategia: `Redesenho do ICP, implementação de lead scoring (SPICED), e reestruturação do processo comercial para aumentar a taxa de conversão e o ticket médio.`,
+        produto: drProduto,
+      },
+      acaoImediata: `Perguntar: "De cada 10 leads que entram, quantos viram cliente? E qual o ticket médio atual de ${empresa}?"`,
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // T7 Decisão — fatura bem mas não tem estrutura de autoridade
+  // ═══════════════════════════════════════════════════════
+  const t7Sinais: string[] = []
+  if (revenue > 200000 && !lead.website) t7Sinais.push(`Fatura ${revenueStr} sem website`)
+  if (revenue > 100000 && !lead.inpiHasRegisteredTrademark) t7Sinais.push('Sem marca registrada no INPI')
+  if (revenue > 200000 && !lead.instagram) t7Sinais.push('Sem presença no Instagram')
+  if (revenue > 500000 && employees < 10) t7Sinais.push(`Fatura ${revenueStr} com apenas ${employees} func.`)
+  if (t7Sinais.length >= 1 && revenue > 100000) {
+    travas.push({
+      codigo: 'T7', nome: 'Decisão', severidade: 'ALTA',
+      sinaisDetectados: t7Sinais,
+      impactoEstimado: `R$ ${Math.round(revenue * 0.1 / 1000)}k–${Math.round(revenue * 0.2 / 1000)}k/mês em fechamentos perdidos`,
+      step: {
+        situacao: `${empresa} fatura ${revenueStr} mas carece de elementos de autoridade: ${!lead.website ? 'sem website, ' : ''}${!lead.inpiHasRegisteredTrademark ? 'sem marca registrada, ' : ''}${!lead.instagram ? 'sem Instagram' : ''}. Prospects avaliam e não fecham.`,
+        trava: `Clientes qualificados chegam à decisão final mas desistem. A falta de presença profissional, cases documentados e proposta estruturada gera insegurança.`,
+        estrategia: `Construir autoridade digital: website profissional, registro de marca INPI, cases de sucesso documentados e proposta comercial com ROI projetado.`,
+        produto: drProduto,
+      },
+      acaoImediata: `Perguntar: "Quantas propostas ${empresa} envia por mês? E dessas, quantas fecham? O que os prospects dizem quando não fecham?"`,
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // T6 Compromisso — empresa antiga com ticket estagnado
+  // ═══════════════════════════════════════════════════════
+  const t6Sinais: string[] = []
+  if (years > 8 && revenue > 0 && revenue < 500000) t6Sinais.push(`${years} anos no mercado com ${revenueStr}`)
+  if ((lead.tier === 'Micro+' || lead.tier === 'Small') && years > 5) t6Sinais.push(`Tier ${lead.tier} após ${years} anos`)
+  if (lead.taxRegime === 'simples' && revenue > 200000) t6Sinais.push(`Simples Nacional com ${revenueStr} — pode estar no limite`)
+  if (t6Sinais.length >= 1) {
+    travas.push({
+      codigo: 'T6', nome: 'Compromisso', severidade: 'MEDIA',
+      sinaisDetectados: t6Sinais,
+      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k–${Math.max(12, Math.round(revenue * 0.12 / 1000))}k/mês`,
+      step: {
+        situacao: `${empresa} opera há ${years} anos no ${lead.taxRegime || 'regime atual'} com faturamento de ${revenueStr}. A receita está estagnada proporcionalmente ao tempo de mercado.`,
+        trava: `Prospects demonstram interesse mas abandonam antes de fechar. O ciclo de venda é longo, falta urgência e a proposta não gera comprometimento imediato.`,
+        estrategia: `Reestruturar a proposta comercial com gatilhos de urgência, garantias de resultado e cases do segmento de ${segmento}. Implementar follow-up automatizado com cadência de 5 toques.`,
+        produto: drProduto,
+      },
+      acaoImediata: `Usar dado de custo da inação: "Cada mês sem escalar custa R$ ${Math.max(10, Math.round(revenue * 0.1 / 1000))}k em receita potencial não capturada."`,
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // T2 Exposição — sem presença digital (só se tem dados financeiros)
+  // Não é prioritária se o lead tem travas financeiras mais urgentes
+  // ═══════════════════════════════════════════════════════
   const t2Sinais: string[] = []
   if (!lead.website) t2Sinais.push('Sem website')
   if (!lead.instagram) t2Sinais.push('Sem Instagram')
   if ((lead.instagramFollowers || 0) < 500 && lead.instagram) t2Sinais.push(`Apenas ${lead.instagramFollowers || 0} seguidores`)
-  if (!lead.domainActive && lead.website) t2Sinais.push('Domínio inativo')
-  if (t2Sinais.length >= 2) {
+  if (t2Sinais.length >= 1 && (revenue > 0 || employees > 0)) {
     travas.push({
-      codigo: 'T2', nome: 'Exposição', severidade: 'ALTA',
+      codigo: 'T2', nome: 'Exposição', severidade: travas.length === 0 ? 'ALTA' : 'MEDIA',
       sinaisDetectados: t2Sinais,
-      impactoEstimado: 'R$ 10.000–25.000/mês em alcance perdido',
+      impactoEstimado: `R$ ${Math.max(10, Math.round(revenue * 0.08 / 1000))}k–${Math.max(25, Math.round(revenue * 0.15 / 1000))}k/mês`,
       step: {
-        situacao: `${empresa} tem presença digital limitada no segmento de ${segmento}. Potenciais clientes não conseguem encontrar a empresa online.`,
-        trava: `Sem exposição digital, a empresa depende exclusivamente de indicação e tráfego orgânico limitado. O público-alvo não sabe que ela existe.`,
-        estrategia: `Estruturar presença digital completa: website otimizado, perfil Instagram profissional, Google Meu Negócio ativo + campanha de tráfego pago para gerar alcance imediato.`,
+        situacao: `${empresa} fatura ${revenueStr} no segmento de ${segmento} mas ${!lead.website && !lead.instagram ? 'não tem presença digital' : !lead.website ? 'não tem website' : 'tem presença digital limitada'}. Potenciais clientes não encontram a empresa online.`,
+        trava: `Sem exposição digital, a empresa depende de indicação e boca a boca. O público-alvo busca soluções online e encontra concorrentes que investem em tráfego.`,
+        estrategia: `Estruturar presença digital: ${!lead.website ? 'website otimizado para conversão, ' : ''}${!lead.instagram ? 'perfil Instagram profissional, ' : ''}Google Meu Negócio ativo + campanha de tráfego pago para alcance imediato.`,
         produto: drProduto,
       },
-      acaoImediata: `Apresentar dados de concorrentes digitais do segmento de ${segmento} que já investem em tráfego pago.`,
+      acaoImediata: `Mostrar que concorrentes de ${segmento} com presença digital faturam 2-3x mais. Perguntar: "De onde vêm seus clientes hoje?"`,
     })
   }
 
-  // T3 Atenção
-  const t3Sinais: string[] = []
-  if ((lead.googleRating || 0) < 3.5 && lead.googleRating) t3Sinais.push(`Rating ${lead.googleRating}/5 no Google`)
-  if ((lead.googleReviewsCount || 0) < 15) t3Sinais.push(`Apenas ${lead.googleReviewsCount || 0} avaliações`)
-  if ((lead.instagramFollowers || 0) < 1000 && lead.instagram) t3Sinais.push('Baixo engajamento no Instagram')
-  if (t3Sinais.length >= 2) {
-    travas.push({
-      codigo: 'T3', nome: 'Atenção', severidade: 'ALTA',
-      sinaisDetectados: t3Sinais,
-      impactoEstimado: 'R$ 8.000–20.000/mês em conversões perdidas',
-      step: {
-        situacao: `${empresa} tem presença online mas não gera atenção suficiente. Rating de ${lead.googleRating || 'N/A'}/5 com ${lead.googleReviewsCount || 0} avaliações indica baixa percepção de qualidade.`,
-        trava: `A exposição existe mas é ignorada. O público vê a empresa e não se interessa — falta de prova social, conteúdo fraco ou posicionamento genérico.`,
-        estrategia: `Campanha de reputação (Google Reviews + conteúdo Instagram) + otimização de perfis com copy focada em conversão + gestão ativa de avaliações.`,
-        produto: drProduto,
-      },
-      acaoImediata: `Mostrar comparativo de rating vs concorrentes do segmento. "${empresa} está abaixo da média de ${segmento}."`,
-    })
-  }
-
-  // T4 Interesse
-  const t4Sinais: string[] = []
-  if (!lead.assertivaWhatsappFlag) t4Sinais.push('Sem WhatsApp Business')
-  const emailDomain = lead.emailDomain || ''
-  if (/gmail|hotmail|yahoo|outlook|live|bol|uol/i.test(emailDomain)) t4Sinais.push(`Email genérico (${emailDomain})`)
-  if (lead.website && !lead.instagram) t4Sinais.push('Website sem funil de captura')
-  if (t4Sinais.length >= 2) {
-    travas.push({
-      codigo: 'T4', nome: 'Interesse', severidade: 'MEDIA',
-      sinaisDetectados: t4Sinais,
-      impactoEstimado: 'R$ 5.000–15.000/mês em leads não capturados',
-      step: {
-        situacao: `${empresa} gera visitantes mas não converte em leads. Email genérico e ausência de WhatsApp Business indicam falta de estrutura de captura.`,
-        trava: `Visitantes chegam mas não viram leads. Sem formulários, WhatsApp ou automação, o tráfego é desperdiçado.`,
-        estrategia: `Implementar funil de captura: WhatsApp Business com atendimento, formulários com oferta de valor, automação de follow-up e régua de nutrição.`,
-        produto: drProduto,
-      },
-      acaoImediata: `Perguntar: "Quantos contatos novos ${empresa} recebe por mês? E quantos viram clientes?"`,
-    })
-  }
-
-  // T5 Qualificação
-  const t5Sinais: string[] = []
-  if ((lead.employees || 0) > 20 && revenue < 100000) t5Sinais.push(`${lead.employees} funcionários mas fatura ${revenueStr}`)
-  if ((lead.capitalSocial || 0) < 50000 && (lead.yearsInMarket || 0) > 5) t5Sinais.push('Capital baixo após 5+ anos')
-  if (t5Sinais.length >= 1) {
-    travas.push({
-      codigo: 'T5', nome: 'Qualificação', severidade: 'MEDIA',
-      sinaisDetectados: t5Sinais,
-      impactoEstimado: 'R$ 8.000–18.000/mês em ineficiência operacional',
-      step: {
-        situacao: `${empresa} tem estrutura operacional (${lead.employees || '?'} funcionários) mas receita desproporcional (${revenueStr}). Indica ineficiência na conversão de leads em clientes.`,
-        trava: `A empresa atrai leads mas os leads errados — ou o processo comercial não qualifica adequadamente, desperdiçando tempo da equipe.`,
-        estrategia: `Redesenho do ICP (perfil de cliente ideal), implementação de scoring de leads, e processo comercial com etapas de qualificação (SPICED).`,
-        produto: drProduto,
-      },
-      acaoImediata: `Perguntar: "Qual o perfil do seu melhor cliente? E quanto da equipe comercial é gasto com leads que não fecham?"`,
-    })
-  }
-
-  // T6 Compromisso
-  const t6Sinais: string[] = []
-  if (lead.tier === 'Micro+' || lead.tier === 'Small') t6Sinais.push(`Tier ${lead.tier} (ticket baixo)`)
-  if (lead.taxRegime === 'simples' || lead.taxRegime === 'mei') t6Sinais.push(`Regime ${lead.taxRegime}`)
-  if ((lead.yearsInMarket || 0) > 5 && revenue < 200000) t6Sinais.push(`${lead.yearsInMarket} anos mas fatura ${revenueStr}`)
-  if (t6Sinais.length >= 2) {
-    travas.push({
-      codigo: 'T6', nome: 'Compromisso', severidade: 'MEDIA',
-      sinaisDetectados: t6Sinais,
-      impactoEstimado: 'R$ 5.000–12.000/mês em vendas abandonadas',
-      step: {
-        situacao: `${empresa} opera há ${lead.yearsInMarket || '?'} anos no regime ${lead.taxRegime || 'não informado'} com faturamento estagnado em ${revenueStr}.`,
-        trava: `Prospects demonstram interesse mas abandonam no momento de comprometer. Falta urgência, garantias ou proposta de valor clara que justifique a decisão.`,
-        estrategia: `Reestruturar proposta comercial com gatilhos de urgência, garantias de resultado, e caso de sucesso do segmento de ${segmento}. Implementar follow-up automatizado.`,
-        produto: drProduto,
-      },
-      acaoImediata: `Usar dado de custo da inação: "Cada mês sem resolver custa R$ ${Math.round(revenue * 0.1 / 1000) || 10}k em receita não capturada."`,
-    })
-  }
-
-  // T7 Decisão
-  const t7Sinais: string[] = []
-  if (!lead.inpiHasRegisteredTrademark && revenue > 100000) t7Sinais.push('Sem marca registrada (INPI)')
-  if ((lead.capitalSocial || 0) < 50000) t7Sinais.push(`Capital social R$ ${Math.round((lead.capitalSocial || 0) / 1000)}k`)
-  if (t7Sinais.length >= 1 && revenue > 50000) {
-    travas.push({
-      codigo: 'T7', nome: 'Decisão', severidade: 'ALTA',
-      sinaisDetectados: t7Sinais,
-      impactoEstimado: 'R$ 12.000–30.000/mês em fechamentos perdidos',
-      step: {
-        situacao: `${empresa} fatura ${revenueStr} mas não protegeu a marca (sem registro INPI) e tem capital social baixo — sinais de gestão pouco estratégica.`,
-        trava: `Prospects qualificados chegam à decisão final mas não fecham. Falta de autoridade da marca, materiais de venda fracos ou processo de fechamento inexistente.`,
-        estrategia: `Construir autoridade: registro de marca, cases de sucesso documentados, proposta comercial profissional com ROI projetado e garantias.`,
-        produto: drProduto,
-      },
-      acaoImediata: `Apresentar projeção de ROI personalizada para ${empresa} — "Investimento de R$ X retorna R$ Y em 90 dias."`,
-    })
-  }
-
-  // T8 Retenção
+  // ═══════════════════════════════════════════════════════
+  // T8 Retenção — empresa madura, equipe grande, risco de churn
+  // ═══════════════════════════════════════════════════════
   const t8Sinais: string[] = []
-  if ((lead.yearsInMarket || 0) > 5) t8Sinais.push(`${lead.yearsInMarket} anos no mercado`)
-  if (lead.simplesOptant && (lead.employees || 0) > 10) t8Sinais.push(`Simples Nacional com ${lead.employees} funcionários`)
-  if (t8Sinais.length >= 2) {
+  if (years > 10 && employees > 5) t8Sinais.push(`${years} anos no mercado com ${employees} funcionários`)
+  if (years > 10 && revenue > 0 && revenue < 300000) t8Sinais.push(`Empresa madura com receita de ${revenueStr}`)
+  if (lead.simplesOptant && employees > 10) t8Sinais.push(`Simples Nacional com ${employees} funcionários — estrutura de retenção ausente`)
+  if (t8Sinais.length >= 1) {
     travas.push({
       codigo: 'T8', nome: 'Retenção', severidade: 'MEDIA',
       sinaisDetectados: t8Sinais,
-      impactoEstimado: 'R$ 8.000–20.000/mês em clientes perdidos',
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.06 / 1000))}k–${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês em clientes perdidos`,
       step: {
-        situacao: `${empresa} está há ${lead.yearsInMarket || '?'} anos no mercado com ${lead.employees || '?'} funcionários no Simples Nacional. Estrutura sugere dependência de clientes recorrentes sem estratégia de retenção.`,
-        trava: `Perder 1 cliente custa 5-7x mais que reter. Sem programa de fidelidade, NPS ou régua de relacionamento, o churn corrói a base silenciosamente.`,
-        estrategia: `Implementar programa de retenção: NPS automatizado, régua de relacionamento, ofertas de recompra e estratégia de upsell para aumentar LTV.`,
+        situacao: `${empresa} está há ${years} anos no mercado com ${employees} funcionários. A maturidade sugere base de clientes recorrentes mas sem estratégia ativa de retenção.`,
+        trava: `Perder 1 cliente custa 5-7x mais que reter. Sem NPS, régua de relacionamento ou programa de fidelidade, o churn corrói a base silenciosamente.`,
+        estrategia: `Implementar programa de retenção: NPS automatizado, régua de relacionamento por WhatsApp, ofertas de recompra e estratégia de upsell para aumentar LTV.`,
         produto: drProduto,
       },
-      acaoImediata: `Perguntar: "Qual a taxa de retorno dos seus clientes? Quantos compram mais de uma vez?"`,
+      acaoImediata: `Perguntar: "Qual a taxa de retorno dos seus clientes? Quantos compram mais de uma vez? ${empresa} mede o NPS?"`,
     })
   }
 
-  // Ordenar por severidade
+  // ═══════════════════════════════════════════════════════
+  // T3 Atenção — só se TEM presença digital mas é fraca
+  // ═══════════════════════════════════════════════════════
+  if (lead.googleRating && lead.googleRating < 3.5) {
+    travas.push({
+      codigo: 'T3', nome: 'Atenção', severidade: 'ALTA',
+      sinaisDetectados: [`Rating ${lead.googleRating}/5 no Google`, `${lead.googleReviewsCount || 0} avaliações`],
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k–${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês`,
+      step: {
+        situacao: `${empresa} tem rating de ${lead.googleRating}/5 no Google com ${lead.googleReviewsCount || 0} avaliações. A percepção de qualidade está abaixo do aceitável para o segmento.`,
+        trava: `O público vê a empresa online mas não se interessa. Reputação fraca = desconfiança = lead perdido antes mesmo de chegar ao funil.`,
+        estrategia: `Campanha intensiva de reputação: solicitar avaliações 5 estrelas, responder todas avaliações negativas, otimizar perfil Google Meu Negócio.`,
+        produto: drProduto,
+      },
+      acaoImediata: `Mostrar: "${empresa} tem ${lead.googleRating}/5 — a média do segmento de ${segmento} é 4.2. Isso custa clientes todos os dias."`,
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // T4 Interesse — tem exposição mas não converte
+  // ═══════════════════════════════════════════════════════
+  if (lead.website && !lead.assertivaWhatsappFlag) {
+    const emailDomain = lead.emailDomain || ''
+    const isGeneric = /gmail|hotmail|yahoo|outlook|live|bol|uol/i.test(emailDomain)
+    const sinais = ['Website sem WhatsApp Business vinculado']
+    if (isGeneric) sinais.push(`Email genérico (${emailDomain})`)
+    travas.push({
+      codigo: 'T4', nome: 'Interesse', severidade: 'MEDIA',
+      sinaisDetectados: sinais,
+      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k–${Math.max(15, Math.round(revenue * 0.12 / 1000))}k/mês`,
+      step: {
+        situacao: `${empresa} tem website mas sem WhatsApp Business${isGeneric ? ' e email genérico' : ''}. Visitantes chegam mas não têm canal direto para converter.`,
+        trava: `Tráfego sem funil de captura é desperdício. Visitantes vão, olham e saem — sem forma fácil de contato, nenhum vira lead.`,
+        estrategia: `Implementar WhatsApp Business com chatbot, formulários de captura com oferta de valor, e automação de follow-up para nutrir leads.`,
+        produto: drProduto,
+      },
+      acaoImediata: `Perguntar: "Quantos visitantes o site de ${empresa} recebe por mês? E quantos viram contato?"`,
+    })
+  }
+
+  // Ordenar: travas com impacto financeiro mais alto primeiro
+  // CRITICA > ALTA > MEDIA, e dentro da mesma severidade, por revenue impact
   const order = { CRITICA: 0, ALTA: 1, MEDIA: 2 }
   travas.sort((a, b) => order[a.severidade] - order[b.severidade])
 
