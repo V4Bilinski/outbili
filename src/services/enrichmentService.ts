@@ -1159,6 +1159,35 @@ export async function enrichLead(
           : `https://${assertivaData._site}`
       }
 
+      // Redes sociais da Assertiva (Instagram, Facebook, LinkedIn)
+      if (assertivaData?._redesSociais) {
+        if (assertivaData._redesSociais.instagram && !merged.instagram) {
+          merged.instagram = assertivaData._redesSociais.instagram
+        }
+        if (assertivaData._redesSociais.facebook && !merged.facebook) {
+          merged.facebook = assertivaData._redesSociais.facebook
+        }
+        if (assertivaData._redesSociais.linkedin && !merged.linkedin) {
+          merged.linkedin = assertivaData._redesSociais.linkedin
+        }
+        merged.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
+      }
+
+      // Faturamento presumido da Assertiva (substitui estimativa por dados reais)
+      if (assertivaData?._faturamentoPresumido && !merged.monthlyRevenue) {
+        merged.monthlyRevenue = Number(assertivaData._faturamentoPresumido)
+      }
+
+      // Score de crédito da Assertiva
+      if (assertivaData?._scoreCredito) {
+        merged.assertivaCreditScore = Number(assertivaData._scoreCredito)
+      }
+
+      // Renda presumida da Assertiva
+      if (assertivaData?._rendaPresumida) {
+        merged.assertivaIncomeEstimate = Number(assertivaData._rendaPresumida)
+      }
+
       // Buscar decisores via Assertiva (requer protocolo da consulta CNPJ)
       const protocolo = assertivaData?._protocolo
       const decisores = await getDecisionMakers(leadData.cnpj, protocolo)
@@ -1177,6 +1206,9 @@ export async function enrichLead(
         decisores.length ? `${decisores.length} decisor${decisores.length > 1 ? 'es' : ''}` : null,
         assertivaData?._quantidadeFuncionarios ? `${assertivaData._quantidadeFuncionarios} func` : null,
         assertivaData?._cnaeDescricao ? 'CNAE' : null,
+        assertivaData?._redesSociais ? 'redes sociais' : null,
+        assertivaData?._faturamentoPresumido ? `faturamento R$ ${assertivaData._faturamentoPresumido}` : null,
+        assertivaData?._scoreCredito ? `score ${assertivaData._scoreCredito}` : null,
       ].filter(Boolean)
       step('assertiva').detail = assertivaDetails.join(' + ') || 'Sem dados'
       step('assertiva').status = 'done'
@@ -2024,6 +2056,25 @@ export async function reEnrichLead(
     }
     if (assertivaData?._site && !lead.website) {
       merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
+    }
+    // Redes sociais da Assertiva
+    if (assertivaData?._redesSociais) {
+      if (assertivaData._redesSociais.instagram && !lead.instagram) merged.instagram = assertivaData._redesSociais.instagram
+      if (assertivaData._redesSociais.facebook && !lead.facebook) merged.facebook = assertivaData._redesSociais.facebook
+      if (assertivaData._redesSociais.linkedin && !lead.linkedin) merged.linkedin = assertivaData._redesSociais.linkedin
+      merged.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
+    }
+    // Faturamento presumido
+    if (assertivaData?._faturamentoPresumido && !lead.monthlyRevenue) {
+      merged.monthlyRevenue = Number(assertivaData._faturamentoPresumido)
+    }
+    // Score de crédito
+    if (assertivaData?._scoreCredito) {
+      merged.assertivaCreditScore = Number(assertivaData._scoreCredito)
+    }
+    // Renda presumida
+    if (assertivaData?._rendaPresumida) {
+      merged.assertivaIncomeEstimate = Number(assertivaData._rendaPresumida)
     }
 
     if (source !== 'both') source = 'assertiva'

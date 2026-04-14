@@ -1,4 +1,4 @@
-import type { AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone } from '../types'
+import type { AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone, AssertivaSocialLinks } from '../types'
 
 // Assertiva proxy: Worker (primário) + n8n (fallback)
 // Worker Cloudflare elimina CORS server-side. Se falhar, tenta n8n.
@@ -115,6 +115,44 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     qualificacao: s.qualificacao || s.cargo || '',
   }))
 
+  // Extrair redes sociais (podem vir em resp.redesSociais, cadastro.redesSociais, ou resp.midiasSociais)
+  const rawSociais = resp.redesSociais || cadastro.redesSociais || resp.midiasSociais || {}
+  const redesSociais: AssertivaSocialLinks = {}
+  if (typeof rawSociais === 'object' && rawSociais !== null) {
+    redesSociais.instagram = rawSociais.instagram || rawSociais.instagramUrl || undefined
+    redesSociais.facebook = rawSociais.facebook || rawSociais.facebookUrl || undefined
+    redesSociais.linkedin = rawSociais.linkedin || rawSociais.linkedinUrl || undefined
+    redesSociais.twitter = rawSociais.twitter || rawSociais.twitterUrl || undefined
+    redesSociais.youtube = rawSociais.youtube || rawSociais.youtubeUrl || undefined
+  }
+
+  // Detectar WhatsApp Business em telefones fixos
+  const hasWhatsappBusiness = fixos.some((f: AssertivaPhone) => f.whatsapp === true)
+
+  // Faturamento — pode vir em diferentes paths da resposta
+  const faturamentoPresumido = resp.faturamentoPresumido
+    || cadastro.faturamentoPresumido
+    || resp.faturamento?.valorPresumido
+    || cadastro.receitaBruta
+    || undefined
+
+  // Score de crédito
+  const scoreCredito = resp.scoreCredito?.valor
+    || resp.scoreCredito
+    || cadastro.scoreCredito
+    || undefined
+
+  // Renda presumida
+  const rendaPresumida = resp.rendaPresumida
+    || cadastro.rendaPresumida
+    || undefined
+
+  // Indicador de atividade
+  const indicadorAtividade = resp.indicadorAtividade
+    || cadastro.indicadorAtividade
+    || cadastro.situacaoAtividade
+    || undefined
+
   return {
     razaoSocial: cadastro.razaoSocial,
     nomeFantasia: cadastro.nomeFantasia,
@@ -127,7 +165,13 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     _cnaeDescricao: cadastro.cnaeDescricao,
     _idadeEmpresa: cadastro.idadeEmpresa,
     _quantidadeFuncionarios: cadastro.quantidadeFuncionarios,
-  } as any
+    _redesSociais: Object.values(redesSociais).some(Boolean) ? redesSociais : undefined,
+    _faturamentoPresumido: typeof faturamentoPresumido === 'number' ? faturamentoPresumido : undefined,
+    _scoreCredito: typeof scoreCredito === 'number' ? scoreCredito : undefined,
+    _rendaPresumida: typeof rendaPresumida === 'number' ? rendaPresumida : undefined,
+    _hasWhatsappBusiness: hasWhatsappBusiness || undefined,
+    _indicadorAtividade: indicadorAtividade,
+  } satisfies AssertivaCompanyResult
 }
 
 // --- Possiveis decisores (requer protocolo da consulta CNPJ) ---

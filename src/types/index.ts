@@ -410,6 +410,14 @@ export interface AssertivaDecisionMaker {
   emails: Array<{ endereco: string }>
 }
 
+export interface AssertivaSocialLinks {
+  instagram?: string
+  facebook?: string
+  linkedin?: string
+  twitter?: string
+  youtube?: string
+}
+
 export interface AssertivaCompanyResult {
   razaoSocial?: string
   nomeFantasia?: string
@@ -417,4 +425,16 @@ export interface AssertivaCompanyResult {
   telefones: AssertivaPhone[]
   emails: Array<{ endereco: string }>
   socios: Array<{ nome: string; cpf?: string; qualificacao?: string }>
+  // Campos internos (prefixo _) — extraídos da resposta raw
+  _protocolo?: string
+  _site?: string
+  _cnaeDescricao?: string
+  _idadeEmpresa?: number
+  _quantidadeFuncionarios?: number
+  _redesSociais?: AssertivaSocialLinks
+  _faturamentoPresumido?: number
+  _scoreCredito?: number
+  _rendaPresumida?: number
+  _hasWhatsappBusiness?: boolean
+  _indicadorAtividade?: string
 }

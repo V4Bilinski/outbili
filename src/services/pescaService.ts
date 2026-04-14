@@ -297,6 +297,42 @@ export async function enrichBatchWithAssertiva(
             }
           }
 
+          // Redes sociais da Assertiva
+          if (assertivaData?._redesSociais) {
+            if (assertivaData._redesSociais.instagram && !leadRecord.fields.instagram) {
+              leadUpdate.instagram = assertivaData._redesSociais.instagram
+            }
+            if (assertivaData._redesSociais.facebook && !leadRecord.fields.facebook) {
+              leadUpdate.facebook = assertivaData._redesSociais.facebook
+            }
+            if (assertivaData._redesSociais.linkedin && !leadRecord.fields.linkedin) {
+              leadUpdate.linkedin = assertivaData._redesSociais.linkedin
+            }
+            leadUpdate.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
+          }
+
+          // Faturamento presumido
+          if (assertivaData?._faturamentoPresumido && !leadRecord.fields.monthlyRevenue) {
+            leadUpdate.monthlyRevenue = Number(assertivaData._faturamentoPresumido)
+          }
+
+          // Score de crédito
+          if (assertivaData?._scoreCredito) {
+            leadUpdate.assertivaCreditScore = Number(assertivaData._scoreCredito)
+          }
+
+          // Renda presumida
+          if (assertivaData?._rendaPresumida) {
+            leadUpdate.assertivaIncomeEstimate = Number(assertivaData._rendaPresumida)
+          }
+
+          // Website da Assertiva (se não tinha)
+          if (assertivaData?._site && !leadRecord.fields.website) {
+            leadUpdate.website = assertivaData._site.startsWith('http')
+              ? assertivaData._site
+              : `https://${assertivaData._site}`
+          }
+
           leadUpdate.enrichmentStatus = 'assertiva' as any
 
           // PATCH Lead no Airtable
