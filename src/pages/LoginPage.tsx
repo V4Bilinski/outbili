@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context'
 import { createUser } from '../services/authService'
 import { toast } from 'sonner'
-import { LogIn, UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { LogIn, UserPlus, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '../lib/cn'
 
 type Mode = 'login' | 'signup'
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 
 export function LoginPage() {
   const [mode, setMode] = useState<Mode>('login')
@@ -15,16 +17,33 @@ export function LoginPage() {
   const [fullName, setFullName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const inputClass = 'h-12 w-full rounded-xl bg-white/[0.05] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/40 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
+  const touch = (field: string) => setTouched((p) => ({ ...p, [field]: true }))
+
+  const emailError = touched.email && email.length > 0 && !isValidEmail(email) ? 'Email inválido' : null
+  const emailOk = email.length > 0 && isValidEmail(email)
+  const passwordError = touched.password && password.length > 0 && password.length < 6 ? `Faltam ${6 - password.length} caractere${6 - password.length > 1 ? 's' : ''}` : null
+  const passwordOk = password.length >= 6
+  const nameError = touched.fullName && mode === 'signup' && fullName.length === 0 ? 'Nome obrigatório' : null
+
+  const inputBase = 'h-12 w-full rounded-xl bg-white/[0.05] border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors'
+  const inputClass = (error: string | null, ok: boolean) => cn(
+    inputBase,
+    error ? 'border-error/50 focus:border-error/60 focus:ring-error/20' :
+    ok ? 'border-success/40 focus:border-success/50 focus:ring-success/20' :
+    'border-border focus:border-red/40 focus:ring-red/20',
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) { toast.error('Preencha email e senha'); return }
-    if (mode === 'signup' && !fullName) { toast.error('Preencha seu nome'); return }
-    if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return }
+    setTouched({ email: true, password: true, fullName: true })
+    if (!email || !password) return
+    if (!isValidEmail(email)) return
+    if (mode === 'signup' && !fullName) return
+    if (password.length < 6) return
 
     setIsLoading(true)
     try {
@@ -106,23 +125,31 @@ export function LoginPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  onBlur={() => touch('fullName')}
                   placeholder="Seu nome"
-                  className={inputClass}
+                  className={inputClass(nameError, fullName.length > 0 && !nameError)}
                   autoComplete="name"
                 />
+                {nameError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{nameError}</p>}
               </div>
             )}
 
             <div>
               <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                className={inputClass}
-                autoComplete="email"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => touch('email')}
+                  placeholder="seu@email.com"
+                  className={cn(inputClass(emailError, emailOk), 'pr-10')}
+                  autoComplete="email"
+                />
+                {emailOk && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-success" />}
+                {emailError && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-error" />}
+              </div>
+              {emailError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{emailError}</p>}
             </div>
 
             <div>
@@ -132,18 +159,28 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => touch('password')}
                   placeholder="Mínimo 6 caracteres"
-                  className={cn(inputClass, 'pr-12')}
+                  className={cn(inputClass(passwordError, passwordOk), 'pr-20')}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer p-1 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                  {passwordOk && <CheckCircle className="h-4 w-4 text-success" />}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-text-muted hover:text-text-primary cursor-pointer p-1 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
+              {passwordError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{passwordError}</p>}
+              {password.length > 0 && password.length < 6 && !touched.password && (
+                <div className="mt-1.5 h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-error to-warning rounded-full transition-all duration-300" style={{ width: `${(password.length / 6) * 100}%` }} />
+                </div>
+              )}
             </div>
 
             <button

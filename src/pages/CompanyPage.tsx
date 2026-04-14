@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useLead, useDeleteLead } from '../hooks/useLeads'
+import { useLead, useDeleteLead, useUpdateLead } from '../hooks/useLeads'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
@@ -13,6 +13,8 @@ import { getPartners } from '../services/partnerService'
 import { getEnrichmentLog } from '../services/enrichmentLogService'
 import { useQuery } from '@tanstack/react-query'
 import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
+import { LEAD_STATUSES } from '../lib/constants'
+import { createActivity } from '../services/activityService'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -43,8 +45,10 @@ export function CompanyPage() {
   const [showActionMenu, setShowActionMenu] = useState(false)
   const [showAddContact, setShowAddContact] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showStatusMenu, setShowStatusMenu] = useState(false)
   const createContact = useCreateContact()
   const deleteLead = useDeleteLead()
+  const updateLead = useUpdateLead()
 
   if (isLoading) {
     return (
@@ -182,6 +186,47 @@ export function CompanyPage() {
               <Badge variant={tempVariant} pulse={lead.temperature === 'Quente'}>
                 {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </Badge>
+              {/* Status editável */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowStatusMenu(!showStatusMenu)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-label font-semibold uppercase tracking-wider cursor-pointer transition-all border',
+                    lead.status === 'Fechado' ? 'bg-success/12 text-success border-success/20' :
+                    lead.status === 'Perdido' ? 'bg-error/12 text-error border-error/20' :
+                    'bg-white/5 text-text-secondary border-white/8 hover:border-red/30',
+                  )}
+                >
+                  {LEAD_STATUSES.find(s => s.value === lead.status)?.label || lead.status || 'Novo'}
+                  <ChevronRight className={cn('h-3 w-3 transition-transform', showStatusMenu && 'rotate-90')} />
+                </button>
+                {showStatusMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowStatusMenu(false)} />
+                    <div className="absolute left-0 top-full mt-1 w-44 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
+                      {LEAD_STATUSES.map(s => (
+                        <button
+                          key={s.value}
+                          onClick={() => {
+                            if (s.value === lead.status) { setShowStatusMenu(false); return }
+                            updateLead.mutate({ id: lead.id, data: { status: s.value } })
+                            createActivity({ leadId: lead.id, type: 'status_change', description: `Status: ${lead.status || 'Novo'} → ${s.label}` }).catch(() => {})
+                            toast.success(`Status alterado para ${s.label}`)
+                            setShowStatusMenu(false)
+                          }}
+                          className={cn(
+                            'w-full flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer transition-colors',
+                            s.value === lead.status ? 'text-red bg-red/5 font-semibold' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary',
+                          )}
+                        >
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
               <Badge variant="outline">{lead.tier}</Badge>
               <Badge variant="outline">{lead.segment}</Badge>
             </div>
@@ -318,9 +363,18 @@ export function CompanyPage() {
               <button type="button" onClick={() => setShowAddContact(false)} className="text-xs text-text-muted hover:text-text-primary cursor-pointer">Cancelar</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input name="name" type="text" placeholder="Nome completo *" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
-              <input name="role" type="text" placeholder="Cargo (CEO, Proprietário...)" className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
-              <input name="whatsapp" type="tel" placeholder="WhatsApp * (11999998888)" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+              <div>
+                <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 flex items-center gap-1 block">Nome <span className="text-red">*</span></label>
+                <input name="name" type="text" placeholder="Nome completo" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
+              </div>
+              <div>
+                <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 block">Cargo</label>
+                <input name="role" type="text" placeholder="CEO, Proprietário..." className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+              </div>
+              <div>
+                <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 flex items-center gap-1 block">WhatsApp <span className="text-red">*</span></label>
+                <input name="whatsapp" type="tel" placeholder="11999998888" required pattern="[0-9]{10,13}" className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
+              </div>
             </div>
             <Button type="submit" size="sm" loading={createContact.isPending} icon={<UserPlus className="h-3.5 w-3.5" />}>
               Salvar contato
