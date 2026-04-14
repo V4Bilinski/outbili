@@ -330,7 +330,7 @@ Novo → Qualificado → Contactado → Respondeu → Reunião → Proposta → 
 - Portfolio de produtos (productPortfolio)
 - Stack tecnologico (techStack)
 - SPICED score detalhado com notas por dimensão
-- Trava hipotetica principal (hypotheticalTrap)
+- Trava dominante (hypotheticalTrap) — formato "T1 — Cegueira", gravado automaticamente por `detectTravas()` no enriquecimento
 - Status de enriquecimento
 
 **Tab 2 — Reunião (TabReuniao)**

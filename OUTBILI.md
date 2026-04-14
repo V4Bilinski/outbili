@@ -170,6 +170,15 @@ As 3 tabs de análise na CompanyPage são conectadas à metodologia Fábrica de 
 - Lógica em `src/services/strategicAnalysisService.ts` (funções `detectTravas`, `generateProjecaoCompetitiva`, `generatePlaybookBDR`)
 - Blueprint UX em `docs/guides/BLUEPRINT-ANALISES-BDR.md`
 
+**REGRA ABSOLUTA — Trava dominante:**
+- Todo lead DEVE ter `hypotheticalTrap` preenchido com a trava principal no formato `"T1 — Cegueira"`
+- O campo é gravado automaticamente em 3 pontos:
+  1. `enrichLead()` — enriquecimento individual (CompanyPage)
+  2. `enrichBatchWithAssertiva()` — enriquecimento batch pós-PESCA
+  3. `reEnrichLead()` — re-enriquecimento batch (AdminPage)
+- A lógica `detectTravas()` analisa os dados reais do lead (website, instagram, employees, revenue, etc.) e identifica as travas T1-T8
+- O card "Trava dominante" na CompanyPage mostra a trava em tempo real via `detectTravas()` (não depende do campo salvo)
+
 ### Cascata Assertiva WhatsApp (3 níveis obrigatórios)
 
 Todo enriquecimento de WhatsApp DEVE seguir a cascata completa de 3 níveis. Se o nível 1 não encontra telefone, o sistema DEVE tentar os níveis 2 e 3 antes de desistir.

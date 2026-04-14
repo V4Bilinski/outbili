@@ -1,6 +1,7 @@
 import { listAllRecords, createRecords, getRecord, updateRecords } from '../lib/airtable'
 import { getCnaeCodesForCnpja } from '../lib/cnae-mapping'
 import { formatPhone } from './enrichmentService'
+import { detectTravas } from './strategicAnalysisService'
 import { searchOffice, searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
 import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone, lookupCpf } from './assertivaService'
 import { TIERS } from '../lib/constants'
@@ -488,7 +489,14 @@ export async function enrichBatchWithAssertiva(
             }
           }
 
-          // Atualizar lead com dados completos
+          // Calcular trava dominante (Fábrica de Receita) com dados atualizados
+          const mergedForTrava = { ...leadRecord.fields, ...leadUpdate } as Partial<Lead>
+          const travasDetectadas = detectTravas(mergedForTrava)
+          if (travasDetectadas.length > 0) {
+            leadUpdate.hypotheticalTrap = `${travasDetectadas[0].codigo} — ${travasDetectadas[0].nome}`
+          }
+
+          // Atualizar lead com dados completos + trava
           await updateRecords<Lead>('Leads', [{ id: leadId, fields: leadUpdate }])
 
           enrichedCount++
