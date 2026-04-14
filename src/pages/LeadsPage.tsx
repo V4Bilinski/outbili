@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads } from '../hooks/useLeads'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Card } from '../components/ui/Card'
@@ -154,8 +154,9 @@ function LeadTable({ leads }: { leads: Lead[] }) {
 export function LeadsPage() {
   const { data: leads, isLoading } = useLeads()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [segment, setSegment] = useState('')
-  const [temperature, setTemperature] = useState('')
+  const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
   const [status, setStatus] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -165,6 +166,7 @@ export function LeadsPage() {
     setSegment('')
     setTemperature('')
     setStatus('')
+    if (searchParams.has('temperatura')) setSearchParams({}, { replace: true })
     setSearchQuery('')
   }
 

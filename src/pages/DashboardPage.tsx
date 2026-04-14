@@ -136,19 +136,19 @@ function KPICards({ leads }: { leads: Lead[] }) {
             label: 'Quentes', emoji: '🔥', value: hotCount, pct: hotPct, icon: Flame,
             color: 'text-hot', borderColor: 'border-hot/20', bgAccent: 'bg-hot/[0.06]',
             hint: hotCount > 0 ? 'Prontos para contato direto' : 'Nenhum lead quente ainda',
-            action: hotCount > 0 ? () => navigate('/leads') : undefined,
+            action: () => navigate('/leads?temperatura=Quente'),
           },
           {
             label: 'Mornos', emoji: '🟡', value: warmCount, pct: warmPct, icon: TrendingUp,
             color: 'text-warm', borderColor: 'border-warm/20', bgAccent: 'bg-warm/[0.04]',
             hint: warmCount > 0 ? 'Qualificar para avançar no funil' : 'Nenhum lead morno',
-            action: warmCount > 0 ? () => navigate('/leads') : undefined,
+            action: () => navigate('/leads?temperatura=Morno'),
           },
           {
             label: 'Frios', emoji: '❄️', value: coldCount, pct: coldPct, icon: Snowflake,
             color: 'text-success', borderColor: 'border-success/20', bgAccent: 'bg-success/[0.04]',
             hint: coldCount > 0 ? 'Iniciar cadência de aquecimento' : 'Nenhum lead frio',
-            action: coldCount > 0 ? () => navigate('/leads') : undefined,
+            action: () => navigate('/leads?temperatura=Frio'),
           },
         ].map((card, i) => (
           <button
