@@ -64,7 +64,7 @@ function TabCampanhas({ contacts }: { leadId: string; contacts: Array<{ whatsapp
       <div className="text-center py-12">
         <Send className="h-8 w-8 text-text-muted mx-auto mb-3 opacity-40" />
         <p className="text-sm text-text-muted">Nenhuma campanha criada ainda</p>
-        <p className="text-xs text-text-muted mt-1">Crie campanhas na aba Campanhas para acompanhar aqui</p>
+        <p className="text-xs text-text-muted mt-1">Crie uma campanha WhatsApp para acompanhar o envio aqui</p>
       </div>
     )
   }
@@ -133,7 +133,7 @@ export function CompanyPage() {
   }
 
   if (!lead) {
-    return <p className="text-text-secondary">Lead não encontrada.</p>
+    return <p className="text-text-secondary">Lead não encontrado.</p>
   }
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
@@ -207,7 +207,7 @@ export function CompanyPage() {
               </div>
               <h3 className="text-base font-bold text-text-primary">Excluir lead?</h3>
               <p className="text-sm text-text-muted mt-1">
-                <strong>{lead.companyName}</strong> será removido permanentemente do sistema, incluindo todos os contatos e atividades.
+                <strong>{lead.companyName}</strong> será excluído permanentemente, junto com seus contatos e histórico de atividades. Esta ação não pode ser desfeita.
               </p>
             </div>
             <div className="flex gap-3">
@@ -255,6 +255,7 @@ export function CompanyPage() {
           <div className="text-right shrink-0">
             <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
             <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">SPICED</p>
+            <p className="text-[10px] text-text-muted mt-0.5">{score >= 4 ? 'Lead qualificado' : score >= 3 ? 'Potencial médio' : score >= 2 ? 'Necessita qualificação' : 'Prioridade baixa'}</p>
           </div>
         </div>
 
@@ -262,7 +263,7 @@ export function CompanyPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-' },
-            { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est.)' : ''}` : '-' },
+            { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est. via CNPJá)' : ''}` : '-' },
             { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-' },
             { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true },
           ].map((stat: any) => (
@@ -287,7 +288,7 @@ export function CompanyPage() {
                   {contactPhone && (
                     <span className={`font-mono ml-1.5 ${hasWhatsapp ? 'text-whatsapp' : 'text-text-secondary'}`}>
                       · {contactPhone}
-                      {!hasWhatsapp && contactPhone && <span className="text-[9px] text-text-muted ml-1">(fixo)</span>}
+                      {!hasWhatsapp && contactPhone && <span className="text-[9px] text-text-muted ml-1">(fixo — sem WhatsApp)</span>}
                     </span>
                   )}
                 </p>
@@ -322,7 +323,7 @@ export function CompanyPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-warning">Adicionar decisor</p>
-              <p className="text-[11px] text-text-muted">CEO/proprietário com WhatsApp para iniciar prospecção</p>
+              <p className="text-[11px] text-text-muted">Adicione o decisor com WhatsApp para liberar a prospecção</p>
             </div>
           </button>
         )}
@@ -331,7 +332,7 @@ export function CompanyPage() {
         <div className="flex gap-2 flex-wrap">
           {lead.website && !lead.website.includes('instagram.com') && (
             <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
-              site
+              Website
             </a>
           )}
           {lead.instagram && (
@@ -416,7 +417,7 @@ export function CompanyPage() {
                 SECONDARY_TABS.some(t => t.id === activeTab) ? 'text-red' : 'text-text-muted',
               )}
             >
-              {SECONDARY_TABS.find(t => t.id === activeTab)?.label || 'Mais'}
+              {SECONDARY_TABS.find(t => t.id === activeTab)?.label || 'Análises'}
               <span className={cn(
                 'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
                 SECONDARY_TABS.some(t => t.id === activeTab) ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
@@ -468,10 +469,11 @@ export function CompanyPage() {
             {/* WTP anual — destaque */}
             {lead.monthlyRevenue && (
               <div className="p-3 rounded-xl bg-red/5 border border-red/15">
-                <span className="text-xs text-text-muted">WTP anual: </span>
+                <span className="text-xs text-text-muted">Potencial de investimento anual: </span>
                 <span className="font-mono text-base font-bold text-red">
                   {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
                 </span>
+                <p className="text-[10px] text-text-muted mt-1">Baseado em 10-15% do faturamento anual estimado</p>
               </div>
             )}
 

@@ -40,9 +40,9 @@ const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCh
   },
   Contactado: {
     emoji: '📞',
-    title: 'Marcar como contactado',
+    title: 'Registrar primeiro contato',
     checks: [
-      { text: 'Primeiro contato realizado (WhatsApp, email ou LinkedIn)', required: true },
+      { text: 'Primeiro contato realizado via WhatsApp, email ou LinkedIn', required: true },
       { text: 'Mensagem personalizada enviada', required: true },
       { text: 'Canal de contato registrado no lead', required: false },
     ],
@@ -232,7 +232,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         <span className="text-xs font-mono font-bold text-text-muted">{score.toFixed(1)}</span>
       </div>
       <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
-      <p className="text-[11px] text-text-muted mt-0.5">{lead.segment || 'Sem segmento'} · {lead.tier || '—'}</p>
+      <p className="text-[11px] text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
       {lead.city && <p className="text-[10px] text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
       {lead.enrichmentStatus === 'complete' && (
         <span className="inline-block mt-1.5 text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>
@@ -299,7 +299,7 @@ export function PipelinePage() {
               <h1 className="text-xl font-bold font-heading gradient-text">Pipeline</h1>
             </div>
             <p className="text-xs text-text-muted mt-0.5">
-              Gerencie seus leads através do funil de vendas · {allLeads.length} leads
+              Funil de vendas — arraste leads entre etapas · {allLeads.length} leads
               {closedCount > 0 && <span className="text-success"> · {closedCount} fechados</span>}
             </p>
           </div>
@@ -387,7 +387,7 @@ export function PipelinePage() {
                         isOver ? 'border-red/40 bg-red/5' : 'border-border/40',
                       )}>
                         <p className={cn('text-[11px]', isOver ? 'text-red font-medium' : 'text-text-muted')}>
-                          {isOver ? 'Solte aqui' : 'Nenhum lead'}
+                          {isOver ? 'Solte aqui' : 'Arraste um lead aqui'}
                         </p>
                       </div>
                     )}

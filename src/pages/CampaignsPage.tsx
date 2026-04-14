@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
   DRAFT: { label: 'Rascunho', variant: 'default' },
   SCHEDULED: { label: 'Agendada', variant: 'info' },
   SENDING: { label: 'Enviando', variant: 'warning' },
-  COMPLETED: { label: 'Concluído', variant: 'success' },
+  COMPLETED: { label: 'Concluída', variant: 'success' },
   PAUSED: { label: 'Pausada', variant: 'default' },
   FAILED: { label: 'Falhou', variant: 'error' },
   CANCELLED: { label: 'Cancelada', variant: 'error' },

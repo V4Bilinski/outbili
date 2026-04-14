@@ -36,7 +36,7 @@ export function LoginPage() {
       toast.success('Bem-vindo ao Outbili!')
       navigate('/')
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao autenticar')
+      toast.error(err.message || 'Email ou senha incorretos. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -63,7 +63,7 @@ export function LoginPage() {
             </div>
             <span className="text-2xl font-bold font-heading text-text-primary tracking-tight">OUTBILI</span>
           </div>
-          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Sistema de prospecção outbound · Bilinski&Co</p>
+          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Inteligência comercial para prospecção outbound · Bilinski&Co</p>
         </div>
 
         {/* Card */}

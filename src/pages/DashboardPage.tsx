@@ -157,7 +157,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
       case 'Contactado': return { text: 'Aguardando resposta', type: 'whatsapp' as const }
       case 'Respondeu': return { text: 'Agendar reunião', type: 'meeting' as const }
       case 'Qualificado': return { text: 'Iniciar cadência', type: 'whatsapp' as const }
-      default: return { text: 'Qualificar lead', type: 'view' as const }
+      default: return { text: 'Analisar e qualificar', type: 'view' as const }
     }
   }
 
@@ -165,7 +165,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
     <Card className="p-0 overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <CardTitle>Próximas ações</CardTitle>
-        <span className="text-[11px] text-text-muted font-mono">{sorted.length} pendentes</span>
+        <span className="text-[11px] text-text-muted font-mono">{sorted.length} requerem ação</span>
       </div>
       <div className="divide-y divide-border">
         {sorted.map((lead) => {
@@ -288,7 +288,7 @@ function CampaignStats() {
           {sending > 0 && <Badge variant="warning" size="sm">{sending} ativa{sending > 1 ? 's' : ''}</Badge>}
         </div>
         <Button size="sm" variant="ghost" onClick={() => navigate('/campaigns')}>
-          Ver todas
+          Ver campanhas
         </Button>
       </div>
       <div className="grid grid-cols-4 gap-3">
@@ -308,9 +308,9 @@ function QuickActions() {
   const navigate = useNavigate()
   const actions = [
     { label: 'Nova pesquisa', desc: 'Encontrar empresas por segmento e estado via CNPJa', icon: Search, onClick: () => navigate('/search') },
-    { label: 'Importar relatório', desc: 'Upload de planilha ou HTML com lista de empresas', icon: FileDown, onClick: () => navigate('/search') },
+    { label: 'Importar relatório', desc: 'Importe sua lista (Excel, CSV, HTML ou PDF)', icon: FileDown, onClick: () => navigate('/search') },
     { label: 'Nova cadência', desc: 'Criar sequência WhatsApp com template aprovado', icon: Plus, onClick: () => navigate('/campaigns/new') },
-    { label: 'Ver pipeline', desc: 'Gerenciar leads no funil de vendas (arrastar e soltar)', icon: Target, onClick: () => navigate('/pipeline') },
+    { label: 'Ver pipeline', desc: 'Funil visual — arraste leads entre etapas', icon: Target, onClick: () => navigate('/pipeline') },
   ]
 
   return (
@@ -464,9 +464,9 @@ export function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: 'Leads no pipeline', value: '0', sub: 'Comece pesquisando' },
-            { label: 'Pesquisas realizadas', value: '0', sub: 'Nenhuma ainda' },
+            { label: 'Pesquisas realizadas', value: '0', sub: 'Faça sua primeira' },
             { label: 'Campanhas WhatsApp', value: '0', sub: 'Crie após importar' },
-            { label: 'Taxa de conversão', value: '—', sub: 'Dados em breve' },
+            { label: 'Taxa de conversão', value: '—', sub: 'Aparece após seu primeiro fechamento' },
           ].map((stat) => (
             <div key={stat.label} className="p-4 rounded-2xl bg-white/[0.015] border border-border">
               <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>

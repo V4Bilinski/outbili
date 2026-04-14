@@ -67,7 +67,7 @@ export function SettingsPage() {
     },
     {
       name: 'Apify',
-      desc: 'Scraping Google Maps, Instagram, Website',
+      desc: 'Coleta de dados: Google, Instagram e websites',
       connected: !!apifyToken,
       status: apifyToken ? 'Conectado' : 'Token ausente',
       details: apifyToken ? '3 actors configurados' : undefined,
@@ -79,7 +79,7 @@ export function SettingsPage() {
     <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
       <div>
         <h1 className="text-xl font-bold font-heading gradient-text">Configurações</h1>
-        <p className="text-xs text-text-muted mt-0.5">Gerencie conexões, segmentos e templates</p>
+        <p className="text-xs text-text-muted mt-0.5">Conexões, templates e configurações do sistema</p>
       </div>
 
       <Card>
@@ -166,7 +166,7 @@ export function SettingsPage() {
           <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-8" />
           <div>
             <p className="text-sm font-semibold">OUTBILI v1.0</p>
-            <p className="text-[11px] text-text-muted">Sistema de prospecção outbound · V4 Bilinski &amp;Co</p>
+            <p className="text-[11px] text-text-muted">Inteligência comercial para prospecção outbound · V4 Bilinski &amp;Co</p>
           </div>
         </div>
       </Card>

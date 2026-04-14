@@ -87,7 +87,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
     <div className="overflow-x-auto">
       {/* Indicador mobile para colunas ocultas */}
       <p className="text-[10px] text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
-        <ChevronRight className="h-3 w-3" /> Toque em um lead para ver detalhes completos
+        <ChevronRight className="h-3 w-3" /> Toque para abrir a ficha completa
       </p>
       <table className="w-full">
         <thead>
@@ -111,11 +111,11 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
-                    {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">IA</span>}
-                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">...</span>}
+                    {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
+                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
                   </div>
                   <p className="text-[11px] text-text-muted mt-0.5">
-                    {lead.segment || 'Sem segmento'}
+                    {lead.segment || 'Segmento pendente'}
                     {lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
                     {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
                   </p>
@@ -234,7 +234,7 @@ export function LeadsPage() {
           <EmptyState
             icon={Users}
             title="Nenhum lead encontrado"
-            description="Faça sua primeira pesquisa para começar a prospectar."
+            description="Inicie uma pesquisa para encontrar empresas compatíveis com seu ICP."
             action={{ label: 'Nova pesquisa', onClick: () => navigate('/search') }}
           />
         </AnimateIn>
@@ -242,7 +242,7 @@ export function LeadsPage() {
         <AnimateIn delay={120}>
           <EmptyState
             icon={Search}
-            title="Nenhum lead com esses filtros"
+            title="Nenhum lead encontrado com esses filtros"
             description={`${totalLeads} leads no sistema, mas nenhum corresponde aos filtros aplicados.`}
             action={{ label: 'Limpar filtros', onClick: clearFilters }}
           />
