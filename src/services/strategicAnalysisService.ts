@@ -464,8 +464,10 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
   // Não é prioritária se o lead tem travas financeiras mais urgentes
   // ═══════════════════════════════════════════════════════
   const t2Sinais: string[] = []
-  if (!lead.website) t2Sinais.push('Sem website')
-  if (!lead.instagram) t2Sinais.push('Sem Instagram')
+  // Só marcar como "sem" se a Assertiva já rodou (enrichmentStatus inclui 'assertiva' ou 'complete')
+  const assertivaRodou = lead.enrichmentStatus === 'assertiva' || lead.enrichmentStatus === 'complete'
+  if (!lead.website) t2Sinais.push(assertivaRodou ? 'Sem website (validado Assertiva)' : 'Website não identificado')
+  if (!lead.instagram) t2Sinais.push(assertivaRodou ? 'Sem Instagram (validado Assertiva)' : 'Instagram não identificado')
   if ((lead.instagramFollowers || 0) < 500 && lead.instagram) t2Sinais.push(`Apenas ${lead.instagramFollowers || 0} seguidores`)
   if (t2Sinais.length >= 1 && (revenue > 0 || employees > 0)) {
     travas.push({
