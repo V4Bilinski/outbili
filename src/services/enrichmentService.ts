@@ -193,10 +193,8 @@ export async function enrichLead(
   onProgress?: (progress: EnrichmentProgress) => void,
 ): Promise<Partial<Lead>> {
   // Pipeline v2: apenas CNPJá + Assertiva (CNPJ + decisores + CPF) + Strategic Analysis
-  const alreadyEnriched = leadData.enrichmentStatus === 'complete' || leadData.enrichmentStatus === 'assertiva' || leadData.enrichmentStatus === 'cnpja'
-
   const steps: EnrichmentStep[] = [
-    { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (alreadyEnriched && leadData.tradeName) ? 'skipped' : 'pending', label: 'CNPJá (dados cadastrais)', estimatedMs: 3000 },
+    { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (leadData.enrichmentStatus !== 'none' && leadData.tradeName && leadData.employees && leadData.foundingDate) ? 'skipped' : 'pending', label: 'CNPJá (dados cadastrais)', estimatedMs: 3000 },
     { source: 'assertiva', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'Assertiva (telefones + redes + renda + decisores)', estimatedMs: 8000 },
     { source: 'strategic', status: 'pending', label: 'SPICED + Análise Estratégica', estimatedMs: 500 },
   ]
@@ -323,6 +321,11 @@ export async function enrichLead(
         if (bestPhone.whatsapp) {
           merged.rfPhone = bestPhone.whatsapp
           ;(merged as any).phoneType = 'MOBILE'
+          merged.assertivaPhoneValidated = bestPhone.whatsapp
+          merged.assertivaWhatsappFlag = true
+        } else if (bestPhone.landline) {
+          merged.assertivaPhoneValidated = bestPhone.landline
+          merged.assertivaWhatsappFlag = false
         }
       }
 
@@ -355,6 +358,11 @@ export async function enrichLead(
           merged.linkedin = assertivaData._redesSociais.linkedin
         }
         merged.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
+      }
+
+      // Email validado
+      if (assertivaData?.emails?.length && !merged.assertivaEmailValidated) {
+        merged.assertivaEmailValidated = assertivaData.emails[0].endereco
       }
 
       // Faturamento presumido da Assertiva (substitui estimativa por dados reais)
@@ -391,6 +399,7 @@ export async function enrichLead(
         (s.qualificacao || '').toLowerCase().includes('diretor'),
       )?.cpf || assertivaData?.socios?.[0]?.cpf
       if (decisorCpf) {
+        merged.assertivaCpfDecisor = decisorCpf
         try {
           const cpfData = await assertivaLookupCpf(decisorCpf)
           // Renda estimada do decisor → proxy de faturamento/capacidade
@@ -414,6 +423,8 @@ export async function enrichLead(
             const personalPhone = extractBestPhone(cpfData.telefones)
             if (personalPhone.whatsapp && !merged.rfPhone) {
               merged.rfPhone = personalPhone.whatsapp
+            } else if (personalPhone.landline && !merged.rfPhone) {
+              merged.rfPhone = personalPhone.landline
             }
           }
           // Emails pessoais do decisor como fallback
@@ -421,6 +432,29 @@ export async function enrichLead(
             merged.rfEmail = cpfData.emails[0].endereco
           }
         } catch { /* CPF lookup é complementar, não bloqueia */ }
+      }
+
+      // NÍVEL 4: Se AINDA não tem rfPhone, varrer CPF de TODOS os sócios
+      if (!merged.rfPhone && !leadData.rfPhone) {
+        const allSocios = assertivaData?.socios || []
+        const alreadyCheckedCpf = decisorCpf?.replace?.(/\D/g, '')
+        for (const socio of allSocios) {
+          if (merged.rfPhone) break
+          const cpf = socio?.cpf?.replace(/\D/g, '')
+          if (!cpf || cpf.length !== 11 || cpf === alreadyCheckedCpf) continue
+          try {
+            const cpfData = await assertivaLookupCpf(cpf)
+            if (cpfData.telefones?.length) {
+              const phone = extractBestPhone(cpfData.telefones)
+              if (phone.whatsapp) {
+                merged.rfPhone = phone.whatsapp
+                merged.assertivaWhatsappFlag = true
+              } else if (phone.landline) {
+                merged.rfPhone = phone.landline
+              }
+            }
+          } catch { /* sócio sem dados, tentar próximo */ }
+        }
       }
 
       const assertivaDetails = [
@@ -530,7 +564,7 @@ export async function enrichLead(
         if (!isDup && (c.email || c.whatsapp)) {
           await createContact({
             name: c.name || 'Decisor não identificado',
-            role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'vibeprospecting' ? 'Decisor (VibeProspecting)' : c.source === 'google_search_decisor' ? 'CEO/Fundador (Google)' : c.source === 'linkedin_profile' ? 'CEO/Fundador (LinkedIn)' : `Via ${c.source}`,
+            role: c.source === 'receita_federal' ? 'Socio/Administrador (RF)' : c.source === 'google_maps' ? 'Telefone comercial' : c.source === 'website' ? 'Contato do site' : c.source === 'google_search_decisor' ? 'CEO/Fundador (Google)' : c.source === 'linkedin_profile' ? 'CEO/Fundador (LinkedIn)' : `Via ${c.source}`,
             contactType: 'stakeholder',
             whatsapp: c.whatsapp || '',
             email: c.email || '',
@@ -646,12 +680,21 @@ export async function reEnrichLead(
         source = source === 'cnpja' ? 'both' : 'assertiva'
       }
     }
-    // Telefone com WhatsApp validado
+    // Telefone com WhatsApp validado + flags Assertiva
     if (assertivaData?.telefones?.length) {
       const bestPhone = extractBestPhone(assertivaData.telefones)
-      if (bestPhone.whatsapp && !lead.rfPhone) {
-        merged.rfPhone = bestPhone.whatsapp
+      if (bestPhone.whatsapp) {
+        merged.assertivaPhoneValidated = bestPhone.whatsapp
+        merged.assertivaWhatsappFlag = true
+        if (!lead.rfPhone) merged.rfPhone = bestPhone.whatsapp
+      } else if (bestPhone.landline) {
+        merged.assertivaPhoneValidated = bestPhone.landline
+        merged.assertivaWhatsappFlag = false
+        if (!lead.rfPhone) merged.rfPhone = bestPhone.landline
       }
+    }
+    if (assertivaData?.emails?.length) {
+      merged.assertivaEmailValidated = assertivaData.emails[0].endereco
     }
     if (assertivaData?._site && !lead.website) {
       merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
@@ -674,6 +717,60 @@ export async function reEnrichLead(
     // Renda presumida
     if (assertivaData?._rendaPresumida) {
       merged.assertivaIncomeEstimate = Number(assertivaData._rendaPresumida)
+    }
+
+    // NÍVEL 2: Decisores via protocolo
+    const protocolo = assertivaData?._protocolo
+    if (protocolo && lead.cnpj && !merged.rfPhone && !lead.rfPhone) {
+      try {
+        const decisores = await getDecisionMakers(lead.cnpj, protocolo)
+        for (const d of decisores) {
+          const phones = extractBestPhone(d.telefones || [])
+          if (phones.whatsapp) { merged.rfPhone = phones.whatsapp; merged.assertivaWhatsappFlag = true; break }
+          if (phones.landline && !merged.rfPhone) merged.rfPhone = phones.landline
+        }
+      } catch { /* complementar */ }
+    }
+
+    // NÍVEL 3: CPF do decisor
+    const decisorSocio = assertivaData?.socios?.find((s: any) =>
+      (s.qualificacao || '').toLowerCase().includes('administrador') ||
+      (s.qualificacao || '').toLowerCase().includes('diretor'),
+    ) || assertivaData?.socios?.[0]
+    if (decisorSocio?.cpf && !merged.rfPhone && !lead.rfPhone) {
+      try {
+        const cpfData = await assertivaLookupCpf(decisorSocio.cpf)
+        if (cpfData.telefones?.length) {
+          const phone = extractBestPhone(cpfData.telefones)
+          if (phone.whatsapp) { merged.rfPhone = phone.whatsapp; merged.assertivaWhatsappFlag = true }
+          else if (phone.landline) merged.rfPhone = phone.landline
+        }
+        if (cpfData.rendaEstimada && !merged.assertivaIncomeEstimate) {
+          merged.assertivaIncomeEstimate = cpfData.rendaEstimada
+        }
+      } catch { /* complementar */ }
+    }
+    if (decisorSocio?.cpf) {
+      merged.assertivaCpfDecisor = decisorSocio.cpf
+    }
+
+    // NÍVEL 4: Varredura CPF de TODOS os sócios
+    if (!merged.rfPhone && !lead.rfPhone) {
+      const allSocios = assertivaData?.socios || []
+      const checkedCpf = decisorSocio?.cpf?.replace(/\D/g, '')
+      for (const socio of allSocios) {
+        if (merged.rfPhone) break
+        const cpf = socio?.cpf?.replace(/\D/g, '')
+        if (!cpf || cpf.length !== 11 || cpf === checkedCpf) continue
+        try {
+          const cpfData = await assertivaLookupCpf(cpf)
+          if (cpfData.telefones?.length) {
+            const phone = extractBestPhone(cpfData.telefones)
+            if (phone.whatsapp) { merged.rfPhone = phone.whatsapp; merged.assertivaWhatsappFlag = true }
+            else if (phone.landline) merged.rfPhone = phone.landline
+          }
+        } catch { /* tentar próximo */ }
+      }
     }
 
     if (source !== 'both') source = 'assertiva'

@@ -179,20 +179,30 @@ Base ID: `appKh4qQ5JN94dQHv`
 | `temperatura` | Single line text | Nome no Airtable para "temperature" (mapeado via FIELD_TO_AIRTABLE no código) |
 | `rfPhone` | Single line text | Salva `whatsapp \|\| phone` (preferência celular). Assertiva atualiza quando encontra WhatsApp |
 
-### Tabela Leads — Field IDs obrigatórios (campos Assertiva)
+### Tabela Leads — Field IDs (campos Assertiva + padrão)
 
-**REGRA:** Campos com prefixo "assertiva" no Airtable são reconhecidos APENAS por Field ID na REST API. Usar o nome do campo retorna 422.
+Campos Assertiva foram criados em 2026-04-14 e aceitam PATCH por nome.
 
 | Campo | Field ID | Aceita nome? | Tipo |
 |-------|----------|-------------|------|
-| assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | **NÃO** | singleLineText |
-| assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | **NÃO** | checkbox |
+| assertivaPhoneValidated | `fldRnhMHJCLI5YEqj` | SIM | singleLineText |
+| assertivaWhatsappFlag | `fld1z1mZawfZFld18` | SIM | checkbox |
+| assertivaEmailValidated | `flda9umFfaO9YmXsE` | SIM | email |
+| assertivaCpfDecisor | `fldAcsxPyyMfRXmJ2` | SIM | singleLineText |
+| assertivaIncomeEstimate | `fldLcwOxT7AThjdXw` | SIM | number |
+| assertivaCreditScore | `fldK87LYk8GJzNnFV` | SIM | number |
+| assertivaSocialMedia | `fldx1SkBKXXcbsxaY` | SIM | multilineText |
 | rfPhone | `fld8I7Eb1tGJfhSyw` | SIM | phoneNumber |
 | enrichmentStatus | `fldoGOPUsqbP4fwzc` | SIM | singleLineText |
 | employees | `fld7D8lIRW6xEiWJe` | SIM | number |
 | companyName | `fldBoavQTKIryQTWi` | SIM | singleLineText |
 | cnpj | `fldpsnHQDMCvYU3Ub` | SIM | singleLineText |
+| temperatura | `fldf9BoMLPRUbUFCW` | SIM | singleSelect |
 | assertivaEnrichDate | — | **NÃO EXISTE** | — |
+| assertivaBehavioralData | — | **NÃO EXISTE** | — |
+| assertivaTier | — | **NÃO EXISTE** | — |
+
+**NOTA:** O campo de temperatura no Airtable se chama `temperatura` (não `temperature`). Em filterByFormula, usar `{temperatura}`.
 
 ### Tabela Contacts — Field IDs
 

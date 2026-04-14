@@ -87,9 +87,6 @@ export interface Lead {
   assertivaIncomeEstimate?: number
   assertivaCreditScore?: number
   assertivaSocialMedia?: string       // JSON: perfis de redes sociais
-  assertivaBehavioralData?: string    // JSON: dados comportamentais
-  assertivaEnrichDate?: string
-  assertivaTier?: 'Identificacao' | 'Conexoes' | 'Estrategico'
   // --- Fonte de dados ---
   enrichmentSources?: string  // JSON: quais fontes retornaram dados
   enrichmentLog?: string      // JSON: log de cada etapa
@@ -109,10 +106,7 @@ export interface Contact {
   cpf?: string
   whatsappConfirmed?: boolean
   phoneIsHot?: boolean
-  source?: 'cnpja' | 'assertiva' | 'manual' | 'pesca' | 'apify'
-  assertivaPhoneValidated?: boolean
-  assertivaWhatsappValidated?: boolean
-  assertivaEmailValidated?: boolean
+  source?: 'cnpja' | 'assertiva' | 'manual' | 'pesca'
   bilinskizapContactId?: string
   createdAt?: string
 }

@@ -128,7 +128,8 @@ npm run preview   # Preview do build local
 - Hooks em `src/hooks/` usam React Query para cache e mutations
 - **10 tabelas:** Leads, Contacts, Campaigns, Messages, Activities, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog
 - Campo `temperature` no código mapeia para `temperatura` no Airtable (via FIELD_TO_AIRTABLE)
-- **CRÍTICO — Contacts table:** campo `phone` NÃO existe. Usar `whatsapp` para telefones. Campos disponíveis: `whatsappConfirmed`, `phoneIsHot`, `source`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`
+- **CRÍTICO — Contacts table:** campo `phone` NÃO existe. Usar `whatsapp` para telefones. Campos disponíveis: `whatsappConfirmed`, `phoneIsHot`, `source`, `cpf`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`, `assertivaEmailValidated`
+- **CRÍTICO — mapFieldsToAirtable:** é table-aware. `INVALID_LEAD_FIELDS` só se aplica à tabela Leads. Contacts e Users passam `whatsapp` e `email` normalmente
 - **CRÍTICO — rfPhone:** deve conter o MELHOR telefone disponível (prioridade: WhatsApp celular > fixo). Assertiva sempre atualiza rfPhone quando encontra WhatsApp validado
 
 ### Idioma e ortografia
@@ -161,27 +162,26 @@ Todo enriquecimento de WhatsApp DEVE seguir a cascata completa de 3 níveis. Se 
 | 2 | `get-decision-makers` (protocolo) | Telefones pessoais dos decisores | Se nível 1 não encontrou celular |
 | 3 | `lookup-cpf` (CPF do sócio) | Celular pessoal do administrador | Se nível 2 não encontrou celular |
 
-**Regras de gravação no Airtable (prevenção de erros 422):**
+**Regras de gravação no Airtable:**
 
-| Operação | Usar Field ID | NÃO usar nome | Motivo |
-|----------|---------------|---------------|--------|
-| PATCH Lead assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | ~~assertivaPhoneValidated~~ | Nome não reconhecido pela REST API |
-| PATCH Lead assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | ~~assertivaWhatsappFlag~~ | Nome não reconhecido pela REST API |
-| PATCH Lead rfPhone | `fld8I7Eb1tGJfhSyw` | rfPhone (funciona) | Aceito por nome e ID |
-| PATCH Lead enrichmentStatus | `fldoGOPUsqbP4fwzc` | enrichmentStatus (funciona) | Aceito por nome e ID |
-| PATCH Lead employees | `fld7D8lIRW6xEiWJe` | employees (funciona) | Aceito por nome e ID |
+Todos os campos Assertiva foram criados no Airtable (2026-04-14) e aceitam PATCH por nome. Campos padrão (rfPhone, enrichmentStatus, employees) também aceitam nome.
 
-**REGRA ABSOLUTA:** ao fazer PATCH em campos Assertiva, SEMPRE usar field IDs (não nomes). Campos que contêm "assertiva" no nome são reconhecidos APENAS por field ID na REST API do Airtable. Campos padrão (rfPhone, enrichmentStatus, employees) aceitam tanto nome quanto ID.
+**IMPORTANTE:** Os campos `assertivaEnrichDate`, `assertivaBehavioralData` e `assertivaTier` NÃO existem no Airtable e são filtrados automaticamente pelo `mapFieldsToAirtable()` em `airtable.ts`.
 
 **Mapeamento completo de Field IDs — Tabela Leads (campos Assertiva):**
 
-| Campo | Field ID | Tipo |
-|-------|----------|------|
-| assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | singleLineText |
-| assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | checkbox |
-| assertivaEmailValidated | (verificar antes de usar) | email |
-| assertivaCpfDecisor | (verificar antes de usar) | singleLineText |
-| assertivaEnrichDate | **NÃO EXISTE** | — |
+| Campo | Field ID | Tipo | Aceita nome? |
+|-------|----------|------|-------------|
+| assertivaPhoneValidated | `fldRnhMHJCLI5YEqj` | singleLineText | SIM |
+| assertivaWhatsappFlag | `fld1z1mZawfZFld18` | checkbox | SIM |
+| assertivaEmailValidated | `flda9umFfaO9YmXsE` | email | SIM |
+| assertivaCpfDecisor | `fldAcsxPyyMfRXmJ2` | singleLineText | SIM |
+| assertivaIncomeEstimate | `fldLcwOxT7AThjdXw` | number | SIM |
+| assertivaCreditScore | `fldK87LYk8GJzNnFV` | number | SIM |
+| assertivaSocialMedia | `fldx1SkBKXXcbsxaY` | multilineText | SIM |
+| assertivaEnrichDate | — | **NÃO EXISTE** | — |
+| assertivaBehavioralData | — | **NÃO EXISTE** | — |
+| assertivaTier | — | **NÃO EXISTE** | — |
 
 **Mapeamento completo de Field IDs — Tabela Contacts:**
 

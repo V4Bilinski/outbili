@@ -138,7 +138,7 @@ export async function createRecords<T>(
   const batches: AirtableRecord<T>[] = []
   for (let i = 0; i < records.length; i += 10) {
     const batch = records.slice(i, i + 10).map((r) => ({
-      fields: mapFieldsToAirtable(r.fields as Record<string, any>),
+      fields: mapFieldsToAirtable(r.fields as Record<string, any>, table),
     }))
     const result = await airtableFetch(`/${encodeURIComponent(table)}`, {
       method: 'POST',
@@ -157,7 +157,7 @@ export async function updateRecords<T>(
   for (let i = 0; i < records.length; i += 10) {
     const batch = records.slice(i, i + 10).map((r) => ({
       id: r.id,
-      fields: mapFieldsToAirtable(r.fields as Record<string, any>),
+      fields: mapFieldsToAirtable(r.fields as Record<string, any>, table),
     }))
     const result = await airtableFetch(`/${encodeURIComponent(table)}`, {
       method: 'PATCH',
@@ -200,7 +200,19 @@ const INVALID_LEAD_FIELDS = new Set([
   'category', 'isMobile', 'revenue', 'reviews', 'rating', 'emails',
   'ownerName', 'phone', 'whatsapp', 'email', 'estimatedRevenue',
   '_whatsapp', '_email', '_ownerName', '_phone', '_isMobile', '_estimatedRevenue',
+  'assertivaEnrichDate', 'assertivaBehavioralData', 'assertivaTier',
 ])
+
+// Fields that do NOT exist in the Contacts table — strip before sending to avoid 422
+const INVALID_CONTACT_FIELDS = new Set([
+  'phone',
+])
+
+// Table-specific invalid field sets
+const INVALID_FIELDS_BY_TABLE: Record<string, Set<string>> = {
+  Leads: INVALID_LEAD_FIELDS,
+  Contacts: INVALID_CONTACT_FIELDS,
+}
 
 // Linked record fields: code field → Airtable linked field name
 // When writing: wrap string ID as array ["recXXX"]
@@ -223,11 +235,12 @@ const LINKED_RECORD_READ: Record<string, string> = {
 const LINKED_RECORD_MULTI: Set<string> = new Set(['LeadLinks'])
 
 // Map fields before sending to Airtable (code → Airtable names + sanitize)
-function mapFieldsToAirtable(fields: Record<string, any>): Record<string, any> {
+function mapFieldsToAirtable(fields: Record<string, any>, table?: string): Record<string, any> {
   const mapped: Record<string, any> = {}
+  const invalidFields = (table && INVALID_FIELDS_BY_TABLE[table]) || new Set<string>()
   for (const [key, value] of Object.entries(fields)) {
     if (value === undefined || value === null) continue
-    if (INVALID_LEAD_FIELDS.has(key)) continue
+    if (invalidFields.has(key)) continue
     // Linked record: wrap string as array for Airtable
     const linkedField = LINKED_RECORD_WRITE[key]
     if (linkedField && typeof value === 'string' && value.startsWith('rec')) {

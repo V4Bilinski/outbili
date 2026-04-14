@@ -318,7 +318,6 @@ export async function enrichBatchWithAssertiva(
           // Consulta Assertiva CNPJ — telefones, emails, socios
           const assertivaData = await assertivaLookupCnpj(cnpj) as any
           const leadUpdate: Partial<Lead> = {
-            assertivaEnrichDate: new Date().toISOString(),
           }
 
           // Telefone validado — PRIORIDADE: atualizar rfPhone com melhor telefone
