@@ -60,12 +60,12 @@ export function TabTravas({ lead }: { lead: Lead }) {
 
       {/* Grid de travas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {travas.map((trava, i) => {
+        {travas.map((trava) => {
           const config = severidadeConfig[trava.severidade]
           return (
             <AccordionItem
               key={trava.codigo}
-              defaultOpen={i === 0}
+              defaultOpen={true}
               accentColor={config.accent}
               className={trava.severidade === 'CRITICA' ? 'shadow-[0_0_12px_rgba(239,68,68,0.08)]' : undefined}
               title={

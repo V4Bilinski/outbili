@@ -1,6 +1,6 @@
 import { updateLead } from './leadService'
 import { createContact, getContacts } from './contactService'
-import { generateStrategicAnalysis } from './strategicAnalysisService'
+import { generateStrategicAnalysis, detectTravas } from './strategicAnalysisService'
 import { searchOffice, mapCnpjaToLead, extractPartners } from './cnpjaService'
 import { lookupCnpj as assertivaLookupCnpj, lookupCpf as assertivaLookupCpf, getDecisionMakers, extractBestPhone } from './assertivaService'
 import { createPartners } from './partnerService'
@@ -501,7 +501,13 @@ export async function enrichLead(
     const fullLeadData = { ...leadData, ...merged, ...spiced }
     fullLeadData.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
     const strategic = generateStrategicAnalysis(fullLeadData)
-    if (!leadData.hypotheticalTrap) merged.hypotheticalTrap = strategic.hypotheticalTrap
+    // Trava dominante: SEMPRE atualizar com detectTravas (Fábrica de Receita)
+    const travasEnrich = detectTravas(fullLeadData)
+    if (travasEnrich.length > 0) {
+      merged.hypotheticalTrap = `${travasEnrich[0].codigo} — ${travasEnrich[0].nome}`
+    } else if (!leadData.hypotheticalTrap) {
+      merged.hypotheticalTrap = strategic.hypotheticalTrap
+    }
     if (!leadData.discoveryQuestions) merged.discoveryQuestions = strategic.discoveryQuestions
     if (!leadData.eligibilityChecklist) merged.eligibilityChecklist = strategic.eligibilityChecklist
     if (!leadData.meetingPrep) merged.meetingPrep = strategic.meetingPrep
