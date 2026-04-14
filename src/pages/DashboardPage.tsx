@@ -74,7 +74,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
               {[
                 { label: 'Quentes', count: hotCount, color: 'bg-hot', textColor: 'text-hot' },
                 { label: 'Mornos', count: warmCount, color: 'bg-warm', textColor: 'text-warm' },
-                { label: 'Frios', count: coldCount, color: 'bg-text-muted/60', textColor: 'text-text-muted' },
+                { label: 'Frios', count: coldCount, color: 'bg-success/60', textColor: 'text-success' },
               ].map((t) => (
                 <div key={t.label} className="flex items-center gap-2">
                   <span className="text-[10px] text-text-muted">{t.label}</span>
@@ -94,13 +94,13 @@ function KPICards({ leads }: { leads: Lead[] }) {
             <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
               {hotCount > 0 && <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />}
               {warmCount > 0 && <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />}
-              {coldCount > 0 && <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
+              {coldCount > 0 && <div className="bg-success/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
             </div>
             <div className="flex items-center justify-between px-0.5">
               <div className="flex items-center gap-3">
                 {hotPct > 0 && <span className="flex items-center gap-1 text-[10px] text-hot"><span className="w-1.5 h-1.5 rounded-full bg-hot" />{hotPct}%</span>}
                 {warmPct > 0 && <span className="flex items-center gap-1 text-[10px] text-warm"><span className="w-1.5 h-1.5 rounded-full bg-warm" />{warmPct}%</span>}
-                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-text-muted"><span className="w-1.5 h-1.5 rounded-full bg-text-muted/60" />{coldPct}%</span>}
+                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-success"><span className="w-1.5 h-1.5 rounded-full bg-success/60" />{coldPct}%</span>}
               </div>
               <p className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Distribuição de temperatura</p>
             </div>
@@ -125,7 +125,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
           },
           {
             label: 'Frios', emoji: '❄️', value: coldCount, pct: coldPct, icon: Snowflake,
-            color: 'text-text-muted', borderColor: 'border-border', bgAccent: 'bg-white/[0.02]',
+            color: 'text-success', borderColor: 'border-success/20', bgAccent: 'bg-success/[0.04]',
             hint: coldCount > 0 ? 'Iniciar cadência de aquecimento' : 'Nenhum lead frio',
             action: coldCount > 0 ? () => navigate('/leads') : undefined,
           },
@@ -152,7 +152,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
 
             {/* Micro-barra de proporção dentro do card */}
             <div className="w-full h-1 rounded-full bg-white/[0.04] mt-2.5 mb-2 overflow-hidden">
-              <div className={`h-full rounded-full ${card.label === 'Quentes' ? 'bg-hot' : card.label === 'Mornos' ? 'bg-warm' : 'bg-text-muted/50'} transition-all duration-700`} style={{ width: `${card.pct}%` }} />
+              <div className={`h-full rounded-full ${card.label === 'Quentes' ? 'bg-hot' : card.label === 'Mornos' ? 'bg-warm' : 'bg-success/60'} transition-all duration-700`} style={{ width: `${card.pct}%` }} />
             </div>
 
             {/* Hint narrativo */}
