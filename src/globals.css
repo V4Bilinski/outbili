@@ -41,6 +41,24 @@
   /* WhatsApp */
   --color-whatsapp: #25D366;
 
+  /* Pipeline stages — ZERO azul */
+  --color-stage-prospect: #FF6B1A;
+  --color-stage-qualified: #A855F7;
+  --color-stage-contacted: #F59E0B;
+  --color-stage-replied: #22C55E;
+  --color-stage-meeting: #EC4899;
+  --color-stage-proposal: #F97316;
+  --color-stage-closed: #10B981;
+
+  /* Source/provider colors — ZERO azul */
+  --color-source-cnpja: #FF9F0A;
+  --color-source-assertiva: #A855F7;
+  --color-source-apify: #FF6B1A;
+
+  /* Tag accent (substituir blue) */
+  --color-tag-location: #FF6B1A;
+  --color-tag-keyword: #A855F7;
+
   /* Tipografia */
   --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;

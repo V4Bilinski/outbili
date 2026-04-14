@@ -21,7 +21,6 @@ import { TabProjecao } from '../components/company/TabProjecao'
 import { TabVulnerabilidades } from '../components/company/TabVulnerabilidades'
 import { TabCompetitiva } from '../components/company/TabCompetitiva'
 import { TabArgumentos } from '../components/company/TabArgumentos'
-import { TabAdsIntel } from '../components/company/TabAdsIntel'
 
 const PRIMARY_TABS = [
   { id: 'resumo', label: 'Resumo' },
@@ -34,7 +33,6 @@ const SECONDARY_TABS = [
   { id: 'projecao', label: 'Projeção' },
   { id: 'competitiva', label: 'Competitiva' },
   { id: 'argumentos', label: 'Objeções & Respostas' },
-  { id: 'ads-intel', label: 'Anúncios' },
 ] as const
 
 
@@ -397,10 +395,10 @@ export function CompanyPage() {
               <p className="text-sm text-text-primary leading-relaxed">{lead.businessSummary}</p>
             )}
 
-            {/* WTP anual — destaque */}
+            {/* LTP anual — destaque */}
             {lead.monthlyRevenue && (
               <div className="p-3 rounded-xl bg-red/5 border border-red/15">
-                <span className="text-xs text-text-muted">Potencial de investimento anual: </span>
+                <span className="text-xs text-text-muted" title="LTP — Lifetime Throughput do Projeto">Potencial de investimento anual (LTP): </span>
                 <span className="font-mono text-base font-bold text-red">
                   {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
                 </span>
@@ -471,7 +469,7 @@ export function CompanyPage() {
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {lead.isHeadquarters !== undefined && (
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.isHeadquarters ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-surface-md border-border text-text-muted')}>{lead.isHeadquarters ? 'Matriz' : 'Filial'}</span>
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.isHeadquarters ? 'bg-red-subtle border-red/20 text-red' : 'bg-surface-md border-border text-text-muted')}>{lead.isHeadquarters ? 'Matriz' : 'Filial'}</span>
                   )}
                   {lead.simplesOptant && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">Simples Nacional</span>
@@ -504,7 +502,7 @@ export function CompanyPage() {
                         {p.qualification && <span className="text-text-muted ml-1.5">· {p.qualification}</span>}
                       </div>
                       {p.personType && (
-                        <span className={cn('text-[9px] px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-blue-500/10 text-blue-400' : p.personType === 'LEGAL' ? 'bg-purple-500/10 text-purple-400' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
+                        <span className={cn('text-[9px] px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-white/5 text-text-secondary' : p.personType === 'LEGAL' ? 'bg-source-assertiva/10 text-source-assertiva' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
                       )}
                     </div>
                   ))}
@@ -542,7 +540,7 @@ export function CompanyPage() {
                   {enrichmentLog.map((entry) => (
                     <div key={entry.id} className="flex items-center gap-2 text-[11px]">
                       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', entry.status === 'done' ? 'bg-success' : entry.status === 'error' ? 'bg-error' : 'bg-text-muted')} />
-                      <span className={cn('font-medium', entry.source?.includes('cnpja') ? 'text-cyan-400' : entry.source?.includes('assertiva') ? 'text-purple-400' : entry.source?.includes('apify') ? 'text-orange-400' : 'text-text-secondary')}>{entry.source}</span>
+                      <span className={cn('font-medium', entry.source?.includes('cnpja') ? 'text-source-cnpja' : entry.source?.includes('assertiva') ? 'text-source-assertiva' : entry.source?.includes('apify') ? 'text-source-apify' : 'text-text-secondary')}>{entry.source}</span>
                       <span className="text-text-muted truncate">{entry.detail}</span>
                       {entry.timestamp && <span className="text-text-muted ml-auto shrink-0">{new Date(entry.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>}
                     </div>
@@ -728,8 +726,6 @@ export function CompanyPage() {
 
         {/* Tab: Argumentos */}
         {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
-
-        {activeTab === 'ads-intel' && <TabAdsIntel lead={lead} />}
 
 
         </div>

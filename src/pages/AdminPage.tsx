@@ -16,12 +16,12 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   logout: { label: 'Logout', color: 'text-text-muted' },
   page_view: { label: 'Visualizou', color: 'text-info' },
   lead_created: { label: 'Criou lead', color: 'text-warning' },
-  lead_enriched: { label: 'Enriqueceu', color: 'text-purple-400' },
+  lead_enriched: { label: 'Enriqueceu', color: 'text-source-assertiva' },
   campaign_created: { label: 'Criou campanha', color: 'text-red' },
   campaign_dispatched: { label: 'Disparou campanha', color: 'text-red' },
   lead_imported: { label: 'Importou leads', color: 'text-warning' },
   pipeline_move: { label: 'Moveu no pipeline', color: 'text-info' },
-  search: { label: 'Pesquisou', color: 'text-cyan-400' },
+  search: { label: 'Pesquisou', color: 'text-source-cnpja' },
 }
 
 const PAGE_LABELS: Record<string, string> = {

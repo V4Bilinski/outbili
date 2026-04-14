@@ -558,9 +558,9 @@ export function PescaPanel() {
 
           {/* Footer — fontes de dados */}
           <div className="flex items-center justify-center gap-3 mt-3">
-            <span className="text-[10px] text-cyan-400/60 font-medium">CNPJa API</span>
+            <span className="text-[10px] text-source-cnpja/60 font-medium">CNPJa API</span>
             <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-purple-400/60 font-medium">Assertiva</span>
+            <span className="text-[10px] text-source-assertiva/60 font-medium">Assertiva</span>
             <span className="text-[10px] text-text-muted/40">→</span>
             <span className="text-[10px] text-success/60 font-medium">Airtable</span>
           </div>

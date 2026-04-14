@@ -576,7 +576,7 @@ export function SearchPage() {
             : `${realCompanyName} salvo — adicione o decisor manualmente`
       )
 
-      // 4. Trigger enrichment antigo apenas se NÃO teve CNPJa (fallback para Apify)
+      // 4. Trigger enrichment adicional se NÃO teve CNPJa
       if (!cnpjaData) {
         enrichment.enrich(lead.id, leadData)
         setTimeout(() => {
@@ -1296,9 +1296,9 @@ export function SearchPage() {
                 </span>
               ))}
               {states.map((s) => (
-                <span key={`st-${s}`} className="inline-flex items-center gap-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span key={`st-${s}`} className="inline-flex items-center gap-1 bg-tag-location/10 text-tag-location border border-tag-location/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
                   {s}
-                  <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-blue-300"><X className="h-3 w-3" /></button>
+                  <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-info"><X className="h-3 w-3" /></button>
                 </span>
               ))}
               {city && (
@@ -1308,9 +1308,9 @@ export function SearchPage() {
                 </span>
               )}
               {keywords.map((k) => (
-                <span key={`kw-${k}`} className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span key={`kw-${k}`} className="inline-flex items-center gap-1 bg-tag-keyword/10 text-tag-keyword border border-tag-keyword/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
                   {k}
-                  <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-purple-300"><X className="h-3 w-3" /></button>
+                  <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-tag-keyword"><X className="h-3 w-3" /></button>
                 </span>
               ))}
               <span className="inline-flex items-center gap-1 bg-white/5 text-text-muted border border-border rounded-lg px-2.5 py-1 text-[11px]">
@@ -1350,7 +1350,7 @@ export function SearchPage() {
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   {entry.segments.map((s) => <span key={s} className="text-[10px] text-red bg-red/10 border border-red/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
-                  {entry.states.map((s) => <span key={s} className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
+                  {entry.states.map((s) => <span key={s} className="text-[10px] text-tag-location bg-tag-location/10 border border-tag-location/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
                 </div>
                 <p className="text-[10px] text-text-muted group-hover:text-text-secondary transition-colors">
                   {entry.city && <><MapPin className="h-2.5 w-2.5 inline mr-0.5" />{entry.city} · </>}{new Date(entry.date).toLocaleDateString('pt-BR')}

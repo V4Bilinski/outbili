@@ -16,13 +16,13 @@ import type { Lead } from '../types'
 
 // --- Pipeline columns (all statuses from prospect to close) ---
 const PIPELINE_COLUMNS = [
-  { value: 'Novo', label: 'Prospecção', color: '#6366F1', accent: 'border-l-indigo-500' },
-  { value: 'Qualificado', label: 'Qualificação', color: '#A855F7', accent: 'border-l-purple-500' },
-  { value: 'Contactado', label: 'Contactado', color: '#F59E0B', accent: 'border-l-amber-500' },
-  { value: 'Respondeu', label: 'Respondeu', color: '#22C55E', accent: 'border-l-green-500' },
-  { value: 'Reunião', label: 'Reunião', color: '#EC4899', accent: 'border-l-pink-500' },
-  { value: 'Proposta', label: 'Proposta', color: '#F97316', accent: 'border-l-orange-500' },
-  { value: 'Fechado', label: 'Fechado', color: '#10B981', accent: 'border-l-emerald-500' },
+  { value: 'Novo', label: 'Prospecção', color: 'var(--color-stage-prospect)', accent: 'border-l-stage-prospect' },
+  { value: 'Qualificado', label: 'Qualificação', color: 'var(--color-stage-qualified)', accent: 'border-l-stage-qualified' },
+  { value: 'Contactado', label: 'Contactado', color: 'var(--color-stage-contacted)', accent: 'border-l-stage-contacted' },
+  { value: 'Respondeu', label: 'Respondeu', color: 'var(--color-stage-replied)', accent: 'border-l-stage-replied' },
+  { value: 'Reunião', label: 'Reunião', color: 'var(--color-stage-meeting)', accent: 'border-l-stage-meeting' },
+  { value: 'Proposta', label: 'Proposta', color: 'var(--color-stage-proposal)', accent: 'border-l-stage-proposal' },
+  { value: 'Fechado', label: 'Fechado', color: 'var(--color-stage-closed)', accent: 'border-l-stage-closed' },
 ]
 
 // --- Stage gate checklists (required: true = obrigatório, false = opcional) ---
@@ -206,6 +206,20 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
   )
 }
 
+// --- Trap badge helpers ---
+function getTrapAbbrev(trap?: string): string | null {
+  if (!trap) return null
+  const match = trap.match(/^(T\d+)/)
+  return match ? match[1] : null
+}
+
+function trapBadgeClass(abbrev: string): string {
+  const num = parseInt(abbrev.replace('T', ''), 10)
+  if (num >= 7) return 'text-red bg-red/10'
+  if (num >= 4) return 'text-orange-400 bg-orange-400/10'
+  return 'text-amber-400 bg-amber-400/10'
+}
+
 // --- Lead card for pipeline ---
 function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => void }) {
   const navigate = useNavigate()
@@ -234,12 +248,21 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
       <p className="text-[11px] text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
       {lead.city && <p className="text-[10px] text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
-      {lead.enrichmentStatus === 'complete' && (
-        <span className="inline-block mt-1.5 text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
-      )}
-      {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
-        <span className="inline-block mt-1.5 text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
-      )}
+      <div className="flex flex-wrap gap-1 mt-1.5">
+        {lead.enrichmentStatus === 'complete' && (
+          <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
+        )}
+        {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
+          <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
+        )}
+        {(() => {
+          const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
+          if (!abbrev) return null
+          return (
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
+          )
+        })()}
+      </div>
     </div>
   )
 }
