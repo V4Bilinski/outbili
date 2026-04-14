@@ -19,17 +19,19 @@ import { useCountUp } from '../hooks/useCountUp'
 import { useInView } from '../hooks/useInView'
 import { AnimateIn } from '../components/ui/AnimateIn'
 
-function CountUpValue({ end, color, isInView }: { end: number; color: string; isInView: boolean }) {
+function CountUpValue({ end, className, isInView }: { end: number; className: string; isInView: boolean }) {
   const value = useCountUp({ end, duration: 1200, enabled: isInView })
-  return <p className={`text-4xl font-bold font-mono mt-2 tracking-tight ${color}`}>{value}</p>
+  return <span className={className}>{value}</span>
 }
 
 function KPICards({ leads }: { leads: Lead[] }) {
+  const navigate = useNavigate()
   const hotCount = leads.filter((l) => l.temperature === 'Quente').length
   const warmCount = leads.filter((l) => l.temperature === 'Morno').length
   const coldCount = leads.filter((l) => l.temperature === 'Frio').length
   const meetingsCount = leads.filter((l) => l.status === 'Reunião').length
   const contactedCount = leads.filter((l) => l.status === 'Contactado' || l.status === 'Respondeu').length
+  const closedCount = leads.filter((l) => l.status === 'Fechado').length
   const total = leads.length
   const { ref, isInView } = useInView({ threshold: 0.2 })
 
@@ -37,101 +39,127 @@ function KPICards({ leads }: { leads: Lead[] }) {
   const warmPct = total > 0 ? Math.round((warmCount / total) * 100) : 0
   const coldPct = total > 0 ? Math.round((coldCount / total) * 100) : 0
 
-  const tempCards = [
-    { label: 'Quentes', value: hotCount, pct: hotPct, icon: Flame, color: 'text-hot', barColor: 'bg-hot', accent: 'from-hot/8 to-transparent', pulse: hotCount > 0, hint: hotCount > 0 ? 'prontos para contato' : '' },
-    { label: 'Mornos', value: warmCount, pct: warmPct, icon: TrendingUp, color: 'text-warm', barColor: 'bg-warm', accent: 'from-warm/8 to-transparent', pulse: false, hint: warmCount > 0 ? 'qualificar para aquecer' : '' },
-    { label: 'Frios', value: coldCount, pct: coldPct, icon: Snowflake, color: 'text-text-muted', barColor: 'bg-text-muted', accent: 'from-white/5 to-transparent', pulse: false, hint: coldCount > 0 ? 'aquecer com cadência' : '' },
-  ]
-
   return (
     <div ref={ref} className="space-y-4">
-      {/* Linha principal: Total + Temperatura */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card Total */}
-        <div
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
-          style={{
-            opacity: isInView ? 1 : 0,
-            transform: isInView ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)',
-            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1) 200ms',
-          }}
-        >
-          <div className="flex items-start justify-between">
+      {/* Hero card — Total leads com contexto narrativo */}
+      <div
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-surface-md to-surface border border-border p-6 transition-all duration-300"
+        style={{
+          opacity: isInView ? 1 : 0,
+          transform: isInView ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1) 200ms',
+        }}
+      >
+        {/* Glow sutil no canto */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-red/[0.06] rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center justify-between gap-4">
+          {/* Bloco principal: número grande + contexto */}
+          <div className="flex items-baseline gap-3">
+            <CountUpValue end={total} className="text-5xl md:text-6xl font-bold font-mono text-text-primary tracking-tighter leading-none" isInView={isInView} />
             <div>
-              <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">Total leads</p>
-              <CountUpValue end={total} color="text-text-primary" isInView={isInView} />
-              <p className="text-[10px] text-text-muted mt-1">no pipeline</p>
+              <p className="text-sm font-semibold text-text-secondary">leads no pipeline</p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                {closedCount > 0 && <span className="text-success">{closedCount} fechado{closedCount > 1 ? 's' : ''} </span>}
+                {meetingsCount > 0 && <span>· {meetingsCount} em reunião </span>}
+                {contactedCount > 0 && <span>· {contactedCount} em contato</span>}
+                {closedCount === 0 && meetingsCount === 0 && contactedCount === 0 && 'Comece qualificando seus leads'}
+              </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              <Users className="h-5 w-5 text-text-primary opacity-60" />
+          </div>
+
+          {/* Mini spark: distribuição rápida */}
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="flex flex-col items-end gap-1">
+              {[
+                { label: 'Quentes', count: hotCount, color: 'bg-hot', textColor: 'text-hot' },
+                { label: 'Mornos', count: warmCount, color: 'bg-warm', textColor: 'text-warm' },
+                { label: 'Frios', count: coldCount, color: 'bg-text-muted/60', textColor: 'text-text-muted' },
+              ].map((t) => (
+                <div key={t.label} className="flex items-center gap-2">
+                  <span className="text-[10px] text-text-muted">{t.label}</span>
+                  <span className={`text-xs font-mono font-bold ${t.textColor}`}>{t.count}</span>
+                  <div className="w-12 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                    <div className={`h-full rounded-full ${t.color} transition-all duration-700`} style={{ width: total > 0 ? `${(t.count / total) * 100}%` : '0%' }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Cards de Temperatura (somam ao total) */}
-        {tempCards.map((card, i) => (
-          <div
-            key={card.label}
-            className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.accent} backdrop-blur-xl border border-border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 ${card.pulse ? 'animate-[pulse-glow_2.5s_ease-in-out_1.5s_infinite]' : ''}`}
-            style={{
-              opacity: isInView ? 1 : 0,
-              transform: isInView ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)',
-              transition: `all 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${(i + 1) * 100 + 200}ms`,
-            }}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{card.label}</p>
-                <CountUpValue end={card.value} color={card.color} isInView={isInView} />
-                <p className={`text-[10px] mt-1 ${card.color} opacity-60`}>{card.pct}% do total{card.hint ? ` — ${card.hint}` : ''}</p>
+        {/* Barra de distribuição full-width */}
+        {total > 0 && (
+          <div className="mt-4 space-y-1.5">
+            <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
+              {hotCount > 0 && <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />}
+              {warmCount > 0 && <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />}
+              {coldCount > 0 && <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
+            </div>
+            <div className="flex items-center justify-between px-0.5">
+              <div className="flex items-center gap-3">
+                {hotPct > 0 && <span className="flex items-center gap-1 text-[10px] text-hot"><span className="w-1.5 h-1.5 rounded-full bg-hot" />{hotPct}%</span>}
+                {warmPct > 0 && <span className="flex items-center gap-1 text-[10px] text-warm"><span className="w-1.5 h-1.5 rounded-full bg-warm" />{warmPct}%</span>}
+                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-text-muted"><span className="w-1.5 h-1.5 rounded-full bg-text-muted/60" />{coldPct}%</span>}
               </div>
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                <card.icon className={`h-5 w-5 ${card.color} opacity-60`} />
-              </div>
+              <p className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Distribuição de temperatura</p>
             </div>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Barra de distribuição visual */}
-      {total > 0 && (
-        <div
-          className="space-y-2"
-          style={{
-            opacity: isInView ? 1 : 0,
-            transition: 'opacity 0.5s ease 600ms',
-          }}
-        >
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium">Distribuição de temperatura</p>
-            <div className="flex items-center gap-4">
-              {meetingsCount > 0 && (
-                <span className="flex items-center gap-1.5 text-[10px] text-success">
-                  <Calendar className="h-3 w-3" />
-                  {meetingsCount} reuniões
-                </span>
-              )}
-              {contactedCount > 0 && (
-                <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                  <MessageCircle className="h-3 w-3" />
-                  {contactedCount} em contato
-                </span>
-              )}
+      {/* 3 cards de temperatura — compactos, acionáveis */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          {
+            label: 'Quentes', emoji: '🔥', value: hotCount, pct: hotPct, icon: Flame,
+            color: 'text-hot', borderColor: 'border-hot/20', bgAccent: 'bg-hot/[0.06]',
+            hint: hotCount > 0 ? 'Prontos para contato direto' : 'Nenhum lead quente ainda',
+            action: hotCount > 0 ? () => navigate('/leads') : undefined,
+          },
+          {
+            label: 'Mornos', emoji: '🟡', value: warmCount, pct: warmPct, icon: TrendingUp,
+            color: 'text-warm', borderColor: 'border-warm/20', bgAccent: 'bg-warm/[0.04]',
+            hint: warmCount > 0 ? 'Qualificar para avançar no funil' : 'Nenhum lead morno',
+            action: warmCount > 0 ? () => navigate('/leads') : undefined,
+          },
+          {
+            label: 'Frios', emoji: '❄️', value: coldCount, pct: coldPct, icon: Snowflake,
+            color: 'text-text-muted', borderColor: 'border-border', bgAccent: 'bg-white/[0.02]',
+            hint: coldCount > 0 ? 'Iniciar cadência de aquecimento' : 'Nenhum lead frio',
+            action: coldCount > 0 ? () => navigate('/leads') : undefined,
+          },
+        ].map((card, i) => (
+          <button
+            key={card.label}
+            onClick={card.action}
+            className={`relative overflow-hidden rounded-xl ${card.bgAccent} border ${card.borderColor} p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 cursor-pointer group`}
+            style={{
+              opacity: isInView ? 1 : 0,
+              transform: isInView ? 'translateY(0)' : 'translateY(8px)',
+              transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${i * 80 + 400}ms`,
+            }}
+          >
+            {/* Número + label */}
+            <div className="flex items-center justify-between mb-2">
+              <p className={`text-[10px] uppercase tracking-[0.1em] font-semibold ${card.color}`}>{card.label}</p>
+              <card.icon className={`h-4 w-4 ${card.color} opacity-40 group-hover:opacity-70 transition-opacity`} />
             </div>
-          </div>
-          <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
-            {hotCount > 0 && (
-              <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />
-            )}
-            {warmCount > 0 && (
-              <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />
-            )}
-            {coldCount > 0 && (
-              <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />
-            )}
-          </div>
-        </div>
-      )}
+            <div className="flex items-baseline gap-2">
+              <CountUpValue end={card.value} className={`text-3xl font-bold font-mono tracking-tight ${card.color}`} isInView={isInView} />
+              {card.pct > 0 && <span className={`text-[11px] font-mono ${card.color} opacity-50`}>{card.pct}%</span>}
+            </div>
+
+            {/* Micro-barra de proporção dentro do card */}
+            <div className="w-full h-1 rounded-full bg-white/[0.04] mt-2.5 mb-2 overflow-hidden">
+              <div className={`h-full rounded-full ${card.label === 'Quentes' ? 'bg-hot' : card.label === 'Mornos' ? 'bg-warm' : 'bg-text-muted/50'} transition-all duration-700`} style={{ width: `${card.pct}%` }} />
+            </div>
+
+            {/* Hint narrativo */}
+            <p className="text-[10px] text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">{card.hint}</p>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
