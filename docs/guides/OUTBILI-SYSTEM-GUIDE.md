@@ -1,14 +1,14 @@
 # OUTBILI — System Guide End-to-End
 
-> Guia completo da jornada do usuario, processos, fluxos de dados e pontos de validacao do sistema OUTBILI.
+> Guia completo da jornada do usuário, processos, fluxos de dados e pontos de validação do sistema OUTBILI.
 
-**Versao:** 2.0 | **Data:** 2026-04-14 | **Autor:** Orion (AIOX Master)
+**Versão:** 2.0 | **Data:** 2026-04-14 | **Autor:** Orion (AIOX Master)
 
 ---
 
-## 1. Visao Geral do Sistema
+## 1. Visão Geral do Sistema
 
-**OUTBILI** e um sistema de prospecao outbound B2B construido para a V4 Bilinski & Co. Seu proposito e encontrar, qualificar e prospectar empresas via WhatsApp com inteligencia de marketing completa.
+**OUTBILI** é um sistema de prospecção outbound B2B construído para a V4 Bilinski & Co. Seu propósito é encontrar, qualificar e prospectar empresas via WhatsApp com inteligência de marketing completa.
 
 ### 1.1 Proposta de Valor
 
@@ -16,7 +16,7 @@
 Pesquise > Analise > Prospecte > Converta
 ```
 
-O sistema transforma uma busca por segmento/localizacao em leads qualificados com score SPICED, argumentos de venda prontos, analise competitiva e disparo de campanhas WhatsApp — tudo em um unico fluxo.
+O sistema transforma uma busca por segmento/localização em leads qualificados com score SPICED, argumentos de venda prontos, análise competitiva e disparo de campanhas WhatsApp — tudo em um único fluxo.
 
 ### 1.2 Arquitetura de Alto Nivel
 
@@ -55,13 +55,13 @@ O sistema transforma uma busca por segmento/localizacao em leads qualificados co
 |--------|-----------|
 | Frontend | React 19 + TypeScript + Vite 8 |
 | Roteamento | React Router DOM v7 (HashRouter) |
-| Estilizacao | Tailwind CSS v4 |
+| Estilização | Tailwind CSS v4 |
 | Estado/Dados | TanStack React Query v5 |
 | Graficos | Recharts v3 |
 | Database | Airtable (REST API — 10 tabelas) |
 | Enriquecimento cadastral | CNPJa API (searchOffice + mapCnpjaToLead) |
 | Enriquecimento telefone | Assertiva Localize (Worker proxy primario, n8n fallback) |
-| Automacao | n8n (self-hosted em `n8n.bilinski.cloud`) |
+| Automação | n8n (self-hosted em `n8n.bilinski.cloud`) |
 | Scraping | Apify (8 actors) |
 | WhatsApp | BilinskiZap API |
 | Deploy | Static files (base path `/outbili/`) |
@@ -165,7 +165,7 @@ SearchPage              CNPJa API                  Assertiva              Airtab
     │ [enrichmentStatus: 'cnpja' → 'assertiva' → 'complete']                  │
 ```
 
-#### Pontos de Validacao — Fase 1
+#### Pontos de Validação — Fase 1
 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
@@ -178,17 +178,17 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 | 1.7 | Frontend exibe dados | Frontend | Dados enriquecidos visiveis |
 | 1.8 | Historico salvo | Frontend | localStorage atualizado |
 
-#### Regras criticas do pipeline PESCA (fix 2026-04-14)
+#### Regras críticas do pipeline PESCA (fix 2026-04-14)
 
 | Regra | Detalhe |
 |-------|---------|
 | rfPhone prioriza mobile | `lead.whatsapp \|\| lead.phone` — celular tem prioridade sobre fixo |
-| Contacts SEM campo phone | Tabela Contacts nao tem campo `phone`. Usar `whatsapp` para qualquer telefone |
-| Contacts SEM assertiva fields | `assertivaPhoneValidated`, `assertivaWhatsappValidated` nao existem em Contacts. Usar `whatsappConfirmed`, `phoneIsHot` |
-| Assertiva atualiza rfPhone | Quando Assertiva encontra WhatsApp validado, atualiza `rfPhone` no Lead (nao so `assertivaPhoneValidated`) |
-| Employees real | Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimate CNPJa (5/30/100) |
+| Contacts SEM campo phone | Tabela Contacts não tem campo `phone`. Usar `whatsapp` para qualquer telefone |
+| Contacts SEM assertiva fields | `assertivaPhoneValidated`, `assertivaWhatsappValidated` não existem em Contacts. Usar `whatsappConfirmed`, `phoneIsHot` |
+| Assertiva atualiza rfPhone | Quando Assertiva encontra WhatsApp validado, atualiza `rfPhone` no Lead (não só `assertivaPhoneValidated`) |
+| Employees real | Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimativa CNPJa (5/30/100) |
 
-#### Fluxo Alternativo: Importacao Manual
+#### Fluxo Alternativo: Importação Manual
 
 ```
 1. Usuario clica "Importar" no LeadsPage
@@ -202,7 +202,7 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 
 ---
 
-### 3.2 FASE 2: Qualificacao de Leads
+### 3.2 FASE 2: Qualificação de Leads
 
 **Pagina:** `LeadsPage` (`/#/leads`)
 
@@ -223,24 +223,24 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 5. Clica em um lead → navega para CompanyPage (/#/leads/:id)
 ```
 
-#### Modelo de Qualificacao SPICED
+#### Modelo de Qualificação SPICED
 
 ```
 ┌───────────────────────────────────────────────────────┐
 │                   SPICED SCORING                       │
 ├──────────────┬──────┬─────────────────────────────────┤
-│ Dimensao     │ Peso │ O que avalia                    │
+│ Dimensão     │ Peso │ O que avalia                    │
 ├──────────────┼──────┼─────────────────────────────────┤
-│ S (Situacao) │ 25%  │ Maturidade digital da empresa   │
+│ S (Situação) │ 25%  │ Maturidade digital da empresa   │
 │ P (Dor/Pain) │ 25%  │ Gaps de marketing identificados │
 │ I (Impacto)  │ 20%  │ Potencial de uplift de receita  │
-│ C (Critico)  │ 15%  │ Pressao competitiva             │
-│ D (Decisao)  │ 15%  │ Acessibilidade do decisor       │
+│ C (Crítico)  │ 15%  │ Pressão competitiva             │
+│ D (Decisão)  │ 15%  │ Acessibilidade do decisor       │
 ├──────────────┼──────┼─────────────────────────────────┤
 │ TOTAL        │100%  │ Score final 0–5                 │
 └──────────────┴──────┴─────────────────────────────────┘
 
-Classificacao de Temperatura:
+Classificação de Temperatura:
   Score >= 4.0 → HOT  (vermelho)
   Score >= 3.0 → WARM (laranja)
   Score <  3.0 → COLD (azul)
@@ -258,13 +258,13 @@ Classificacao de Temperatura:
 #### Pipeline de Status (Funil)
 
 ```
-Novo → Qualificado → Contactado → Respondeu → Reuniao → Proposta → Fechado
+Novo → Qualificado → Contactado → Respondeu → Reunião → Proposta → Fechado
   │                                                                    │
   └──────────────────── Perdido ◄──────────────────────────────────────┘
                     (pode sair de qualquer etapa)
 ```
 
-#### Pontos de Validacao — Fase 2
+#### Pontos de Validação — Fase 2
 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
@@ -272,7 +272,7 @@ Novo → Qualificado → Contactado → Respondeu → Reuniao → Proposta → F
 | 2.2 | Filtros funcionais | Frontend | Filtragem client-side correta |
 | 2.3 | SPICED visivel | Frontend | Score e temperatura exibidos por lead |
 | 2.4 | Kanban drag funcional | Frontend | Mudanca de coluna atualiza status |
-| 2.5 | Navegacao para detalhe | Frontend | Click leva a /#/leads/:id correto |
+| 2.5 | Navegação para detalhe | Frontend | Click leva a /#/leads/:id correto |
 
 ---
 
@@ -308,21 +308,21 @@ Novo → Qualificado → Contactado → Respondeu → Reuniao → Proposta → F
 - Contexto de mercado (marketContext)
 - Portfolio de produtos (productPortfolio)
 - Stack tecnologico (techStack)
-- SPICED score detalhado com notas por dimensao
+- SPICED score detalhado com notas por dimensão
 - Trava hipotetica principal (hypotheticalTrap)
 - Status de enriquecimento
 
-**Tab 2 — Reuniao (TabReuniao)**
-- Roteiro de reuniao estruturado em 5 blocos:
+**Tab 2 — Reunião (TabReuniao)**
+- Roteiro de reunião estruturado em 5 blocos:
   1. **Rapport** — quebra-gelo personalizada
   2. **Discovery** — perguntas de descoberta baseadas no SPICED
-  3. **Validacao** — confirmar dores e impacto
-  4. **Proposta** — enquadrar solucao V4
+  3. **Validação** — confirmar dores e impacto
+  4. **Proposta** — enquadrar solução V4
   5. **Fechamento** — proximos passos
 - Cada bloco tem sinais positivos (verde) e alertas (vermelho)
 - Perguntas de descoberta geradas por IA (discoveryQuestions)
 
-**Tab 3 — Projecao (TabProjecao)**
+**Tab 3 — Projeção (TabProjecao)**
 - 3 cenarios de receita calculados a partir do `monthlyRevenue`:
   - **Agressivo:** uplift de 40-60%
   - **Moderado:** uplift de 20-35%
@@ -334,12 +334,12 @@ Novo → Qualificado → Contactado → Respondeu → Reuniao → Proposta → F
 - 8 cards pre-construidos de vulnerabilidades de marketing:
   1. SEO fraco / sem posicionamento organico
   2. Redes sociais inativas ou inconsistentes
-  3. Sem funil de conversao digital
-  4. Dependencia de um unico canal
+  3. Sem funil de conversão digital
+  4. Dependência de um único canal
   5. Ticket medio abaixo do potencial
-  6. Sem estrategia de retencao
+  6. Sem estratégia de retenção
   7. Marca sem posicionamento claro
-  8. Sem automacao de marketing
+  8. Sem automação de marketing
 - Cada card mostra impacto financeiro estimado
 - Dados vem do campo `vulnerabilities` (JSON) ou fallback para defaults
 
@@ -350,7 +350,7 @@ Novo → Qualificado → Contactado → Respondeu → Reuniao → Proposta → F
 
 **Tab 6 — Argumentos (TabArgumentos)**
 - Argumentos de venda contextualizados
-- Objecoes previstas com contra-argumentos
+- Objeções previstas com contra-argumentos
 - Impacto de ROI por argumento
 - Dados do campo `salesArguments` (JSON)
 
@@ -388,7 +388,7 @@ T7 Escalabilidade   → "O negocio escala sem o dono?"
 T8 Dependencia      → "Depende de um unico canal?"
 ```
 
-#### Pontos de Validacao — Fase 3
+#### Pontos de Validação — Fase 3
 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
@@ -463,7 +463,7 @@ CampaignsPage           BilinskiZap API              WhatsApp
 | `follow_up` | Seguimento apos contato | Lead status = Contactado / Respondeu |
 | `reengajamento` | Reativar leads frios | Lead temperature = COLD + inativo > 30d |
 
-#### Pontos de Validacao — Fase 4
+#### Pontos de Validação — Fase 4
 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
@@ -509,7 +509,7 @@ CampaignsPage           BilinskiZap API              WhatsApp
 - Breakdown por segmento
 - Performance por periodo
 
-#### Pontos de Validacao — Fase 5
+#### Pontos de Validação — Fase 5
 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
@@ -686,7 +686,7 @@ none → cnpja → assertiva → complete
 
 ---
 
-## 5. Integracao de Sistemas — Mapa Completo
+## 5. Integração de Sistemas — Mapa Completo
 
 ### 5.1 Airtable (Database)
 
@@ -769,14 +769,14 @@ O campo `temperatura` e o nome no Airtable para temperature (code usa `temperatu
 ### 5.4 Apify (Scraping)
 
 - **Auth:** Token via header ou query param
-- **8 Actors** configurados (ver secao 4.3)
+- **8 Actors** configurados (ver seção 4.3)
 - **Chamada direta do frontend** (useApifySearch) OU **via n8n** (fluxo principal)
 
 ---
 
-## 6. Configuracao e Saude do Sistema
+## 6. Configuração e Saúde do Sistema
 
-### 6.1 Variaveis de Ambiente
+### 6.1 Variáveis de Ambiente
 
 ```env
 # Airtable
@@ -800,7 +800,7 @@ VITE_CNPJA_API_KEY=                   # API key CNPJa (73 chars)
 # Assertiva
 VITE_ASSERTIVA_CLIENT_ID=             # OAuth2 client ID
 VITE_ASSERTIVA_CLIENT_SECRET=         # OAuth2 client secret
-VITE_ASSERTIVA_WORKER_URL=            # Worker proxy URL (primario)
+VITE_ASSERTIVA_WORKER_URL=            # Worker proxy URL (primário)
 
 # VibeProspecting
 VITE_VIBEPROSPECTING_URL=             # URL VibeProspecting
@@ -809,9 +809,9 @@ VITE_VIBEPROSPECTING_TOKEN=           # Token VibeProspecting
 
 ### 6.2 Settings Page — Health Checks
 
-A pagina `/#/settings` verifica em tempo real:
+A página `/#/settings` verifica em tempo real:
 
-| Servico | Teste | Indicador |
+| Serviço | Teste | Indicador |
 |---------|-------|-----------|
 | Airtable | GET /tables | Verde/Vermelho |
 | BilinskiZap | GET /api/health | Verde/Vermelho |
@@ -820,23 +820,23 @@ A pagina `/#/settings` verifica em tempo real:
 
 ---
 
-## 7. Checklist de Validacao End-to-End
+## 7. Checklist de Validação End-to-End
 
-### 7.1 Pre-requisitos
+### 7.1 Pré-requisitos
 
-- [ ] Variaveis de ambiente configuradas (.env.local)
+- [ ] Variáveis de ambiente configuradas (.env.local)
 - [ ] Airtable base criada com 10 tabelas (Leads, Contacts, Campaigns, Activities, Messages, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog)
-- [ ] CNPJa API key configurada e com creditos
+- [ ] CNPJa API key configurada e com créditos
 - [ ] Assertiva OAuth2 credentials configuradas (client_id + client_secret)
 - [ ] n8n workflow importado e ativo
-- [ ] BilinskiZap conectado com numero WhatsApp
-- [ ] Apify token com creditos disponiveis
+- [ ] BilinskiZap conectado com número WhatsApp
+- [ ] Apify token com créditos disponíveis
 
 ### 7.2 Teste de Jornada Completa
 
-| Etapa | Acao | Resultado Esperado | Status |
+| Etapa | Ação | Resultado Esperado | Status |
 |-------|------|--------------------|--------|
-| 1 | Acessar /#/settings | Todos os 4 servicos verdes | [ ] |
+| 1 | Acessar /#/settings | Todos os 4 serviços verdes | [ ] |
 | 2 | Pesquisar "Restaurantes + Sao Paulo" | Webhook disparado, polling inicia | [ ] |
 | 3 | Aguardar resultados (max 5min) | Leads aparecem com score SPICED | [ ] |
 | 4 | Acessar /#/leads | Tabela com leads filtrados | [ ] |
@@ -869,7 +869,7 @@ A pagina `/#/settings` verifica em tempo real:
 
 ### 7.4 Teste de Enriquecimento
 
-| Etapa | Acao | Resultado Esperado | Status |
+| Etapa | Ação | Resultado Esperado | Status |
 |-------|------|--------------------|--------|
 | E.1 | Lead criado com enrichmentStatus=cnpja | Dados CNPJa presentes | [ ] |
 | E.2 | Assertiva processa o lead | enrichmentStatus=assertiva, telefones validados | [ ] |
@@ -877,26 +877,26 @@ A pagina `/#/settings` verifica em tempo real:
 
 ### 7.5 Teste de Re-enriquecimento
 
-| Etapa | Acao | Resultado Esperado | Status |
+| Etapa | Ação | Resultado Esperado | Status |
 |-------|------|--------------------|--------|
-| R.1 | Acessar /#/admin > tab Enriquecimento | Cards diagnosticos visiveis | [ ] |
-| R.2 | Clicar botao re-enrichment batch | Progress tracking inicia | [ ] |
+| R.1 | Acessar /#/admin > tab Enriquecimento | Cards diagnósticos visíveis | [ ] |
+| R.2 | Clicar botão re-enrichment batch | Progress tracking inicia | [ ] |
 | R.3 | Verificar leads atualizados | employees, yearsInMarket, foundingDate preenchidos | [ ] |
 | R.4 | Assertiva sobrescreve employees CNPJa | _quantidadeFuncionarios SEMPRE prevalece | [ ] |
 
 ---
 
-## 8. Riscos e Pontos de Atencao
+## 8. Riscos e Pontos de Atenção
 
-| Risco | Impacto | Mitigacao |
+| Risco | Impacto | Mitigação |
 |-------|---------|-----------|
-| Rate limit Airtable (5 req/s) | Lentidao em listas grandes | Token-bucket implementado em `airtable.ts` |
+| Rate limit Airtable (5 req/s) | Lentidão em listas grandes | Token-bucket implementado em `airtable.ts` |
 | Apify credits esgotados | Pesquisa para de funcionar | Monitorar saldo no Apify dashboard |
-| n8n workflow offline | Pesquisa nao processa | Health check em /#/settings |
-| BilinskiZap desconectado | Campanhas nao disparam | Health check + precheck antes do envio |
-| VITE_* expostas no frontend | Tokens visiveis no bundle | Sistema single-user interno; migrar para BFF se escalar |
-| Sem autenticacao | Qualquer um com URL acessa | Proteger via VPN ou auth proxy se expor externamente |
-| Airtable como DB primario | Limites de 50k records/base (free) | Monitorar volume; migrar para Supabase se necessario |
+| n8n workflow offline | Pesquisa não processa | Health check em /#/settings |
+| BilinskiZap desconectado | Campanhas não disparam | Health check + precheck antes do envio |
+| VITE_* expostas no frontend | Tokens visíveis no bundle | Sistema single-user interno; migrar para BFF se escalar |
+| Sem autenticação | Qualquer um com URL acessa | Proteger via VPN ou auth proxy se expor externamente |
+| Airtable como DB primário | Limites de 50k records/base (free) | Monitorar volume; migrar para Supabase se necessário |
 
 ---
 
@@ -906,7 +906,7 @@ A pagina `/#/settings` verifica em tempo real:
 # Iniciar dev server
 npm run dev
 
-# Build para producao
+# Build para produção
 npm run build
 
 # Preview do build
@@ -924,16 +924,16 @@ cd scripts && python enrich-leads.py
 
 ---
 
-## 10. Glossario
+## 10. Glossário
 
-| Termo | Definicao |
+| Termo | Definição |
 |-------|-----------|
-| **SPICED** | Framework de qualificacao: Situacao, Pain, Impacto, Critico, Decisao |
-| **Trava Hipotetica** | Gargalo principal do negocio (1 de 8 categorias) |
-| **Tier** | Classificacao por faturamento (Micro+, Small, Medium-, Medium=) |
+| **SPICED** | Framework de qualificação: Situação, Pain, Impacto, Crítico, Decisão |
+| **Trava Hipotética** | Gargalo principal do negócio (1 de 8 categorias) |
+| **Tier** | Classificação por faturamento (Micro+, Small, Medium-, Medium=) |
 | **Temperatura** | HOT/WARM/COLD baseado no score SPICED |
-| **BilinskiZap** | API proprietaria para campanhas WhatsApp |
-| **Cadencia Outbound** | Sequencia de mensagens para primeira abordagem |
+| **BilinskiZap** | API proprietária para campanhas WhatsApp |
+| **Cadência Outbound** | Sequência de mensagens para primeira abordagem |
 | **ICP** | Ideal Customer Profile — perfil de cliente ideal |
 | **Enrichment** | Processo de adicionar dados ao lead (SPICED, questions, etc.) |
 | **Thamyres** | Agent de inteligência digital — espionagem de ads, presença digital, SEMrush |

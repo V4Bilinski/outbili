@@ -1,7 +1,7 @@
 # OUTBILI — Gap Analysis Completo
 
-> Analise cruzada: Sistema ao vivo + Codigo-fonte + Benchmarking de 13 plataformas CRM
-> Foco: Jornada do usuario end-to-end e experiencia dentro do sistema
+> Análise cruzada: Sistema ao vivo + Código-fonte + Benchmarking de 13 plataformas CRM
+> Foco: Jornada do usuário end-to-end e experiencia dentro do sistema
 
 **Data:** 2026-03-27 | **Executado por:** Atlas (CRM Master) + Orion (AIOX Master)
 **Sistema:** https://v4bilinski.github.io/outbili/
@@ -9,16 +9,16 @@
 
 ---
 
-## Indice
+## Índice
 
 1. [Resumo Executivo](#1-resumo-executivo)
-2. [Bugs Criticos (P0)](#2-bugs-criticos-p0)
+2. [Bugs Críticos (P0)](#2-bugs-críticos-p0)
 3. [Gaps Graves de UX (P1)](#3-gaps-graves-de-ux-p1)
 4. [Gaps de Jornada por Fase](#4-gaps-de-jornada-por-fase)
 5. [Benchmarking: O Que Falta vs Melhores do Mercado](#5-benchmarking-o-que-falta-vs-melhores-do-mercado)
-6. [Codigo Orfao: Features Construidas Mas Nunca Expostas](#6-codigo-orfao-features-construidas-mas-nunca-expostas)
+6. [Código Órfão: Features Construídas Mas Nunca Expostas](#6-código-órfão-features-construidas-mas-nunca-expostas)
 7. [Matriz de Prioridade (Impacto x Esforco)](#7-matriz-de-prioridade-impacto-x-esforco)
-8. [Roadmap de Correcao Sugerido](#8-roadmap-de-correcao-sugerido)
+8. [Roadmap de Correção Sugerido](#8-roadmap-de-correcao-sugerido)
 
 ---
 
@@ -26,36 +26,36 @@
 
 ### Score Geral do Sistema
 
-| Dimensao | Score | Classificacao |
+| Dimensão | Score | Classificação |
 |----------|-------|---------------|
 | Funcionalidade Core | 7/10 | Bom — fluxo Search→Qualify→Prospect funciona |
 | UX / Experiência | 6/10 | Melhorado — copy audit concluído, tooltips, micro-narrativas, consistência pt-BR |
 | Pipeline Management | 5/10 | Parcial — drag-and-drop implementado (@dnd-kit), busca por texto funciona |
-| Campanhas WhatsApp | 2/10 | Quebrado — disparo vai para numero placeholder |
+| Campanhas WhatsApp | 2/10 | Quebrado — disparo vai para número placeholder |
 | Analytics / Reports | 7/10 | Bom — métricas com benchmarks, fórmulas explícitas, recomendações condicionais, filtro por período, export CSV |
-| Mobile Experience | 4/10 | Critico — pagina Reports inacessivel, filtros limitados |
+| Mobile Experience | 4/10 | Crítico — página Reports inacessível, filtros limitados |
 | Enriquecimento | 8/10 | Bom — CNPJa + Assertiva + re-enrichment batch + fix 422/rfPhone/Assertiva (2026-04-14) |
-| Automacao | 3/10 | Basico — n8n funciona mas cadencia multi-step nao existe |
+| Automação | 3/10 | Básico — n8n funciona mas cadência multi-step não existe |
 | Pos-Venda / CS | 0/10 | Inexistente — sem health score, NPS, churn prevention |
 
 ### Veredicto
 
-O OUTBILI tem uma **base solida de discovery e qualificacao** (SearchPage + SPICED + 7 tabs de inteligencia), mas **quebra na hora de executar** (campanhas com numero fake, status de lead imutavel, cadencia single-shot). A jornada do usuario tem **3 dead ends criticos** que impedem o fluxo natural de trabalho.
+O OUTBILI tem uma **base sólida de discovery e qualificação** (SearchPage + SPICED + 7 tabs de inteligência), mas **quebra na hora de executar** (campanhas com número fake, status de lead imutável, cadência single-shot). A jornada do usuário tem **3 dead ends críticos** que impedem o fluxo natural de trabalho.
 
 ---
 
-## 2. Bugs Criticos (P0)
+## 2. Bugs Críticos (P0)
 
-Estes sao bugs que **quebram funcionalidade core**. Devem ser corrigidos antes de qualquer melhoria.
+Estes são bugs que **quebram funcionalidade core**. Devem ser corrigidos antes de qualquer melhoria.
 
-### P0-RESOLVED (2026-04-14): 4 bugs criticos no pipeline PESCA corrigidos
+### P0-RESOLVED (2026-04-14): 4 bugs críticos no pipeline PESCA corrigidos
 
 | Bug | Causa raiz | Fix |
 |-----|-----------|-----|
 | **422 Airtable em Contacts** | Campo `phone` NAO existe na tabela Contacts. 147 de 149 contacts falhavam silenciosamente | Removido `phone` do Contact create. Telefone vai para `whatsapp` |
 | **rfPhone ignorava celular** | `savePescaToAirtable` enviava `rfPhone: lead.phone` (fixo), ignorando `lead.whatsapp` (celular) | Agora `rfPhone: lead.whatsapp \|\| lead.phone` |
-| **Assertiva nao atualizava rfPhone** | WhatsApp validado ia para `assertivaPhoneValidated` (campo tecnico) mas NAO para `rfPhone` (campo visivel nos cards) | `enrichBatchWithAssertiva` agora atualiza `rfPhone` com WhatsApp validado |
-| **Contact Assertiva com campos inexistentes** | `assertivaPhoneValidated`, `assertivaWhatsappValidated` nao existem em Contacts — causavam 422 silencioso | Substituidos por `whatsappConfirmed`, `phoneIsHot` |
+| **Assertiva não atualizava rfPhone** | WhatsApp validado ia para `assertivaPhoneValidated` (campo tecnico) mas NAO para `rfPhone` (campo visivel nos cards) | `enrichBatchWithAssertiva` agora atualiza `rfPhone` com WhatsApp validado |
+| **Contact Assertiva com campos inexistentes** | `assertivaPhoneValidated`, `assertivaWhatsappValidated` não existem em Contacts — causavam 422 silencioso | Substituídos por `whatsappConfirmed`, `phoneIsHot` |
 
 ### P0-RESOLVED (2026-04-14): Bug prioridade employees
 
@@ -63,16 +63,16 @@ Assertiva `_quantidadeFuncionarios` (dado real RAIS/CAGED) era ignorado quando C
 
 ---
 
-### P0-1: Campanhas WhatsApp disparam para numero placeholder
+### P0-1: Campanhas WhatsApp disparam para número placeholder
 
 **Arquivo:** `src/pages/CampaignsPage.tsx` (linha ~181)
 ```typescript
 phone: '5511999999999', // Placeholder - needs real decisor WhatsApp
 ```
 
-**Impacto:** TODAS as campanhas WhatsApp enviam mensagens para um numero falso. O usuario cria campanha, seleciona leads, confirma envio — e nada chega ao destinatario real. O numero real do decisor (tabela Contacts) nunca e resolvido.
+**Impacto:** TODAS as campanhas WhatsApp enviam mensagens para um número falso. O usuário cria campanha, seleciona leads, confirma envio — e nada chega ao destinatario real. O número real do decisor (tabela Contacts) nunca e resolvido.
 
-**Correcao:** Resolver o WhatsApp do decisor principal de cada lead via `contactService` antes do dispatch.
+**Correção:** Resolver o WhatsApp do decisor principal de cada lead via `contactService` antes do dispatch.
 
 ---
 
@@ -83,22 +83,22 @@ phone: '5511999999999', // Placeholder - needs real decisor WhatsApp
 onClick: () => {}  // No-op
 ```
 
-**Impacto:** O Dashboard mostra 4 acoes rapidas. "Agendar reuniao" e a mais importante para conversao — e nao faz nada. Sem feedback, sem toast, sem redirect. O usuario clica e nada acontece. Isso gera desconfianca com o sistema inteiro.
+**Impacto:** O Dashboard mostra 4 acoes rapidas. "Agendar reuniao" e a mais importante para conversão — e não faz nada. Sem feedback, sem toast, sem redirect. O usuário clica e nada acontece. Isso gera desconfianca com o sistema inteiro.
 
-**Correcao:** Redirecionar para CompanyPage do lead HOT prioritario, ou abrir modal de agendamento.
+**Correção:** Redirecionar para CompanyPage do lead HOT prioritario, ou abrir modal de agendamento.
 
 ---
 
-### P0-3: Botao "Ver leads" usa hack de navegacao
+### P0-3: Botao "Ver leads" usa hack de navegação
 
 **Arquivo:** `src/pages/SearchPage.tsx` (linha ~507)
 ```typescript
 onClick={() => window.location.hash = '#/leads'}
 ```
 
-**Impacto:** Usa manipulacao direta de hash ao inves de `useNavigate()`. Em React Router, isso pode causar reload completo da SPA, perda de estado, ou navegacao incorreta.
+**Impacto:** Usa manipulacao direta de hash ao inves de `useNavigate()`. Em React Router, isso pode causar reload completo da SPA, perda de estado, ou navegação incorreta.
 
-**Correcao:** Substituir por `navigate('/leads')` do React Router.
+**Correção:** Substituir por `navigate('/leads')` do React Router.
 
 ---
 
@@ -112,7 +112,7 @@ onClick={() => window.location.hash = '#/leads'}
 
 ### ~~P0-5: rfPhone vazio — preferencia errada de telefone~~ RESOLVIDO (2026-04-14)
 
-**O que acontecia:** rfPhone do Lead salvava apenas telefone fixo, ignorando celular/WhatsApp. Assertiva encontrava WhatsApp validado mas salvava em `assertivaPhoneValidated` (campo que nao existe em Contacts), ficando invisivel nos cards.
+**O que acontecia:** rfPhone do Lead salvava apenas telefone fixo, ignorando celular/WhatsApp. Assertiva encontrava WhatsApp validado mas salvava em `assertivaPhoneValidated` (campo que não existe em Contacts), ficando invisivel nos cards.
 
 **Fix:** rfPhone agora salva `whatsapp || phone` (preferencia celular). Assertiva atualiza rfPhone no Lead quando encontra WhatsApp validado. Contacts usa `whatsappConfirmed`/`phoneIsHot` (campos reais da tabela).
 
@@ -120,38 +120,38 @@ onClick={() => window.location.hash = '#/leads'}
 
 ### ~~P0-6: Assertiva campos invalidos em Contacts~~ RESOLVIDO (2026-04-14)
 
-**O que acontecia:** Codigo tentava salvar `assertivaPhoneValidated`/`assertivaWhatsappValidated` na tabela Contacts, mas esses campos NAO existem. Substituidos por `whatsappConfirmed` (checkbox) e `phoneIsHot` (checkbox) que sao os campos reais.
+**O que acontecia:** Código tentava salvar `assertivaPhoneValidated`/`assertivaWhatsappValidated` na tabela Contacts, mas esses campos NAO existem. Substituídos por `whatsappConfirmed` (checkbox) e `phoneIsHot` (checkbox) que são os campos reais.
 
 ---
 
 ## 3. Gaps Graves de UX (P1)
 
-### P1-1: Nao e possivel mudar status do lead na CompanyPage
+### P1-1: Não e possivel mudar status do lead na CompanyPage
 
-**O que acontece:** O usuario abre a ficha completa do lead (7 tabs de inteligencia), decide que o lead e qualificado e quer mover para "Contactado" — mas nao existe nenhum controle para isso. O status aparece como badge read-only no header.
+**O que acontece:** O usuário abre a ficha completa do lead (7 tabs de inteligência), decide que o lead e qualificado e quer mover para "Contactado" — mas não existe nenhum controle para isso. O status aparece como badge read-only no header.
 
 **Benchmarking:**
 - Pipedrive: Dropdown inline no deal card, drag-and-drop no kanban
 - HubSpot: Lifecycle stage selector no contact record
 
-**Impacto:** O pipeline inteiro fica estagnado. Leads entram como "Novo" e ficam "Novo" para sempre a menos que o usuario edite diretamente no Airtable.
+**Impacto:** O pipeline inteiro fica estagnado. Leads entram como "Novo" e ficam "Novo" para sempre a menos que o usuário edite diretamente no Airtable.
 
-**Correcao:** Adicionar dropdown de status + temperatura no header da CompanyPage.
+**Correção:** Adicionar dropdown de status + temperatura no header da CompanyPage.
 
 ---
 
-### P1-2: Mobile nao tem acesso a pagina Reports
+### P1-2: Mobile não tem acesso a página Reports
 
-**O que acontece:** O `BottomNav` mobile tem 5 itens: Home, Busca, Leads, Camp., Config. "Relatorios" foi trocado por "Config". Um usuario mobile nunca consegue acessar analytics de funil.
+**O que acontece:** O `BottomNav` mobile tem 5 itens: Home, Busca, Leads, Camp., Config. "Relatorios" foi trocado por "Config". Um usuário mobile nunca consegue acessar analytics de funil.
 
 **Sidebar (desktop):** Dashboard, Pesquisa, Leads, Campanhas, **Relatorios**, Settings
 **BottomNav (mobile):** Dashboard, Pesquisa, Leads, Campanhas, **Config** (Settings)
 
-**Correcao:** Trocar "Config" por "Relatorios" no BottomNav, mover Settings para hamburger menu ou acessivel via Dashboard.
+**Correção:** Trocar "Config" por "Relatorios" no BottomNav, mover Settings para hamburger menu ou acessivel via Dashboard.
 
 ---
 
-### ~~P1-3: Nao existe busca por texto no LeadsPage~~ RESOLVIDO
+### ~~P1-3: Não existe busca por texto no LeadsPage~~ RESOLVIDO
 
 **Status:** RESOLVIDO — Search bar implementada no LeadsPage, filtra por companyName e tradeName.
 
@@ -171,17 +171,17 @@ onClick={() => window.location.hash = '#/leads'}
 
 ### P1-6: Sem preview de template antes de enviar campanha
 
-**O que acontece:** O wizard de campanha pede para selecionar um template de um `<select>` dropdown por nome. O usuario nao ve o corpo da mensagem, variaveis de merge, ou como o lead vai receber. Envia no escuro.
+**O que acontece:** O wizard de campanha pede para selecionar um template de um `<select>` dropdown por nome. O usuário não ve o corpo da mensagem, variaveis de merge, ou como o lead vai receber. Envia no escuro.
 
 **Benchmarking:**
 - Kommo: Preview com merge tags resolvidos
 - HubSpot: Template editor + preview mobile
 
-**Correcao:** Renderizar preview do template selecionado com merge tags de exemplo.
+**Correção:** Renderizar preview do template selecionado com merge tags de exemplo.
 
 ---
 
-### ~~P1-7: Sidebar collapse nao persiste~~ RESOLVIDO
+### ~~P1-7: Sidebar collapse não persiste~~ RESOLVIDO
 
 **Status:** RESOLVIDO — Estado da sidebar persistido em localStorage.
 
@@ -197,8 +197,8 @@ onClick={() => window.location.hash = '#/leads'}
 | Estados com recomendados separados | Campo de CNPJ descartado silenciosamente (P1-5) |
 | Mensagens rotativas durante busca | Sem cancelar busca em andamento |
 | Historico de buscas (localStorage) | Historico mostra 5 mas guarda 10 — sem "ver mais" |
-| Modo massa vs especifico | Leads importados nao aparecem no historico |
-| | `getDaySegment()` existe mas nao sugere segmento do dia |
+| Modo massa vs especifico | Leads importados não aparecem no historico |
+| | `getDaySegment()` existe mas não sugere segmento do dia |
 | | SubSegmentos definidos mas nunca expostos como filtro |
 
 ### Fase 2: Qualificacao (LeadsPage)
@@ -210,20 +210,20 @@ onClick={() => window.location.hash = '#/leads'}
 | Empty state com CTA para Search | Sem filtro por Trava (T1-T8) |
 | Badge de contagem no Kanban | Kanban sem drag-and-drop (P1-4) |
 | | Filtros resetam ao navegar e voltar |
-| | Sem ordenacao por coluna na tabela |
-| | "Perdido" oculto no Kanban sem explicacao |
+| | Sem ordenação por coluna na tabela |
+| | "Perdido" oculto no Kanban sem explicação |
 | | Sem "limpar todos os filtros" |
 
-### Fase 3: Analise do Lead (CompanyPage)
+### Fase 3: Análise do Lead (CompanyPage)
 
 | O que funciona | O que falta |
 |----------------|-------------|
-| 7-8 tabs de inteligencia completas | Sem controle de status/temperatura (P1-1) |
-| Formulario inline de contato | Sem navegacao prev/next entre leads |
+| 7-8 tabs de inteligência completas | Sem controle de status/temperatura (P1-1) |
+| Formulario inline de contato | Sem navegação prev/next entre leads |
 | Back button | Back usa `navigate(-1)` — falha em deep links |
 | Score SPICED detalhado | Sem breadcrumb (Leads > Clinica X) |
-| | Tab state nao persiste ao voltar |
-| | Sem botao "Iniciar cadencia" direto do lead |
+| | Tab state não persiste ao voltar |
+| | Sem botao "Iniciar cadência" direto do lead |
 | | Sem toast ao criar contato |
 | | Links sociais duplicados (header + Resumo) |
 
@@ -233,25 +233,25 @@ onClick={() => window.location.hash = '#/leads'}
 |----------------|-------------|
 | Wizard de 3 etapas claro | Numero de WhatsApp PLACEHOLDER (P0-1) |
 | Step indicator animado | Sem preview de template (P1-6) |
-| Banner de alerta pre-envio | Sem validacao de telefone por lead |
+| Banner de alerta pre-envio | Sem validação de telefone por lead |
 | Metricas de entrega no detalhe | Sem duplicar campanha |
 | | Sem editar rascunho |
 | | Sem refresh real-time durante envio |
-| | Sem cadencia multi-step (CADENCE_DEFAULT_DAYS orfao) |
+| | Sem cadência multi-step (CADENCE_DEFAULT_DAYS órfão) |
 | | Detalhe inline sem URL — back/forward quebrado |
 
 ### Fase 5: Acompanhamento (Dashboard + Reports)
 
 | O que funciona | O que falta |
 |----------------|-------------|
-| 4 KPI cards com animacao | KPIs nao clicaveis (sem drill-down) |
+| 4 KPI cards com animacao | KPIs não clicaveis (sem drill-down) |
 | NextActions prioriza HOT | Sem KPI de tendencia (delta, seta up/down) |
-| Pipeline chart (Recharts) | Barras nao clicaveis (sem filtrar por status) |
-| Funil de conversao no Reports | Sem filtro de periodo/data (P2) |
+| Pipeline chart (Recharts) | Barras não clicaveis (sem filtrar por status) |
+| Funil de conversão no Reports | Sem filtro de período/data (P2) |
 | Recomendacoes estrategicas condicionais | Sem export PDF/CSV (P2) |
-| | Sem metrica de tempo-de-ciclo |
+| | Sem métrica de tempo-de-ciclo |
 | | Sem comparativo por campanha WhatsApp |
-| | Reports inacessivel no mobile (P1-2) |
+| | Reports inacessível no mobile (P1-2) |
 
 ### Fase 6: Pos-Venda / Customer Success
 
@@ -260,7 +260,7 @@ onClick={() => window.location.hash = '#/leads'}
 | (nada implementado) | Health Score pos-venda |
 | | NPS automatizado |
 | | Alertas de churn |
-| | Playbooks de retencao |
+| | Playbooks de retenção |
 | | Pipeline de Upsell/Expansao |
 | | Pipeline de Renewal |
 | | Deal-to-Squad bridge |
@@ -274,54 +274,54 @@ onClick={() => window.location.hash = '#/leads'}
 | Funcionalidade | Benchmark | OUTBILI Tem? | Gap |
 |---------------|-----------|-------------|-----|
 | **Pipeline drag-and-drop** | Pipedrive | Sim | @dnd-kit implementado |
-| **Rotting indicators** (deals estagnados) | Pipedrive | Nao | Sem alerta de inatividade |
+| **Rotting indicators** (deals estagnados) | Pipedrive | Não | Sem alerta de inatividade |
 | **Activity-based selling** (prox acao) | Pipedrive | Parcial | NextActions no Dashboard, mas sem no CompanyPage |
-| **Pipeline velocity** | Pipedrive | Nao | Sem metrica de velocidade do funil |
-| **Probabilidade por estagio** | Pipedrive | Nao | Sem weighted pipeline value |
-| **Health Score** pos-venda | HubSpot | Nao | Zero CS no sistema |
-| **NPS automatizado** | HubSpot | Nao | Sem surveys |
-| **Workflow builder** visual | HubSpot | Nao | n8n cobre backend, sem UI |
-| **CS Workspace** | HubSpot | Nao | Sem area dedicada a CS |
-| **Revenue forecasting** | Salesforce | Nao | Sem forecast, apenas pipeline value simples |
-| **Cross-entity reporting** | Salesforce | Nao | Reports single-entity (leads only) |
-| **Win/Loss analysis** | Salesforce | Nao | "Perdido" some do Kanban sem analise |
-| **Deal-to-Project bridge** | Monday.com | Nao | Sem fluxo pos-fechamento |
-| **Workload view** | ClickUp | Nao | Sem gestao de capacidade |
+| **Pipeline velocity** | Pipedrive | Não | Sem métrica de velocidade do funil |
+| **Probabilidade por estagio** | Pipedrive | Não | Sem weighted pipeline value |
+| **Health Score** pos-venda | HubSpot | Não | Zero CS no sistema |
+| **NPS automatizado** | HubSpot | Não | Sem surveys |
+| **Workflow builder** visual | HubSpot | Não | n8n cobre backend, sem UI |
+| **CS Workspace** | HubSpot | Não | Sem area dedicada a CS |
+| **Revenue forecasting** | Salesforce | Não | Sem forecast, apenas pipeline value simples |
+| **Cross-entity reporting** | Salesforce | Não | Reports single-entity (leads only) |
+| **Win/Loss analysis** | Salesforce | Não | "Perdido" some do Kanban sem análise |
+| **Deal-to-Project bridge** | Monday.com | Não | Sem fluxo pos-fechamento |
+| **Workload view** | ClickUp | Não | Sem gestao de capacidade |
 | **WhatsApp como CRM** | Kommo | Parcial | Disparo existe mas sem CRM conversacional |
-| **Salesbot qualificacao** | Kommo/Pipefy | Nao | Sem AI agent para pre-vendas |
-| **ROI por cliente** | Ekyte | Nao | Sem financeiro |
-| **Producao de agencia** | Ekyte | Nao | Sem gestao de demandas |
-| **Template editor** | HubSpot | Nao | Templates read-only, sem preview |
+| **Salesbot qualificação** | Kommo/Pipefy | Não | Sem AI agent para pre-vendas |
+| **ROI por cliente** | Ekyte | Não | Sem financeiro |
+| **Producao de agencia** | Ekyte | Não | Sem gestao de demandas |
+| **Template editor** | HubSpot | Não | Templates read-only, sem preview |
 | **Global search** | Pipedrive | Sim | Search bar no LeadsPage |
-| **Cadencia multi-step** | HubSpot/Kommo | Nao | Constante definida mas nao implementada |
-| **Export PDF/CSV** | Todos | Nao | Reports sem export |
-| **Filtro por periodo** | Todos | Nao | Tudo e all-time |
+| **Cadencia multi-step** | HubSpot/Kommo | Não | Constante definida mas não implementada |
+| **Export PDF/CSV** | Todos | Não | Reports sem export |
+| **Filtro por período** | Todos | Não | Tudo e all-time |
 
 ### O Que o OUTBILI Faz Melhor Que Muitos CRMs
 
 | Diferencial | Descricao |
 |-------------|-----------|
-| SPICED scoring nativo | Framework de qualificacao avancado com 5 dimensoes ponderadas — a maioria dos CRMs tem lead scoring generico |
-| 8 Travas Hipoteticas | Framework de diagnostico de negocios unico (T1-T8) — nenhum CRM tem isso |
-| Inteligencia de reuniao | Tab Reuniao com roteiro de 5 blocos + sinais positivos/negativos — nao existe em nenhum CRM |
-| Projecao de receita por lead | 3 cenarios (agressivo/moderado/conservador) com timeline — unico |
-| Vulnerabilidades de marketing | 8 cards de fraquezas com impacto financeiro — analise que CRMs nao fazem |
-| Argumentos de venda contextualizados | Objecoes previstas com contra-argumentos e ROI — CRMs nao geram isso |
-| Enrichment automatico | CNPJa + Assertiva + Apify = dados cadastrais, telefones validados, social que CRMs manuais nao tem |
+| SPICED scoring nativo | Framework de qualificação avançado com 5 dimensões ponderadas — a maioria dos CRMs tem lead scoring genérico |
+| 8 Travas Hipotéticas | Framework de diagnóstico de negócios único (T1-T8) — nenhum CRM tem isso |
+| Inteligencia de reuniao | Tab Reuniao com roteiro de 5 blocos + sinais positivos/negativos — não existe em nenhum CRM |
+| Projeção de receita por lead | 3 cenários (agressivo/moderado/conservador) com timeline — único |
+| Vulnerabilidades de marketing | 8 cards de fraquezas com impacto financeiro — análise que CRMs não fazem |
+| Argumentos de venda contextualizados | Objeções previstas com contra-argumentos e ROI — CRMs não geram isso |
+| Enrichment automatico | CNPJa + Assertiva + Apify = dados cadastrais, telefones validados, social que CRMs manuais não tem |
 
 ---
 
-## 6. Codigo Orfao: Features Construidas Mas Nunca Expostas
+## 6. Código Órfão: Features Construídas Mas Nunca Expostas
 
-Estas features **ja existem no codigo** mas nao aparecem em nenhuma interface:
+Estas features **ja existem no código** mas não aparecem em nenhuma interface:
 
 | Constante / Funcao | Arquivo | O que faz | Como expor |
 |---------------------|---------|-----------|-----------|
-| `CADENCE_DEFAULT_DAYS` = [0,3,7,10,14] | `constants.ts` | Define cadencia D+0, D+3, D+7, D+10, D+14 | Implementar wizard de cadencia multi-step no CampaignsPage |
+| `CADENCE_DEFAULT_DAYS` = [0,3,7,10,14] | `constants.ts` | Define cadência D+0, D+3, D+7, D+10, D+14 | Implementar wizard de cadência multi-step no CampaignsPage |
 | `getDaySegment()` | `constants.ts` | Retorna segmento do dia (Seg=Estetica, Ter=Odonto...) | Mostrar banner "Segmento do dia: Estetica" no Dashboard e SearchPage |
 | `SEGMENTS[].subSegments` | `constants.ts` | Sub-segmentos (Odonto → Ortodontia, Implantes...) | Usar como filtro secundario ou sugestao de keywords na busca |
 | `TRAPS` (T1-T8) como filtro | `constants.ts` | 8 tipos de trava hipotetica | Adicionar filtro "Trava" no LeadsPage |
-| `eligibilityChecklist` | `types/index.ts` | Checklist de eligibilidade do lead | Renderizar no CompanyPage como pre-requisito para qualificacao |
+| `eligibilityChecklist` | `types/index.ts` | Checklist de eligibilidade do lead | Renderizar no CompanyPage como pre-requisito para qualificação |
 | `discoveryQuestions` | `types/index.ts` | Perguntas de descoberta geradas por AI | Ja aparecem na TabReuniao, mas poderiam ter destaque proprio |
 
 ---
@@ -339,7 +339,7 @@ Estas features **ja existem no codigo** mas nao aparecem em nenhuma interface:
      │  P0-1 Fix phone      │   P1-4 Drag-n-drop   │
      │  P0-2 Fix agendar    │   Cadencia multi-step │
      │  P0-3 Fix navigate   │   Health Score CS     │
-     │  P1-1 Status dropdown│   Filtro por periodo  │
+     │  P1-1 Status dropdown│   Filtro por período  │
      │  P1-2 Mobile reports │   Export PDF/CSV      │
      │  P1-3 Text search    │   Pipeline velocity   │
      │  P1-5 Fix CNPJ       │   Win/Loss analysis   │
@@ -366,7 +366,7 @@ BAIXO ──────────────────────┼─�
 
 ---
 
-## 8. Roadmap de Correcao Sugerido
+## 8. Roadmap de Correção Sugerido
 
 ### Sprint 1: Desbloqueio (P0 + Quick Wins)
 
@@ -376,7 +376,7 @@ BAIXO ──────────────────────┼─�
 |---|------|------|---------|--------|
 | 1 | Fix placeholder phone no CampaignsPage | Bug P0 | 2h | Pendente |
 | 2 | Fix botao "Agendar reuniao" no Dashboard | Bug P0 | 1h | Pendente |
-| 3 | Fix navegacao "Ver leads" no SearchPage | Bug P0 | 15min | Pendente |
+| 3 | Fix navegação "Ver leads" no SearchPage | Bug P0 | 15min | Pendente |
 | 4 | ~~Fix CNPJ descartado no SearchPage~~ | Bug P1 | 30min | DONE |
 | 5 | ~~Adicionar dropdown status/temp no CompanyPage~~ | Feature P1 | 3h | DONE |
 | 6 | ~~Adicionar Reports no BottomNav mobile~~ | Fix P1 | 1h | DONE |
@@ -398,7 +398,7 @@ BAIXO ──────────────────────┼─�
 |---|------|---------|
 | 1 | Kanban drag-and-drop com PATCH de status | 8h |
 | 2 | Preview de template no wizard de campanha | 4h |
-| 3 | Filtro por periodo (data) no ReportsPage | 6h |
+| 3 | Filtro por período (data) no ReportsPage | 6h |
 | 4 | KPI cards clicaveis (drill-down para leads filtrados) | 3h |
 | 5 | Barras do pipeline chart clicaveis | 2h |
 | 6 | Navegacao prev/next entre leads no CompanyPage | 3h |
@@ -413,9 +413,9 @@ BAIXO ──────────────────────┼─�
 
 | # | Item | Esforco |
 |---|------|---------|
-| 1 | Wizard de cadencia multi-step (usar CADENCE_DEFAULT_DAYS) | 12h |
+| 1 | Wizard de cadência multi-step (usar CADENCE_DEFAULT_DAYS) | 12h |
 | 2 | Validacao de telefone por lead antes do envio | 4h |
-| 3 | Refresh real-time de metricas durante envio | 4h |
+| 3 | Refresh real-time de métricas durante envio | 4h |
 | 4 | Duplicar campanha | 2h |
 | 5 | Editar rascunho de campanha | 4h |
 | 6 | Export de relatorios (PDF/CSV) | 8h |
@@ -424,7 +424,7 @@ BAIXO ──────────────────────┼─�
 
 ### Sprint 4: Customer Success (v2.0)
 
-**Meta:** Ciclo pos-venda com health score e retencao.
+**Meta:** Ciclo pos-venda com health score e retenção.
 
 | # | Item | Esforco |
 |---|------|---------|
@@ -439,13 +439,13 @@ BAIXO ──────────────────────┼─�
 
 ---
 
-## Apendice A: Checklist de Validacao Pos-Fix
+## Apêndice A: Checklist de Validacao Pos-Fix
 
 Usar apos cada sprint para validar correcoes:
 
 ### Sprint 1 Validation
 
-- [ ] Campanha WhatsApp chega no numero real do decisor
+- [ ] Campanha WhatsApp chega no número real do decisor
 - [ ] Botao "Agendar reuniao" redireciona corretamente
 - [ ] "Ver leads" usa React Router sem reload
 - [ ] CNPJ salvo no Airtable ao criar lead especifico
@@ -468,7 +468,7 @@ Usar apos cada sprint para validar correcoes:
 
 ---
 
-## Apendice B: Arquivos Impactados por Correcao
+## Apêndice B: Arquivos Impactados por Correção
 
 | Fix | Arquivo(s) |
 |-----|-----------|
@@ -488,7 +488,7 @@ Usar apos cada sprint para validar correcoes:
 ---
 
 *Gap Analysis executado por Atlas (CRM Master) + Orion (AIOX Master) — 2026-03-27*
-*Benchmarking: 13 plataformas | Codigo: 30+ arquivos analisados | Live: v4bilinski.github.io/outbili*
+*Benchmarking: 13 plataformas | Código: 30+ arquivos analisados | Live: v4bilinski.github.io/outbili*
 
 
 ---

@@ -58,7 +58,7 @@ src/
     SearchPage        # Pesquisa em massa + cadastro manual + upload
     CampaignsPage     # Cadências WhatsApp
     ReportsPage       # Relatórios
-    AdminPage         # Administração (3 tabs: Atividades, Usuarios, Enriquecimento)
+    AdminPage         # Administração (3 tabs: Atividades, Usuários, Enriquecimento)
     SettingsPage      # Configurações
     LoginPage         # Autenticação (Users table + useAuth hook)
   components/
@@ -116,7 +116,7 @@ npm run preview   # Preview do build local
 - Seguir padrões existentes no codebase (nomes, estrutura, estilos)
 - Componentes usam Tailwind CSS com classes utilitárias
 - Tema escuro (dark-first), cores via variáveis CSS em `globals.css`
-- Sem emojis no codigo a menos que o usuário peça
+- Sem emojis no código a menos que o usuário peça
 
 ### Git
 - Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`
@@ -129,13 +129,19 @@ npm run preview   # Preview do build local
 - Hooks em `src/hooks/` usam React Query para cache e mutations
 - **10 tabelas:** Leads, Contacts, Campaigns, Messages, Activities, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog
 - Campo `temperature` no código mapeia para `temperatura` no Airtable (via FIELD_TO_AIRTABLE)
-- **CRITICO — Contacts table:** campo `phone` NAO existe. Usar `whatsapp` para telefones. Campos disponiveis: `whatsappConfirmed`, `phoneIsHot`, `source`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`
-- **CRITICO — rfPhone:** deve conter o MELHOR telefone disponivel (prioridade: WhatsApp celular > fixo). Assertiva sempre atualiza rfPhone quando encontra WhatsApp validado
+- **CRÍTICO — Contacts table:** campo `phone` NÃO existe. Usar `whatsapp` para telefones. Campos disponíveis: `whatsappConfirmed`, `phoneIsHot`, `source`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`
+- **CRÍTICO — rfPhone:** deve conter o MELHOR telefone disponível (prioridade: WhatsApp celular > fixo). Assertiva sempre atualiza rfPhone quando encontra WhatsApp validado
+
+### Idioma e ortografia
+- **Obrigatório:** todo texto produzido (documentação, comentários, copys, mensagens de erro) deve ser em **português do Brasil (pt-BR)** com acentuação correta
+- Termos técnicos e identificadores de código (nomes de variáveis, campos, funções) permanecem em inglês
+- Labels do sistema: português com acentos (ex: "Configurações", "Relatórios", "Usuários")
+- Documentos do projeto: português com acentuação completa, nunca sem acentos
 
 ### Enriquecimento de leads
 - Pipeline em 3 fases: CNPJa (cadastral central) → Assertiva (telefones/WhatsApp) → Apify (social/digital)
 - Fluxo de status: `none` → `cnpja` → `assertiva` → `complete`
-- **Prioridade de dados:** decisor (nome) + WhatsApp/telefone sao campos obrigatorios
+- **Prioridade de dados:** decisor (nome) + WhatsApp/telefone são campos obrigatórios
 - **Prioridade de telefone:** Assertiva WhatsApp validado > CNPJa celular (MOBILE) > CNPJa fixo (LANDLINE)
 - **Assertiva employees:** `_quantidadeFuncionarios` SEMPRE sobrescreve estimate CNPJa (dado real RAIS/CAGED)
 - Lógica em `src/services/enrichmentService.ts` e `src/hooks/useLeadEnrichment.ts`
@@ -144,7 +150,7 @@ npm run preview   # Preview do build local
 - Diagnóstico via `leadNeedsReEnrich()` helper
 - Upload de arquivos (CSV, Excel, PDF, TXT, MD) via `src/lib/file-parser.ts`
 - **PESCA pipeline:** frontend chama CNPJa diretamente (searchOfficesPaginated), salva no Airtable, depois enriquece via Assertiva em batch
-- **Assertiva proxy:** Worker Cloudflare (primario) → n8n webhook (fallback). Ambos tratam CORS server-side
+- **Assertiva proxy:** Worker Cloudflare (primário) → n8n webhook (fallback). Ambos tratam CORS server-side
 
 ---
 
@@ -164,10 +170,10 @@ Para tarefas que envolvam agentes, workflows ou padrões do framework AIOX, cons
 6. **Campanhas WhatsApp** — cadências outbound com tracking via BilinskiZap, KPIs contextuais
 7. **Mensagens** — inbox WhatsApp integrado (sidebar: "Mensagens", mobile: "Msgs")
 8. **Dashboard** — KPIs com micro-narrativas, temperatura com hints de ação, ações rápidas orientadas
-9. **Relatorios** — métricas com benchmarks, projeções com fórmulas explícitas, recomendações condicionais
+9. **Relatórios** — métricas com benchmarks, projeções com fórmulas explícitas, recomendações condicionais
 10. **Re-enriquecimento** — batch re-enrichment com diagnóstico (AdminPage > tab Enriquecimento)
 11. **Autenticação** — login com Users table, useAuth hook, proteção de rotas
-12. **Administração** — AdminPage com 3 tabs: Atividades, Usuarios, Enriquecimento
+12. **Administração** — AdminPage com 3 tabs: Atividades, Usuários, Enriquecimento
 
 ---
 
@@ -201,7 +207,7 @@ Padrões definidos pela auditoria Copy Squad (2026-04-14). Para novas telas ou c
 - Números com contexto: Score 4.2 → "Lead qualificado"
 - Taxas com benchmark: 15% → "abaixo do benchmark (30%)"
 - Valores monetários com fórmula: "Baseado em 10-15% do faturamento anual"
-- Enrichment legivel: "Enriquecido", "Processando...", "Dados completos"
+- Enrichment legível: "Enriquecido", "Processando...", "Dados completos"
 
 ### Tooltips educativos
 - Termos técnicos (SPICED, Tier, WTP, Trava) com `title` explicativo

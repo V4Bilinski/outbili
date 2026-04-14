@@ -1,9 +1,24 @@
-# Airtable: Formulas, Rollups e Views
+# Airtable: Formulas, Rollups, Views e Schema
 
 Campos computados e views que devem ser criados manualmente na interface do Airtable
-(a API MCP nao suporta criacao de formulas/rollups).
+(a API MCP nao suporta criação de formulas/rollups).
 
 Base ID: `appKh4qQ5JN94dQHv`
+**Total de tabelas:** 10
+
+| # | Tabela | Descrição |
+|---|--------|-----------|
+| 1 | Leads | Empresas prospectadas — dados cadastrais, SPICED, enrichment |
+| 2 | Contacts | Decisores e stakeholders vinculados a leads |
+| 3 | Campaigns | Campanhas WhatsApp via BilinskiZap |
+| 4 | Activities | Atividades de vendas (ligacoes, emails, reunioes) |
+| 5 | Messages | Mensagens WhatsApp trocadas |
+| 6 | Segments | Segmentos de mercado (CNAE) |
+| 7 | Users | Usuarios do sistema (auth, roles) |
+| 8 | ActivityLog | Audit trail de acoes no sistema |
+| 9 | Partners | Socios (QSA) extraidos do CNPJa |
+| 10 | Trademarks | Marcas registradas (INPI) |
+| 11 | EnrichmentLog | Log de etapas de enriquecimento |
 
 ---
 
@@ -17,7 +32,7 @@ Base ID: `appKh4qQ5JN94dQHv`
 ### displayName
 - **Tipo:** Formula (text)
 - **Formula:** `IF(tradeName, tradeName, companyName)`
-- **Uso:** Nome de exibicao (fantasia se existir, senao razao social)
+- **Uso:** Nome de exibição (fantasia se existir, senao razao social)
 
 ### isHot
 - **Tipo:** Formula (checkbox)
@@ -27,12 +42,12 @@ Base ID: `appKh4qQ5JN94dQHv`
 ### daysSinceCreation
 - **Tipo:** Formula (number)
 - **Formula:** `DATETIME_DIFF(NOW(), CREATED_TIME(), 'days')`
-- **Uso:** Dias desde a criacao do lead
+- **Uso:** Dias desde a criação do lead
 
 ### hasWhatsApp
 - **Tipo:** Formula (checkbox)
 - **Formula:** `IF(LEN(rfPhone & "") > 0, TRUE(), FALSE())`
-- **Uso:** Lead tem telefone cadastrado
+- **Uso:** Lead tem telefone cadastrado (rfPhone salva whatsapp || phone, preferencia celular)
 
 ---
 
@@ -41,19 +56,19 @@ Base ID: `appKh4qQ5JN94dQHv`
 ### contactCount
 - **Tipo:** Rollup
 - **Campo linked:** Contacts (fldnZlX11hgBEfC1R)
-- **Agregacao:** COUNTA(values)
+- **Agregação:** COUNTA(values)
 - **Uso:** Quantidade de contatos vinculados
 
 ### partnerCount
 - **Tipo:** Rollup
 - **Campo linked:** Socios (fldTwRjyo9O6jiDko)
-- **Agregacao:** COUNTA(values)
+- **Agregação:** COUNTA(values)
 - **Uso:** Quantidade de socios
 
 ### enrichmentStepCount
 - **Tipo:** Rollup
 - **Campo linked:** LogEnriquecimento (fldsu0CFSwa2UZBgq)
-- **Agregacao:** COUNTA(values)
+- **Agregação:** COUNTA(values)
 - **Uso:** Quantidade de etapas de enriquecimento executadas
 
 ---
@@ -82,7 +97,7 @@ Base ID: `appKh4qQ5JN94dQHv`
 |------|--------|-----------|-----|
 | Hot Leads | temperatura = "Quente" | score DESC | Dashboard |
 | Pending Enrichment | enrichmentStatus != "complete" | CREATED_TIME DESC | Fila de enriquecimento |
-| By Segment | Group by: segment | companyName ASC | Analise por segmento |
+| By Segment | Group by: segment | companyName ASC | Análise por segmento |
 | High Score | score >= 4 | score DESC | Leads prioritarios |
 | Simples Nacional | simplesOptant = true | companyName ASC | Empresas optantes |
 | Matrizes | isHeadquarters = true | companyName ASC | Apenas matrizes |
@@ -94,7 +109,7 @@ Base ID: `appKh4qQ5JN94dQHv`
 | With WhatsApp | whatsapp nao vazio | Targeting campanhas |
 | WhatsApp Confirmed | whatsappConfirmed = true | Contatos validados |
 | Decisors Only | contactType = "decisor" | Lista outreach |
-| By Source | Group by: source | Analise de fontes |
+| By Source | Group by: source | Análise de fontes |
 
 ### Tabela Campaigns
 
@@ -108,6 +123,61 @@ Base ID: `appKh4qQ5JN94dQHv`
 |------|--------|-----|
 | Errors | status = "error" | Monitoramento de falhas |
 | By Source | Group by: source | Análise de cobertura |
+
+### Tabela Users
+
+| View | Filtro | Uso |
+|------|--------|-----|
+| Active Users | status = "active" | Usuarios ativos |
+| By Role | Group by: role | Gestão de permissoes |
+
+### Tabela ActivityLog
+
+| View | Filtro | Uso |
+|------|--------|-----|
+| Recent | — | CREATED_TIME DESC | Ultimas acoes |
+| By User | Group by: userId | Atividade por usuario |
+
+### Tabela Partners
+
+| View | Filtro | Uso |
+|------|--------|-----|
+| Administradores | role contains "Administrador" | Decisores |
+
+---
+
+## Known Field Restrictions (prevenção de erros 422)
+
+**CRITICO:** Campos que NAO existem em determinadas tabelas. Tentar salvar nesses campos causa erro 422 silencioso no Airtable.
+
+### Tabela Contacts — campos que NAO existem
+
+| Campo inexistente | O que usar no lugar | Notas |
+|-------------------|---------------------|-------|
+| `phone` | `whatsapp` | A tabela usa `whatsapp` para numero de telefone |
+| `assertivaPhoneValidated` | `whatsappConfirmed` (checkbox) | Flag de telefone validado |
+| `assertivaWhatsappValidated` | `whatsappConfirmed` (checkbox) | Mesmo campo que phone validated |
+
+### Tabela Contacts — campos que EXISTEM
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `whatsapp` | Single line text | Numero de telefone/WhatsApp |
+| `whatsappConfirmed` | Checkbox | WhatsApp confirmado pela Assertiva |
+| `phoneIsHot` | Checkbox | Telefone validado e ativo |
+| `source` | Single select | Fonte do contato (cnpja, assertiva, manual) |
+| `email` | Email | Email do contato |
+| `name` | Single line text | Nome do contato |
+| `role` | Single line text | Cargo |
+| `contactType` | Single select | Tipo (decisor, stakeholder, influenciador) |
+
+### Tabela Leads — notas de schema
+
+| Campo | Tipo real | Notas |
+|-------|----------|-------|
+| `enrichmentStatus` | Single line text | NAO e singleSelect — e singleLineText |
+| `temperatura` | Single line text | Nome no Airtable para "temperature" (mapeado via FIELD_TO_AIRTABLE no codigo) |
+| `rfPhone` | Single line text | Salva `whatsapp \|\| phone` (preferencia celular). Assertiva atualiza quando encontra WhatsApp |
 
 ---
 

@@ -1,30 +1,30 @@
-# Planejamento Tatico — PESCA v2: Pipeline CNPJa + Assertiva
+# Planejamento Tatico — PESCA v3: Pipeline Frontend-Direto CNPJa + Assertiva
 
 **Preparado por:** Luiz Henrique | **Para:** Thiago Bilinski
-**Data:** 07/04/2026 | **Projeto:** OUTBILI — Sistema de Prospeccao Outbound
-**Versao:** 2.0 — Pipeline Automatizada CNPJa + Assertiva
+**Data:** 14/04/2026 | **Projeto:** OUTBILI — Sistema de Prospecção Outbound
+**Versao:** 3.0 — Pipeline Frontend-Direto CNPJa + Assertiva (sem n8n para PESCA)
 
 ---
 
-## 1. Contexto e Decisao
+## 1. Contexto e Decisão
 
 ### Problema original
 
 A feature PESCA do OUTBILI dependia da Casa dos Dados API para descoberta em massa de empresas por filtros (CNAE, estado, porte). Essa API foi bloqueada pelo Cloudflare, forçando o uso de um workaround fragil via Apify Web Scraper (browser headless). O enriquecimento de dados usava APIs publicas gratuitas (OpenCNPJ, BrasilAPI, ReceitaWS) que retornam dados limitados:
 
-| Limitacao das APIs gratuitas | Impacto |
+| Limitação das APIs gratuitas | Impacto |
 |------------------------------|---------|
 | Telefones apenas da Receita Federal | Muitos desatualizados, sem flag WhatsApp |
-| Sem validacao de email | Emails genericos (info@, contato@) |
+| Sem validação de email | Emails genericos (info@, contato@) |
 | Sem dados comportamentais | Impossivel qualificar decisor |
 | Sem score de credito | Sem priorizacao por saude financeira |
 | Rate limits severos | ReceitaWS: 3 req/min |
 
-### Decisao tomada
+### Decisão tomada
 
 Contratar duas ferramentas pagas com APIs robustas:
 
-| Ferramenta | Funcao | Plano |
+| Ferramenta | Função | Plano |
 |-----------|--------|-------|
 | **CNPJa** (cnpja.com) | Descoberta em massa — busca por CNAE, estado, capital, porte com 50+ filtros | Pago (10.000 creditos/mes) |
 | **Assertiva Localize** (assertiva.com.br) | Enriquecimento profundo — telefones validados, WhatsApp, email, renda, score | Pago (conforme tier contratado) |
@@ -44,7 +44,7 @@ Pipeline 100% automatizada dentro do OUTBILI:
 
 ## 2. Arquitetura da Pipeline Completa
 
-### Fluxo principal
+### Fluxo principal (v3 — Frontend direto, sem n8n para PESCA)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -53,81 +53,68 @@ Pipeline 100% automatizada dentro do OUTBILI:
 │  Pesquisa → aba PESCA → [Segmento] [Estado] [Capital] [Excluir MEI]    │
 │                           ↓ clique "PESCAR 100+ Leads"                  │
 │                           ↓                                              │
-│  Fase 1: "Buscando empresas..." (3-5 segundos)                          │
-│  Fase 2: "Salvando leads..." (10-15 segundos)                           │
-│  Fase 3: "Enriquecendo dados..." (assincrono, 20-60 segundos)          │
+│  Fase 1: CNPJa searchOffice (direto do frontend, 3-5 segundos)          │
+│  Fase 2: mapCnpjaToLead + salvar Airtable (10-15 segundos)             │
+│  Fase 3: Assertiva via Worker proxy (assincrono, 20-60 segundos)        │
 │                           ↓                                              │
 │  Painel: 100 leads | badge ASSERTIVA nos enriquecidos | filtros         │
 └─────────────────────────┬───────────────────────────────────────────────┘
-                          │ POST /outbili-pesca
+                          │ GET api.cnpja.com/office/search (direto)
                           ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ n8n — WORKFLOW 1: PESCA-CNPJA (sincrono, ~16 nos)                       │
+│ CNPJa API (chamada direta do frontend)                                  │
 │                                                                         │
-│  1. Webhook recebe filtros                                              │
-│  2. Valida e mapeia CNAE codes                                          │
-│  3. Monta query params CNPJa                                            │
-│  4. GET https://api.cnpja.com/office/search                             │
-│  5. Processa resultados (CNPJ, QSA, telefones, capital)                │
-│  6. Paginacao se necessario                                             │
-│  7. Extrai decisor + classifica telefones                               │
-│  8. Deduplica contra Airtable existente                                 │
-│  9. Salva Leads no Airtable [enrichmentStatus: 'basic']                │
-│ 10. Salva Contacts no Airtable                                         │
-│ 11. Dispara Workflow 2 (fire-and-forget)                                │
-│ 12. Responde ao frontend com resultados                                 │
+│  1. Frontend monta query params CNPJa (CNAE, estado, capital)           │
+│  2. GET https://api.cnpja.com/office/search                             │
+│  3. Resultados mapeados via mapCnpjaToLead()                            │
+│  4. Extrai decisor do QSA + classifica telefones                        │
+│  5. Deduplica contra Airtable existente                                 │
+│  6. Salva Leads no Airtable [enrichmentStatus: 'cnpja']                │
+│  7. Salva Contacts (SEM campo 'phone' — usa 'whatsapp')                │
+│  8. rfPhone salva whatsapp || phone (preferencia celular)               │
 └─────────────────────────┬───────────────────────────────────────────────┘
-                          │ Trigger assincrono
+                          │ Assertiva enriquecimento
                           ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ n8n — WORKFLOW 2: ASSERTIVA-ENRICH (assincrono, ~12 nos)                │
+│ Assertiva Localize (Worker proxy primario | n8n webhook fallback)       │
 │                                                                         │
-│  1. Recebe lista de lead IDs recem-criados                              │
-│  2. Obtem OAuth2 token da Assertiva                                     │
-│  3. Para cada batch de 10 leads:                                        │
-│     a. Busca dados do lead no Airtable (CNPJ + partners)               │
-│     b. POST Assertiva /localize CNPJ (dados empresa)                   │
-│     c. POST Assertiva /localize CPF do decisor (telefone, WhatsApp)    │
-│     d. Merge dados CNPJa + Assertiva                                   │
-│     e. PATCH Lead no Airtable [enrichmentStatus: 'enriched']           │
-│     f. PATCH Contact no Airtable (telefone/WhatsApp validados)         │
-│  4. Wait 1s entre batches (rate limiting)                               │
+│  1. Worker proxy obtem OAuth2 token                                     │
+│  2. Localize CNPJ → dados empresa                                       │
+│  3. Localize CPF decisor → telefones validados, WhatsApp                │
+│  4. _quantidadeFuncionarios SEMPRE sobrescreve estimativa CNPJa         │
+│  5. PATCH Lead: rfPhone, employees, enrichmentStatus → 'assertiva'     │
+│  6. PATCH Contact: whatsappConfirmed, phoneIsHot                        │
+│     (NAO usar assertivaPhoneValidated/assertivaWhatsappValidated)       │
+│  7. Se Worker falha → fallback para VITE_N8N_ASSERTIVA_PROXY            │
 └─────────────────────────┬───────────────────────────────────────────────┘
                           │ Airtable atualizado
                           ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Airtable                                                                │
+│ Airtable (10 tabelas)                                                   │
 │                                                                         │
 │  Tabela Leads: CNPJ + dados CNPJa + dados Assertiva                   │
-│    enrichmentStatus: 'basic' → 'enriched'                              │
-│  Tabela Contacts: decisor com telefone/WhatsApp validado                │
-└─────────────────────────┬───────────────────────────────────────────────┘
-                          │ React Query polling (5s interval)
-                          ↓
-┌─────────────────────────────────────────────────────────────────────────┐
-│ OUTBILI Frontend — Atualizacao em tempo real                            │
-│                                                                         │
-│  Leads com enrichmentStatus 'cnpja': badge 'Processando...' (dados CNPJá visíveis)              │
-│  Leads com enrichmentStatus 'complete': badge 'Dados completos' + todos dados  │
-│  Polling para automaticamente quando todos estão 'complete'            │
+│    enrichmentStatus: 'none' → 'cnpja' → 'assertiva' → 'complete'      │
+│  Tabela Contacts: decisor com whatsapp, whatsappConfirmed, phoneIsHot   │
+│    NOTA: tabela Contacts NAO tem campo 'phone' (apenas 'whatsapp')     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Por que dois workflows separados?
+### Por que frontend direto (v3) ao inves de n8n (v2)?
 
-| Fator | Workflow unico (sincrono) | Dois workflows (assincrono) |
-|-------|--------------------------|----------------------------|
-| **Tempo de resposta** | 60-120s (usuario espera) | 3-5s (resposta imediata) |
-| **Timeout risk** | Alto (n8n webhook 600s max) | Zero (WF2 roda independente) |
-| **UX** | Tela travada ate completar | Resultados parciais imediatos |
-| **Resiliencia** | Falha Assertiva = falha total | Falha Assertiva = dados basicos mantidos |
-| **Escolha** | — | **Este** |
+| Fator | v2 (n8n workflows) | v3 (frontend direto) |
+|-------|-------------------|----------------------|
+| **Complexidade** | 2 workflows n8n, 28 nos total | 0 workflows, tudo em enrichmentService.ts |
+| **Debugging** | Logs dispersos no n8n | Console do browser + error logging detalhado |
+| **Deploy** | Depende de n8n server online | Funciona com GitHub Pages (static) |
+| **Latencia** | Frontend → n8n → CNPJa → n8n → Airtable | Frontend → CNPJa → Airtable (direto) |
+| **Assertiva fallback** | Apenas n8n | Worker proxy (primario) + n8n (fallback) |
+| **Re-enrichment** | Nao existia | reEnrichLead() batch com diagnostico |
 
 ---
 
-## 3. CNPJa — Integracao Tecnica
+## 3. CNPJa — Integração Tecnica
 
-### Autenticacao
+### Autenticação
 
 ```
 Authorization: 92a03e40-6718-4400-af64-4637043fe1ff-f894c2a6-f148-4b45-8714-936f25b58017
@@ -152,7 +139,7 @@ GET https://api.cnpja.com/office/search
 | Excluir MEI | `company.simpilesNacional.mei.eq` | `company.simplesNacional.mei.eq=false` |
 | Limite por pagina | `limit` | `limit=100` |
 
-**Nota:** Os codigos CNAE no OUTBILI usam formato com hifen (`9602-5/01`), mas o CNPJa espera formato numerico puro (`9602501`). A conversao e feita removendo hifens e barras do mapeamento em `src/lib/cnae-mapping.ts`.
+**Nota:** Os codigos CNAE no OUTBILI usam formato com hifen (`9602-5/01`), mas o CNPJa espera formato numerico puro (`9602501`). A conversão e feita removendo hifens e barras do mapeamento em `src/lib/cnae-mapping.ts`.
 
 ### Formato CNAE: OUTBILI → CNPJa
 
@@ -236,9 +223,9 @@ GET https://api.cnpja.com/office/search
 
 ---
 
-## 4. Assertiva Localize — Integracao Tecnica
+## 4. Assertiva Localize — Integração Tecnica
 
-### Autenticacao (OAuth2)
+### Autenticação (OAuth2)
 
 ```
 POST https://integracao.assertivasolucoes.com.br/oauth2/token
@@ -315,7 +302,7 @@ Retorna (conforme tier contratado):
 | CPF | `/localize/cpf/{cpf}` | Dados decisor — quando CPF disponivel no QSA |
 | Telefone | `/localize/telefone/{phone}` | Reverso — quando tem telefone sem nome |
 | Email | `/localize/email/{email}` | Reverso — quando tem email sem telefone |
-| Nome + Endereco | `/localize/nome` | Fallback — quando nao tem CPF |
+| Nome + Endereco | `/localize/nome` | Fallback — quando não tem CPF |
 
 ### Rate limiting e batching
 
@@ -346,81 +333,74 @@ Retorna (conforme tier contratado):
 | `assertiva_enrich_date` | Date | Sistema | Data/hora do enriquecimento Assertiva |
 | `assertiva_tier` | Single select | Sistema | Tier usado: Identificacao / Conexoes / Estrategico |
 
-### Tabela Contacts — 3 campos novos
+### Tabela Contacts — campos reais (ATENCAO: restricoes)
 
 | Campo | Tipo Airtable | Descricao |
 |-------|--------------|-----------|
-| `assertiva_phone_validated` | Checkbox | Telefone confirmado pela Assertiva |
-| `assertiva_whatsapp_validated` | Checkbox | WhatsApp confirmado pela Assertiva |
-| `assertiva_email_validated` | Checkbox | Email confirmado pela Assertiva |
+| `whatsappConfirmed` | Checkbox | WhatsApp confirmado pela Assertiva |
+| `phoneIsHot` | Checkbox | Telefone validado e ativo |
+| `source` | Single select | Fonte do contato |
+
+**CRITICO:** A tabela Contacts NAO tem os seguintes campos:
+- `phone` — NAO existe (usar `whatsapp` para numero de telefone)
+- `assertivaPhoneValidated` — NAO existe (usar `whatsappConfirmed`)
+- `assertivaWhatsappValidated` — NAO existe (usar `whatsappConfirmed`)
 
 ### Campo existente atualizado
 
 | Campo | Antes | Depois |
 |-------|-------|--------|
-| `enrichmentStatus` | `'none' \| 'basic' \| 'pending' \| 'complete'` | `'none' \| 'basic' \| 'enriched' \| 'pending' \| 'complete'` |
+| `enrichmentStatus` | `'none' \| 'basic' \| 'pending' \| 'complete'` | `'none' \| 'cnpja' \| 'assertiva' \| 'complete'` |
 
-O valor `'enriched'` indica que o lead passou pelo enriquecimento Assertiva. O valor `'complete'` continua indicando enriquecimento total (Assertiva + Google Maps + Instagram, quando aplicavel).
+Fluxo: `none` → `cnpja` (dados cadastrais CNPJa) → `assertiva` (telefones validados) → `complete` (todos os dados incluindo Apify/social).
 
 ---
 
-## 6. Workflows n8n — Especificacao Detalhada
+## 6. Implementação Frontend — Especificacao Tecnica
 
-### Workflow 1: PESCA-CNPJA (sincrono — responde ao frontend)
+> **NOTA v3:** Os workflows n8n 1 (PESCA-CNPJA) e 2 (ASSERTIVA-ENRICH) da v2 foram SUBSTITUIDOS
+> por codigo frontend direto em `enrichmentService.ts`. O n8n agora e usado apenas como
+> fallback para Assertiva (`VITE_N8N_ASSERTIVA_PROXY`).
 
-**Trigger:** `POST /outbili-pesca`
-**Tempo de execucao:** 10-30 segundos (dependendo do volume)
-**Substitui:** Workflow atual que usa Apify + Casa dos Dados + OpenCNPJ
+### enrichmentService.ts — Funcoes principais
 
-| No | Nome | Tipo | Descricao |
-|----|------|------|-----------|
-| 1 | Webhook PESCA | Webhook | Recebe `{ cnaeCodes, states, capitalMin, capitalMax, excludeMei, targetCount }` |
-| 2 | Validar Filtros | Code | Valida campos obrigatorios, normaliza CNAE codes (remove hifens/barras) |
-| 3 | Montar Query CNPJa | Code | Constroi URL com query params: `mainActivity.id.in[]`, `address.state.in[]`, etc. |
-| 4 | HTTP GET CNPJa | HTTP Request | `GET https://api.cnpja.com/office/search?{params}` com header `Authorization: {API_KEY}` |
-| 5 | Processar Resultados | Code | Mapeia schema CNPJa → CnpjRecord (taxId → cnpj, company.members → qsa, phones → telefones) |
-| 6 | Mais Resultados? | IF | Se `count < targetCount` E existe `nextPage`, continuar paginacao |
-| 7 | Rate Limit | Wait | 0.5 segundos entre paginas (respeitar rate limit do plano) |
-| 8 | Extrair Decisor | Code | Percorre `company.members[]`, busca role "Administrador/Diretor/Presidente", extrai nome + CPF. Classifica telefones: celular (9 digito) = WhatsApp potencial |
-| 9 | Deduplicar Airtable | Code | Busca CNPJs existentes na tabela Leads, remove duplicatas do batch |
-| 10 | SplitInBatches | SplitInBatches | Divide em grupos de 10 (limite batch Airtable) |
-| 11 | Salvar Lead | HTTP Request | `POST https://api.airtable.com/v0/{baseId}/Leads` com `enrichmentStatus: 'basic'` |
-| 12 | Salvar Contact | HTTP Request | `POST https://api.airtable.com/v0/{baseId}/Contacts` vinculado ao Lead |
-| 13 | Wait Batch | Wait | 0.2 segundos (rate limit Airtable: 5 req/s) |
-| 14 | Aggregator | Merge | Consolida todos os resultados salvos |
-| 15 | Disparar Assertiva | HTTP Request | `POST /outbili-assertiva-enrich` com `{ leadIds: [...] }` — fire-and-forget |
-| 16 | Responder | Respond to Webhook | `{ success: true, leadsCreated: N, searchId: "..." }` |
+| Função | Descricao |
+|--------|-----------|
+| `searchOffice()` | GET CNPJa /office/search — busca por CNAE, estado, capital |
+| `mapCnpjaToLead()` | Converte schema CNPJa → Lead (taxId → cnpj, company.members → socios) |
+| `enrichWithAssertiva()` | Worker proxy (primario) ou n8n webhook (fallback) para Assertiva |
+| `reEnrichLead()` | Re-enriquecimento leve: CNPJa + Assertiva only, force-writes campos |
+| `leadNeedsReEnrich()` | Diagnostico: identifica leads com dados faltantes |
 
-### Workflow 2: ASSERTIVA-ENRICH (assincrono — roda em background)
+### useReEnrichment.ts — Hook de batch
 
-**Trigger:** `POST /outbili-assertiva-enrich` ou Execute Workflow
-**Tempo de execucao:** 20-60 segundos para 100 leads
-**Novo workflow** — nao existe no sistema atual
+| Feature | Detalhe |
+|---------|---------|
+| Concurrency | 2 leads simultaneos |
+| Progress | Tracking com diagnostico por lead |
+| UI | AdminPage > tab Enriquecimento com cards + botoes |
 
-| No | Nome | Tipo | Descricao |
-|----|------|------|-----------|
-| 1 | Trigger | Webhook | Recebe `{ leadIds: ["recXXX", "recYYY", ...] }` |
-| 2 | OAuth Token | HTTP Request | `POST /oauth2/token` com client_id + client_secret → armazena access_token |
-| 3 | SplitInBatches | SplitInBatches | Divide leadIds em grupos de 10 |
-| 4 | Buscar Leads | HTTP Request | `GET Airtable/Leads?filterByFormula=OR(RECORD_ID()='recXXX',...)` → obtem CNPJ + partners JSON |
-| 5 | Assertiva CNPJ | HTTP Request | `GET /v3/localize/cnpj/{cnpj}` com Bearer token → dados empresa |
-| 6 | Assertiva CPF | HTTP Request | `GET /v3/localize/cpf/{cpf_decisor}` com Bearer token → telefones, WhatsApp, email |
-| 7 | Merge Dados | Code | Combina dados CNPJa (ja salvos) + Assertiva (novos). Prioriza Assertiva para telefone/email |
-| 8 | Mapear Campos | Code | Mapeia resposta Assertiva → campos Airtable (assertiva_phone_validated, assertiva_whatsapp_flag, etc.) |
-| 9 | PATCH Lead | HTTP Request | `PATCH Airtable/Leads/{recordId}` — atualiza com dados Assertiva + `enrichmentStatus: 'enriched'` |
-| 10 | PATCH Contact | HTTP Request | `PATCH Airtable/Contacts` — atualiza telefone/WhatsApp/email validados |
-| 11 | Wait | Wait | 1 segundo entre batches (rate limit Assertiva) |
-| 12 | Loop/Done | IF | Se mais batches, volta ao no 4. Senao, finaliza |
+### Bug fixes aplicados (2026-04-14)
 
-### Variaveis de ambiente necessarias no n8n
+| Bug | Root cause | Fix |
+|-----|-----------|-----|
+| 422 Airtable em Contacts | Campo `phone` NAO existe na tabela | Removido do payload de Create Contact |
+| rfPhone vazio | Salvava apenas fixo, ignorava celular | Agora salva `whatsapp \|\| phone` (preferencia celular) |
+| Assertiva não atualiza rfPhone | WhatsApp ia para campo invisivel | Assertiva agora PATCH rfPhone no Lead |
+| Assertiva campos invalidos Contacts | `assertivaPhoneValidated` não existe | Substituido por `whatsappConfirmed`/`phoneIsHot` |
+| Employees ignorava Assertiva | CNPJa ja tinha valor, Assertiva não sobrescrevia | `_quantidadeFuncionarios` SEMPRE sobrescreve |
+
+### Variaveis de ambiente (frontend)
 
 | Variavel | Uso | Onde configurar |
 |----------|-----|-----------------|
-| `CNPJA_API_KEY` | Header Authorization no Workflow 1 | n8n Credentials ou env var |
-| `ASSERTIVA_CLIENT_ID` | OAuth2 token request no Workflow 2 | n8n Credentials ou env var |
-| `ASSERTIVA_CLIENT_SECRET` | OAuth2 token request no Workflow 2 | n8n Credentials ou env var |
-| `AIRTABLE_PAT` | Todas as operacoes Airtable | Ja configurado |
-| `AIRTABLE_BASE_ID` | Todas as operacoes Airtable | Ja configurado |
+| `VITE_CNPJA_API_KEY` | CNPJa API (searchOffice, mapCnpjaToLead) | .env + GitHub Secrets |
+| `VITE_ASSERTIVA_CLIENT_ID` | OAuth2 Assertiva | .env + GitHub Secrets |
+| `VITE_ASSERTIVA_CLIENT_SECRET` | OAuth2 Assertiva | .env + GitHub Secrets |
+| `VITE_ASSERTIVA_WORKER_URL` | Worker proxy Assertiva (primario) | .env + GitHub Secrets |
+| `VITE_N8N_ASSERTIVA_PROXY` | n8n webhook fallback Assertiva | .env + GitHub Secrets |
+| `VITE_AIRTABLE_PAT` | Todas as operacoes Airtable | Ja configurado |
+| `VITE_AIRTABLE_BASE_ID` | Todas as operacoes Airtable | Ja configurado |
 
 ---
 
@@ -491,7 +471,7 @@ type PescaPhase = 'idle' | 'searching' | 'enriching' | 'assertiva_enriching' | '
 | `@data-engineer` | Dara | Schema Airtable (13 campos novos), migracao de dados existentes | PESCA-001 |
 | `@dev` | Dex | Workflows n8n, services TypeScript, hooks React, tipos | PESCA-002 a 007 |
 | `@ux-design-expert` | Uma | Badge Assertiva, loading states, layout da tabela enriquecida | PESCA-007 |
-| `@qa` | Quinn | Testes e2e, mocks de APIs pagas, validacao de pipeline completa | PESCA-008 |
+| `@qa` | Quinn | Testes e2e, mocks de APIs pagas, validação de pipeline completa | PESCA-008 |
 | `@devops` | Gage | Env vars no n8n e GitHub, deploy, push | PESCA-004 |
 | `@sm` | River | Sprint planning, Definition of Done por story, tracking | Planning |
 
@@ -519,7 +499,7 @@ type PescaPhase = 'idle' | 'searching' | 'enriching' | 'assertiva_enriching' | '
   - [ ] 10 campos criados na tabela Leads (assertiva_phone_validated, assertiva_whatsapp_flag, etc.)
   - [ ] 3 campos criados na tabela Contacts (assertiva_phone_validated, assertiva_whatsapp_validated, assertiva_email_validated)
   - [ ] Campo enrichmentStatus atualizado com opcao 'enriched'
-  - [ ] Campos existentes nao foram alterados
+  - [ ] Campos existentes não foram alterados
 - **Bloqueia:** PESCA-002, 003, 005, 006, 007
 - **Dependencia:** Nenhuma
 
@@ -538,7 +518,7 @@ type PescaPhase = 'idle' | 'searching' | 'enriching' | 'assertiva_enriching' | '
 - **Agente:** `@dev`
 - **Descricao:** Refatorar o workflow n8n PESCA para usar CNPJa API em vez de Apify/Casa dos Dados. Substituir nos 3 (query), 4 (Apify), 5 (processar) e 8 (OpenCNPJ) por chamadas diretas ao CNPJa
 - **AC:**
-  - [ ] No 3 monta query params CNPJa (GET, nao POST)
+  - [ ] No 3 monta query params CNPJa (GET, não POST)
   - [ ] No 4 faz HTTP GET para api.cnpja.com/office/search
   - [ ] No 5 mapeia resposta CNPJa → CnpjRecord (taxId → cnpj, company.members → decisor)
   - [ ] No 8 (OpenCNPJ) removido — dados ja vem do CNPJa
@@ -672,7 +652,7 @@ PESCA-004 (Env Vars) ────┼──→ PESCA-005 (WF Assert) ──┤ �
 | Leads qualificados/mes (300/dia) | ~6.600 |
 | Com WhatsApp validado (estimativa 60%) | ~3.960 |
 | Com decisor identificado (estimativa 80%) | ~5.280 |
-| Taxa conversao WhatsApp (5%) | ~198 contatos efetivos |
+| Taxa conversão WhatsApp (5%) | ~198 contatos efetivos |
 | Custo por contato efetivo | < R$ 1,00 |
 
 ---
@@ -682,18 +662,18 @@ PESCA-004 (Env Vars) ────┼──→ PESCA-005 (WF Assert) ──┤ �
 | Risco | Probabilidade | Impacto | Mitigacao |
 |-------|:---:|:---:|-----------|
 | Falha OAuth Assertiva (token expirado) | Media | Medio | Retry automatico no n8n: re-obter token se 401, max 3 tentativas |
-| Lead stuck em 'basic' (Assertiva falhou silencioso) | Media | Baixo | Campo `assertiva_enrich_date` null = nao processado. Cron de reprocessamento diario |
+| Lead stuck em 'basic' (Assertiva falhou silencioso) | Media | Baixo | Campo `assertiva_enrich_date` null = não processado. Cron de reprocessamento diario |
 | Creditos CNPJa esgotados | Muito Baixa | Alto | Alerta no n8n quando consumo > 80%. Cache strategy reduz uso em ~50% |
 | API CNPJa indisponivel | Baixa | Alto | Fallback: enfileirar requests, retry apos 5 minutos. Monitorar status page |
 | API Assertiva indisponivel | Baixa | Medio | Leads mantem status 'basic' (dados CNPJa permanecem validos). Re-tentar no proximo batch |
 | Rate limit excedido (CNPJa ou Assertiva) | Baixa | Baixo | Wait nodes no n8n ja implementados. Se 429, backoff exponencial |
 | Dados desatualizados no CNPJa | Media | Baixo | Usar `CACHE_IF_FRESH` com maxAge=30. Dados RF atualizam mensalmente |
-| CPF do decisor nao disponivel no QSA | Media | Medio | Fallback: consultar Assertiva por CNPJ (retorna socios). Se nao encontrar, marcar lead como `assertiva_tier: 'parcial'` |
+| CPF do decisor não disponivel no QSA | Media | Medio | Fallback: consultar Assertiva por CNPJ (retorna socios). Se não encontrar, marcar lead como `assertiva_tier: 'parcial'` |
 | Custo Assertiva acima do esperado | Baixa | Medio | Monitorar consumo semanal. Limitar tier Estrategico a leads com capital > R$ 500k |
 
 ---
 
-## 12. Cronograma de Implementacao
+## 12. Cronograma de Implementação
 
 ### Sprint 1 — Fundacao (3 dias uteis)
 
@@ -831,6 +811,6 @@ Frontend envia POST para n8n:
 
 ---
 
-*Documento v2.0 — Pipeline automatizada CNPJa + Assertiva*
-*Substitui versao anterior (Econodata + CNPJa para aprovacao)*
-*Proximo passo: @pm criar Epic e @sm criar Stories no AIOX*
+*Documento v3.0 — Pipeline frontend-direto CNPJa + Assertiva (sem n8n para PESCA)*
+*Substitui v2.0 (n8n workflows) e v1.0 (Econodata + APIs gratuitas)*
+*Implementado em producao: 2026-04-14*
