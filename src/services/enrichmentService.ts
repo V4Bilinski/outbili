@@ -3,7 +3,7 @@ import { createContact, getContacts } from './contactService'
 import { generateStrategicAnalysis } from './strategicAnalysisService'
 import { matchBusiness, matchProspects } from '../lib/vibeprospecting'
 import { searchOffice, mapCnpjaToLead, extractPartners } from './cnpjaService'
-import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone } from './assertivaService'
+import { lookupCnpj as assertivaLookupCnpj, lookupCpf as assertivaLookupCpf, getDecisionMakers, extractBestPhone } from './assertivaService'
 import { createPartners } from './partnerService'
 import { logEnrichmentStep } from './enrichmentLogService'
 import type { Lead } from '../types'
@@ -1201,6 +1201,44 @@ export async function enrichLead(
         })
       }
 
+      // Lookup CPF do decisor — renda estimada, cargo, redes sociais pessoais
+      const decisorCpf = assertivaData?.socios?.find((s: any) =>
+        (s.qualificacao || '').toLowerCase().includes('administrador') ||
+        (s.qualificacao || '').toLowerCase().includes('diretor'),
+      )?.cpf || assertivaData?.socios?.[0]?.cpf
+      if (decisorCpf) {
+        try {
+          const cpfData = await assertivaLookupCpf(decisorCpf)
+          // Renda estimada do decisor → proxy de faturamento/capacidade
+          if (cpfData.rendaEstimada && !merged.assertivaIncomeEstimate) {
+            merged.assertivaIncomeEstimate = cpfData.rendaEstimada
+          }
+          // Redes sociais pessoais do decisor (fallback se empresa não tem)
+          if (cpfData.redesSociais) {
+            if (cpfData.redesSociais.instagram && !merged.instagram) {
+              merged.instagram = cpfData.redesSociais.instagram
+            }
+            if (cpfData.redesSociais.facebook && !merged.facebook) {
+              merged.facebook = cpfData.redesSociais.facebook
+            }
+            if (cpfData.redesSociais.linkedin && !merged.linkedin) {
+              merged.linkedin = cpfData.redesSociais.linkedin
+            }
+          }
+          // Telefone pessoal do decisor como fallback
+          if (cpfData.telefones?.length) {
+            const personalPhone = extractBestPhone(cpfData.telefones)
+            if (personalPhone.whatsapp && !merged.rfPhone) {
+              merged.rfPhone = personalPhone.whatsapp
+            }
+          }
+          // Emails pessoais do decisor como fallback
+          if (cpfData.emails?.length && !merged.rfEmail) {
+            merged.rfEmail = cpfData.emails[0].endereco
+          }
+        } catch { /* CPF lookup é complementar, não bloqueia */ }
+      }
+
       const assertivaDetails = [
         assertivaData?.telefones?.length ? `${assertivaData.telefones.length} tel` : null,
         decisores.length ? `${decisores.length} decisor${decisores.length > 1 ? 'es' : ''}` : null,
@@ -1209,6 +1247,8 @@ export async function enrichLead(
         assertivaData?._redesSociais ? 'redes sociais' : null,
         assertivaData?._faturamentoPresumido ? `faturamento R$ ${assertivaData._faturamentoPresumido}` : null,
         assertivaData?._scoreCredito ? `score ${assertivaData._scoreCredito}` : null,
+        decisorCpf ? 'CPF decisor' : null,
+        merged.assertivaIncomeEstimate ? `renda R$ ${Math.round(merged.assertivaIncomeEstimate)}` : null,
       ].filter(Boolean)
       step('assertiva').detail = assertivaDetails.join(' + ') || 'Sem dados'
       step('assertiva').status = 'done'

@@ -212,11 +212,92 @@ export async function getDecisionMakers(cnpj: string, protocolo?: string): Promi
   }
 }
 
-// --- Consulta CPF (telefones pessoais do decisor) ---
+// --- Consulta CPF (dados pessoais do decisor: renda, cargo, telefones, redes sociais) ---
 
-export async function lookupCpf(cpf: string): Promise<any> {
+export interface AssertivaCpfResult {
+  nome?: string
+  cpf: string
+  idade?: number
+  sexo?: string
+  telefones: AssertivaPhone[]
+  emails: Array<{ endereco: string }>
+  redesSociais: AssertivaSocialLinks
+  rendaEstimada?: number
+  faixaSalarial?: string
+  cargoAtual?: string
+  setorAtual?: string
+  participacoesEmpresas: Array<{ cnpj: string; razaoSocial: string; cargo: string }>
+}
+
+export async function lookupCpf(cpf: string): Promise<AssertivaCpfResult> {
   const cleanCpf = cpf.replace(/\D/g, '')
-  return assertivaViaProxy('lookup-cpf', { cpf: cleanCpf })
+  const raw = await assertivaViaProxy<any>('lookup-cpf', { cpf: cleanCpf })
+  const resp = raw.resposta || raw
+  const cadastro = resp.dadosCadastrais || resp.dadosPessoais || {}
+
+  // Telefones pessoais (celulares = moveis na consulta CPF)
+  const moveis = (resp.telefones?.moveis || resp.telefones?.celulares || []).map((t: any) => ({
+    numero: t.numero?.replace(/\D/g, '') || '',
+    tipo: 'celular' as const,
+    operadora: t.operadora,
+    whatsapp: t.aplicativos?.whatsApp || false,
+    hotphone: t.hotphone || false,
+  }))
+  const fixos = (resp.telefones?.fixos || []).map((t: any) => ({
+    numero: t.numero?.replace(/\D/g, '') || '',
+    tipo: 'fixo' as const,
+    operadora: t.operadora,
+    whatsapp: false,
+    hotphone: false,
+  }))
+
+  // Emails pessoais
+  const emails = (resp.emails || []).map((e: any) => ({
+    endereco: e.email || e.endereco || '',
+  }))
+
+  // Redes sociais da pessoa
+  const rawSociais = Array.isArray(resp.redesSociais) ? resp.redesSociais : []
+  const redesSociais: AssertivaSocialLinks = {}
+  for (const rede of rawSociais) {
+    const tipo = (rede.tipo || rede.rede || rede.nome || '').toLowerCase()
+    const url = rede.url || rede.link || rede.perfil || ''
+    if (!url) continue
+    if (tipo.includes('instagram')) redesSociais.instagram = url
+    else if (tipo.includes('facebook')) redesSociais.facebook = url
+    else if (tipo.includes('linkedin')) redesSociais.linkedin = url
+    else if (tipo.includes('twitter') || tipo.includes('x.com')) redesSociais.twitter = url
+  }
+
+  // Historico profissional — renda, cargo, setor (primeiro = mais recente)
+  const historico = resp.possivelHistoricoProfissional || []
+  const maisRecente = historico[0] || null
+  const rendaEstimada = maisRecente?.rendaEstimada ? parseFloat(maisRecente.rendaEstimada) : undefined
+  const faixaSalarial = maisRecente?.faixaSalarial || undefined
+  const cargoAtual = maisRecente?.cboDescricao || undefined
+  const setorAtual = maisRecente?.setor || undefined
+
+  // Participacoes em empresas
+  const participacoes = (resp.participacoesEmpresas || []).map((p: any) => ({
+    cnpj: p.cnpj || '',
+    razaoSocial: p.razaoSocial || '',
+    cargo: p.cargo || '',
+  }))
+
+  return {
+    nome: cadastro.nome,
+    cpf: cleanCpf,
+    idade: cadastro.idade,
+    sexo: cadastro.sexo,
+    telefones: [...moveis, ...fixos],
+    emails,
+    redesSociais,
+    rendaEstimada: rendaEstimada && !isNaN(rendaEstimada) ? rendaEstimada : undefined,
+    faixaSalarial,
+    cargoAtual,
+    setorAtual,
+    participacoesEmpresas: participacoes,
+  }
 }
 
 // --- Consulta telefone (validacao reversa) ---

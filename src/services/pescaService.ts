@@ -335,9 +335,6 @@ export async function enrichBatchWithAssertiva(
 
           leadUpdate.enrichmentStatus = 'assertiva' as any
 
-          // PATCH Lead no Airtable
-          await updateRecords<Lead>('Leads', [{ id: leadId, fields: leadUpdate }])
-
           // Decisores com telefone/WhatsApp — atualizar Contacts
           const protocolo = assertivaData?._protocolo
           if (protocolo) {
@@ -364,6 +361,36 @@ export async function enrichBatchWithAssertiva(
               }
             } catch { /* decisores sao complementares */ }
           }
+
+          // Lookup CPF do decisor — renda estimada, redes sociais pessoais
+          const decisorCpf = leadUpdate.assertivaCpfDecisor || assertivaData?.socios?.[0]?.cpf
+          if (decisorCpf) {
+            try {
+              const cpfData = await lookupCpf(decisorCpf)
+              if (cpfData.rendaEstimada) {
+                leadUpdate.assertivaIncomeEstimate = cpfData.rendaEstimada
+              }
+              if (cpfData.redesSociais) {
+                if (cpfData.redesSociais.instagram && !leadRecord.fields.instagram) {
+                  leadUpdate.instagram = cpfData.redesSociais.instagram
+                }
+                if (cpfData.redesSociais.facebook && !leadRecord.fields.facebook) {
+                  leadUpdate.facebook = cpfData.redesSociais.facebook
+                }
+                if (cpfData.redesSociais.linkedin && !leadRecord.fields.linkedin) {
+                  leadUpdate.linkedin = cpfData.redesSociais.linkedin
+                }
+              }
+              // Telefone pessoal como fallback
+              if (cpfData.telefones?.length && !leadUpdate.rfPhone) {
+                const personalPhone = extractBestPhone(cpfData.telefones)
+                if (personalPhone.whatsapp) leadUpdate.rfPhone = personalPhone.whatsapp
+              }
+            } catch { /* CPF lookup complementar */ }
+          }
+
+          // Atualizar lead com dados do CPF
+          await updateRecords<Lead>('Leads', [{ id: leadId, fields: leadUpdate }])
 
           enrichedCount++
         } catch (err) {
