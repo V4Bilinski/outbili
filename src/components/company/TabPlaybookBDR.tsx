@@ -6,7 +6,7 @@ import { Phone } from 'lucide-react'
 import { WhatsAppIcon } from '../ui/WhatsAppIcon'
 import { LinkedInIcon } from '../ui/LinkedInIcon'
 import { cn } from '../../lib/cn'
-import type { Lead } from '../../types'
+import type { Lead, Contact } from '../../types'
 import { detectTravas, generatePlaybookBDR } from '../../services/strategicAnalysisService'
 
 const CHANNELS = [
@@ -37,10 +37,12 @@ function ScriptCard({ label, text, labelColor, bgColor, borderColor, showCharCou
   )
 }
 
-export function TabPlaybookBDR({ lead }: { lead: Lead }) {
+export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Contact[] }) {
   const [activeChannel, setActiveChannel] = useState('whatsapp')
   const travas = detectTravas(lead)
-  const playbook = generatePlaybookBDR(lead, travas)
+  // Pegar primeiro nome do decisor dos contacts (prioridade) ou partners
+  const decisorContact = contacts?.find(c => c.contactType === 'decisor') || contacts?.[0]
+  const playbook = generatePlaybookBDR(lead, travas, decisorContact?.name)
 
   return (
     <div className="space-y-5">

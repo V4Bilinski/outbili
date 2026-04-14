@@ -613,14 +613,16 @@ export function generateProjecaoCompetitiva(lead: Partial<Lead>): ProjecaoCompet
 // Playbook BDR
 // =============================================
 
-export function generatePlaybookBDR(lead: Partial<Lead>, travas: TravaDetectada[]): PlaybookBDR {
+export function generatePlaybookBDR(lead: Partial<Lead>, travas: TravaDetectada[], decisorName?: string): PlaybookBDR {
   const empresa = lead.companyName || 'a empresa'
   const segmento = lead.segment || 'seu segmento'
   const revenue = lead.monthlyRevenue || 0
   const revenueStr = revenue > 0 ? `R$ ${Math.round(revenue / 1000)}k/mês` : ''
   const trava = travas[0] || { nome: 'Aquisição', codigo: 'T2', impactoEstimado: 'R$ 10k–25k/mês' }
+  // Prioridade: nome passado pelo componente (contacts) > partners JSON > fallback
   const decisor = extractDecisionMaker(lead.partners)
-  const decisorNome = decisor?.nome?.split(' ')[0] || 'responsável'
+  const rawName = decisorName || decisor?.nome || ''
+  const decisorNome = rawName.split(' ')[0] || 'responsável'
 
   const drProduto = lead.tier === 'Medium=' ? { nome: 'DR-E', faixa: 'R$ 350.000/ano', justificativa: `${empresa} opera no tier ${lead.tier} com estrutura para estratégia de longo prazo.` }
     : lead.tier === 'Medium-' ? { nome: 'DR-T', faixa: 'R$ 150.000/ano', justificativa: `${empresa} tem porte para implementação tática com time dedicado.` }

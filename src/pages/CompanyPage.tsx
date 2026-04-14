@@ -698,7 +698,7 @@ export function CompanyPage() {
         {activeTab === 'projecao-competitiva' && <TabProjecaoCompetitiva lead={lead} />}
 
         {/* Tab: Playbook BDR */}
-        {activeTab === 'playbook-bdr' && <TabPlaybookBDR lead={lead} />}
+        {activeTab === 'playbook-bdr' && <TabPlaybookBDR lead={lead} contacts={contacts} />}
 
 
         </div>
