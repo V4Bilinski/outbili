@@ -49,13 +49,13 @@ const REVENUE_MAX_OPTIONS = [
 
 
 const CURIOSITY_MESSAGES = [
-  'Descobrindo oportunidades escondidas...',
-  'Analisando o mercado em tempo real...',
-  'Identificando gaps competitivos...',
+  'Cruzando dados da Receita Federal...',
+  'Validando CNPJs e sócios administradores...',
+  'Identificando decisores com WhatsApp...',
   'Calculando potencial de receita...',
   'Mapeando vulnerabilidades de marketing...',
-  'Preparando arsenal de argumentos...',
-  'Criando projeção de cenários...',
+  'Analisando presença digital...',
+  'Verificando dados da Assertiva...',
   'Montando diagnóstico estratégico...',
   'Quase lá... finalizando análise...',
 ]
@@ -141,7 +141,7 @@ function StateMultiSelect({ selected, setSelected }: { selected: string[]; setSe
       </button>
       {open && (
         <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[300px] overflow-y-auto">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Recomendados</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Estados com maior volume</p>
           {recommended.map((state) => (
             <button key={state.uf} onClick={() => toggle(state.uf)} className={cn('flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors', selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
               <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>

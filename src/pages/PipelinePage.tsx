@@ -235,7 +235,10 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       <p className="text-[11px] text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
       {lead.city && <p className="text-[10px] text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
       {lead.enrichmentStatus === 'complete' && (
-        <span className="inline-block mt-1.5 text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>
+        <span className="inline-block mt-1.5 text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
+      )}
+      {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
+        <span className="inline-block mt-1.5 text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
       )}
     </div>
   )

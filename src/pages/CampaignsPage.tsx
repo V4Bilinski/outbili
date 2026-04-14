@@ -48,7 +48,7 @@ function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: Za
   const deliveryRate = calculateDeliveryRate(campaign)
   const sendTime = campaign.startedAt && campaign.completedAt
     ? `${Math.round((new Date(campaign.completedAt).getTime() - new Date(campaign.startedAt).getTime()) / 1000)}s`
-    : campaign.startedAt ? 'Em andamento' : '-'
+    : campaign.startedAt ? 'Enviando agora...' : '-'
 
   return (
     <tr
@@ -188,11 +188,11 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
       icon: <Eye className="h-5 w-5" />, borderColor: 'border-info/30', iconColor: 'text-info',
     },
     {
-      label: 'Ignoradas', value: stats?.skipped || 0, sub: 'Variáveis/telefones inválidos (pre-check)',
+      label: 'Ignoradas', value: stats?.skipped || 0, sub: 'Ignoradas pelo pré-check (telefone inválido ou template incompleto)',
       icon: <CircleAlert className="h-5 w-5" />, borderColor: 'border-warning/30', iconColor: 'text-warning',
     },
     {
-      label: 'Falhas', value: campaign.failed, sub: 'Números inválidos ou bloqueio',
+      label: 'Falhas', value: campaign.failed, sub: 'Falhas de envio (número inválido, bloqueado ou indisponível)',
       icon: <AlertTriangle className="h-5 w-5" />, borderColor: 'border-error/30', iconColor: 'text-error',
     },
   ]

@@ -38,9 +38,9 @@ function KPICards({ leads }: { leads: Lead[] }) {
   const coldPct = total > 0 ? Math.round((coldCount / total) * 100) : 0
 
   const tempCards = [
-    { label: 'Quentes', value: hotCount, pct: hotPct, icon: Flame, color: 'text-hot', barColor: 'bg-hot', accent: 'from-hot/8 to-transparent', pulse: hotCount > 0 },
-    { label: 'Mornos', value: warmCount, pct: warmPct, icon: TrendingUp, color: 'text-warm', barColor: 'bg-warm', accent: 'from-warm/8 to-transparent', pulse: false },
-    { label: 'Frios', value: coldCount, pct: coldPct, icon: Snowflake, color: 'text-text-muted', barColor: 'bg-text-muted', accent: 'from-white/5 to-transparent', pulse: false },
+    { label: 'Quentes', value: hotCount, pct: hotPct, icon: Flame, color: 'text-hot', barColor: 'bg-hot', accent: 'from-hot/8 to-transparent', pulse: hotCount > 0, hint: hotCount > 0 ? 'prontos para contato' : '' },
+    { label: 'Mornos', value: warmCount, pct: warmPct, icon: TrendingUp, color: 'text-warm', barColor: 'bg-warm', accent: 'from-warm/8 to-transparent', pulse: false, hint: warmCount > 0 ? 'qualificar para aquecer' : '' },
+    { label: 'Frios', value: coldCount, pct: coldPct, icon: Snowflake, color: 'text-text-muted', barColor: 'bg-text-muted', accent: 'from-white/5 to-transparent', pulse: false, hint: coldCount > 0 ? 'aquecer com cadência' : '' },
   ]
 
   return (
@@ -83,7 +83,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
               <div>
                 <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{card.label}</p>
                 <CountUpValue end={card.value} color={card.color} isInView={isInView} />
-                <p className={`text-[10px] mt-1 ${card.color} opacity-60`}>{card.pct}% do total</p>
+                <p className={`text-[10px] mt-1 ${card.color} opacity-60`}>{card.pct}% do total{card.hint ? ` — ${card.hint}` : ''}</p>
               </div>
               <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                 <card.icon className={`h-5 w-5 ${card.color} opacity-60`} />
@@ -276,8 +276,8 @@ function CampaignStats() {
   const stats = [
     { label: 'Campanhas', value: campaigns.length, icon: Smartphone, color: 'text-text-primary' },
     { label: 'Enviadas', value: totalSent, icon: Send, color: 'text-info' },
-    { label: 'Entrega', value: `${avgDelivery}%`, icon: CheckCircle, color: 'text-success' },
-    { label: 'Leitura', value: `${avgRead}%`, icon: Eye, color: 'text-warning' },
+    { label: 'Entrega', value: `${avgDelivery}%`, icon: CheckCircle, color: avgDelivery >= 80 ? 'text-success' : avgDelivery >= 50 ? 'text-warning' : 'text-error' },
+    { label: 'Leitura', value: `${avgRead}%`, icon: Eye, color: avgRead >= 50 ? 'text-success' : avgRead >= 25 ? 'text-warning' : 'text-text-muted' },
   ]
 
   return (
