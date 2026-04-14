@@ -152,6 +152,24 @@ npm run preview   # Preview do build local
 - **PESCA pipeline:** frontend chama CNPJa diretamente (searchOfficesPaginated), salva no Airtable, depois enriquece via Assertiva em batch
 - **Assertiva proxy:** Worker Cloudflare (primário) → n8n webhook (fallback). Ambos tratam CORS server-side
 
+### Análises BDR — Fábrica de Receita V4
+
+As 3 tabs de análise na CompanyPage são conectadas à metodologia Fábrica de Receita (8 travas + STEP):
+
+| Tab | Componente | Serviço | Descrição |
+|-----|-----------|---------|-----------|
+| Diagnóstico de Travas | `TabTravas.tsx` | `detectTravas()` | Detecta T1-T8 nos dados do lead, prioriza por TOC, gera STEP |
+| Projeção Competitiva | `TabProjecaoCompetitiva.tsx` | `generateProjecaoCompetitiva()` | Benchmark dimensional + 3 cenários + gaps |
+| Playbook BDR | `TabPlaybookBDR.tsx` | `generatePlaybookBDR()` | Scripts WhatsApp/LinkedIn/Ligação personalizados |
+
+**Regras:**
+- O nome do decisor nos scripts é extraído dos Contacts (prioridade: contactType 'decisor') ou do JSON `partners` (fallback)
+- O JSON `partners` aceita formato `{nome, qualificacao}` ou `{nome_socio, qualificacao_socio}`
+- Scripts são personalizados com dados reais: companyName, segment, trava detectada, faturamento, decisor
+- Produto DR recomendado é baseado no tier: Micro+ → DR-X, Small → DR-O, Medium- → DR-T, Medium= → DR-E
+- Lógica em `src/services/strategicAnalysisService.ts` (funções `detectTravas`, `generateProjecaoCompetitiva`, `generatePlaybookBDR`)
+- Blueprint UX em `docs/guides/BLUEPRINT-ANALISES-BDR.md`
+
 ### Cascata Assertiva WhatsApp (3 níveis obrigatórios)
 
 Todo enriquecimento de WhatsApp DEVE seguir a cascata completa de 3 níveis. Se o nível 1 não encontra telefone, o sistema DEVE tentar os níveis 2 e 3 antes de desistir.
@@ -213,7 +231,7 @@ Para tarefas que envolvam agentes, workflows ou padrões do framework AIOX, cons
 2. **Cadastro manual** — formulário com enriquecimento automático CNPJa + Assertiva por CNPJ
 3. **Upload de lista** — importa arquivos (Excel, CSV, HTML, PDF) com até 15 leads, enriquece automaticamente
 4. **Pipeline Kanban** — funil visual com drag-and-drop e stage gates (checklists por etapa): Prospecção > Qualificação > Contactado > Respondeu > Reunião > Proposta > Fechado
-5. **Perfil da empresa** — score SPICED com contexto qualitativo, WTP explícito, tooltips educativos, 9 tabs (4 primárias + 5 em "Análises")
+5. **Perfil da empresa** — score SPICED, 6 tabs (3 primárias: Resumo, SPICED, Reunião + 3 análises BDR: Diagnóstico de Travas, Projeção Competitiva, Playbook BDR). Análises conectadas à metodologia Fábrica de Receita V4 (8 travas + framework STEP)
 6. **Campanhas WhatsApp** — cadências outbound com tracking via BilinskiZap, KPIs contextuais
 7. **Mensagens** — inbox WhatsApp integrado (sidebar: "Mensagens", mobile: "Msgs")
 8. **Dashboard** — KPIs com micro-narrativas, temperatura com hints de ação, ações rápidas orientadas

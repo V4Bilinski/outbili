@@ -35,11 +35,11 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 │       │              │              │               │          │
 ├───────┼──────────────┼──────────────┼───────────────┼──────────┤
 │       ▼              ▼              ▼               ▼          │
-│  ┌─────────┐   ┌──────────┐  ┌──────────┐   ┌─────────────┐  │
-│  │ CNPJa   │   │ Airtable │  │ Apify    │   │ BilinskiZap │  │
-│  │ API     │   │ REST API │  │ Actors   │   │ WhatsApp    │  │
-│  │(central)│   │ (10 tab) │  │ (social) │   │             │  │
-│  └────┬────┘   └──────────┘  └──────────┘   └─────────────┘  │
+│  ┌─────────┐   ┌──────────┐   ┌─────────────┐               │
+│  │ CNPJa   │   │ Airtable │   │ BilinskiZap │               │
+│  │ API     │   │ REST API │   │ WhatsApp    │               │
+│  │(central)│   │ (10 tab) │   │             │               │
+│  └────┬────┘   └──────────┘   └─────────────┘               │
 │       │                                                        │
 │       ▼                                                        │
 │  ┌──────────────────────────────────────────────────────┐      │
@@ -62,7 +62,6 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 | Enriquecimento cadastral | CNPJa API (searchOffice + mapCnpjaToLead) |
 | Enriquecimento telefone | Assertiva Localize (Worker proxy primario, n8n fallback) |
 | Automação | n8n (self-hosted em `n8n.bilinski.cloud`) |
-| Scraping | Apify (8 actors) |
 | WhatsApp | BilinskiZap API |
 | Deploy | Static files (base path `/outbili/`) |
 
@@ -75,7 +74,7 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 | `/#/` | DashboardPage | Dashboard | KPIs com micro-narrativas, próximas ações orientadas |
 | `/#/search` | SearchPage | Pesquisa | Descoberta de leads (PESCA CNPJá + manual + upload) |
 | `/#/leads` | LeadsPage | Leads | Tabela com filtros e busca por texto |
-| `/#/leads/:id` | CompanyPage | — | Perfil do lead com 9 tabs (4 primárias + 5 em "Análises") |
+| `/#/leads/:id` | CompanyPage | — | Perfil do lead com 6 tabs (3 primárias + 3 análises BDR: Travas, Projeção, Playbook) |
 | `/#/pipeline` | PipelinePage | Pipeline | Kanban drag-and-drop com stage gates |
 | `/#/inbox` | InboxPage | Mensagens | Inbox WhatsApp integrado |
 | `/#/campaigns` | CampaignsPage | Campanhas | Gestão de campanhas WhatsApp |
@@ -344,49 +343,33 @@ Novo → Qualificado → Contactado → Respondeu → Reunião → Proposta → 
 - Cada bloco tem sinais positivos (verde) e alertas (vermelho)
 - Perguntas de descoberta geradas por IA (discoveryQuestions)
 
-**Tab 3 — Projeção (TabProjecao)**
-- 3 cenarios de receita calculados a partir do `monthlyRevenue`:
-  - **Agressivo:** uplift de 40-60%
-  - **Moderado:** uplift de 20-35%
-  - **Conservador:** uplift de 10-15%
-- Timeline de 3, 6 e 12 meses
-- ROI projetado vs investimento V4
+**Tab 3 — Diagnóstico de Travas (TabTravas)** — Fábrica de Receita V4
+- Detecta automaticamente as 8 travas (T1-T8) nos dados enriquecidos do lead
+- Card destaque TOC com a restrição principal (trava de maior impacto)
+- Accordion por trava com: badge severidade (CRÍTICA/ALTA/MÉDIA), chips de sinais detectados, bloco STEP (Situação → Trava → Estratégia → Produto)
+- Impacto financeiro estimado por trava + ação imediata para o BDR com CopyButton
+- Footer com produto DR recomendado baseado no tier
+- Serviço: `detectTravas()` em `strategicAnalysisService.ts`
 
-**Tab 4 — Vulnerabilidades (TabVulnerabilidades)**
-- 8 cards pre-construidos de vulnerabilidades de marketing:
-  1. SEO fraco / sem posicionamento organico
-  2. Redes sociais inativas ou inconsistentes
-  3. Sem funil de conversão digital
-  4. Dependência de um único canal
-  5. Ticket medio abaixo do potencial
-  6. Sem estratégia de retenção
-  7. Marca sem posicionamento claro
-  8. Sem automação de marketing
-- Cada card mostra impacto financeiro estimado
-- Dados vem do campo `vulnerabilities` (JSON) ou fallback para defaults
+**Tab 4 — Projeção Competitiva (TabProjecaoCompetitiva)**
+- Benchmark dimensional: 8 dimensões comparando lead vs mercado (Forte/Média/Fraca)
+- 3 cenários de impacto: "Com Destrava" (verde), "Sem ação" (neutro), "Concorrente cresce" (vermelho)
+- Gaps para resolver: dimensões onde o lead é Fraca com produto DR que resolve
+- Oportunidades do segmento baseadas em dados do nicho
+- Serviço: `generateProjecaoCompetitiva()` em `strategicAnalysisService.ts`
 
-**Tab 5 — Competitiva (TabCompetitiva)**
-- Matriz de competidores
-- Radar chart comparativo
-- Dados do campo `competitiveAnalysis` (JSON)
-
-**Tab 6 — Argumentos (TabArgumentos)**
-- Argumentos de venda contextualizados
-- Objeções previstas com contra-argumentos
-- Impacto de ROI por argumento
-- Dados do campo `salesArguments` (JSON)
-
-**Tab 7 — Ads Intel (TabAdsIntel)** *(NOVO)*
-- Botão "Gerar Relatório de Ads" que aciona coleta via Apify
-- Fases: Meta Ads Library → SEMrush → Análise → Relatório
-- Score cards: anúncios ativos, plataformas, authority score, DA
-- Cards estilo Meta Ads Library com:
-  - Imagens reais dos criativos (do Meta CDN)
-  - Avatar real da página
-  - Copy real do anúncio
-  - Link "Ver detalhes do anúncio" → Meta Ads Library
+**Tab 5 — Playbook BDR (TabPlaybookBDR)**
+- Scripts prontos para outbound com 3 sub-abas: WhatsApp, LinkedIn, Ligação
+- WhatsApp: abertura + follow-up 48h + 3 objeções com resposta + CTA reunião
+- LinkedIn: nota de conexão (300 chars) + InMail + comentário em post
+- Ligação: script 30s + 3 perguntas qualificação + frase-gatilho + 5 objeções + fechamento
+- Todos os textos personalizados com nome do decisor (extraído de Contacts com prioridade), empresa, segmento, trava identificada
+- CopyButton em cada script para o BDR copiar e colar
+- Footer com produto DR recomendado + justificativa
+- Serviço: `generatePlaybookBDR()` em `strategicAnalysisService.ts`
+- **Regra:** nome do decisor vem dos Contacts (contactType 'decisor') com fallback para JSON partners
   - Plataformas, data, contagem de variações
-- Dados via `useAdsIntel` hook → `startFacebookAdsScrape` + `startSemrushScrape`
+- Dados via `useAdsIntel` hook
 - Componente: `src/components/company/TabAdsIntel.tsx`
 - Hook: `src/hooks/useAdsIntel.ts`
 
@@ -420,7 +403,7 @@ T8 Dependencia      → "Depende de um unico canal?"
 | 3.4 | Reuniao com 5 blocos | Frontend | Rapport, Discovery, Validacao, Proposta, Fechamento |
 | 3.5 | Projecao com 3 cenarios | Frontend | Agressivo, Moderado, Conservador calculados |
 | 3.6 | Contatos CRUD funcional | Frontend → Airtable | Criar, listar contatos |
-| 3.7 | Vulnerabilidades renderizam | Frontend | 8 cards ou fallback para defaults |
+| 3.7 | Diagnóstico de Travas renderiza | Frontend | Travas T1-T8 detectadas com STEP e CopyButton |
 
 ---
 
@@ -550,103 +533,17 @@ CampaignsPage           BilinskiZap API              WhatsApp
 
 **Objetivo:** Gerar relatório completo de inteligência de anúncios de qualquer empresa antes da abordagem outbound — entender quanto investem, quais criativos rodam, em quais plataformas e qual a sofisticação de marketing.
 
-#### Fluxo Validado (Processo Padrão)
-
-```
-1. Ativar Thamyres:  @thamyres  ou  /thamyres-spy
-2. Executar comando:  *ads-intel https://www.empresa.com.br/
-3. Thamyres executa 4 frentes em paralelo:
-
-   ┌──────────────────────────────────────────────────────────────────────┐
-   │                    COLETA PARALELA (Apify MCP)                       │
-   │                                                                      │
-   │  ┌─────────────┐  ┌─────────────┐  ┌──────────┐  ┌──────────────┐  │
-   │  │ Meta Ads     │  │ Google SERP │  │ SEMrush  │  │ Web Scraper  │  │
-   │  │ Library      │  │ (branded +  │  │ (author. │  │ (pixels,     │  │
-   │  │ (anuncios    │  │  paid ads)  │  │  score,  │  │  tracking,   │  │
-   │  │  ativos)     │  │             │  │  DA, spam│  │  tech stack) │  │
-   │  └──────┬───────┘  └──────┬──────┘  └────┬─────┘  └──────┬───────┘  │
-   │         │                 │               │               │          │
-   │         ▼                 ▼               ▼               ▼          │
-   │  ┌────────────────────────────────────────────────────────────────┐  │
-   │  │              CRUZAMENTO DE DADOS + ANÁLISE                     │  │
-   │  │  - Criativos reais com imagens/vídeos do Meta CDN              │  │
-   │  │  - Copy real dos anúncios                                      │  │
-   │  │  - Plataformas de distribuição                                 │  │
-   │  │  - Score de sofisticação (0-10)                                │  │
-   │  │  - Estimativa de investimento mensal                           │  │
-   │  │  - Cobertura de funil (TOFU/MOFU/BOFU)                        │  │
-   │  │  - Gaps e oportunidades                                        │  │
-   │  └────────────────────────────────────────────────────────────────┘  │
-   │                              │                                       │
-   │                              ▼                                       │
-   │  ┌────────────────────────────────────────────────────────────────┐  │
-   │  │          GERAÇÃO DO RELATÓRIO HTML (/baziotti UX)              │  │
-   │  │  - Paleta Outbili (dark premium, vermelho #E63329)             │  │
-   │  │  - Cards estilo Meta Ads Library com dados reais               │  │
-   │  │  - Imagens dos criativos direto do Meta CDN                    │  │
-   │  │  - Links clicáveis para cada anúncio real                      │  │
-   │  │  - Animações de scroll + glassmorphism                         │  │
-   │  │  - Responsivo (mobile-first)                                   │  │
-   │  └────────────────────────────────────────────────────────────────┘  │
-   └──────────────────────────────────────────────────────────────────────┘
-
-4. Relatório salvo em: public/reports/ads-intel-{empresa}.html
-5. Aberto automaticamente no navegador
-```
-
-#### Ferramentas MCP Utilizadas (Apify)
-
-| Ferramenta | Tool ID | Dados Coletados |
-|-----------|---------|----------------|
-| Facebook Ads Scraper | `apify/facebook-ads-scraper` | Anúncios ativos, criativos, copies, imagens, CTAs, plataformas |
-| Google Search Scraper | `apify/google-search-scraper` | Presença em SERPs, paid ads, sitelinks |
-| SEMrush Scraper | `radeance/semrush-scraper` | Authority Score, DA, Spam Score |
-| Web Scraper | `apify/web-scraper` | Pixels, tracking, tech stack do site |
-| RAG Web Browser | `apify/rag-web-browser` | Conteúdo profundo do site |
-
-#### Estrutura do Relatório HTML (10 Seções)
-
-| Seção | Conteúdo | Fonte de Dados |
-|-------|----------|---------------|
-| Score Hero | 4 KPIs principais (sofisticação, ads ativos, authority, investimento) | Todos |
-| 1. Meta Ads | Cards estilo Ads Library com imagens reais, copy, CTAs | `facebook-ads-scraper` |
-| 2. Google Ads | Detecção de paid results em buscas branded | `google-search-scraper` |
-| 3. SEO & Autoridade | Authority Score, DA, Spam Score, presença orgânica | `semrush-scraper` |
-| 4. Pixels & Tracking | GTM, GA4, Meta Pixel, LinkedIn, TikTok | `web-scraper` |
-| 5. Presença Social | LinkedIn, Instagram, YouTube, TikTok, Facebook | `google-search-scraper` |
-| 6. Estimativa de Investimento | Gasto mensal estimado por canal | Cruzamento de sinais |
-| 7. Score de Sofisticação | 7 dimensões avaliadas (0-10 cada) | Análise consolidada |
-| 8. Cobertura de Funil | Mapeamento TOFU/MOFU/BOFU | Criativos + presença |
-| 9. Gaps & Oportunidades | Vulnerabilidades detectadas para abordagem | Análise consolidada |
-| 10. Fontes & Confiança | Cada dado com nível VERIFIED/HIGH/MEDIUM/ESTIMATED | Meta-dados |
-
-#### Design System Aplicado (Baziotti UX + Outbili)
-
-| Aspecto | Aplicação |
-|---------|-----------|
-| Paleta | Dark premium: `#09090B` (bg), `#0F0F12` (surface), `#E63329` (brand red) |
-| Tipografia | Plus Jakarta Sans (headings), Inter (body), JetBrains Mono (dados) |
-| Hierarquia visual | F-Pattern, seções numeradas, score cards hero (ancoragem) |
-| Carga cognitiva | Chunks de informação (Lei de Miller), progressive disclosure |
-| Animações | Intersection Observer, barras animadas, pulse glow, gradient shift |
-| Acessibilidade | `prefers-reduced-motion`, contraste adequado, touch targets 44px+ |
-| Cards de anúncio | Estilo Meta Ads Library com imagem real, avatar, copy, link direto |
-
 #### Pontos de Validação — Fase 6
 
 | # | Checkpoint | Tipo | Critério |
 |---|-----------|------|----------|
 | 6.1 | Thamyres ativada | Agent | `@thamyres` responde com greeting |
-| 6.2 | Meta Ads Library scrapeada | Apify MCP | `facebook-ads-scraper` retorna ads com imagens |
-| 6.3 | SEMrush dados coletados | Apify MCP | `semrush-scraper` retorna authority score |
-| 6.4 | Google SERPs analisadas | Apify MCP | Resultados orgânicos + paid detectados |
-| 6.5 | Relatório HTML gerado | File system | Arquivo criado em `public/reports/` |
-| 6.6 | Cards com imagens reais | HTML | Imagens do Meta CDN carregam corretamente |
-| 6.7 | Links de anúncios funcionam | HTML | Cada card abre o anúncio real na Meta Ads Library |
-| 6.8 | Design Outbili aplicado | Visual | Paleta dark, fontes, glassmorphism corretos |
-| 6.9 | Responsivo | Visual | Layout funciona em mobile e desktop |
-| 6.10 | Relatório abre no navegador | OS | `open` abre o arquivo com sucesso |
+| 6.2 | Relatório HTML gerado | File system | Arquivo criado em `public/reports/` |
+| 6.3 | Cards com imagens reais | HTML | Imagens do Meta CDN carregam corretamente |
+| 6.4 | Links de anúncios funcionam | HTML | Cada card abre o anúncio real na Meta Ads Library |
+| 6.5 | Design Outbili aplicado | Visual | Paleta dark, fontes, glassmorphism corretos |
+| 6.6 | Responsivo | Visual | Layout funciona em mobile e desktop |
+| 6.7 | Relatório abre no navegador | OS | `open` abre o arquivo com sucesso |
 
 #### Caso Validado: Contabilizei (2026-03-27)
 
@@ -661,13 +558,12 @@ Primeiro relatório gerado com sucesso:
 
 ## 4. Enriquecimento de Dados
 
-### 4.1 Pipeline principal (3 fases)
+### 4.1 Pipeline principal (2 fases)
 
 | Fase | Fonte | Dados | Status resultante |
 |------|-------|-------|-------------------|
 | 1. Cadastral | CNPJa API (searchOffice + mapCnpjaToLead) | CNPJ, razao social, nome fantasia, socios, capital, endereco, CNAE, telefones RF | `cnpja` |
-| 2. Telefone/WhatsApp | Assertiva Localize (Worker proxy primario, n8n fallback) | Telefones validados, WhatsApp confirmado, email verificado | `assertiva` |
-| 3. Social/Digital | Apify Actors (sob demanda) | Instagram, SEO, ads, trafego | `complete` |
+| 2. Telefone/WhatsApp | Assertiva Localize (Worker proxy primario, n8n fallback) | Telefones validados, WhatsApp confirmado, email verificado | `complete` |
 
 **Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimativa CNPJa** (fix 2026-04-14).
 
@@ -675,33 +571,17 @@ Primeiro relatório gerado com sucesso:
 
 Substituiu o antigo `scripts/enrich-leads.py`. Agora roda direto no frontend:
 
-- **Funcao:** `reEnrichLead()` em `enrichmentService.ts` — CNPJa + Assertiva only (sem Apify), force-writes campos
+- **Funcao:** `reEnrichLead()` em `enrichmentService.ts` — CNPJa + Assertiva, force-writes campos
 - **Diagnostico:** `leadNeedsReEnrich()` — identifica leads com dados faltantes
 - **Hook:** `src/hooks/useReEnrichment.ts` — batch com concurrency=2, progress tracking
 - **UI:** AdminPage > tab Enriquecimento — cards diagnosticos + botoes de batch re-enrichment
 
-### 4.3 Enriquecimento via Apify (sob demanda)
-
-Actors disponiveis para enriquecimento adicional:
-
-| Actor | Dados Coletados |
-|-------|----------------|
-| `compass~crawler-google-places` | Google Maps |
-| `apify~instagram-scraper` | Perfil Instagram, seguidores, posts |
-| `apify~website-content-crawler` | Conteudo do site, tech stack |
-| `apify~facebook-ads-scraper` | Anuncios ativos no Facebook |
-| `misceres~seo-audit-tool` | Audit SEO completo |
-| `radeance~ahrefs-scraper` | Domain Authority, backlinks |
-| `ecomdate~similarweb-scraper` | Trafego estimado |
-| `radeance~semrush-scraper` | Keywords, posicionamento |
-
-### 4.4 Status de Enriquecimento
+### 4.3 Status de Enriquecimento
 
 ```
-none → cnpja → assertiva → complete
-  │      │         │            │
-  │      │         │            └── Todos os dados (incluindo Apify/social)
-  │      │         └──────────────── Telefones/WhatsApp validados (Assertiva)
+none → cnpja → complete
+  │      │         │
+  │      │         └──────────────── Telefones/WhatsApp validados (Assertiva) + dados cadastrais
   │      └────────────────────────── Dados cadastrais CNPJa (razao social, socios, capital)
   └───────────────────────────────── Sem dados (recem-importado)
 ```
@@ -788,12 +668,6 @@ O campo `temperatura` e o nome no Airtable para temperature (code usa `temperatu
 | GET/POST | `/api/templates` | Templates WhatsApp |
 | GET | `/api/health` | Health check |
 
-### 5.4 Apify (Scraping)
-
-- **Auth:** Token via header ou query param
-- **8 Actors** configurados (ver seção 4.3)
-- **Chamada direta do frontend** (useApifySearch) OU **via n8n** (fluxo principal)
-
 ---
 
 ## 6. Configuração e Saúde do Sistema
@@ -809,9 +683,6 @@ VITE_AIRTABLE_BASE_ID=                # ID da base (ex: appXXXXXX)
 VITE_BILINSKIZAP_URL=                 # Default: https://bilinskizap.vercel.app
 VITE_BILINSKIZAP_API_KEY=             # Bearer token
 
-# Apify
-VITE_APIFY_TOKEN=                     # API token
-
 # n8n
 VITE_N8N_WEBHOOK_URL=                 # Default: https://n8n.bilinski.cloud/webhook/outbili-search
 VITE_N8N_ASSERTIVA_PROXY=             # Webhook n8n fallback Assertiva
@@ -824,9 +695,6 @@ VITE_ASSERTIVA_CLIENT_ID=             # OAuth2 client ID
 VITE_ASSERTIVA_CLIENT_SECRET=         # OAuth2 client secret
 VITE_ASSERTIVA_WORKER_URL=            # Worker proxy URL (primário)
 
-# VibeProspecting
-VITE_VIBEPROSPECTING_URL=             # URL VibeProspecting
-VITE_VIBEPROSPECTING_TOKEN=           # Token VibeProspecting
 ```
 
 ### 6.2 Settings Page — Health Checks
@@ -837,7 +705,6 @@ A página `/#/settings` verifica em tempo real:
 |---------|-------|-----------|
 | Airtable | GET /tables | Verde/Vermelho |
 | BilinskiZap | GET /api/health | Verde/Vermelho |
-| Apify | GET /v2/acts | Verde/Vermelho |
 | n8n | Webhook configured | Verde/Vermelho |
 
 ---
@@ -852,7 +719,6 @@ A página `/#/settings` verifica em tempo real:
 - [ ] Assertiva OAuth2 credentials configuradas (client_id + client_secret)
 - [ ] n8n workflow importado e ativo
 - [ ] BilinskiZap conectado com número WhatsApp
-- [ ] Apify token com créditos disponíveis
 
 ### 7.2 Teste de Jornada Completa
 
@@ -867,7 +733,7 @@ A página `/#/settings` verifica em tempo real:
 | 7 | Verificar Tab Resumo | Dados completos do lead | [ ] |
 | 8 | Verificar Tab Reuniao | 5 blocos do roteiro | [ ] |
 | 9 | Verificar Tab Projecao | 3 cenarios de receita | [ ] |
-| 10 | Verificar Tab Vulnerabilidades | 8 cards renderizados | [ ] |
+| 10 | Verificar Tab Diagnóstico de Travas | Travas detectadas com STEP | [ ] |
 | 11 | Adicionar contato | Contato salvo no Airtable | [ ] |
 | 12 | Criar campanha WhatsApp | Template selecionado, leads adicionados | [ ] |
 | 13 | Pre-check contatos | Validacao retorna OK | [ ] |
@@ -913,7 +779,6 @@ A página `/#/settings` verifica em tempo real:
 | Risco | Impacto | Mitigação |
 |-------|---------|-----------|
 | Rate limit Airtable (5 req/s) | Lentidão em listas grandes | Token-bucket implementado em `airtable.ts` |
-| Apify credits esgotados | Pesquisa para de funcionar | Monitorar saldo no Apify dashboard |
 | n8n workflow offline | Pesquisa não processa | Health check em /#/settings |
 | BilinskiZap desconectado | Campanhas não disparam | Health check + precheck antes do envio |
 | VITE_* expostas no frontend | Tokens visíveis no bundle | Sistema single-user interno; migrar para BFF se escalar |
