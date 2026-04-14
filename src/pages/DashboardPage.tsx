@@ -88,21 +88,42 @@ function KPICards({ leads }: { leads: Lead[] }) {
           </div>
         </div>
 
-        {/* Barra de distribuição full-width */}
+        {/* Barra de distribuição — estilo "tanque sendo preenchido" */}
         {total > 0 && (
-          <div className="mt-4 space-y-1.5">
-            <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
-              {hotCount > 0 && <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />}
-              {warmCount > 0 && <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />}
-              {coldCount > 0 && <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
-            </div>
+          <div className="mt-5 space-y-2">
             <div className="flex items-center justify-between px-0.5">
+              <p className="text-[10px] text-text-muted uppercase tracking-[0.08em] font-medium">Distribuição de temperatura</p>
               <div className="flex items-center gap-3">
-                {hotPct > 0 && <span className="flex items-center gap-1 text-[10px] text-hot"><span className="w-1.5 h-1.5 rounded-full bg-hot" />{hotPct}%</span>}
-                {warmPct > 0 && <span className="flex items-center gap-1 text-[10px] text-warm"><span className="w-1.5 h-1.5 rounded-full bg-warm" />{warmPct}%</span>}
-                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-text-muted"><span className="w-1.5 h-1.5 rounded-full bg-text-muted/60" />{coldPct}%</span>}
+                {hotPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-hot font-medium"><span className="w-2 h-2 rounded-full bg-hot" />{hotPct}% Quentes</span>}
+                {warmPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-warm font-medium"><span className="w-2 h-2 rounded-full bg-warm" />{warmPct}% Mornos</span>}
+                {coldPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-text-muted font-medium"><span className="w-2 h-2 rounded-full bg-text-muted/60" />{coldPct}% Frios</span>}
               </div>
-              <p className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Distribuição de temperatura</p>
+            </div>
+            {/* Tanque */}
+            <div className="relative h-3.5 rounded-lg overflow-hidden bg-white/[0.03] border border-white/[0.04]">
+              {/* Segmentos preenchendo da esquerda para a direita */}
+              <div className="absolute inset-0 flex">
+                {hotCount > 0 && (
+                  <div
+                    className="h-full bg-gradient-to-r from-hot to-hot/80 animate-[bar-grow_1s_cubic-bezier(0.4,0,0.2,1)_0.3s_both]"
+                    style={{ width: `${hotPct}%` }}
+                  />
+                )}
+                {warmCount > 0 && (
+                  <div
+                    className="h-full bg-gradient-to-r from-warm to-warm/80 animate-[bar-grow_1s_cubic-bezier(0.4,0,0.2,1)_0.6s_both]"
+                    style={{ width: `${warmPct}%` }}
+                  />
+                )}
+                {coldCount > 0 && (
+                  <div
+                    className="h-full bg-gradient-to-r from-text-muted/30 to-text-muted/20 animate-[bar-grow_1.2s_cubic-bezier(0.4,0,0.2,1)_0.9s_both]"
+                    style={{ width: `${coldPct}%` }}
+                  />
+                )}
+              </div>
+              {/* Shimmer de "alimentação" contínuo */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-[bar-shimmer_3s_ease-in-out_infinite] pointer-events-none" />
             </div>
           </div>
         )}
