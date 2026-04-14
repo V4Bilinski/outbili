@@ -21,16 +21,13 @@ import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
 
-const PRIMARY_TABS = [
-  { id: 'resumo', label: 'Resumo' },
-  { id: 'spiced', label: 'SPICED' },
-  { id: 'reuniao', label: 'Reunião' },
-] as const
-
-const SECONDARY_TABS = [
-  { id: 'travas', label: 'Diagnóstico de Travas' },
-  { id: 'projecao-competitiva', label: 'Projeção Competitiva' },
-  { id: 'playbook-bdr', label: 'Playbook BDR' },
+const ALL_TABS = [
+  { id: 'resumo', label: 'Resumo', group: 'primary' },
+  { id: 'spiced', label: 'SPICED', group: 'primary' },
+  { id: 'reuniao', label: 'Reunião', group: 'primary' },
+  { id: 'travas', label: 'Travas', group: 'analise' },
+  { id: 'projecao-competitiva', label: 'Projeção', group: 'analise' },
+  { id: 'playbook-bdr', label: 'Playbook', group: 'analise' },
 ] as const
 
 
@@ -42,7 +39,7 @@ export function CompanyPage() {
   const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
-  const [showMoreTabs, setShowMoreTabs] = useState(false)
+  const [_showMoreTabs, _setShowMoreTabs] = useState(false) // legacy — tabs agora são inline
   const [showActionMenu, setShowActionMenu] = useState(false)
   const [showAddContact, setShowAddContact] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -328,18 +325,19 @@ export function CompanyPage() {
         </Card>
       )}
 
-      {/* Tabs navigation — 4 primarias + dropdown "Análises" */}
-      <div className="relative border-b border-border">
+      {/* Tabs navigation — todas inline com scroll horizontal */}
+      <div className="border-b border-border">
         <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
           <div className="flex gap-0.5 min-w-max pb-0">
-            {PRIMARY_TABS.map((tab) => (
+            {ALL_TABS.map((tab, i) => (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
                   'hover:text-text-primary',
                   activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-white/[0.02]',
+                  i === 3 && 'ml-3 pl-4 border-l border-border',
                 )}
               >
                 {tab.label}
@@ -349,42 +347,8 @@ export function CompanyPage() {
                 )} />
               </button>
             ))}
-            {/* Botao "Análises" — dentro do scroll, dropdown fora */}
-            <button
-              onClick={() => setShowMoreTabs(!showMoreTabs)}
-              className={cn(
-                'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer hover:text-text-primary',
-                SECONDARY_TABS.some(t => t.id === activeTab) ? 'text-red' : 'text-text-muted',
-              )}
-            >
-              {SECONDARY_TABS.find(t => t.id === activeTab)?.label || 'Análises'}
-              <span className={cn(
-                'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
-                SECONDARY_TABS.some(t => t.id === activeTab) ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
-              )} />
-            </button>
           </div>
         </div>
-        {/* Dropdown menu — fora do overflow container para não ser cortado */}
-        {showMoreTabs && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowMoreTabs(false)} />
-            <div className="absolute right-0 md:right-auto md:left-auto top-full mt-1 w-52 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
-              {SECONDARY_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
-                  className={cn(
-                    'w-full flex items-center gap-2.5 px-3 py-2.5 text-xs cursor-pointer transition-colors text-left',
-                    activeTab === tab.id ? 'bg-red/10 text-red font-semibold' : 'text-text-secondary hover:bg-white/[0.04]',
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Tab content */}
