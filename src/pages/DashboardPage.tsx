@@ -74,7 +74,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
               {[
                 { label: 'Quentes', count: hotCount, color: 'bg-hot', textColor: 'text-hot' },
                 { label: 'Mornos', count: warmCount, color: 'bg-warm', textColor: 'text-warm' },
-                { label: 'Frios', count: coldCount, color: 'bg-success/60', textColor: 'text-success' },
+                { label: 'Frios', count: coldCount, color: 'bg-text-muted/60', textColor: 'text-text-muted' },
               ].map((t) => (
                 <div key={t.label} className="flex items-center gap-2">
                   <span className="text-[10px] text-text-muted">{t.label}</span>
@@ -94,13 +94,13 @@ function KPICards({ leads }: { leads: Lead[] }) {
             <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
               {hotCount > 0 && <div className="bg-hot transition-all duration-700" style={{ width: `${hotPct}%` }} />}
               {warmCount > 0 && <div className="bg-warm transition-all duration-700" style={{ width: `${warmPct}%` }} />}
-              {coldCount > 0 && <div className="bg-success/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
+              {coldCount > 0 && <div className="bg-text-muted/40 transition-all duration-700" style={{ width: `${coldPct}%` }} />}
             </div>
             <div className="flex items-center justify-between px-0.5">
               <div className="flex items-center gap-3">
                 {hotPct > 0 && <span className="flex items-center gap-1 text-[10px] text-hot"><span className="w-1.5 h-1.5 rounded-full bg-hot" />{hotPct}%</span>}
                 {warmPct > 0 && <span className="flex items-center gap-1 text-[10px] text-warm"><span className="w-1.5 h-1.5 rounded-full bg-warm" />{warmPct}%</span>}
-                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-success"><span className="w-1.5 h-1.5 rounded-full bg-success/60" />{coldPct}%</span>}
+                {coldPct > 0 && <span className="flex items-center gap-1 text-[10px] text-text-muted"><span className="w-1.5 h-1.5 rounded-full bg-text-muted/60" />{coldPct}%</span>}
               </div>
               <p className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Distribuição de temperatura</p>
             </div>
