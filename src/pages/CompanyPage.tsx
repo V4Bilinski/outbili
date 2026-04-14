@@ -12,7 +12,7 @@ import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../li
 import { getPartners } from '../services/partnerService'
 import { getEnrichmentLog } from '../services/enrichmentLogService'
 import { useQuery } from '@tanstack/react-query'
-import { generateDiscoveryQuestions, generateEligibilityChecklist } from '../services/strategicAnalysisService'
+import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -75,6 +75,10 @@ export function CompanyPage() {
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
+
+  // Trava dominante: detectar via Fábrica de Receita (dados reais do lead)
+  const travasDetectadas = detectTravas(lead)
+  const travaDominante = travasDetectadas[0]
 
   // Anos no mercado: fallback dinâmico via foundingDate
   const yearsInMarket = lead.yearsInMarket
@@ -202,7 +206,7 @@ export function CompanyPage() {
             { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-', tooltip: lead.monthlyRevenue ? 'Receita mensal × 12 meses' : 'Capital social registrado na Receita Federal' },
             { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est. via CNPJá)' : ''}` : '-', tooltip: 'Quantidade de funcionários estimada ou confirmada' },
             { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-', tooltip: yearsInMarket != null ? (yearsInMarket >= 10 ? 'Empresa consolidada' : yearsInMarket >= 3 ? 'Empresa em crescimento' : 'Empresa recente') : '' },
-            { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true, tooltip: 'Principal barreira de receita identificada pela análise' },
+            { label: 'Trava dominante', value: travaDominante ? `${travaDominante.codigo} ${travaDominante.nome}` : lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || '-', isHighlight: true, tooltip: travaDominante ? `${travaDominante.severidade} — ${travaDominante.impactoEstimado}` : 'Principal barreira de receita identificada pela análise' },
           ].map((stat: any) => (
             <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`} title={stat.tooltip || ''}>
               <p className="text-[10px] uppercase tracking-wider text-text-muted">{stat.label}</p>
@@ -363,7 +367,7 @@ export function CompanyPage() {
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.segment}</span>
               {lead.yearsInMarket && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.yearsInMarket}+ anos</span>}
               {lead.employees && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.employees} func.</span>}
-              {lead.hypotheticalTrap && <span className="text-[11px] px-2.5 py-1 rounded-full bg-red/10 border border-red/20 text-red font-medium">{lead.hypotheticalTrap}</span>}
+              {travaDominante && <span className="text-[11px] px-2.5 py-1 rounded-full bg-red/10 border border-red/20 text-red font-medium">{travaDominante.codigo} {travaDominante.nome}</span>}
             </div>
 
             {/* Business summary */}
@@ -645,11 +649,11 @@ export function CompanyPage() {
               ))}
             </div>
 
-            {/* Trava dominante hipotética */}
-            {lead.hypotheticalTrap && (
+            {/* Trava dominante — Fábrica de Receita */}
+            {travaDominante && (
               <div className="mt-10 p-6 rounded-xl border border-red/30 bg-red/5">
-                <h3 className="text-lg font-bold text-red mb-3">Trava dominante hipotética</h3>
-                <p className="text-base font-bold text-text-primary mb-2">{lead.hypotheticalTrap}</p>
+                <h3 className="text-lg font-bold text-red mb-3">Trava dominante — {travaDominante.codigo} {travaDominante.nome}</h3>
+                <p className="text-base font-bold text-text-primary mb-2">{travaDominante.step.trava}</p>
                 {spicedNotes['trap'] && (
                   <p className="text-[15px] text-text-secondary leading-[1.8]">{spicedNotes['trap']}</p>
                 )}
