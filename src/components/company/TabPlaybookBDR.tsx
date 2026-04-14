@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { AccordionItem } from '../ui/AccordionItem'
 import { Badge } from '../ui/Badge'
 import { CopyButton } from '../ui/CopyButton'
-import { Phone, Globe } from 'lucide-react'
+import { Phone } from 'lucide-react'
 import { WhatsAppIcon } from '../ui/WhatsAppIcon'
+import { LinkedInIcon } from '../ui/LinkedInIcon'
 import { cn } from '../../lib/cn'
 import type { Lead } from '../../types'
 import { detectTravas, generatePlaybookBDR } from '../../services/strategicAnalysisService'
 
 const CHANNELS = [
   { id: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, activeColor: 'text-whatsapp', borderColor: 'border-whatsapp', isCustomIcon: true },
-  { id: 'linkedin', label: 'LinkedIn', icon: Globe, activeColor: 'text-info', borderColor: 'border-info', isCustomIcon: false },
+  { id: 'linkedin', label: 'LinkedIn', icon: LinkedInIcon, activeColor: 'text-info', borderColor: 'border-info', isCustomIcon: true },
   { id: 'ligacao', label: 'Ligação', icon: Phone, activeColor: 'text-red', borderColor: 'border-red', isCustomIcon: false },
 ] as const
 
