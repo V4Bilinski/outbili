@@ -82,36 +82,93 @@ function saveToHistory(entry: SearchHistory) {
   localStorage.setItem('outbili_search_history', JSON.stringify(history))
 }
 
-// --- Tag Input ---
-function TagInput({ label, placeholder, tags, setTags, suggestions, suggestionsLabel }: {
-  label: string; placeholder: string; tags: string[]; setTags: (t: string[]) => void; suggestions: string[]; suggestionsLabel: string
-}) {
-  const [input, setInput] = useState('')
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const filtered = suggestions.filter((s) => !tags.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
-  const addTag = (tag: string) => { const t = tag.trim(); if (t && !tags.includes(t)) setTags([...tags, t]); setInput('') }
-  const removeTag = (tag: string) => setTags(tags.filter((t) => t !== tag))
-  const handleKeyDown = (e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ',') && input.trim()) { e.preventDefault(); addTag(input) }; if (e.key === 'Backspace' && !input && tags.length) removeTag(tags[tags.length - 1]) }
-  useEffect(() => { const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [])
+// --- Segment Emoji Map ---
+const SEGMENT_EMOJI: Record<string, string> = {
+  estetica: '💆', odontologia: '🦷', varejo: '🛒', farmacia: '💊', movelaria: '🛋',
+  servicos: '⚙', alimentacao: '🍽', saude: '🏥', educacao: '📚', tecnologia: '💻',
+  automotivo: '🚗', petshop: '🐾', fitness: '💪', beleza: '💅', imobiliario: '🏠',
+  construcao: '🔨', moda: '👗', decoracao: '🎨', agronegocio: '🌾', logistica: '📦',
+}
 
+// --- Segment Chip Grid (replaces TagInput) ---
+function SegmentChipGrid({ selected, setSelected }: { selected: string[]; setSelected: (s: string[]) => void }) {
+  const toggle = (name: string) => setSelected(selected.includes(name) ? selected.filter(s => s !== name) : [...selected, name])
   return (
-    <div ref={ref} className="relative">
-      <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">{label}</label>
-      <div className={cn('min-h-[44px] w-full rounded-xl bg-white/[0.03] border text-sm text-text-primary px-3 py-2 flex flex-wrap gap-1.5 items-center cursor-text transition-colors', open ? 'border-red/30 ring-1 ring-red/20' : 'border-border')} onClick={() => setOpen(true)}>
-        {tags.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-xs font-medium">
-            {tag}
-            <button onClick={(e) => { e.stopPropagation(); removeTag(tag) }} className="hover:text-red-vivid cursor-pointer"><X className="h-3 w-3" /></button>
-          </span>
+    <div>
+      <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">
+        Setor / Segmento *
+        {selected.length > 0 && <span className="ml-2 text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{selected.length}</span>}
+      </label>
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+        {SEGMENTS.map(seg => (
+          <button
+            key={seg.slug}
+            onClick={() => toggle(seg.name)}
+            aria-pressed={selected.includes(seg.name)}
+            className={cn(
+              'flex flex-col items-center gap-1 p-2.5 rounded-xl text-center transition-all cursor-pointer border',
+              selected.includes(seg.name)
+                ? 'bg-red/15 text-red border-red/40 shadow-md shadow-red/10 ring-1 ring-red/20'
+                : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
+            )}
+          >
+            <span className="text-lg">{SEGMENT_EMOJI[seg.slug] || '🏢'}</span>
+            <span className="text-caption font-medium leading-tight">{seg.name}</span>
+          </button>
         ))}
-        <input type="text" value={input} onChange={(e) => { setInput(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} onKeyDown={handleKeyDown} placeholder={tags.length === 0 ? placeholder : ''} className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-text-muted" />
       </div>
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[240px] overflow-y-auto">
-          <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-2">{suggestionsLabel}</p>
-          {filtered.map((item) => (
-            <button key={item} onClick={() => { addTag(item); setOpen(false) }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer transition-colors">{item}</button>
+    </div>
+  )
+}
+
+// --- Keyword Chip Grid (replaces TagInput) ---
+const KEYWORD_SUGGESTIONS = ['implantes', 'ortodontia', 'harmonização', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']
+
+function KeywordChipGrid({ selected, setSelected }: { selected: string[]; setSelected: (s: string[]) => void }) {
+  const [customInput, setCustomInput] = useState('')
+  const toggle = (kw: string) => setSelected(selected.includes(kw) ? selected.filter(s => s !== kw) : [...selected, kw])
+  const addCustom = () => { const t = customInput.trim(); if (t && !selected.includes(t)) { setSelected([...selected, t]); setCustomInput('') } }
+  return (
+    <div>
+      <label className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Termos de busca</label>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {KEYWORD_SUGGESTIONS.map(kw => (
+          <button
+            key={kw}
+            onClick={() => toggle(kw)}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer border',
+              selected.includes(kw)
+                ? 'bg-tag-keyword/15 text-tag-keyword border-tag-keyword/40'
+                : 'bg-white/[0.02] text-text-muted border-border hover:border-tag-keyword/20 hover:text-text-secondary',
+            )}
+          >
+            {kw}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && customInput.trim()) { e.preventDefault(); addCustom() } }}
+          placeholder="Adicionar termo personalizado..."
+          className="flex-1 h-9 rounded-lg bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
+        />
+        {customInput.trim() && (
+          <button onClick={addCustom} className="h-9 px-3 rounded-lg bg-red/10 text-red text-label font-medium border border-red/20 hover:bg-red/20 cursor-pointer transition-colors">
+            Adicionar
+          </button>
+        )}
+      </div>
+      {selected.filter(s => !KEYWORD_SUGGESTIONS.includes(s)).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selected.filter(s => !KEYWORD_SUGGESTIONS.includes(s)).map(kw => (
+            <span key={kw} className="inline-flex items-center gap-1 bg-tag-keyword/10 text-tag-keyword border border-tag-keyword/20 rounded-lg px-2.5 py-1 text-label font-medium">
+              {kw}
+              <button onClick={() => toggle(kw)} className="cursor-pointer hover:text-tag-keyword"><X className="h-3 w-3" /></button>
+            </span>
           ))}
         </div>
       )}
@@ -1186,7 +1243,7 @@ export function SearchPage() {
         {/* ===== MAIN FIELDS ===== */}
         <div className="space-y-4 mt-5">
           {/* Segmento — large, prominent (like Nome in specific) */}
-          <TagInput label="Setor / Segmento *" placeholder="Digite ou selecione segmentos..." tags={segments} setTags={setSegments} suggestions={RECOMMENDED_SEGMENTS} suggestionsLabel="Segmentos recomendados" />
+          <SegmentChipGrid selected={segments} setSelected={setSegments} />
 
           {/* Estado — prominent */}
           <StateMultiSelect selected={states} setSelected={setStates} />
@@ -1250,7 +1307,7 @@ export function SearchPage() {
               </p>
             )}
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-keywords') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-              <TagInput label="Termos de busca" placeholder="Ex: implantes, ortodontia, clínica..." tags={keywords} setTags={setKeywords} suggestions={['implantes', 'ortodontia', 'harmonização', 'manipulação', 'planejados', 'pet shop', 'ecommerce', 'franquia', 'delivery', 'consultório']} suggestionsLabel="Sugestões" />
+              <KeywordChipGrid selected={keywords} setSelected={setKeywords} />
             </div>
           </div>
 
