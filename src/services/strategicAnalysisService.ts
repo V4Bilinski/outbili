@@ -335,14 +335,20 @@ function generateProductPortfolio(lead: Partial<Lead>): string {
 function extractDecisionMaker(partnersJson?: string): { nome: string; qualificacao: string } | null {
   if (!partnersJson) return null
   try {
-    const partners: Array<{ nome: string; qualificacao: string }> = JSON.parse(partnersJson)
-    if (!partners.length) return null
+    const raw: Array<Record<string, string>> = JSON.parse(partnersJson)
+    if (!raw.length) return null
+    // Normalizar: aceitar nome/nome_socio e qualificacao/qualificacao_socio
+    const partners = raw.map(p => ({
+      nome: p.nome || p.nome_socio || '',
+      qualificacao: p.qualificacao || p.qualificacao_socio || '',
+    }))
     const priorities = ['administrador', 'socio-administrador', 'sócio-administrador', 'diretor', 'ceo', 'fundador', 'presidente', 'gerente']
     for (const keyword of priorities) {
       const match = partners.find(p => p.qualificacao?.toLowerCase().includes(keyword))
       if (match && match.nome) return match
     }
-    return partners[0] || null
+    const first = partners.find(p => p.nome && p.nome.length > 2)
+    return first || null
   } catch { return null }
 }
 
