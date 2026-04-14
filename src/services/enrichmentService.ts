@@ -340,10 +340,21 @@ export async function enrichLead(
       if (assertivaData?._cnaeDescricao && !merged.cnaePrimary) {
         merged.cnaePrimary = assertivaData._cnaeDescricao
       }
-      if (assertivaData?._site && !merged.website) {
-        merged.website = assertivaData._site.startsWith('http')
-          ? assertivaData._site
-          : `https://${assertivaData._site}`
+      // Website: Assertiva _site → fallback: inferir do domínio do email corporativo
+      if (!merged.website && !leadData.website) {
+        if (assertivaData?._site) {
+          merged.website = assertivaData._site.startsWith('http')
+            ? assertivaData._site
+            : `https://${assertivaData._site}`
+        } else if (assertivaData?.emails?.length) {
+          const corpEmail = assertivaData.emails.find((e: any) => {
+            const domain = (e.endereco || '').split('@')[1] || ''
+            return domain && !/gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(domain)
+          })
+          if (corpEmail) {
+            merged.website = `https://${corpEmail.endereco.split('@')[1]}`
+          }
+        }
       }
 
       // Redes sociais da Assertiva (Instagram, Facebook, LinkedIn)
@@ -702,8 +713,19 @@ export async function reEnrichLead(
     if (assertivaData?.emails?.length) {
       merged.assertivaEmailValidated = assertivaData.emails[0].endereco
     }
-    if (assertivaData?._site && !lead.website) {
-      merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
+    // Website: _site → fallback: email corporativo
+    if (!lead.website && !merged.website) {
+      if (assertivaData?._site) {
+        merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
+      } else if (assertivaData?.emails?.length) {
+        const corpEmail = assertivaData.emails.find((e: any) => {
+          const domain = (e.endereco || '').split('@')[1] || ''
+          return domain && !/gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(domain)
+        })
+        if (corpEmail) {
+          merged.website = `https://${corpEmail.endereco.split('@')[1]}`
+        }
+      }
     }
     // Redes sociais da Assertiva
     if (assertivaData?._redesSociais) {

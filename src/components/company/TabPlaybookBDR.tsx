@@ -22,13 +22,13 @@ function ScriptCard({ label, text, labelColor, bgColor, borderColor, showCharCou
   return (
     <div className={cn('p-4 rounded-xl border', bgColor, borderColor)}>
       <div className="flex items-center justify-between mb-2">
-        <span className={cn('text-[10px] uppercase tracking-wider font-medium', labelColor)}>{label}</span>
+        <span className={cn('text-caption uppercase tracking-wider font-medium', labelColor)}>{label}</span>
         <CopyButton text={text} />
       </div>
       <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{text}</p>
       {showCharCount && (
         <div className="flex justify-end mt-2">
-          <span className={cn('text-[10px] font-mono', (text.length > (maxChars || 300)) ? 'text-error' : 'text-text-muted')}>
+          <span className={cn('text-caption font-mono', (text.length > (maxChars || 300)) ? 'text-error' : 'text-text-muted')}>
             {text.length}/{maxChars || 300}
           </span>
         </div>
@@ -99,7 +99,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
 
             {/* Objeções */}
             <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">Objeções e respostas</span>
+              <span className="text-caption uppercase tracking-wider text-text-muted font-medium">Objeções e respostas</span>
               {Object.entries(playbook.canais.whatsapp.objecoes).map(([objecao, resposta], i) => (
                 <AccordionItem
                   key={i}
@@ -155,7 +155,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
 
             {/* Perguntas de qualificação */}
             <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium block mb-3">3 perguntas de qualificação</span>
+              <span className="text-caption uppercase tracking-wider text-text-muted font-medium block mb-3">3 perguntas de qualificação</span>
               <div className="space-y-3">
                 {playbook.canais.ligacao.qualificacao.map((pergunta, i) => (
                   <div key={i} className="flex items-start gap-3">
@@ -169,7 +169,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
             {/* Frase-gatilho */}
             <div className="p-4 rounded-xl bg-red/[0.06] border border-red/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider text-red font-medium">Frase-gatilho</span>
+                <span className="text-caption uppercase tracking-wider text-red font-medium">Frase-gatilho</span>
                 <CopyButton text={playbook.canais.ligacao.gatilho} />
               </div>
               <p className="text-sm font-medium text-text-primary leading-relaxed">{playbook.canais.ligacao.gatilho}</p>
@@ -177,7 +177,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
 
             {/* Objeções */}
             <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">Objeções por telefone</span>
+              <span className="text-caption uppercase tracking-wider text-text-muted font-medium">Objeções por telefone</span>
               {Object.entries(playbook.canais.ligacao.objecoes).map(([objecao, resposta], i) => (
                 <AccordionItem
                   key={i}
@@ -205,7 +205,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
       <div className="p-5 rounded-xl bg-red/[0.05] border border-red/20">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-red font-medium">Produto recomendado</span>
+            <span className="text-caption uppercase tracking-wider text-red font-medium">Produto recomendado</span>
             <p className="text-sm font-semibold text-red mt-1">{playbook.produtoRecomendado.nome} — {playbook.produtoRecomendado.faixa}</p>
             <p className="text-xs text-text-muted mt-1">{playbook.produtoRecomendado.justificativa}</p>
           </div>

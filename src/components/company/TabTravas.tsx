@@ -47,7 +47,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
 
       {/* Card destaque TOC — restrição principal */}
       <div className="p-5 rounded-xl bg-error/[0.06] border border-error/20">
-        <span className="text-[10px] uppercase tracking-wider text-error font-medium">Restrição principal</span>
+        <span className="text-caption uppercase tracking-wider text-error font-medium">Restrição principal</span>
         <div className="flex items-center gap-3 mt-2">
           <Badge variant="error" pulse size="sm">{principal.codigo}</Badge>
           <span className="text-lg font-bold text-text-primary font-heading">{principal.nome}</span>
@@ -80,7 +80,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
                 {/* Sinais detectados — chips */}
                 <div className="flex flex-wrap gap-1.5">
                   {trava.sinaisDetectados.map((sinal, j) => (
-                    <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] text-text-secondary">
+                    <span key={j} className="text-caption px-2 py-0.5 rounded-full bg-white/[0.05] text-text-secondary">
                       {sinal}
                     </span>
                   ))}
@@ -90,7 +90,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
                 <div className="space-y-0">
                   {stepKeys.map((key, j) => (
                     <div key={key} className={cn('border-l-2 px-3 py-2.5', stepColors[j].border, stepColors[j].bg)}>
-                      <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
+                      <span className="text-caption uppercase tracking-wider text-text-muted font-medium">
                         {'STEP'[j]} — {stepColors[j].label}
                       </span>
                       <p className="text-sm text-text-secondary mt-0.5">{trava.step[key]}</p>
@@ -101,7 +101,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
                 {/* Ação BDR */}
                 <div className="p-3 rounded-lg bg-red/[0.05] border border-red/15">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-red font-medium">Ação imediata</span>
+                    <span className="text-caption uppercase tracking-wider text-red font-medium">Ação imediata</span>
                     <CopyButton text={trava.acaoImediata} />
                   </div>
                   <p className="text-sm text-text-secondary">{trava.acaoImediata}</p>
@@ -116,7 +116,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
       <div className="p-5 rounded-xl bg-red/[0.05] border border-red/20">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-red font-medium">Produto recomendado</span>
+            <span className="text-caption uppercase tracking-wider text-red font-medium">Produto recomendado</span>
             <p className="text-sm font-semibold text-red mt-1">
               {principal.step.produto}
             </p>

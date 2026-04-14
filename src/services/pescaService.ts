@@ -390,11 +390,22 @@ export async function enrichBatchWithAssertiva(
             leadUpdate.assertivaIncomeEstimate = Number(assertivaData._rendaPresumida)
           }
 
-          // Website da Assertiva (se não tinha)
-          if (assertivaData?._site && !leadRecord.fields.website) {
-            leadUpdate.website = assertivaData._site.startsWith('http')
-              ? assertivaData._site
-              : `https://${assertivaData._site}`
+          // Website: Assertiva _site → fallback: inferir do domínio do email corporativo
+          if (!leadRecord.fields.website) {
+            if (assertivaData?._site) {
+              leadUpdate.website = assertivaData._site.startsWith('http')
+                ? assertivaData._site
+                : `https://${assertivaData._site}`
+            } else if (assertivaData?.emails?.length) {
+              const corpEmail = assertivaData.emails.find((e: any) => {
+                const domain = (e.endereco || e.email || '').split('@')[1] || ''
+                return domain && !/gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(domain)
+              })
+              if (corpEmail) {
+                const domain = (corpEmail.endereco || corpEmail.email).split('@')[1]
+                leadUpdate.website = `https://${domain}`
+              }
+            }
           }
 
           // CNPJa já rodou (lead foi salvo com 'cnpja') + Assertiva concluiu = complete
