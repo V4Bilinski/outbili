@@ -9,9 +9,9 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/search', icon: Search, label: 'Pesquisa' },
   { to: '/leads', icon: Users, label: 'Leads' },
-  { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
-  { to: '/inbox', icon: MessageSquare, label: 'Mensagens' },
-  { to: '/campaigns', icon: Smartphone, label: 'Campanhas' },
+  { to: '/pipeline', icon: Columns3, label: 'Pipeline', adminOnly: true },
+  { to: '/inbox', icon: MessageSquare, label: 'Mensagens', adminOnly: true },
+  { to: '/campaigns', icon: Smartphone, label: 'Campanhas', adminOnly: true },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]
 
@@ -36,27 +36,46 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
         {!collapsed && (
           <p className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3 animate-[fade-in_0.2s_ease-out]">Menu</p>
         )}
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            title={collapsed ? item.label : undefined}
-            onClick={onNavClick}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-red/10 text-red shadow-[inset_0_0_0_1px_rgba(230,51,41,0.15)]'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
-                collapsed && 'justify-center px-2',
-              )
-            }
-          >
-            <item.icon className="h-[18px] w-[18px] shrink-0" />
-            {!collapsed && <span className="truncate">{item.label}</span>}
-          </NavLink>
-        ))}
+        {navItems.map((item) => {
+          const disabled = item.adminOnly && !isAdmin
+          if (disabled) {
+            return (
+              <div
+                key={item.to}
+                title={collapsed ? `${item.label} (indisponível)` : 'Em atualização — disponível em breve'}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-not-allowed select-none',
+                  'text-white/20',
+                  collapsed && 'justify-center px-2',
+                )}
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </div>
+            )
+          }
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              title={collapsed ? item.label : undefined}
+              onClick={onNavClick}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-red/10 text-red shadow-[inset_0_0_0_1px_rgba(230,51,41,0.15)]'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+                  collapsed && 'justify-center px-2',
+                )
+              }
+            >
+              <item.icon className="h-[18px] w-[18px] shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* Bottom */}
