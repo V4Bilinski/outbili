@@ -363,6 +363,9 @@ export function PipelinePage() {
         </AnimateIn>
       ) : (
         <div className="animate-[fade-in_0.4s_ease-out]">
+          <div className="relative">
+          {/* Mobile scroll hint */}
+          <div className="md:hidden pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-bg to-transparent z-10" />
           <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none">
             {PIPELINE_COLUMNS.map((col) => {
               const colLeads = allLeads.filter((l) => (l.status || 'Novo') === col.value)
@@ -421,6 +424,7 @@ export function PipelinePage() {
                 </div>
               )
             })}
+          </div>
           </div>
         </div>
       )}

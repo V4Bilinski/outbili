@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './lib/auth-context'
 import { MainLayout } from './components/layout/MainLayout'
@@ -13,6 +13,10 @@ import { ReportsPage } from './pages/ReportsPage'
 import { InboxPage } from './pages/InboxPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AdminPage } from './pages/AdminPage'
+import { InstitucionalPage } from './pages/InstitucionalPage'
+import { GlossarioPage } from './pages/GlossarioPage'
+import { EmptyState } from './components/ui/EmptyState'
+import { AlertCircle } from 'lucide-react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +41,18 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function NotFoundPage() {
+  const navigate = useNavigate()
+  return (
+    <EmptyState
+      icon={AlertCircle}
+      title="Página não encontrada"
+      description="O endereço que você acessou não existe. Volte ao dashboard para continuar."
+      action={{ label: 'Voltar ao Dashboard', onClick: () => navigate('/') }}
+    />
+  )
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -44,6 +60,7 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="login" element={<LoginPage />} />
+            <Route path="institucional" element={<InstitucionalPage />} />
             <Route element={<AuthGuard><MainLayout /></AuthGuard>}>
               <Route index element={<DashboardPage />} />
               <Route path="leads" element={<LeadsPage />} />
@@ -55,8 +72,10 @@ export default function App() {
               <Route path="campaigns/new" element={<CampaignsPage />} />
               <Route path="campaigns/:id" element={<CampaignsPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="glossario" element={<GlossarioPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </AuthProvider>

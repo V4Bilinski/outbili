@@ -4,7 +4,7 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight, Search } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
@@ -62,7 +62,20 @@ export function CompanyPage() {
   }
 
   if (!lead) {
-    return <p className="text-text-secondary">Lead não encontrado.</p>
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-[fade-in_0.4s_ease-out]">
+        <div className="p-5 rounded-2xl bg-error/[0.06] border border-error/20 mb-6">
+          <Search className="h-10 w-10 text-error" strokeWidth={1.2} />
+        </div>
+        <h3 className="text-lg font-semibold text-text-primary font-heading mb-2">Lead não encontrado</h3>
+        <p className="text-sm text-text-muted max-w-sm mb-8 leading-relaxed">
+          Este lead pode ter sido removido ou o link está incorreto. Volte para a lista de leads.
+        </p>
+        <Button onClick={() => navigate('/leads')} size="lg" icon={<ArrowLeft className="h-4 w-4" />}>
+          Voltar para Leads
+        </Button>
+      </div>
+    )
   }
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
