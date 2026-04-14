@@ -330,28 +330,28 @@ export function CompanyPage() {
         </Card>
       )}
 
-      {/* Tabs navigation — 4 primarias + dropdown "Mais" (Hick's Law) */}
-      <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
-        <div className="flex gap-0.5 min-w-max border-b border-border pb-0">
-          {PRIMARY_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
-              className={cn(
-                'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
-                'hover:text-text-primary',
-                activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-white/[0.02]',
-              )}
-            >
-              {tab.label}
-              <span className={cn(
-                'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
-                activeTab === tab.id ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
-              )} />
-            </button>
-          ))}
-          {/* Dropdown "Mais" para tabs secundarias */}
-          <div className="relative">
+      {/* Tabs navigation — 4 primarias + dropdown "Análises" */}
+      <div className="relative border-b border-border">
+        <div className="overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 scrollbar-hide">
+          <div className="flex gap-0.5 min-w-max pb-0">
+            {PRIMARY_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
+                className={cn(
+                  'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
+                  'hover:text-text-primary',
+                  activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-white/[0.02]',
+                )}
+              >
+                {tab.label}
+                <span className={cn(
+                  'absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300',
+                  activeTab === tab.id ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
+                )} />
+              </button>
+            ))}
+            {/* Botao "Análises" — dentro do scroll, dropdown fora */}
             <button
               onClick={() => setShowMoreTabs(!showMoreTabs)}
               className={cn(
@@ -365,27 +365,28 @@ export function CompanyPage() {
                 SECONDARY_TABS.some(t => t.id === activeTab) ? 'bg-red scale-x-100 opacity-100' : 'bg-transparent scale-x-0 opacity-0',
               )} />
             </button>
-            {showMoreTabs && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMoreTabs(false)} />
-                <div className="absolute left-0 top-full mt-1 w-52 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
-                  {SECONDARY_TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
-                      className={cn(
-                        'w-full flex items-center gap-2.5 px-3 py-2.5 text-xs cursor-pointer transition-colors text-left',
-                        activeTab === tab.id ? 'bg-red/10 text-red font-semibold' : 'text-text-secondary hover:bg-white/[0.04]',
-                      )}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         </div>
+        {/* Dropdown menu — fora do overflow container para não ser cortado */}
+        {showMoreTabs && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowMoreTabs(false)} />
+            <div className="absolute right-0 md:right-auto md:left-auto top-full mt-1 w-52 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
+              {SECONDARY_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false) }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-2.5 text-xs cursor-pointer transition-colors text-left',
+                    activeTab === tab.id ? 'bg-red/10 text-red font-semibold' : 'text-text-secondary hover:bg-white/[0.04]',
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tab content */}
