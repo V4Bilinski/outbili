@@ -2,7 +2,7 @@
 
 > Guia completo da jornada do usuario, processos, fluxos de dados e pontos de validacao do sistema OUTBILI.
 
-**Versao:** 1.1 | **Data:** 2026-03-27 | **Autor:** Orion (AIOX Master)
+**Versao:** 2.0 | **Data:** 2026-04-14 | **Autor:** Orion (AIOX Master)
 
 ---
 
@@ -36,15 +36,16 @@ O sistema transforma uma busca por segmento/localizacao em leads qualificados co
 ├───────┼──────────────┼──────────────┼───────────────┼──────────┤
 │       ▼              ▼              ▼               ▼          │
 │  ┌─────────┐   ┌──────────┐  ┌──────────┐   ┌─────────────┐  │
-│  │ n8n     │   │ Airtable │  │ Apify    │   │ BilinskiZap │  │
-│  │ Webhook │   │ REST API │  │ Actors   │   │ WhatsApp    │  │
+│  │ CNPJa   │   │ Airtable │  │ Apify    │   │ BilinskiZap │  │
+│  │ API     │   │ REST API │  │ Actors   │   │ WhatsApp    │  │
+│  │(central)│   │ (10 tab) │  │ (social) │   │             │  │
 │  └────┬────┘   └──────────┘  └──────────┘   └─────────────┘  │
 │       │                                                        │
 │       ▼                                                        │
-│  ┌──────────────────────────────────┐                          │
-│  │ n8n Workflow (server-side)       │                          │
-│  │ Google Maps → SPICED → Airtable │                          │
-│  └──────────────────────────────────┘                          │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ Assertiva Localize (Worker proxy | n8n fallback)     │      │
+│  │ Telefones validados + WhatsApp + email               │      │
+│  └──────────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -57,7 +58,9 @@ O sistema transforma uma busca por segmento/localizacao em leads qualificados co
 | Estilizacao | Tailwind CSS v4 |
 | Estado/Dados | TanStack React Query v5 |
 | Graficos | Recharts v3 |
-| Database | Airtable (REST API) |
+| Database | Airtable (REST API — 10 tabelas) |
+| Enriquecimento cadastral | CNPJa API (searchOffice + mapCnpjaToLead) |
+| Enriquecimento telefone | Assertiva Localize (Worker proxy primario, n8n fallback) |
 | Automacao | n8n (self-hosted em `n8n.bilinski.cloud`) |
 | Scraping | Apify (8 actors) |
 | WhatsApp | BilinskiZap API |
@@ -65,19 +68,25 @@ O sistema transforma uma busca por segmento/localizacao em leads qualificados co
 
 ---
 
-## 2. Mapa de Rotas e Paginas
+## 2. Mapa de Rotas e Páginas
 
-| Rota | Pagina | Proposito |
-|------|--------|-----------|
-| `/#/` | DashboardPage | KPIs, funil de pipeline, proximas acoes |
-| `/#/search` | SearchPage | Formulario de descoberta de leads |
-| `/#/leads` | LeadsPage | Tabela + Kanban com filtros |
-| `/#/leads/:id` | CompanyPage | Detalhe do lead com 7 abas de analise |
-| `/#/campaigns` | CampaignsPage | Gestao de campanhas WhatsApp |
-| `/#/campaigns/new` | CampaignsPage | Criacao de nova campanha |
-| `/#/campaigns/:id` | CampaignsPage | Detalhe da campanha |
-| `/#/reports` | ReportsPage | Analytics de funil e metricas |
-| `/#/settings` | SettingsPage | Status de conexao das APIs |
+| Rota | Página | Menu Sidebar | Propósito |
+|------|--------|-------------|-----------|
+| `/#/` | DashboardPage | Dashboard | KPIs com micro-narrativas, próximas ações orientadas |
+| `/#/search` | SearchPage | Pesquisa | Descoberta de leads (PESCA CNPJá + manual + upload) |
+| `/#/leads` | LeadsPage | Leads | Tabela com filtros e busca por texto |
+| `/#/leads/:id` | CompanyPage | — | Perfil do lead com 9 tabs (4 primárias + 5 em "Análises") |
+| `/#/pipeline` | PipelinePage | Pipeline | Kanban drag-and-drop com stage gates |
+| `/#/inbox` | InboxPage | Mensagens | Inbox WhatsApp integrado |
+| `/#/campaigns` | CampaignsPage | Campanhas | Gestão de campanhas WhatsApp |
+| `/#/campaigns/new` | CampaignsPage | — | Criação de nova campanha |
+| `/#/campaigns/:id` | CampaignsPage | — | Detalhe com KPIs contextuais |
+| `/#/reports` | ReportsPage | Relatórios | Métricas com benchmarks e recomendações |
+| `/#/settings` | SettingsPage | Configurações | Conexões API e templates |
+| `/#/admin` | AdminPage | Administração | Atividades, usuários, enriquecimento (admin only) |
+| `/#/login` | LoginPage | — | Autenticação |
+
+> **Copy Standards:** Sidebar usa "Mensagens" (nunca "Inbox"), mobile usa "Msgs". Ver seção Copy Standards em `OUTBILI.md`. Usar `/copy-squad` para criar ou revisar copys do sistema.
 
 ---
 
@@ -124,41 +133,36 @@ O sistema transforma uma busca por segmento/localizacao em leads qualificados co
    - Faixa de faturamento: min/max
    - Keywords adicionais (opcional)
 3. Clica "Pesquisar"
-4. Sistema dispara webhook n8n (fire-and-forget)
-5. Frontend inicia polling no Airtable (10s interval, max 5min)
-6. Exibe progresso com skeleton loading
-7. Quando novos leads detectados → transicao para estado "concluido"
-8. Historico de busca salvo em localStorage (key: outbili_search_history)
+4. Frontend chama CNPJa API diretamente (searchOffice)
+5. Resultados mapeados via mapCnpjaToLead
+6. Leads salvos no Airtable com enrichmentStatus: 'cnpja'
+7. Assertiva enriquece telefones/WhatsApp (via Worker proxy, fallback n8n)
+8. enrichmentStatus atualizado: 'cnpja' → 'assertiva' → 'complete'
+9. Historico de busca salvo em localStorage (key: outbili_search_history)
 ```
 
-#### Fluxo de Dados (Backend — n8n)
+#### Fluxo de Dados (Frontend direto)
 
 ```
-SearchPage                n8n Workflow                    Apify                 Airtable
-    │                         │                            │                      │
-    │─── POST webhook ───────>│                            │                      │
-    │    {segments, city,     │                            │                      │
-    │     state, revenue}     │                            │                      │
-    │                         │─── Run Actor ─────────────>│                      │
-    │                         │    compass~crawler-        │                      │
-    │                         │    google-places           │                      │
-    │                         │<── Results ────────────────│                      │
-    │                         │                            │                      │
-    │                         │── Process inline JS:       │                      │
-    │                         │   - Estimar faturamento    │                      │
-    │                         │     (por qtd reviews)      │                      │
-    │                         │   - Calcular SPICED score  │                      │
-    │                         │   - Validar WhatsApp       │                      │
-    │                         │   - Classificar tier       │                      │
-    │                         │   - Definir temperature    │                      │
-    │                         │                            │                      │
-    │                         │─── Create Lead ───────────────────────────────────>│
-    │                         │─── Create Contact ────────────────────────────────>│
-    │                         │                            │                      │
-    │─── Poll (10s) ──────────────────────────────────────────────────────────────>│
-    │<── New leads count ─────────────────────────────────────────────────────────│
-    │                         │                            │                      │
-    │ [Transicao: "done"]     │                            │                      │
+SearchPage              CNPJa API                  Assertiva              Airtable
+    │                       │                          │                      │
+    │─── GET /office/search─>│                          │                      │
+    │    {cnaeCodes, states, │                          │                      │
+    │     capital, excludeMei}│                          │                      │
+    │<── Empresas ───────────│                          │                      │
+    │                        │                          │                      │
+    │── mapCnpjaToLead()     │                          │                      │
+    │── Salvar Leads ────────────────────────────────────────────────────────>│
+    │── Salvar Contacts ─────────────────────────────────────────────────────>│
+    │                        │                          │                      │
+    │── Worker proxy / n8n ────────────────────────────>│                      │
+    │   (telefones, WhatsApp)│                          │                      │
+    │                        │  ┌── Localize CNPJ ──────│                      │
+    │                        │  └── Localize CPF ───────│                      │
+    │                        │                          │── PATCH Lead ──────>│
+    │                        │                          │── PATCH Contact ───>│
+    │                        │                          │                      │
+    │ [enrichmentStatus: 'cnpja' → 'assertiva' → 'complete']                  │
 ```
 
 #### Pontos de Validacao — Fase 1
@@ -166,12 +170,12 @@ SearchPage                n8n Workflow                    Apify                 
 | # | Checkpoint | Tipo | Criterio |
 |---|-----------|------|----------|
 | 1.1 | Formulario preenchido | Frontend | Pelo menos 1 segmento + 1 localizacao |
-| 1.2 | Webhook disparado | Network | POST retorna 2xx |
-| 1.3 | n8n recebe payload | n8n | Workflow trigado com sucesso |
-| 1.4 | Apify actor roda | n8n → Apify | Actor retorna resultados > 0 |
-| 1.5 | SPICED calculado | n8n (inline JS) | Score 0-5 para cada dimensao |
-| 1.6 | Leads salvos no Airtable | n8n → Airtable | Records criados com status "Novo" |
-| 1.7 | Frontend detecta novos leads | Frontend → Airtable | Polling retorna count > anterior |
+| 1.2 | CNPJa API chamada | Frontend | GET /office/search retorna resultados |
+| 1.3 | Leads mapeados | Frontend | mapCnpjaToLead() converte schema CNPJa |
+| 1.4 | Leads salvos no Airtable | Frontend → Airtable | Records criados com enrichmentStatus 'cnpja' |
+| 1.5 | Assertiva enriquece | Worker/n8n | Telefones/WhatsApp validados |
+| 1.6 | enrichmentStatus progride | Airtable | cnpja → assertiva → complete |
+| 1.7 | Frontend exibe dados | Frontend | Dados enriquecidos visiveis |
 | 1.8 | Historico salvo | Frontend | localStorage atualizado |
 
 #### Fluxo Alternativo: Importacao Manual
@@ -623,34 +627,26 @@ Primeiro relatório gerado com sucesso:
 
 ---
 
-## 4. Enriquecimento de Dados (Processo Offline)
+## 4. Enriquecimento de Dados
 
-### 4.1 Enriquecimento via n8n (automatico)
+### 4.1 Pipeline principal (3 fases)
 
-Executado automaticamente apos a pesquisa inicial:
-- Google Maps scraping (Apify)
-- Estimativa de faturamento (por volume de reviews)
-- SPICED scoring inicial
-- Validacao de WhatsApp
+| Fase | Fonte | Dados | Status resultante |
+|------|-------|-------|-------------------|
+| 1. Cadastral | CNPJa API (searchOffice + mapCnpjaToLead) | CNPJ, razao social, nome fantasia, socios, capital, endereco, CNAE, telefones RF | `cnpja` |
+| 2. Telefone/WhatsApp | Assertiva Localize (Worker proxy primario, n8n fallback) | Telefones validados, WhatsApp confirmado, email verificado | `assertiva` |
+| 3. Social/Digital | Apify Actors (sob demanda) | Instagram, SEO, ads, trafego | `complete` |
 
-### 4.2 Enriquecimento via Script Python (batch)
+**Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimativa CNPJa** (fix 2026-04-14).
 
-**Script:** `scripts/enrich-leads.py`
+### 4.2 Re-enriquecimento (batch)
 
-```
-1. Busca leads com enrichmentStatus = 'pending' no Airtable
-2. Para cada lead:
-   a. Recalcula SPICED com dados adicionais
-   b. Gera perguntas de descoberta (discoveryQuestions)
-   c. Gera notas SPICED detalhadas (spicedNotes)
-   d. Atualiza enrichmentStatus → 'complete'
-3. Salva em batch (lotes de 10) no Airtable
-```
+Substituiu o antigo `scripts/enrich-leads.py`. Agora roda direto no frontend:
 
-**Comando rapido:**
-```bash
-cd scripts && python enrich-leads.py
-```
+- **Funcao:** `reEnrichLead()` em `enrichmentService.ts` — CNPJa + Assertiva only (sem Apify), force-writes campos
+- **Diagnostico:** `leadNeedsReEnrich()` — identifica leads com dados faltantes
+- **Hook:** `src/hooks/useReEnrichment.ts` — batch com concurrency=2, progress tracking
+- **UI:** AdminPage > tab Enriquecimento — cards diagnosticos + botoes de batch re-enrichment
 
 ### 4.3 Enriquecimento via Apify (sob demanda)
 
@@ -658,7 +654,7 @@ Actors disponiveis para enriquecimento adicional:
 
 | Actor | Dados Coletados |
 |-------|----------------|
-| `compass~crawler-google-places` | Google Maps (fonte primaria) |
+| `compass~crawler-google-places` | Google Maps |
 | `apify~instagram-scraper` | Perfil Instagram, seguidores, posts |
 | `apify~website-content-crawler` | Conteudo do site, tech stack |
 | `apify~facebook-ads-scraper` | Anuncios ativos no Facebook |
@@ -670,12 +666,12 @@ Actors disponiveis para enriquecimento adicional:
 ### 4.4 Status de Enriquecimento
 
 ```
-none → basic → pending → complete
-  │      │        │          │
-  │      │        │          └── Todos os dados disponiveis
-  │      │        └────────────── Script Python em processamento
-  │      └─────────────────────── Dados basicos do Google Maps
-  └────────────────────────────── Sem dados (recem-importado)
+none → cnpja → assertiva → complete
+  │      │         │            │
+  │      │         │            └── Todos os dados (incluindo Apify/social)
+  │      │         └──────────────── Telefones/WhatsApp validados (Assertiva)
+  │      └────────────────────────── Dados cadastrais CNPJa (razao social, socios, capital)
+  └───────────────────────────────── Sem dados (recem-importado)
 ```
 
 ---
@@ -684,37 +680,49 @@ none → basic → pending → complete
 
 ### 5.1 Airtable (Database)
 
-**4 Tabelas:**
+**10 Tabelas:**
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│     LEADS       │     │    CONTACTS     │
-│─────────────────│     │─────────────────│
-│ companyName     │◄────│ leadId (FK)     │
-│ cnpj            │     │ name            │
-│ segment         │     │ role            │
-│ tier            │     │ contactType     │
-│ status          │     │ whatsapp        │
-│ score           │     │ email           │
-│ temperature     │     │ bilinskizapId   │
-│ spicedS/P/I/C/D│     └─────────────────┘
-│ vulnerabilities │
-│ salesArguments  │     ┌─────────────────┐
-│ meetingPrep     │     │   CAMPAIGNS     │
-│ enrichmentStatus│     │─────────────────│
-│ ...             │     │ name            │
-└─────────────────┘     │ type            │
-                        │ status          │
-┌─────────────────┐     │ leadIds (array) │
-│   ACTIVITIES    │     │ messagesSent    │
-│─────────────────│     │ delivered       │
-│ leadId (FK)     │     │ read            │
-│ contactId (FK)  │     │ responses       │
-│ type            │     └─────────────────┘
-│ description     │
-│ createdBy       │
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│     LEADS       │     │    CONTACTS     │     │   CAMPAIGNS     │
+│─────────────────│     │─────────────────│     │─────────────────│
+│ companyName     │◄────│ leadId (FK)     │     │ name            │
+│ cnpj            │     │ name            │     │ type            │
+│ segment         │     │ role            │     │ status          │
+│ tier            │     │ contactType     │     │ leadIds (array) │
+│ status          │     │ whatsapp        │     │ messagesSent    │
+│ score           │     │ email           │     │ delivered       │
+│ temperatura     │     │ whatsappConfirmed│     │ read            │
+│ spicedS/P/I/C/D│     │ phoneIsHot      │     │ responses       │
+│ vulnerabilities │     │ source          │     └─────────────────┘
+│ salesArguments  │     │ (NO phone field)│
+│ meetingPrep     │     └─────────────────┘     ┌─────────────────┐
+│ enrichmentStatus│                              │   MESSAGES      │
+│ rfPhone         │     ┌─────────────────┐     │─────────────────│
+│ ...             │     │   ACTIVITIES    │     │ (WhatsApp msgs) │
+└─────────────────┘     │─────────────────│     └─────────────────┘
+                        │ leadId (FK)     │
+┌─────────────────┐     │ contactId (FK)  │     ┌─────────────────┐
+│    PARTNERS     │     │ type            │     │   SEGMENTS      │
+│─────────────────│     │ description     │     │─────────────────│
+│ (Socios QSA)    │     │ createdBy       │     │ (Segmentos)     │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   TRADEMARKS    │     │     USERS       │     │  ACTIVITYLOG    │
+│─────────────────│     │─────────────────│     │─────────────────│
+│ (Marcas INPI)   │     │ (Auth + roles)  │     │ (Audit trail)   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+
+┌─────────────────┐
+│ ENRICHMENTLOG   │
+│─────────────────│
+│ (Log de enrich) │
 └─────────────────┘
 ```
+
+**NOTA:** O campo `enrichmentStatus` na tabela Leads e do tipo `singleLineText` (NAO singleSelect).
+O campo `temperatura` e o nome no Airtable para temperature (code usa `temperature`, mapeado via FIELD_TO_AIRTABLE).
 
 **Rate Limiting:** Token-bucket (5 req/s) com auto-retry em HTTP 429.
 
@@ -722,8 +730,8 @@ none → basic → pending → complete
 
 - **Host:** `n8n.bilinski.cloud`
 - **Webhook:** `POST /webhook/outbili-search`
-- **Workflow:** `n8n/outbili-pesquisa-leads.json` (importavel)
-- **Pipeline:** Webhook → Parse → Apify Google Maps → Poll → Process/SPICED → Save Airtable
+- **Assertiva fallback:** `VITE_N8N_ASSERTIVA_PROXY` (usado quando Worker proxy falha)
+- **NOTA:** PESCA agora roda direto do frontend via CNPJa API. n8n usado como fallback Assertiva.
 
 ### 5.3 BilinskiZap (WhatsApp)
 
@@ -774,6 +782,19 @@ VITE_APIFY_TOKEN=                     # API token
 
 # n8n
 VITE_N8N_WEBHOOK_URL=                 # Default: https://n8n.bilinski.cloud/webhook/outbili-search
+VITE_N8N_ASSERTIVA_PROXY=             # Webhook n8n fallback Assertiva
+
+# CNPJa
+VITE_CNPJA_API_KEY=                   # API key CNPJa (73 chars)
+
+# Assertiva
+VITE_ASSERTIVA_CLIENT_ID=             # OAuth2 client ID
+VITE_ASSERTIVA_CLIENT_SECRET=         # OAuth2 client secret
+VITE_ASSERTIVA_WORKER_URL=            # Worker proxy URL (primario)
+
+# VibeProspecting
+VITE_VIBEPROSPECTING_URL=             # URL VibeProspecting
+VITE_VIBEPROSPECTING_TOKEN=           # Token VibeProspecting
 ```
 
 ### 6.2 Settings Page — Health Checks
@@ -794,7 +815,9 @@ A pagina `/#/settings` verifica em tempo real:
 ### 7.1 Pre-requisitos
 
 - [ ] Variaveis de ambiente configuradas (.env.local)
-- [ ] Airtable base criada com 4 tabelas (Leads, Contacts, Campaigns, Activities)
+- [ ] Airtable base criada com 10 tabelas (Leads, Contacts, Campaigns, Activities, Messages, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog)
+- [ ] CNPJa API key configurada e com creditos
+- [ ] Assertiva OAuth2 credentials configuradas (client_id + client_secret)
 - [ ] n8n workflow importado e ativo
 - [ ] BilinskiZap conectado com numero WhatsApp
 - [ ] Apify token com creditos disponiveis
@@ -838,9 +861,18 @@ A pagina `/#/settings` verifica em tempo real:
 
 | Etapa | Acao | Resultado Esperado | Status |
 |-------|------|--------------------|--------|
-| E.1 | Lead com enrichmentStatus=pending | Script Python detecta | [ ] |
-| E.2 | Rodar `python enrich-leads.py` | SPICED recalculado, questions geradas | [ ] |
-| E.3 | Verificar lead no app | enrichmentStatus=complete, dados atualizados | [ ] |
+| E.1 | Lead criado com enrichmentStatus=cnpja | Dados CNPJa presentes | [ ] |
+| E.2 | Assertiva processa o lead | enrichmentStatus=assertiva, telefones validados | [ ] |
+| E.3 | Verificar lead no app | enrichmentStatus=complete, dados completos | [ ] |
+
+### 7.5 Teste de Re-enriquecimento
+
+| Etapa | Acao | Resultado Esperado | Status |
+|-------|------|--------------------|--------|
+| R.1 | Acessar /#/admin > tab Enriquecimento | Cards diagnosticos visiveis | [ ] |
+| R.2 | Clicar botao re-enrichment batch | Progress tracking inicia | [ ] |
+| R.3 | Verificar leads atualizados | employees, yearsInMarket, foundingDate preenchidos | [ ] |
+| R.4 | Assertiva sobrescreve employees CNPJa | _quantidadeFuncionarios SEMPRE prevalece | [ ] |
 
 ---
 
@@ -903,5 +935,5 @@ cd scripts && python enrich-leads.py
 
 ---
 
-*Documento gerado por Orion (AIOX Master) — 2026-03-27*
-*Sistema: OUTBILI v1.0 — V4 Bilinski & Co*
+*Documento gerado por Orion (AIOX Master) — 2026-04-14*
+*Sistema: OUTBILI v2.0 — V4 Bilinski & Co*

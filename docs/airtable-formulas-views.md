@@ -107,4 +107,23 @@ Base ID: `appKh4qQ5JN94dQHv`
 | View | Filtro | Uso |
 |------|--------|-----|
 | Errors | status = "error" | Monitoramento de falhas |
-| By Source | Group by: source | Analise de cobertura |
+| By Source | Group by: source | Análise de cobertura |
+
+---
+
+## Referência de Copy Standards para Labels no Frontend
+
+Os labels exibidos no frontend seguem os padrões definidos pela auditoria Copy Squad (2026-04-14):
+
+| Campo Airtable | Label no Frontend | Contexto |
+|---------------|-------------------|----------|
+| enrichmentStatus = "complete" | "Dados completos" / "Enriquecido" | Badge verde no card do lead |
+| enrichmentStatus = "cnpja"/"assertiva" | "Processando..." | Badge amarelo animado |
+| enrichmentStatus = "none" | (sem badge) | — |
+| temperatura = "Quente" | "Quente — prontos para contato" | KPI Dashboard com hint |
+| temperatura = "Morno" | "Morno — qualificar para aquecer" | KPI Dashboard com hint |
+| temperatura = "Frio" | "Frio — aquecer com cadência" | KPI Dashboard com hint |
+| segment (vazio) | "Segmento pendente" | Nunca "Sem segmento" |
+| status campanha COMPLETED | "Concluída" | Feminino (campanha) |
+
+> Ver seção completa de Copy Standards em `OUTBILI.md`.
