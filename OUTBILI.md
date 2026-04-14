@@ -127,15 +127,24 @@ npm run preview   # Preview do build local
 - Todas as operações via `src/lib/airtable.ts`
 - Services em `src/services/` encapsulam a lógica de cada entidade
 - Hooks em `src/hooks/` usam React Query para cache e mutations
+- **10 tabelas:** Leads, Contacts, Campaigns, Messages, Activities, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog
+- Campo `temperature` no código mapeia para `temperatura` no Airtable (via FIELD_TO_AIRTABLE)
+- **CRITICO — Contacts table:** campo `phone` NAO existe. Usar `whatsapp` para telefones. Campos disponiveis: `whatsappConfirmed`, `phoneIsHot`, `source`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`
+- **CRITICO — rfPhone:** deve conter o MELHOR telefone disponivel (prioridade: WhatsApp celular > fixo). Assertiva sempre atualiza rfPhone quando encontra WhatsApp validado
 
 ### Enriquecimento de leads
 - Pipeline em 3 fases: CNPJa (cadastral central) → Assertiva (telefones/WhatsApp) → Apify (social/digital)
 - Fluxo de status: `none` → `cnpja` → `assertiva` → `complete`
+- **Prioridade de dados:** decisor (nome) + WhatsApp/telefone sao campos obrigatorios
+- **Prioridade de telefone:** Assertiva WhatsApp validado > CNPJa celular (MOBILE) > CNPJa fixo (LANDLINE)
+- **Assertiva employees:** `_quantidadeFuncionarios` SEMPRE sobrescreve estimate CNPJa (dado real RAIS/CAGED)
 - Lógica em `src/services/enrichmentService.ts` e `src/hooks/useLeadEnrichment.ts`
 - Re-enriquecimento via `reEnrichLead()` (CNPJa + Assertiva only, sem Apify) e `src/hooks/useReEnrichment.ts`
 - Enriquecimento em massa via `src/hooks/useMassEnrichment.ts`
 - Diagnóstico via `leadNeedsReEnrich()` helper
 - Upload de arquivos (CSV, Excel, PDF, TXT, MD) via `src/lib/file-parser.ts`
+- **PESCA pipeline:** frontend chama CNPJa diretamente (searchOfficesPaginated), salva no Airtable, depois enriquece via Assertiva em batch
+- **Assertiva proxy:** Worker Cloudflare (primario) → n8n webhook (fallback). Ambos tratam CORS server-side
 
 ---
 

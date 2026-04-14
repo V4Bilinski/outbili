@@ -178,6 +178,16 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 | 1.7 | Frontend exibe dados | Frontend | Dados enriquecidos visiveis |
 | 1.8 | Historico salvo | Frontend | localStorage atualizado |
 
+#### Regras criticas do pipeline PESCA (fix 2026-04-14)
+
+| Regra | Detalhe |
+|-------|---------|
+| rfPhone prioriza mobile | `lead.whatsapp \|\| lead.phone` — celular tem prioridade sobre fixo |
+| Contacts SEM campo phone | Tabela Contacts nao tem campo `phone`. Usar `whatsapp` para qualquer telefone |
+| Contacts SEM assertiva fields | `assertivaPhoneValidated`, `assertivaWhatsappValidated` nao existem em Contacts. Usar `whatsappConfirmed`, `phoneIsHot` |
+| Assertiva atualiza rfPhone | Quando Assertiva encontra WhatsApp validado, atualiza `rfPhone` no Lead (nao so `assertivaPhoneValidated`) |
+| Employees real | Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimate CNPJa (5/30/100) |
+
 #### Fluxo Alternativo: Importacao Manual
 
 ```

@@ -34,7 +34,7 @@
 | Campanhas WhatsApp | 2/10 | Quebrado — disparo vai para numero placeholder |
 | Analytics / Reports | 7/10 | Bom — métricas com benchmarks, fórmulas explícitas, recomendações condicionais, filtro por período, export CSV |
 | Mobile Experience | 4/10 | Critico — pagina Reports inacessivel, filtros limitados |
-| Enriquecimento | 7/10 | Bom — CNPJa + Assertiva + re-enrichment batch funcionais |
+| Enriquecimento | 8/10 | Bom — CNPJa + Assertiva + re-enrichment batch + fix 422/rfPhone/Assertiva (2026-04-14) |
 | Automacao | 3/10 | Basico — n8n funciona mas cadencia multi-step nao existe |
 | Pos-Venda / CS | 0/10 | Inexistente — sem health score, NPS, churn prevention |
 
@@ -47,6 +47,21 @@ O OUTBILI tem uma **base solida de discovery e qualificacao** (SearchPage + SPIC
 ## 2. Bugs Criticos (P0)
 
 Estes sao bugs que **quebram funcionalidade core**. Devem ser corrigidos antes de qualquer melhoria.
+
+### P0-RESOLVED (2026-04-14): 4 bugs criticos no pipeline PESCA corrigidos
+
+| Bug | Causa raiz | Fix |
+|-----|-----------|-----|
+| **422 Airtable em Contacts** | Campo `phone` NAO existe na tabela Contacts. 147 de 149 contacts falhavam silenciosamente | Removido `phone` do Contact create. Telefone vai para `whatsapp` |
+| **rfPhone ignorava celular** | `savePescaToAirtable` enviava `rfPhone: lead.phone` (fixo), ignorando `lead.whatsapp` (celular) | Agora `rfPhone: lead.whatsapp \|\| lead.phone` |
+| **Assertiva nao atualizava rfPhone** | WhatsApp validado ia para `assertivaPhoneValidated` (campo tecnico) mas NAO para `rfPhone` (campo visivel nos cards) | `enrichBatchWithAssertiva` agora atualiza `rfPhone` com WhatsApp validado |
+| **Contact Assertiva com campos inexistentes** | `assertivaPhoneValidated`, `assertivaWhatsappValidated` nao existem em Contacts — causavam 422 silencioso | Substituidos por `whatsappConfirmed`, `phoneIsHot` |
+
+### P0-RESOLVED (2026-04-14): Bug prioridade employees
+
+Assertiva `_quantidadeFuncionarios` (dado real RAIS/CAGED) era ignorado quando CNPJa ja tinha setado estimate (5/30/100 por porte). Fix: Assertiva SEMPRE sobrescreve.
+
+---
 
 ### P0-1: Campanhas WhatsApp disparam para numero placeholder
 
@@ -84,6 +99,28 @@ onClick={() => window.location.hash = '#/leads'}
 **Impacto:** Usa manipulacao direta de hash ao inves de `useNavigate()`. Em React Router, isso pode causar reload completo da SPA, perda de estado, ou navegacao incorreta.
 
 **Correcao:** Substituir por `navigate('/leads')` do React Router.
+
+---
+
+### ~~P0-4: 422 Airtable — campo `phone` inexistente na tabela Contacts~~ RESOLVIDO (2026-04-14)
+
+**O que acontecia:** O PESCA tentava salvar campo `phone` na tabela Contacts, mas esse campo NAO existe (apenas `whatsapp`). Isso causava 147 erros 422 silenciosos — leads eram criados mas contatos falhavam sem aviso.
+
+**Fix:** Removido campo `phone` do payload de criacao de Contact. ROOT CAUSE de falhas silenciosas na pipeline.
+
+---
+
+### ~~P0-5: rfPhone vazio — preferencia errada de telefone~~ RESOLVIDO (2026-04-14)
+
+**O que acontecia:** rfPhone do Lead salvava apenas telefone fixo, ignorando celular/WhatsApp. Assertiva encontrava WhatsApp validado mas salvava em `assertivaPhoneValidated` (campo que nao existe em Contacts), ficando invisivel nos cards.
+
+**Fix:** rfPhone agora salva `whatsapp || phone` (preferencia celular). Assertiva atualiza rfPhone no Lead quando encontra WhatsApp validado. Contacts usa `whatsappConfirmed`/`phoneIsHot` (campos reais da tabela).
+
+---
+
+### ~~P0-6: Assertiva campos invalidos em Contacts~~ RESOLVIDO (2026-04-14)
+
+**O que acontecia:** Codigo tentava salvar `assertivaPhoneValidated`/`assertivaWhatsappValidated` na tabela Contacts, mas esses campos NAO existem. Substituidos por `whatsappConfirmed` (checkbox) e `phoneIsHot` (checkbox) que sao os campos reais.
 
 ---
 
@@ -236,7 +273,7 @@ onClick={() => window.location.hash = '#/leads'}
 
 | Funcionalidade | Benchmark | OUTBILI Tem? | Gap |
 |---------------|-----------|-------------|-----|
-| **Pipeline drag-and-drop** | Pipedrive | Nao | Kanban visual only |
+| **Pipeline drag-and-drop** | Pipedrive | Sim | @dnd-kit implementado |
 | **Rotting indicators** (deals estagnados) | Pipedrive | Nao | Sem alerta de inatividade |
 | **Activity-based selling** (prox acao) | Pipedrive | Parcial | NextActions no Dashboard, mas sem no CompanyPage |
 | **Pipeline velocity** | Pipedrive | Nao | Sem metrica de velocidade do funil |
@@ -255,7 +292,7 @@ onClick={() => window.location.hash = '#/leads'}
 | **ROI por cliente** | Ekyte | Nao | Sem financeiro |
 | **Producao de agencia** | Ekyte | Nao | Sem gestao de demandas |
 | **Template editor** | HubSpot | Nao | Templates read-only, sem preview |
-| **Global search** | Pipedrive | Nao | Sem busca por texto |
+| **Global search** | Pipedrive | Sim | Search bar no LeadsPage |
 | **Cadencia multi-step** | HubSpot/Kommo | Nao | Constante definida mas nao implementada |
 | **Export PDF/CSV** | Todos | Nao | Reports sem export |
 | **Filtro por periodo** | Todos | Nao | Tudo e all-time |
@@ -270,7 +307,7 @@ onClick={() => window.location.hash = '#/leads'}
 | Projecao de receita por lead | 3 cenarios (agressivo/moderado/conservador) com timeline — unico |
 | Vulnerabilidades de marketing | 8 cards de fraquezas com impacto financeiro — analise que CRMs nao fazem |
 | Argumentos de venda contextualizados | Objecoes previstas com contra-argumentos e ROI — CRMs nao geram isso |
-| Enrichment automatico | n8n + Apify + Google Maps + Instagram + SEO = dados que CRMs manuais nao tem |
+| Enrichment automatico | CNPJa + Assertiva + Apify = dados cadastrais, telefones validados, social que CRMs manuais nao tem |
 
 ---
 
@@ -335,20 +372,23 @@ BAIXO ──────────────────────┼─�
 
 **Meta:** Sistema funcional sem dead ends.
 
-| # | Item | Tipo | Esforco |
-|---|------|------|---------|
-| 1 | Fix placeholder phone no CampaignsPage | Bug P0 | 2h |
-| 2 | Fix botao "Agendar reuniao" no Dashboard | Bug P0 | 1h |
-| 3 | Fix navegacao "Ver leads" no SearchPage | Bug P0 | 15min |
-| 4 | Fix CNPJ descartado no SearchPage | Bug P1 | 30min |
-| 5 | Adicionar dropdown status/temp no CompanyPage | Feature P1 | 3h |
-| 6 | Adicionar Reports no BottomNav mobile | Fix P1 | 1h |
-| 7 | Adicionar text search no LeadsPage | Feature P1 | 2h |
-| 8 | Persistir sidebar collapse em localStorage | Fix P1 | 30min |
-| 9 | Expor getDaySegment() como banner no Dashboard | Feature | 1h |
-| 10 | Adicionar filtro por Trava (T1-T8) no LeadsPage | Feature | 1h |
+| # | Item | Tipo | Esforco | Status |
+|---|------|------|---------|--------|
+| 1 | Fix placeholder phone no CampaignsPage | Bug P0 | 2h | Pendente |
+| 2 | Fix botao "Agendar reuniao" no Dashboard | Bug P0 | 1h | Pendente |
+| 3 | Fix navegacao "Ver leads" no SearchPage | Bug P0 | 15min | Pendente |
+| 4 | ~~Fix CNPJ descartado no SearchPage~~ | Bug P1 | 30min | DONE |
+| 5 | ~~Adicionar dropdown status/temp no CompanyPage~~ | Feature P1 | 3h | DONE |
+| 6 | ~~Adicionar Reports no BottomNav mobile~~ | Fix P1 | 1h | DONE |
+| 7 | ~~Adicionar text search no LeadsPage~~ | Feature P1 | 2h | DONE |
+| 8 | ~~Persistir sidebar collapse em localStorage~~ | Fix P1 | 30min | DONE |
+| 9 | Expor getDaySegment() como banner no Dashboard | Feature | 1h | Pendente |
+| 10 | Adicionar filtro por Trava (T1-T8) no LeadsPage | Feature | 1h | Pendente |
+| 11 | ~~Fix 422 Airtable — phone em Contacts~~ | Bug P0 | 1h | DONE |
+| 12 | ~~Fix rfPhone preferencia celular~~ | Bug P0 | 1h | DONE |
+| 13 | ~~Fix Assertiva campos invalidos Contacts~~ | Bug P0 | 1h | DONE |
 
-**Total estimado: ~12h**
+**Total estimado: ~12h | Concluido: ~8h**
 
 ### Sprint 2: Pipeline Funcional
 
