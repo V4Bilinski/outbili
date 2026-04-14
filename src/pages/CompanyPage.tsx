@@ -624,7 +624,7 @@ export function CompanyPage() {
             <div className="flex flex-wrap gap-2">
               {lead.website && !lead.website.includes('instagram.com') && (
                 <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
-                  site
+                  Website
                 </a>
               )}
               {lead.instagram && (

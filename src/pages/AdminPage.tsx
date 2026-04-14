@@ -53,7 +53,7 @@ export function AdminPage() {
       setUsers(u)
       setLogs(l)
     } catch (err: any) {
-      toast.error('Erro ao carregar dados: ' + err.message)
+      toast.error('Não foi possível carregar os dados. Verifique a conexão.')
     }
     setLoading(false)
   }

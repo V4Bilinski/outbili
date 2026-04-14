@@ -933,7 +933,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                         </Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                        <span className="text-[11px] text-text-muted">{lead.segment || 'Sem segmento'}</span>
+                        <span className="text-[11px] text-text-muted">{lead.segment || 'Segmento pendente'}</span>
                         <span className="text-[11px] text-text-muted">Score {lead.score}</span>
                       </div>
                       {lead.decisorContact ? (
@@ -1226,7 +1226,7 @@ export function CampaignsPage() {
             >
               <option value="all">Todos os Status ({campaigns.length})</option>
               <option value="SENDING">Enviando ({statusCounts.SENDING || 0})</option>
-              <option value="COMPLETED">Concluído ({statusCounts.COMPLETED || 0})</option>
+              <option value="COMPLETED">Concluída ({statusCounts.COMPLETED || 0})</option>
               <option value="DRAFT">Rascunho ({statusCounts.DRAFT || 0})</option>
               <option value="SCHEDULED">Agendada ({statusCounts.SCHEDULED || 0})</option>
               <option value="FAILED">Falhou ({statusCounts.FAILED || 0})</option>

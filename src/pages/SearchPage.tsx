@@ -290,7 +290,7 @@ export function SearchPage() {
       setFileSelected(new Set(result.companies.map((_, i) => i)))
       setTimeout(() => setFileReadingStep('preview'), 1500)
     } catch {
-      toast.error('Erro ao processar arquivo')
+      toast.error('Não foi possível processar o arquivo. Verifique o formato e tente novamente.')
       setFileReadingStep('idle')
     }
   }, [])
@@ -584,7 +584,7 @@ export function SearchPage() {
         }, 300)
       }
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar lead')
+      toast.error(err.message || 'Não foi possível salvar o lead. Tente novamente.')
     } finally {
       setIsCreatingSpecific(false)
     }
