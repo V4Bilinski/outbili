@@ -152,6 +152,54 @@ npm run preview   # Preview do build local
 - **PESCA pipeline:** frontend chama CNPJa diretamente (searchOfficesPaginated), salva no Airtable, depois enriquece via Assertiva em batch
 - **Assertiva proxy:** Worker Cloudflare (primário) → n8n webhook (fallback). Ambos tratam CORS server-side
 
+### Cascata Assertiva WhatsApp (3 níveis obrigatórios)
+
+Todo enriquecimento de WhatsApp DEVE seguir a cascata completa de 3 níveis. Se o nível 1 não encontra telefone, o sistema DEVE tentar os níveis 2 e 3 antes de desistir.
+
+| Nível | Ação Assertiva | O que busca | Quando usar |
+|-------|---------------|-------------|-------------|
+| 1 | `lookup-cnpj` | Telefones da empresa (celulares + fixos) | Sempre — primeiro passo |
+| 2 | `get-decision-makers` (protocolo) | Telefones pessoais dos decisores | Se nível 1 não encontrou celular |
+| 3 | `lookup-cpf` (CPF do sócio) | Celular pessoal do administrador | Se nível 2 não encontrou celular |
+
+**Regras de gravação no Airtable (prevenção de erros 422):**
+
+| Operação | Usar Field ID | NÃO usar nome | Motivo |
+|----------|---------------|---------------|--------|
+| PATCH Lead assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | ~~assertivaPhoneValidated~~ | Nome não reconhecido pela REST API |
+| PATCH Lead assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | ~~assertivaWhatsappFlag~~ | Nome não reconhecido pela REST API |
+| PATCH Lead rfPhone | `fld8I7Eb1tGJfhSyw` | rfPhone (funciona) | Aceito por nome e ID |
+| PATCH Lead enrichmentStatus | `fldoGOPUsqbP4fwzc` | enrichmentStatus (funciona) | Aceito por nome e ID |
+| PATCH Lead employees | `fld7D8lIRW6xEiWJe` | employees (funciona) | Aceito por nome e ID |
+
+**REGRA ABSOLUTA:** ao fazer PATCH em campos Assertiva, SEMPRE usar field IDs (não nomes). Campos que contêm "assertiva" no nome são reconhecidos APENAS por field ID na REST API do Airtable. Campos padrão (rfPhone, enrichmentStatus, employees) aceitam tanto nome quanto ID.
+
+**Mapeamento completo de Field IDs — Tabela Leads (campos Assertiva):**
+
+| Campo | Field ID | Tipo |
+|-------|----------|------|
+| assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | singleLineText |
+| assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | checkbox |
+| assertivaEmailValidated | (verificar antes de usar) | email |
+| assertivaCpfDecisor | (verificar antes de usar) | singleLineText |
+| assertivaEnrichDate | **NÃO EXISTE** | — |
+
+**Mapeamento completo de Field IDs — Tabela Contacts:**
+
+| Campo | Field ID | Tipo |
+|-------|----------|------|
+| name | `fldnP5Nv7I4bxKohq` | singleLineText |
+| whatsapp | `fldaRqlIC0D6sxRgm` | phoneNumber |
+| contactType | `fldtKbUnJH47E0IKB` | singleSelect |
+| source | `fldlzSs66OcbhCLIu` | singleSelect |
+| whatsappConfirmed | `fldMY9uwCUYFrZGfR` | checkbox |
+| Lead (linked) | `fldTOTIfGn70ozcqm` | multipleRecordLinks |
+| **phone** | **NÃO EXISTE** | — |
+
+**Worker Cloudflare — User-Agent obrigatório:**
+- O Cloudflare Bot Fight Mode bloqueia requisições com User-Agent de bibliotecas (Python-urllib, etc.)
+- SEMPRE enviar User-Agent de navegador: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36`
+
 ---
 
 ## Configuração do Claude Code

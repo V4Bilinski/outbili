@@ -148,7 +148,7 @@ Base ID: `appKh4qQ5JN94dQHv`
 
 ## Known Field Restrictions (prevenção de erros 422)
 
-**CRITICO:** Campos que NAO existem em determinadas tabelas. Tentar salvar nesses campos causa erro 422 silencioso no Airtable.
+**CRÍTICO:** Campos que NÃO existem em determinadas tabelas. Tentar salvar nesses campos causa erro 422 silencioso no Airtable.
 
 ### Tabela Contacts — campos que NAO existem
 
@@ -175,9 +175,36 @@ Base ID: `appKh4qQ5JN94dQHv`
 
 | Campo | Tipo real | Notas |
 |-------|----------|-------|
-| `enrichmentStatus` | Single line text | NAO e singleSelect — e singleLineText |
-| `temperatura` | Single line text | Nome no Airtable para "temperature" (mapeado via FIELD_TO_AIRTABLE no codigo) |
-| `rfPhone` | Single line text | Salva `whatsapp \|\| phone` (preferencia celular). Assertiva atualiza quando encontra WhatsApp |
+| `enrichmentStatus` | Single line text | NÃO é singleSelect — é singleLineText |
+| `temperatura` | Single line text | Nome no Airtable para "temperature" (mapeado via FIELD_TO_AIRTABLE no código) |
+| `rfPhone` | Single line text | Salva `whatsapp \|\| phone` (preferência celular). Assertiva atualiza quando encontra WhatsApp |
+
+### Tabela Leads — Field IDs obrigatórios (campos Assertiva)
+
+**REGRA:** Campos com prefixo "assertiva" no Airtable são reconhecidos APENAS por Field ID na REST API. Usar o nome do campo retorna 422.
+
+| Campo | Field ID | Aceita nome? | Tipo |
+|-------|----------|-------------|------|
+| assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | **NÃO** | singleLineText |
+| assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | **NÃO** | checkbox |
+| rfPhone | `fld8I7Eb1tGJfhSyw` | SIM | phoneNumber |
+| enrichmentStatus | `fldoGOPUsqbP4fwzc` | SIM | singleLineText |
+| employees | `fld7D8lIRW6xEiWJe` | SIM | number |
+| companyName | `fldBoavQTKIryQTWi` | SIM | singleLineText |
+| cnpj | `fldpsnHQDMCvYU3Ub` | SIM | singleLineText |
+| assertivaEnrichDate | — | **NÃO EXISTE** | — |
+
+### Tabela Contacts — Field IDs
+
+| Campo | Field ID | Tipo |
+|-------|----------|------|
+| name | `fldnP5Nv7I4bxKohq` | singleLineText |
+| whatsapp | `fldaRqlIC0D6sxRgm` | phoneNumber |
+| contactType | `fldtKbUnJH47E0IKB` | singleSelect |
+| source | `fldlzSs66OcbhCLIu` | singleSelect |
+| whatsappConfirmed | `fldMY9uwCUYFrZGfR` | checkbox |
+| Lead (linked) | `fldTOTIfGn70ozcqm` | multipleRecordLinks |
+| **phone** | — | **NÃO EXISTE** |
 
 ---
 

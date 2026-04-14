@@ -178,7 +178,7 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 | 1.7 | Frontend exibe dados | Frontend | Dados enriquecidos visiveis |
 | 1.8 | Historico salvo | Frontend | localStorage atualizado |
 
-#### Regras críticas do pipeline PESCA (fix 2026-04-14)
+#### Regras críticas do pipeline PESCA (validado 2026-04-14)
 
 | Regra | Detalhe |
 |-------|---------|
@@ -187,6 +187,28 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 | Contacts SEM assertiva fields | `assertivaPhoneValidated`, `assertivaWhatsappValidated` não existem em Contacts. Usar `whatsappConfirmed`, `phoneIsHot` |
 | Assertiva atualiza rfPhone | Quando Assertiva encontra WhatsApp validado, atualiza `rfPhone` no Lead (não só `assertivaPhoneValidated`) |
 | Employees real | Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimativa CNPJa (5/30/100) |
+| **Field IDs obrigatórios** | Campos Assertiva no Airtable (assertivaPhoneValidated, assertivaWhatsappFlag) devem ser gravados usando **Field IDs**, não nomes — a REST API rejeita os nomes com 422 |
+| **User-Agent obrigatório** | Worker Cloudflare exige User-Agent de navegador. Python urllib sem User-Agent é bloqueado com 403 (error 1010) |
+
+#### Cascata Assertiva WhatsApp (3 níveis)
+
+```
+Nível 1: lookup-cnpj → telefones da empresa
+    ↓ (se não achou celular)
+Nível 2: get-decision-makers (protocolo) → telefones pessoais dos decisores
+    ↓ (se não achou celular)
+Nível 3: lookup-cpf (CPF do sócio) → celular pessoal do administrador
+```
+
+#### Field IDs obrigatórios para PATCH (campos Assertiva)
+
+| Campo | Field ID | Aceita nome? |
+|-------|----------|-------------|
+| assertivaPhoneValidated | `fldcnS76Lxvemqkp4` | NÃO — usar só field ID |
+| assertivaWhatsappFlag | `fldrdDxps8r6C86sP` | NÃO — usar só field ID |
+| rfPhone | `fld8I7Eb1tGJfhSyw` | SIM — aceita nome e ID |
+| enrichmentStatus | `fldoGOPUsqbP4fwzc` | SIM — aceita nome e ID |
+| employees | `fld7D8lIRW6xEiWJe` | SIM — aceita nome e ID |
 
 #### Fluxo Alternativo: Importação Manual
 
