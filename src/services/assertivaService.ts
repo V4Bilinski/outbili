@@ -90,6 +90,23 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
   // Mapear resposta — proxy retorna dados ja processados pelo n8n ou raw da Assertiva
   const resp = raw.resposta || raw
   const cadastro = resp.dadosCadastrais || {}
+
+  // Debug: logar campos disponíveis para mapear extração expandida
+  if (typeof window !== 'undefined') {
+    const availableFields = Object.keys(resp).filter(k => resp[k] != null)
+    const cadastroFields = Object.keys(cadastro).filter(k => cadastro[k] != null)
+    console.log('[Assertiva] Campos resp:', availableFields.join(', '))
+    console.log('[Assertiva] Campos cadastro:', cadastroFields.join(', '))
+    if (resp.redesSociais || cadastro.redesSociais || resp.midiasSociais) {
+      console.log('[Assertiva] Redes sociais:', JSON.stringify(resp.redesSociais || cadastro.redesSociais || resp.midiasSociais))
+    }
+    if (resp.faturamentoPresumido || cadastro.faturamentoPresumido || resp.faturamento) {
+      console.log('[Assertiva] Faturamento:', resp.faturamentoPresumido || cadastro.faturamentoPresumido || resp.faturamento)
+    }
+    if (resp.scoreCredito || cadastro.scoreCredito) {
+      console.log('[Assertiva] Score crédito:', resp.scoreCredito || cadastro.scoreCredito)
+    }
+  }
   const celulares = (resp.telefones?.celulares || []).map((t: any) => ({
     numero: t.numero?.replace(/\D/g, '') || '',
     tipo: 'celular' as const,
