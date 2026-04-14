@@ -257,16 +257,28 @@ export async function enrichBatchWithAssertiva(
             assertivaEnrichDate: new Date().toISOString(),
           }
 
-          // Telefone validado
+          // Telefone validado — PRIORIDADE: atualizar rfPhone com melhor telefone
           if (assertivaData?.telefones?.length) {
             const bestPhone = extractBestPhone(assertivaData.telefones)
             if (bestPhone.whatsapp) {
               leadUpdate.assertivaPhoneValidated = bestPhone.whatsapp
               leadUpdate.assertivaWhatsappFlag = true
+              // CRITICO: atualizar rfPhone com WhatsApp validado (prioridade maxima)
+              leadUpdate.rfPhone = bestPhone.whatsapp
             } else if (bestPhone.landline) {
               leadUpdate.assertivaPhoneValidated = bestPhone.landline
               leadUpdate.assertivaWhatsappFlag = false
+              // Atualizar rfPhone se nao tinha telefone
+              const currentPhone = leadRecord.fields.rfPhone
+              if (!currentPhone) {
+                leadUpdate.rfPhone = bestPhone.landline
+              }
             }
+          }
+
+          // Quantidade de funcionarios (dado real Assertiva)
+          if (assertivaData?._quantidadeFuncionarios) {
+            leadUpdate.employees = Number(assertivaData._quantidadeFuncionarios)
           }
 
           // Email validado
@@ -308,8 +320,8 @@ export async function enrichBatchWithAssertiva(
                       whatsapp: phones.whatsapp || '',
                       email: decisor.emails?.[0]?.endereco,
                       source: 'assertiva',
-                      assertivaPhoneValidated: true,
-                      assertivaWhatsappValidated: !!phones.whatsapp,
+                      whatsappConfirmed: !!phones.whatsapp,
+                      phoneIsHot: phones.phoneIsHot,
                     } as Partial<Contact>,
                   }])
                 }
@@ -318,8 +330,9 @@ export async function enrichBatchWithAssertiva(
           }
 
           enrichedCount++
-        } catch {
+        } catch (err) {
           failedCount++
+          console.warn(`ASSERTIVA ENRICH falhou para lead ${leadId}:`, err instanceof Error ? err.message : err)
         }
       }),
     )
@@ -457,7 +470,7 @@ export async function savePescaToAirtable(
         state: lead.state,
         city: lead.city,
         address: lead.address,
-        rfPhone: lead.phone,
+        rfPhone: lead.whatsapp || lead.phone,
         rfEmail: lead.email,
         capitalSocial: lead.capitalSocial,
         foundingDate: lead.foundingDate,
@@ -481,16 +494,18 @@ export async function savePescaToAirtable(
               name: originalLead.decisorName,
               role: originalLead.decisorRole,
               contactType: 'decisor',
-              // WhatsApp apenas se celular confirmado (MOBILE do CNPJa)
-              whatsapp: originalLead.whatsapp || '',
-              // Telefone fixo da empresa como fallback
-              phone: !originalLead.whatsapp && originalLead.phone ? originalLead.phone : '',
+              // Prioridade: celular (WhatsApp) > telefone fixo
+              whatsapp: originalLead.whatsapp || originalLead.phone || '',
+              source: 'cnpja',
             } as Partial<Contact>,
           })
         }
       }
-    } catch (err) {
-      console.error(`Erro ao salvar batch leads ${i / 10 + 1}:`, err)
+    } catch (err: any) {
+      // Log detalhado do 422 para debugging
+      const detail = err?.message || JSON.stringify(err)
+      console.error(`PESCA SAVE ERRO batch ${i / 10 + 1} (${batch.length} leads):`, detail)
+      console.error('Campos do primeiro lead do batch:', JSON.stringify(records[0]?.fields, null, 2))
     }
 
     onProgress?.(leadIds.length)

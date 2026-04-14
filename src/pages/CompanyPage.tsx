@@ -241,8 +241,8 @@ export function CompanyPage() {
               <Badge variant={tempVariant} pulse={lead.temperature === 'Quente'}>
                 {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </Badge>
-              <Badge variant="outline" title="Classificação por porte/faturamento da empresa">{lead.tier}</Badge>
-              <Badge variant="outline" title="Segmento de atuação (CNAE)">{lead.segment}</Badge>
+              <Badge variant="outline">{lead.tier}</Badge>
+              <Badge variant="outline">{lead.segment}</Badge>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
