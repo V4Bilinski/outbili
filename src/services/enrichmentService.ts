@@ -348,11 +348,13 @@ export async function enrichLead(
             : `https://${assertivaData._site}`
         } else if (assertivaData?.emails?.length) {
           const corpEmail = assertivaData.emails.find((e: any) => {
-            const domain = (e.endereco || '').split('@')[1] || ''
+            const addr = e.endereco || e.email || ''
+            const domain = addr.split('@')[1] || ''
             return domain && !/gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(domain)
           })
           if (corpEmail) {
-            merged.website = `https://${corpEmail.endereco.split('@')[1]}`
+            const domain = (corpEmail.endereco || corpEmail.email).split('@')[1]
+            merged.website = `https://${domain}`
           }
         }
       }
@@ -719,11 +721,13 @@ export async function reEnrichLead(
         merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
       } else if (assertivaData?.emails?.length) {
         const corpEmail = assertivaData.emails.find((e: any) => {
-          const domain = (e.endereco || '').split('@')[1] || ''
+          const addr = e.endereco || e.email || ''
+          const domain = addr.split('@')[1] || ''
           return domain && !/gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(domain)
         })
         if (corpEmail) {
-          merged.website = `https://${corpEmail.endereco.split('@')[1]}`
+          const domain = (corpEmail.endereco || corpEmail.email).split('@')[1]
+          merged.website = `https://${domain}`
         }
       }
     }
