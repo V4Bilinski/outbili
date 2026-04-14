@@ -71,7 +71,7 @@ export type EnrichmentProgress = {
  *
  * Formula: Score = (S × 0.25) + (P × 0.25) + (I × 0.20) + (C × 0.15) + (D × 0.15)
  * Cada dimensão: 1–5. Score final: 1.0–5.0.
- * Temperatura: >= 4.0 Quente | >= 3.0 Morno | < 3.0 Frio
+ * Temperatura: >= 3.7 Quente | >= 2.5 Morno | < 2.5 Frio
  *
  * Fontes:
  *   CNPJá  → employees (est.), foundingDate, capitalSocial, city/state, taxRegime,

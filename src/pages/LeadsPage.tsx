@@ -78,8 +78,8 @@ function LeadFilters({
 function LeadTable({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
   const barColor = (score: number) => {
-    if (score >= 4) return 'bg-red'
-    if (score >= 3) return 'bg-warning'
+    if (score >= 3.7) return 'bg-red'
+    if (score >= 2.5) return 'bg-warning'
     return 'bg-cold'
   }
 

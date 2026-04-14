@@ -34,8 +34,8 @@ export function calculateSpicedScore(s: number, p: number, i: number, c: number,
 }
 
 export function getTemperatureFromScore(score: number): 'Quente' | 'Morno' | 'Frio' {
-  if (score >= 4) return 'Quente'
-  if (score >= 3) return 'Morno'
+  if (score >= 3.7) return 'Quente'
+  if (score >= 2.5) return 'Morno'
   return 'Frio'
 }
 

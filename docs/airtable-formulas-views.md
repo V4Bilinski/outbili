@@ -217,9 +217,9 @@ Os labels exibidos no frontend seguem os padrões definidos pela auditoria Copy 
 | enrichmentStatus = "complete" | "Dados completos" / "Enriquecido" | Badge verde no card do lead |
 | enrichmentStatus = "cnpja"/"assertiva" | "Processando..." | Badge amarelo animado |
 | enrichmentStatus = "none" | (sem badge) | — |
-| temperatura = "Quente" | "Quente — prontos para contato" | KPI Dashboard com hint |
-| temperatura = "Morno" | "Morno — qualificar para aquecer" | KPI Dashboard com hint |
-| temperatura = "Frio" | "Frio — aquecer com cadência" | KPI Dashboard com hint |
+| temperatura = "Quente" (score >= 3.7) | "Quente — prontos para contato" | KPI Dashboard com hint |
+| temperatura = "Morno" (score 2.5–3.6) | "Morno — qualificar para aquecer" | KPI Dashboard com hint |
+| temperatura = "Frio" (score < 2.5) | "Frio — aquecer com cadência" | KPI Dashboard com hint |
 | segment (vazio) | "Segmento pendente" | Nunca "Sem segmento" |
 | status campanha COMPLETED | "Concluída" | Feminino (campanha) |
 

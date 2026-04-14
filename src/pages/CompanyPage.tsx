@@ -255,7 +255,7 @@ export function CompanyPage() {
           <div className="text-right shrink-0">
             <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
             <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
-            <p className="text-[10px] text-text-muted mt-0.5">{score >= 4 ? 'Lead qualificado' : score >= 3 ? 'Potencial médio' : score >= 2 ? 'Necessita qualificação' : 'Prioridade baixa'}</p>
+            <p className="text-[10px] text-text-muted mt-0.5">{score >= 3.7 ? 'Lead qualificado' : score >= 2.5 ? 'Potencial médio' : 'Necessita qualificação'}</p>
           </div>
         </div>
 

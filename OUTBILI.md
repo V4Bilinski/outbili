@@ -251,8 +251,15 @@ Padrões definidos pela auditoria Copy Squad (2026-04-14). Para novas telas ou c
 - **Mensagens** (nunca "Inbox")
 - **Segmento pendente** (nunca "Sem segmento")
 
+### Classificação SPICED → Temperatura
+- **Score 3.7 – 5.0** → Quente ("Lead qualificado")
+- **Score 2.5 – 3.6** → Morno ("Potencial médio")
+- **Score 1.0 – 2.4** → Frio ("Necessita qualificação")
+- Fórmula: `Score = (S × 25%) + (P × 25%) + (I × 20%) + (C × 15%) + (D × 15%)`
+- Fontes: CNPJá (cadastral) + Assertiva (CNPJ + CPF decisor)
+
 ### Storytelling de dados
-- Números com contexto: Score 4.2 → "Lead qualificado"
+- Números com contexto: Score 3.8 → "Lead qualificado"
 - Taxas com benchmark: 15% → "abaixo do benchmark (30%)"
 - Valores monetários com fórmula: "Baseado em 10-15% do faturamento anual"
 - Enrichment legível: "Enriquecido", "Processando...", "Dados completos"
