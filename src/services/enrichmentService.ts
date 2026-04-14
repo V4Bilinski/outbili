@@ -913,72 +913,123 @@ export type EnrichmentProgress = {
   isDone: boolean
 }
 
+/**
+ * SPICED Score v2 — alimentado 100% por CNPJá + Assertiva (CNPJ + CPF)
+ *
+ * Formula: Score = (S × 0.25) + (P × 0.25) + (I × 0.20) + (C × 0.15) + (D × 0.15)
+ * Cada dimensão: 1–5. Score final: 1.0–5.0.
+ * Temperatura: >= 4.0 Quente | >= 3.0 Morno | < 3.0 Frio
+ *
+ * Fontes:
+ *   CNPJá  → employees (est.), foundingDate, capitalSocial, city/state, taxRegime,
+ *            isHeadquarters, registrationStatus, statusDate, emailDomain, phoneType,
+ *            simplesOptant, partners, cnpj, rfEmail, rfPhone
+ *   Assertiva CNPJ → employees (real RAIS/CAGED), website, temGoogleMeuNegocio,
+ *                     whatsappBusiness (fixos), telefones validados
+ *   Assertiva CPF  → rendaEstimada, redesSociais pessoais, linkedin, whatsapp pessoal
+ */
 function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): { spicedS: number; spicedP: number; spicedI: number; spicedC: number; spicedD: number } {
   const data = { ...leadData, ...merged }
 
-  // Fallback: calcular yearsInMarket a partir de foundingDate
   const yearsInMarket = data.yearsInMarket
     ?? (data.foundingDate
       ? Math.floor((Date.now() - new Date(data.foundingDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       : undefined)
 
-  // S (Situation) — porte e contexto
+  // ═══════════════════════════════════════════════════════════════════
+  // S (Situação) 25% — porte, maturidade e contexto da empresa
+  // Fontes: CNPJá (capitalSocial, foundingDate, address, isHeadquarters)
+  //         Assertiva CNPJ (employees real RAIS/CAGED)
+  // ═══════════════════════════════════════════════════════════════════
   let spicedS = 1
-  if (data.employees && data.employees > 5) spicedS++
-  if (data.employees && data.employees > 20) spicedS++
-  if (yearsInMarket && yearsInMarket > 3) spicedS++
-  if (data.city && data.state) spicedS++
-  // Bonus: capital social alto indica empresa consolidada
-  if (data.capitalSocial && data.capitalSocial >= 100000) spicedS++
+  if (data.employees && data.employees > 5) spicedS++      // Assertiva employees real
+  if (data.employees && data.employees > 20) spicedS++     // Assertiva employees real
+  if (yearsInMarket && yearsInMarket > 3) spicedS++        // CNPJá foundingDate
+  if (data.city && data.state) spicedS++                   // CNPJá address
+  if (data.capitalSocial && data.capitalSocial >= 100000) spicedS++ // CNPJá equity
+  if (data.isHeadquarters) spicedS++                       // CNPJá head (matriz = mais relevante)
 
-  // P (Pain) — sinais de dor
+  // ═══════════════════════════════════════════════════════════════════
+  // P (Dor/Pain) 25% — sinais de fragilidade digital e operacional
+  // Fontes: Assertiva CNPJ (website, temGoogleMeuNegocio, whatsappBusiness)
+  //         CNPJá (emailDomain, phoneType, capitalSocial, foundingDate, simplesOptant)
+  //         Assertiva CPF (redesSociais pessoais como fallback)
+  // ═══════════════════════════════════════════════════════════════════
   let spicedP = 1
-  if (data.googleRating !== undefined && data.googleRating < 4.0) spicedP += 2
-  if (!data.website) spicedP++
-  if (!data.instagram) spicedP++
-  if (data.googleReviewsCount !== undefined && data.googleReviewsCount < 10) spicedP++
-  // Bonus: empresa sem presença digital madura
-  if (data.domainActive === false) spicedP++
+  if (!data.website) spicedP++                              // Assertiva _site: sem website = dor
+  if (!data.instagram) spicedP++                            // Assertiva redesSociais: sem Instagram = dor
+  // Email genérico (gmail, hotmail, yahoo, outlook) = marketing amador
+  const emailDomain = data.emailDomain || (data.rfEmail?.split('@')[1]) || ''
+  const isGenericEmail = /gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(emailDomain)
+  if (isGenericEmail || !emailDomain) spicedP++
+  // Só telefone fixo, sem celular = difícil alcançar
+  if (data.phoneType === 'LANDLINE' || (!data.assertivaWhatsappFlag && data.rfPhone)) spicedP++
+  // Capital baixo e empresa antiga = estagnação
+  if (data.capitalSocial && data.capitalSocial < 50000 && yearsInMarket && yearsInMarket > 5) spicedP++
+  // Simples Nacional com muitos funcionários = pode estar limitando crescimento
+  if (data.simplesOptant && data.employees && data.employees > 10) spicedP++
 
-  // I (Impact) — potencial de impacto
+  // ═══════════════════════════════════════════════════════════════════
+  // I (Impacto) 20% — potencial financeiro e capacidade de investimento
+  // Fontes: Assertiva CPF (rendaEstimada do decisor)
+  //         CNPJá (capitalSocial, taxRegime)
+  //         Assertiva CNPJ (employees real)
+  // ═══════════════════════════════════════════════════════════════════
   let spicedI = 1
   const revenue = data.monthlyRevenue || 0
+  const rendaDecisor = data.assertivaIncomeEstimate || 0
   if (revenue > 0) {
+    // Faturamento da empresa (Assertiva CNPJ _faturamentoPresumido ou estimado)
     if (revenue >= 100000) spicedI++
     if (revenue >= 200000) spicedI++
     if (revenue >= 500000) spicedI++
+  } else if (rendaDecisor > 0) {
+    // Renda do decisor como proxy de porte (Assertiva CPF)
+    if (rendaDecisor >= 10000) spicedI++   // R$ 10k+ = empresa minimamente estruturada
+    if (rendaDecisor >= 30000) spicedI++   // R$ 30k+ = empresa média
+    if (rendaDecisor >= 100000) spicedI++  // R$ 100k+ = empresa grande
   } else if (data.capitalSocial) {
-    // Fallback: capitalSocial como proxy de porte/potencial
+    // Capital social como último proxy (CNPJá)
     if (data.capitalSocial >= 50000) spicedI++
     if (data.capitalSocial >= 200000) spicedI++
     if (data.capitalSocial >= 500000) spicedI++
   }
-  if (data.instagramFollowers && data.instagramFollowers > 1000) spicedI++
-  // Bonus: regime tributário indica porte real
+  // Regime tributário indica porte real (CNPJá)
   if (data.taxRegime === 'lucro_presumido' || data.taxRegime === 'lucro_real') spicedI++
+  // Muitos funcionários = operação com escala = impacto alto (Assertiva)
+  if (data.employees && data.employees > 50) spicedI++
 
-  // C (Critical Event) — urgência
+  // ═══════════════════════════════════════════════════════════════════
+  // C (Evento Crítico) 15% — urgência e timing
+  // Fontes: CNPJá (foundingDate, statusDate, registrationStatus)
+  //         Assertiva CNPJ (whatsappConfirmed, phoneIsHot)
+  // ═══════════════════════════════════════════════════════════════════
   let spicedC = 1
-  if (yearsInMarket !== undefined && yearsInMarket < 2) spicedC += 2
-  if (data.enrichmentStatus === 'complete') spicedC++
-  if (data.googleRating !== undefined && data.googleRating >= 4.5) spicedC++
-  // Bonus: empresa recém-cadastrada = momento de decisão
-  if (data.registrationStatus === 'Ativa' && yearsInMarket && yearsInMarket < 1) spicedC++
+  if (yearsInMarket !== undefined && yearsInMarket < 2) spicedC += 2  // CNPJá: empresa nova = momento decisão
+  // Decisor com WhatsApp validado = canal aberto (Assertiva)
+  if (data.assertivaWhatsappFlag) spicedC++
+  // Status mudou nos últimos 6 meses = momento de transição (CNPJá)
+  if (data.statusDate) {
+    const statusDate = new Date(data.statusDate)
+    const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
+    if (!isNaN(statusDate.getTime()) && statusDate > sixMonthsAgo) spicedC++
+  }
+  // Empresa recém-ativa com menos de 1 ano (CNPJá)
+  if (data.registrationStatus === 'Ativa' && yearsInMarket !== undefined && yearsInMarket < 1) spicedC++
 
-  // D (Decision) — acesso ao decisor
+  // ═══════════════════════════════════════════════════════════════════
+  // D (Decisão) 15% — acesso ao decisor e canal de contato
+  // Fontes: CNPJá (cnpj, partners, rfEmail, rfPhone)
+  //         Assertiva CNPJ/CPF (whatsappConfirmed, linkedin, website)
+  // ═══════════════════════════════════════════════════════════════════
   let spicedD = 1
-  if (data.cnpj) spicedD++
-  if (data.linkedin) spicedD++
-  if (data.website) spicedD++
-  // Bonus: temos sócios identificados da RF
-  if (data.partners) spicedD++
-  if (data.rfEmail || data.rfPhone) spicedD++
+  if (data.cnpj) spicedD++                                   // CNPJá: CNPJ identificado
+  if (data.partners) spicedD++                               // CNPJá: sócios (QSA) identificados
+  if (data.rfEmail || data.assertivaEmailValidated) spicedD++ // CNPJá/Assertiva: email disponível
+  if (data.assertivaWhatsappFlag) spicedD++                  // Assertiva: WhatsApp confirmado do decisor
+  if (data.linkedin || data.website) spicedD++               // Assertiva: presença digital acessível
 
-  // Bonus INPI: empresa com marca registrada = mais consolidada e investidora
-  if (data.inpiHasRegisteredTrademark) { spicedS++; spicedI++ }
-  if (data.inpiTrademarkCount && data.inpiTrademarkCount >= 3) spicedS++
-
-  // Cap all scores at 5
+  // Cap: todas as dimensões entre 1 e 5
   const cap = (n: number) => Math.min(5, Math.max(1, n))
   return { spicedS: cap(spicedS), spicedP: cap(spicedP), spicedI: cap(spicedI), spicedC: cap(spicedC), spicedD: cap(spicedD) }
 }
