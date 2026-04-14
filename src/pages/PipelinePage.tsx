@@ -123,9 +123,9 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
               <div>
                 <p className="text-sm font-bold text-text-primary">{gate?.title || `Mover para ${toLabel}`}</p>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-text-muted">{fromLabel}</span>
+                  <span className="text-label text-text-muted">{fromLabel}</span>
                   <ArrowRight className="h-3 w-3 text-text-muted" />
-                  <span className="text-[11px] font-semibold" style={{ color: toColor }}>{toLabel}</span>
+                  <span className="text-label font-semibold" style={{ color: toColor }}>{toLabel}</span>
                 </div>
               </div>
             </div>
@@ -137,17 +137,17 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
           {/* Lead info */}
           <div className="p-3 rounded-xl bg-white/[0.03] border border-border">
             <p className="text-xs font-semibold text-text-primary">{lead.companyName}</p>
-            <p className="text-[10px] text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
+            <p className="text-caption text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
           </div>
 
           {/* Checklist com prioridade visual */}
           {gate && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">
+                <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-semibold">
                   {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
                 </p>
-                <span className="text-[10px] text-text-muted">
+                <span className="text-caption text-text-muted">
                   {requiredChecked}/{requiredCount} obrigatórios
                 </span>
               </div>
@@ -171,13 +171,13 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
                     )}>
                       {checked.has(idx) && <CheckCircle className="h-2.5 w-2.5 text-white" />}
                     </div>
-                    <span className={cn('text-[11px] flex-1 transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
+                    <span className={cn('text-label flex-1 transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
                       {check.text}
                     </span>
                     {check.required ? (
-                      <span className="text-[9px] text-red/60 font-bold shrink-0">*</span>
+                      <span className="text-micro text-red/60 font-bold shrink-0">*</span>
                     ) : (
-                      <span className="text-[9px] text-text-muted/50 shrink-0">opcional</span>
+                      <span className="text-micro text-text-muted/50 shrink-0">opcional</span>
                     )}
                   </button>
                 ))}
@@ -190,7 +190,7 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
 
           {/* Notes */}
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
-            className="w-full rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
+            className="w-full rounded-lg bg-white/[0.03] border border-border text-label text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -246,20 +246,20 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         <span className="text-xs font-mono font-bold text-text-muted">{score.toFixed(1)}</span>
       </div>
       <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
-      <p className="text-[11px] text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
-      {lead.city && <p className="text-[10px] text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
+      <p className="text-label text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
+      {lead.city && <p className="text-caption text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
       <div className="flex flex-wrap gap-1 mt-1.5">
         {lead.enrichmentStatus === 'complete' && (
-          <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
+          <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
         )}
         {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
-          <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
+          <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
         )}
         {(() => {
           const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
           if (!abbrev) return null
           return (
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
+            <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
           )
         })()}
       </div>
@@ -297,7 +297,12 @@ export function PipelinePage() {
     const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
     createActivity({ leadId: lead.id, type: 'status_change', description: desc }).catch(() => {})
 
-    toast.success(to === 'Fechado' ? `🏆 ${lead.companyName} — Negócio fechado! Parabéns!` : `${lead.companyName} movido para ${toLabel}`)
+    if (to === 'Fechado') {
+      toast.success(`🏆 ${lead.companyName} — Negócio fechado! Parabéns!`, { duration: 5000 })
+    } else {
+      const emoji = to === 'Reunião' ? '📅' : to === 'Proposta' ? '📝' : to === 'Qualificado' ? '🎯' : '✅'
+      toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })
+    }
     setPendingMove(null)
   }, [pendingMove, updateLead])
 
@@ -395,7 +400,7 @@ export function PipelinePage() {
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
                       <span className="text-xs font-semibold text-text-secondary">{col.label}</span>
                     </div>
-                    <span className="text-[11px] text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5 ml-auto">{colLeads.length}</span>
+                    <span className="text-label text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5 ml-auto">{colLeads.length}</span>
                   </div>
 
                   {/* Column body */}
@@ -415,7 +420,7 @@ export function PipelinePage() {
                         'rounded-xl border border-dashed p-8 text-center transition-all',
                         isOver ? 'border-red/40 bg-red/5' : 'border-border/40',
                       )}>
-                        <p className={cn('text-[11px]', isOver ? 'text-red font-medium' : 'text-text-muted')}>
+                        <p className={cn('text-label', isOver ? 'text-red font-medium' : 'text-text-muted')}>
                           {isOver ? 'Solte aqui' : 'Arraste um lead aqui'}
                         </p>
                       </div>

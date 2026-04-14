@@ -120,19 +120,19 @@ export function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono">{users.length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Usuários</p>
+          <p className="text-caption text-text-muted uppercase">Usuários</p>
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono text-success">{users.filter(u => u.isActive).length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Ativos</p>
+          <p className="text-caption text-text-muted uppercase">Ativos</p>
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono text-info">{logs.length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Ações registradas</p>
+          <p className="text-caption text-text-muted uppercase">Ações registradas</p>
         </div>
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono">{logs.filter(l => l.action === 'login').length}</p>
-          <p className="text-[10px] text-text-muted uppercase">Logins</p>
+          <p className="text-caption text-text-muted uppercase">Logins</p>
         </div>
       </div>
 
@@ -193,14 +193,14 @@ export function AdminPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={cn('text-xs font-semibold', actionInfo.color)}>{actionInfo.label}</span>
-                        {pageLabel && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{pageLabel}</span>}
+                        {pageLabel && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{pageLabel}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[11px] text-text-secondary">{log.userName || log.userEmail}</span>
-                        {log.details && <span className="text-[10px] text-text-muted truncate">{log.details}</span>}
+                        <span className="text-label text-text-secondary">{log.userName || log.userEmail}</span>
+                        {log.details && <span className="text-caption text-text-muted truncate">{log.details}</span>}
                       </div>
                     </div>
-                    <span className="text-[10px] text-text-muted font-mono shrink-0">{time}</span>
+                    <span className="text-caption text-text-muted font-mono shrink-0">{time}</span>
                   </div>
                 )
               })
@@ -224,27 +224,27 @@ export function AdminPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
                     <p className="text-2xl font-bold font-mono">{diagnostics.totalLeads}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Total de leads</p>
+                    <p className="text-caption text-text-muted uppercase">Total de leads</p>
                   </div>
                   <div className="p-3 rounded-xl bg-error/5 border border-error/20 text-center">
                     <p className="text-2xl font-bold font-mono text-error">{diagnostics.missingEmployees}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Sem funcionarios</p>
+                    <p className="text-caption text-text-muted uppercase">Sem funcionarios</p>
                   </div>
                   <div className="p-3 rounded-xl bg-error/5 border border-error/20 text-center">
                     <p className="text-2xl font-bold font-mono text-error">{diagnostics.missingFoundingDate}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Sem data abertura</p>
+                    <p className="text-caption text-text-muted uppercase">Sem data abertura</p>
                   </div>
                   <div className="p-3 rounded-xl bg-warning/5 border border-warning/20 text-center">
                     <p className="text-2xl font-bold font-mono text-warning">{diagnostics.estimateOnly}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Apenas estimativa</p>
+                    <p className="text-caption text-text-muted uppercase">Apenas estimativa</p>
                   </div>
                   <div className="p-3 rounded-xl bg-info/5 border border-info/20 text-center">
                     <p className="text-2xl font-bold font-mono text-info">{diagnostics.needsReEnrich}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Precisam re-enriquecer</p>
+                    <p className="text-caption text-text-muted uppercase">Precisam re-enriquecer</p>
                   </div>
                   <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
                     <p className="text-2xl font-bold font-mono text-success">{diagnostics.alreadyComplete}</p>
-                    <p className="text-[10px] text-text-muted uppercase">Ja completos</p>
+                    <p className="text-caption text-text-muted uppercase">Ja completos</p>
                   </div>
                 </div>
               </Card>
@@ -326,7 +326,7 @@ export function AdminPage() {
                         style={{ width: `${recalcProgress.total > 0 ? (recalcProgress.processed / recalcProgress.total) * 100 : 0}%` }}
                       />
                     </div>
-                    <div className="flex items-center gap-4 text-[11px] text-text-muted">
+                    <div className="flex items-center gap-4 text-label text-text-muted">
                       <span className="text-success">{recalcProgress.updated} atualizados</span>
                       <span>{recalcProgress.skipped} sem mudanca</span>
                       <span className="ml-auto">{recalcProgress.processed}/{recalcProgress.total}</span>
@@ -350,7 +350,7 @@ export function AdminPage() {
                     {/* Tabela de mudancas */}
                     {recalcProgress.changes.length > 0 && (
                       <div>
-                        <p className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+                        <p className="text-caption uppercase tracking-wider text-text-muted font-semibold mb-2">
                           Leads com score/temperatura alterados ({recalcProgress.changes.length})
                         </p>
                         <div className="max-h-64 overflow-y-auto rounded-lg border border-border">
@@ -412,7 +412,7 @@ export function AdminPage() {
                     style={{ width: `${reEnrichState.total > 0 ? ((reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped) / reEnrichState.total) * 100 : 0}%` }}
                   />
                 </div>
-                <div className="flex items-center gap-4 text-[11px] text-text-muted">
+                <div className="flex items-center gap-4 text-label text-text-muted">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3 text-success" /> {reEnrichState.completed} atualizados
                   </span>
@@ -440,7 +440,7 @@ export function AdminPage() {
               </div>
               <div className="max-h-60 overflow-y-auto space-y-1">
                 {reEnrichState.results.filter(r => !r.skipped).map((r) => (
-                  <div key={r.leadId} className="flex items-center gap-2 text-[11px] py-1 border-b border-border/50">
+                  <div key={r.leadId} className="flex items-center gap-2 text-label py-1 border-b border-border/50">
                     {r.error ? (
                       <XCircle className="h-3 w-3 text-error shrink-0" />
                     ) : (
@@ -480,9 +480,9 @@ export function AdminPage() {
                     <Badge variant={user.role === 'admin' ? 'error' : 'info'} size="sm">{user.role === 'admin' ? 'Admin' : 'Usuário'}</Badge>
                     {!user.isActive && <Badge variant="default" size="sm">Desativado</Badge>}
                   </div>
-                  <p className="text-[11px] text-text-muted">{user.email}</p>
+                  <p className="text-label text-text-muted">{user.email}</p>
                   {user.lastLoginAt && (
-                    <p className="text-[10px] text-text-muted">Último login: {new Date(user.lastLoginAt).toLocaleString('pt-BR')}</p>
+                    <p className="text-caption text-text-muted">Último login: {new Date(user.lastLoginAt).toLocaleString('pt-BR')}</p>
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">

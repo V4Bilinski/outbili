@@ -54,7 +54,7 @@ export function BottomNav() {
             data-active={isActive(item.to)}
             className={({ isActive: active }) =>
               cn(
-                'flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-[10px] font-medium transition-all duration-250 min-w-[48px] min-h-[44px] justify-center',
+                'flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-caption font-medium transition-all duration-250 min-w-[48px] min-h-[44px] justify-center',
                 active
                   ? 'text-red bg-red/8'
                   : 'text-text-muted active:text-text-secondary',

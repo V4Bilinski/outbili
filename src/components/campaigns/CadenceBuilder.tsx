@@ -63,7 +63,7 @@ export function CadenceBuilder({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-text-primary">Cadência de mensagens</h3>
-          <p className="text-[11px] text-text-muted mt-0.5">Configure a sequência de follow-ups automáticos</p>
+          <p className="text-label text-text-muted mt-0.5">Configure a sequência de follow-ups automáticos</p>
         </div>
         <Badge variant="info" size="sm">{steps.length} step{steps.length !== 1 ? 's' : ''}</Badge>
       </div>
@@ -76,7 +76,7 @@ export function CadenceBuilder({
             {index > 0 && (
               <div className="flex items-center gap-2 py-1.5 pl-6">
                 <ArrowDown className="h-3.5 w-3.5 text-text-muted" />
-                <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                <div className="flex items-center gap-1.5 text-caption text-text-muted">
                   <Clock className="h-3 w-3" />
                   <span>Aguardar {DELAY_OPTIONS.find(d => d.value === step.delayHours)?.label || `${step.delayHours}h`}</span>
                   <span className="text-text-muted/50">·</span>
@@ -95,12 +95,12 @@ export function CadenceBuilder({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+                    'w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold',
                     index === 0 ? 'bg-red text-white' : 'bg-white/5 text-text-muted',
                   )}>
                     {index + 1}
                   </div>
-                  <span className="text-[11px] font-semibold text-text-primary">
+                  <span className="text-label font-semibold text-text-primary">
                     {index === 0 ? 'Mensagem inicial' : `Follow-up ${index}`}
                   </span>
                 </div>
@@ -117,7 +117,7 @@ export function CadenceBuilder({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {/* Template */}
                 <div>
-                  <label className="text-[9px] uppercase tracking-wider text-text-muted mb-1 block">Template</label>
+                  <label className="text-micro uppercase tracking-wider text-text-muted mb-1 block">Template</label>
                   <select
                     value={step.templateName}
                     onChange={(e) => updateStep(step.id, { templateName: e.target.value })}
@@ -133,7 +133,7 @@ export function CadenceBuilder({
                 {/* Delay */}
                 {index > 0 && (
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider text-text-muted mb-1 block">Delay</label>
+                    <label className="text-micro uppercase tracking-wider text-text-muted mb-1 block">Delay</label>
                     <select
                       value={step.delayHours}
                       onChange={(e) => updateStep(step.id, { delayHours: Number(e.target.value) })}
@@ -149,7 +149,7 @@ export function CadenceBuilder({
                 {/* Condition */}
                 {index > 0 && (
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider text-text-muted mb-1 block">Condicao</label>
+                    <label className="text-micro uppercase tracking-wider text-text-muted mb-1 block">Condicao</label>
                     <select
                       value={step.condition}
                       onChange={(e) => updateStep(step.id, { condition: e.target.value as CadenceStep['condition'] })}
@@ -181,7 +181,7 @@ export function CadenceBuilder({
       {/* Summary */}
       {steps.length > 1 && (
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-border">
-          <p className="text-[10px] text-text-muted">
+          <p className="text-caption text-text-muted">
             <MessageSquare className="inline h-3 w-3 mr-1" />
             Cadência: {steps.length} mensagens ao longo de{' '}
             {Math.max(...steps.map(s => s.delayHours))} horas.

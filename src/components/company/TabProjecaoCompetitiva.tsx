@@ -22,14 +22,14 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
           <TrendingUp className="h-4 w-4 text-success" />
           <h3 className="text-sm font-semibold font-heading">Projeção Competitiva</h3>
         </div>
-        <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/[0.05] text-text-secondary">
+        <span className="text-caption px-2.5 py-1 rounded-full bg-white/[0.05] text-text-secondary">
           {data.nichoAnalise.segmento}
         </span>
       </div>
 
       {/* Benchmark dimensional — tabela */}
       <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
-        <div className="grid grid-cols-4 gap-0 text-[10px] uppercase tracking-wider text-text-muted font-medium p-3 border-b border-border">
+        <div className="grid grid-cols-4 gap-0 text-caption uppercase tracking-wider text-text-muted font-medium p-3 border-b border-border">
           <span>Dimensão</span>
           <span className="text-center">{lead.companyName?.slice(0, 15) || 'Lead'}</span>
           <span className="text-center">Benchmark</span>
@@ -68,7 +68,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
 
           return (
             <div key={i} className={cn('p-4 rounded-xl border', styles.border, styles.bg, i === 0 && 'md:order-first')}>
-              <span className={cn('text-[10px] uppercase tracking-wider font-medium', styles.labelColor)}>
+              <span className={cn('text-caption uppercase tracking-wider font-medium', styles.labelColor)}>
                 {styles.label}
               </span>
               <p className={cn('text-xl font-bold font-mono mt-2', styles.valueColor)}>
@@ -80,7 +80,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
               {cenario.travasResolvidas.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
                   {cenario.travasResolvidas.map((t, j) => (
-                    <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success">{t}</span>
+                    <span key={j} className="text-caption px-2 py-0.5 rounded-full bg-success/10 text-success">{t}</span>
                   ))}
                 </div>
               )}
@@ -100,7 +100,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
               <Badge variant="error" size="sm">{gap.de}</Badge>
               <ArrowUp className="h-3 w-3 text-text-muted" />
               <Badge variant="success" size="sm">{gap.para}</Badge>
-              <span className="text-[10px] text-text-muted ml-1">com {gap.comoProduto}</span>
+              <span className="text-caption text-text-muted ml-1">com {gap.comoProduto}</span>
             </div>
           ))}
         </div>

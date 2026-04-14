@@ -33,7 +33,7 @@ export function ContactPanel({
           <h4 className="text-[16px] font-semibold text-[var(--wa-text)]">{displayName}</h4>
           <p className="text-[13px] text-[var(--wa-text-secondary)]">{conversation.phone}</p>
           {conversation.mode && (
-            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{
+            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-caption font-medium" style={{
               backgroundColor: conversation.mode === 'bot' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
               color: conversation.mode === 'bot' ? '#f87171' : '#fbbf24',
             }}>
@@ -45,7 +45,7 @@ export function ContactPanel({
         {/* Contact Details */}
         {contact && (
           <div className="space-y-2.5">
-            <h5 className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Informacoes</h5>
+            <h5 className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Informacoes</h5>
 
             {contact.email && (
               <div className="flex items-center gap-2.5">
@@ -66,7 +66,7 @@ export function ContactPanel({
                 <Tag className="h-4 w-4 text-[var(--wa-text-secondary)] shrink-0 mt-0.5" />
                 <div className="flex flex-wrap gap-1">
                   {contact.tags.map((tag, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--wa-unread-badge)]/10 text-[var(--wa-unread-badge)]">
+                    <span key={i} className="px-2 py-0.5 rounded-full text-caption bg-[var(--wa-unread-badge)]/10 text-[var(--wa-unread-badge)]">
                       {tag}
                     </span>
                   ))}
@@ -79,7 +79,7 @@ export function ContactPanel({
         {/* Custom Fields */}
         {contact?.custom_fields && Object.keys(contact.custom_fields).length > 0 && (
           <div className="space-y-2">
-            <h5 className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Campos personalizados</h5>
+            <h5 className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Campos personalizados</h5>
             {Object.entries(contact.custom_fields).map(([key, value]) => (
               <div key={key} className="flex justify-between text-[12px]">
                 <span className="text-[var(--wa-text-secondary)] capitalize">{key.replace(/_/g, ' ')}</span>
@@ -91,27 +91,27 @@ export function ContactPanel({
 
         {/* Conversation Stats */}
         <div className="space-y-2">
-          <h5 className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Conversa</h5>
+          <h5 className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Conversa</h5>
           <div className="grid grid-cols-2 gap-2">
             <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--wa-search-bg)' }}>
               <p className="text-[16px] font-bold text-[var(--wa-text)]">{conversation.total_messages}</p>
-              <p className="text-[10px] text-[var(--wa-text-secondary)]">Mensagens</p>
+              <p className="text-caption text-[var(--wa-text-secondary)]">Mensagens</p>
             </div>
             <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--wa-search-bg)' }}>
               <p className="text-[16px] font-bold text-[var(--wa-text)]">{conversation.unread_count}</p>
-              <p className="text-[10px] text-[var(--wa-text-secondary)]">Não lidas</p>
+              <p className="text-caption text-[var(--wa-text-secondary)]">Não lidas</p>
             </div>
           </div>
-          <div className="flex justify-between text-[11px]">
+          <div className="flex justify-between text-label">
             <span className="text-[var(--wa-text-secondary)]">Origem</span>
             <span className="text-[var(--wa-text)] capitalize">{conversation.source}</span>
           </div>
-          <div className="flex justify-between text-[11px]">
+          <div className="flex justify-between text-label">
             <span className="text-[var(--wa-text-secondary)]">Status</span>
             <span className="text-[var(--wa-text)] capitalize">{conversation.status}</span>
           </div>
           {conversation.last_message_at && (
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-label">
               <span className="text-[var(--wa-text-secondary)]">Ultima mensagem</span>
               <span className="text-[var(--wa-text)]">{new Date(conversation.last_message_at).toLocaleDateString('pt-BR')}</span>
             </div>
@@ -121,10 +121,10 @@ export function ContactPanel({
         {/* Labels */}
         {conversation.labels && conversation.labels.length > 0 && (
           <div className="space-y-2">
-            <h5 className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Etiquetas</h5>
+            <h5 className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium">Etiquetas</h5>
             <div className="flex flex-wrap gap-1.5">
               {conversation.labels.map(label => (
-                <span key={label.id} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-[var(--wa-text)]" style={{ backgroundColor: label.color + '20', borderLeft: `3px solid ${label.color}` }}>
+                <span key={label.id} className="flex items-center gap-1 px-2 py-1 rounded-lg text-label text-[var(--wa-text)]" style={{ backgroundColor: label.color + '20', borderLeft: `3px solid ${label.color}` }}>
                   {label.name}
                 </span>
               ))}

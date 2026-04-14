@@ -64,6 +64,11 @@
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
+  /* Type scale — formalizar tamanhos arbitrários */
+  --font-size-micro: 9px;
+  --font-size-caption: 10px;
+  --font-size-label: 11px;
+
   /* Animações */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
   --animate-fade-in: fade-in 0.4s ease-out;
@@ -135,6 +140,12 @@
 @keyframes underline-draw {
   from { width: 0; }
   to { width: 100%; }
+}
+
+@layer utilities {
+  .text-micro { font-size: var(--font-size-micro); }
+  .text-caption { font-size: var(--font-size-caption); }
+  .text-label { font-size: var(--font-size-label); }
 }
 
 @layer base {

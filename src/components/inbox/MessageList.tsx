@@ -86,7 +86,7 @@ export function MessageList({
             backgroundColor: 'var(--wa-system-bubble)',
           }}>
             <Lock className="h-3 w-3 text-[var(--wa-text-secondary)]" />
-            <span className="text-[11px] text-[var(--wa-text-secondary)]">
+            <span className="text-label text-[var(--wa-text-secondary)]">
               Mensagens protegidas com criptografia de ponta a ponta
             </span>
           </div>

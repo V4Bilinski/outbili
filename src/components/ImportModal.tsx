@@ -98,7 +98,7 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-text-primary truncate">{fileName}</p>
-          <p className="text-[11px] text-text-muted animate-[fade-in_0.3s_ease-out]" key={msgIndex}>
+          <p className="text-label text-text-muted animate-[fade-in_0.3s_ease-out]" key={msgIndex}>
             {READING_MESSAGES[msgIndex]}
           </p>
         </div>
@@ -287,8 +287,8 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                   { ext: 'TXT', label: 'Texto' },
                 ].map((f) => (
                   <div key={f.ext} className="p-2.5 rounded-xl bg-white/[0.02] border border-border text-center">
-                    <p className="text-[10px] font-bold font-mono text-text-muted">.{f.ext}</p>
-                    <p className="text-[9px] text-text-muted">{f.label}</p>
+                    <p className="text-caption font-bold font-mono text-text-muted">.{f.ext}</p>
+                    <p className="text-micro text-text-muted">{f.label}</p>
                   </div>
                 ))}
               </div>
@@ -314,7 +314,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{parseResult.fileName}</p>
-                  <p className="text-[11px] text-success">
+                  <p className="text-label text-success">
                     {parseResult.fileType} · {parseResult.companies.length} empresas · {parseResult.columns.length} colunas
                   </p>
                 </div>
@@ -324,12 +324,12 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
               {/* Detected fields summary */}
               <div className="flex flex-wrap gap-1.5">
                 {DETECTABLE_FIELDS.filter((f) => parseResult.companies.some((c: any) => c[f.key])).map((field) => (
-                  <span key={field.key} className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/8 border border-success/15 px-2 py-1 rounded-lg">
+                  <span key={field.key} className="inline-flex items-center gap-1 text-caption font-medium text-success bg-success/8 border border-success/15 px-2 py-1 rounded-lg">
                     {field.icon} {field.label}
                   </span>
                 ))}
                 {DETECTABLE_FIELDS.filter((f) => !parseResult.companies.some((c: any) => c[f.key])).slice(0, 4).map((field) => (
-                  <span key={field.key} className="inline-flex items-center gap-1 text-[10px] text-text-muted bg-white/[0.03] border border-border px-2 py-1 rounded-lg opacity-40">
+                  <span key={field.key} className="inline-flex items-center gap-1 text-caption text-text-muted bg-white/[0.03] border border-border px-2 py-1 rounded-lg opacity-40">
                     {field.icon} {field.label}
                   </span>
                 ))}
@@ -349,7 +349,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
               {/* Segment */}
               {parseResult.companies.length > 0 && (
                 <div>
-                  <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento (aplicar a todos)</label>
+                  <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Segmento (aplicar a todos)</label>
                   <input
                     type="text"
                     value={segment}
@@ -366,8 +366,8 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-text-muted">{selected.size} de {parseResult.companies.length} selecionadas</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setSelected(new Set(parseResult.companies.map((_, i) => i)))} className="text-[11px] text-red cursor-pointer hover:underline">Todas</button>
-                      <button onClick={() => setSelected(new Set())} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhuma</button>
+                      <button onClick={() => setSelected(new Set(parseResult.companies.map((_, i) => i)))} className="text-label text-red cursor-pointer hover:underline">Todas</button>
+                      <button onClick={() => setSelected(new Set())} className="text-label text-text-muted cursor-pointer hover:underline">Nenhuma</button>
                     </div>
                   </div>
                   <div className="max-h-[280px] overflow-y-auto space-y-1.5 rounded-xl border border-border p-2">
@@ -388,10 +388,10 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-text-primary">{company.companyName}</p>
                           <div className="flex flex-wrap gap-1 mt-0.5">
-                            {company.phone && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
-                            {company.email && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.email}</span>}
-                            {company.city && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}{company.state ? `, ${company.state}` : ''}</span>}
-                            {company.website && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.website}</span>}
+                            {company.phone && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
+                            {company.email && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.email}</span>}
+                            {company.city && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}{company.state ? `, ${company.state}` : ''}</span>}
+                            {company.website && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.website}</span>}
                           </div>
                         </div>
                       </label>
@@ -447,7 +447,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-text-primary">Enriquecer dados automaticamente?</p>
-                      <p className="text-[11px] text-text-muted">
+                      <p className="text-label text-text-muted">
                         CNPJ, Google Maps, Instagram, LinkedIn, contatos e mais
                       </p>
                     </div>
@@ -467,7 +467,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                 </div>
               )}
 
-              <p className="text-[11px] text-text-muted">
+              <p className="text-label text-text-muted">
                 Identificadas com a tag <span className="text-info font-medium bg-info/10 px-1.5 py-0.5 rounded">Importado manual</span> na lista de leads.
               </p>
               <div className="flex gap-3 justify-center pt-2">

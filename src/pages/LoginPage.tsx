@@ -101,7 +101,7 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="animate-[fade-in_0.3s_ease-out]">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome completo</label>
+                <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome completo</label>
                 <input
                   type="text"
                   value={fullName}
@@ -114,7 +114,7 @@ export function LoginPage() {
             )}
 
             <div>
-              <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Email</label>
+              <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Email</label>
               <input
                 type="email"
                 value={email}
@@ -126,7 +126,7 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Senha</label>
+              <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Senha</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -162,7 +162,7 @@ export function LoginPage() {
           </form>
         </div>
 
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-text-muted animate-[fade-in_1s_ease-out]">
+        <div className="flex items-center justify-center gap-1.5 text-caption text-text-muted animate-[fade-in_1s_ease-out]">
           <span>Criado por</span>
           <a
             href="https://www.instagram.com/luizhenriquexpro/"

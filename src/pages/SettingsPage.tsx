@@ -88,8 +88,8 @@ export function SettingsPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text-primary">{conn.name}</p>
-                    <p className="text-[11px] text-text-muted">{conn.desc}</p>
-                    {conn.details && <p className="text-[10px] text-text-muted mt-0.5">{conn.details}</p>}
+                    <p className="text-label text-text-muted">{conn.desc}</p>
+                    {conn.details && <p className="text-caption text-text-muted mt-0.5">{conn.details}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -112,12 +112,12 @@ export function SettingsPage() {
                 <div className="px-4 pb-3">
                   <button
                     onClick={() => setExpandedError(expandedError === conn.name ? null : conn.name)}
-                    className="flex items-center gap-1 text-[10px] text-warning cursor-pointer hover:text-warning/80 transition-colors"
+                    className="flex items-center gap-1 text-caption text-warning cursor-pointer hover:text-warning/80 transition-colors"
                   >
                     Como resolver <ChevronDown className={cn('h-3 w-3 transition-transform', expandedError === conn.name && 'rotate-180')} />
                   </button>
                   {expandedError === conn.name && (
-                    <p className="text-[10px] text-text-muted mt-1 pl-2 border-l-2 border-warning/20 animate-[fade-in_0.2s_ease-out]">
+                    <p className="text-caption text-text-muted mt-1 pl-2 border-l-2 border-warning/20 animate-[fade-in_0.2s_ease-out]">
                       {conn.errorHint}
                     </p>
                   )}
@@ -137,7 +137,7 @@ export function SettingsPage() {
               <div key={t.name} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-border">
                 <div>
                   <p className="text-sm font-medium text-text-primary">{t.name}</p>
-                  <p className="text-[11px] text-text-muted">{t.category} · {t.language}</p>
+                  <p className="text-label text-text-muted">{t.category} · {t.language}</p>
                 </div>
                 <Badge variant={t.status === 'APPROVED' ? 'success' : t.status === 'PENDING' ? 'warning' : 'error'} size="sm">
                   {t.status}
@@ -154,7 +154,7 @@ export function SettingsPage() {
           <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-8" />
           <div>
             <p className="text-sm font-semibold">OUTBILI v1.0</p>
-            <p className="text-[11px] text-text-muted">Inteligência comercial para prospecção outbound · V4 Bilinski &amp;Co</p>
+            <p className="text-label text-text-muted">Inteligência comercial para prospecção outbound · V4 Bilinski &amp;Co</p>
           </div>
         </div>
       </Card>
@@ -168,14 +168,14 @@ export function SettingsPage() {
           <p className="text-base font-semibold text-text-primary leading-snug">
             "Do CNPJ ao contrato. Sem lista fria. Sem achismo. Sem trava."
           </p>
-          <p className="text-[11px] text-text-muted mt-2 leading-relaxed">
+          <p className="text-label text-text-muted mt-2 leading-relaxed">
             Sistema de inteligência comercial da V4 Bilinski &amp; Co. Fábrica de Receita operacionalizada em software.
           </p>
         </div>
 
         {/* Compromissos */}
         <div className="mb-6">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-3">
+          <p className="text-caption font-semibold uppercase tracking-widest text-text-muted mb-3">
             5 Compromissos
           </p>
           <ol className="space-y-2">
@@ -187,7 +187,7 @@ export function SettingsPage() {
               'Throughput primeiro.',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="text-[10px] font-mono text-text-muted mt-0.5 w-4 shrink-0">{i + 1}.</span>
+                <span className="text-caption font-mono text-text-muted mt-0.5 w-4 shrink-0">{i + 1}.</span>
                 <span className="text-sm text-text-secondary">{item}</span>
               </li>
             ))}
@@ -214,10 +214,10 @@ export function SettingsPage() {
 
         {/* Rodapé */}
         <div className="border-t border-border pt-4">
-          <p className="text-[11px] text-text-muted leading-relaxed italic">
+          <p className="text-label text-text-muted leading-relaxed italic">
             "A maioria das empresas não tem problema de mercado. Tem problema de sistema de receita. Nós resolvemos o nosso."
           </p>
-          <p className="text-[10px] text-text-muted mt-1">— V4 Bilinski &amp; Co</p>
+          <p className="text-caption text-text-muted mt-1">— V4 Bilinski &amp; Co</p>
         </div>
       </Card>
     </div>

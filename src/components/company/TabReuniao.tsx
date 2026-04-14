@@ -189,36 +189,36 @@ export function TabReuniao({ lead }: { lead: Lead }) {
             <div key={i} className="rounded-2xl bg-white/[0.02] border border-border overflow-hidden">
               {/* Block header */}
               <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-white/[0.01]">
-                <span className="text-[11px] font-mono text-red bg-red/10 px-2.5 py-1 rounded-lg font-bold">{block.minutos}</span>
+                <span className="text-label font-mono text-red bg-red/10 px-2.5 py-1 rounded-lg font-bold">{block.minutos}</span>
                 <h4 className="text-sm font-bold text-text-primary flex-1">{block.titulo}</h4>
                 <div className={`flex items-center gap-1.5 ${gatilhoColor}`}>
                   <GatilhoIcon className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider">{block.gatilho}</span>
+                  <span className="text-caption font-semibold uppercase tracking-wider">{block.gatilho}</span>
                 </div>
               </div>
 
               <div className="px-5 py-4 space-y-4">
                 {/* Objetivo */}
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-1">Objetivo</p>
+                  <p className="text-caption uppercase tracking-wider text-text-muted font-medium mb-1">Objetivo</p>
                   <p className="text-sm text-text-primary font-medium">{block.objetivo}</p>
                 </div>
 
                 {/* Tom */}
                 <div className="p-3 rounded-xl bg-white/[0.03] border-l-[3px] border-l-info">
-                  <p className="text-[10px] uppercase tracking-wider text-info font-medium mb-1">Tom e postura</p>
+                  <p className="text-caption uppercase tracking-wider text-info font-medium mb-1">Tom e postura</p>
                   <p className="text-sm text-text-secondary leading-relaxed">{block.tom}</p>
                 </div>
 
                 {/* Sugestão de interação */}
                 <div className="p-3 rounded-xl bg-red/5 border-l-[3px] border-l-red">
-                  <p className="text-[10px] uppercase tracking-wider text-red font-medium mb-1">Como conduzir este momento</p>
+                  <p className="text-caption uppercase tracking-wider text-red font-medium mb-1">Como conduzir este momento</p>
                   <p className="text-sm text-text-secondary leading-relaxed">{block.sugestaoInteracao}</p>
                 </div>
 
                 {/* Perguntas-chave */}
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-2">Perguntas para fazer</p>
+                  <p className="text-caption uppercase tracking-wider text-text-muted font-medium mb-2">Perguntas para fazer</p>
                   <div className="space-y-1.5">
                     {block.perguntasChave.map((q, j) => (
                       <div key={j} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/[0.02]">
@@ -232,7 +232,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
                 {/* Sinais de leitura */}
                 <div className="grid md:grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-success/5 border border-success/10">
-                    <p className="text-[10px] uppercase tracking-wider text-success font-medium mb-2">Sinais positivos</p>
+                    <p className="text-caption uppercase tracking-wider text-success font-medium mb-2">Sinais positivos</p>
                     <ul className="space-y-1">
                       {block.sinaisPositivos.map((s, j) => (
                         <li key={j} className="text-xs text-text-secondary flex items-start gap-1.5">
@@ -242,7 +242,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
                     </ul>
                   </div>
                   <div className="p-3 rounded-xl bg-error/5 border border-error/10">
-                    <p className="text-[10px] uppercase tracking-wider text-error font-medium mb-2">Sinais de alerta</p>
+                    <p className="text-caption uppercase tracking-wider text-error font-medium mb-2">Sinais de alerta</p>
                     <ul className="space-y-1">
                       {block.sinaisAlerta.map((s, j) => (
                         <li key={j} className="text-xs text-text-secondary flex items-start gap-1.5">
@@ -255,7 +255,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
 
                 {/* Dica tática */}
                 <div className="p-3 rounded-xl bg-warning/5 border border-warning/10">
-                  <p className="text-[10px] uppercase tracking-wider text-warning font-medium mb-1">Dica tática</p>
+                  <p className="text-caption uppercase tracking-wider text-warning font-medium mb-1">Dica tática</p>
                   <p className="text-xs text-text-secondary leading-relaxed">{block.dicaTatica}</p>
                 </div>
               </div>
@@ -288,11 +288,11 @@ export function TabReuniao({ lead }: { lead: Lead }) {
             >
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-warning/5">
-                  <p className="text-[10px] uppercase tracking-wider text-warning font-medium mb-1">Abordagem</p>
+                  <p className="text-caption uppercase tracking-wider text-warning font-medium mb-1">Abordagem</p>
                   <p className="text-xs text-text-secondary">{obj.abordagem}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.03] border-l-[3px] border-l-success">
-                  <p className="text-[10px] uppercase tracking-wider text-success font-medium mb-1">Sugestão de resposta</p>
+                  <p className="text-caption uppercase tracking-wider text-success font-medium mb-1">Sugestão de resposta</p>
                   <p className="text-sm text-text-secondary leading-relaxed">{obj.resposta}</p>
                 </div>
               </div>

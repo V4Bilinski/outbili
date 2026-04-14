@@ -195,8 +195,8 @@ export function CompanyPage() {
           </div>
           <div className="text-right shrink-0">
             <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
-            <p className="text-[10px] text-text-muted mt-0.5">{score >= 3.7 ? 'Lead qualificado' : score >= 2.5 ? 'Potencial médio' : 'Necessita qualificação'}</p>
+            <p className="text-caption uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
+            <p className="text-caption text-text-muted mt-0.5">{score >= 3.7 ? 'Lead qualificado' : score >= 2.5 ? 'Potencial médio' : 'Necessita qualificação'}</p>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ export function CompanyPage() {
             { label: 'Trava dominante', value: travaDominante ? `${travaDominante.codigo} ${travaDominante.nome}` : lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || '-', isHighlight: true, tooltip: travaDominante ? `${travaDominante.severidade} — ${travaDominante.impactoEstimado}` : 'Principal barreira de receita identificada pela análise' },
           ].map((stat: any) => (
             <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`} title={stat.tooltip || ''}>
-              <p className="text-[10px] uppercase tracking-wider text-text-muted">{stat.label}</p>
+              <p className="text-caption uppercase tracking-wider text-text-muted">{stat.label}</p>
               <p className={`text-lg font-bold font-mono mt-0.5 ${stat.isHighlight ? 'text-red text-sm' : ''}`}>{stat.value}</p>
             </div>
           ))}
@@ -224,12 +224,12 @@ export function CompanyPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
-                <p className="text-[11px] text-text-muted truncate">
+                <p className="text-label text-text-muted truncate">
                   {mainContact.role || (mainContact.contactType === 'decisor' ? 'Decisor' : 'Stakeholder')}
                   {contactPhone && (
                     <span className={`font-mono ml-1.5 ${hasWhatsapp ? 'text-whatsapp' : 'text-text-secondary'}`}>
                       · {contactPhone}
-                      {!hasWhatsapp && contactPhone && <span className="text-[9px] text-text-muted ml-1">(fixo — sem WhatsApp)</span>}
+                      {!hasWhatsapp && contactPhone && <span className="text-micro text-text-muted ml-1">(fixo — sem WhatsApp)</span>}
                     </span>
                   )}
                 </p>
@@ -264,7 +264,7 @@ export function CompanyPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-warning">Adicionar decisor</p>
-              <p className="text-[11px] text-text-muted">Adicione o decisor com WhatsApp para liberar a prospecção</p>
+              <p className="text-label text-text-muted">Adicione o decisor com WhatsApp para liberar a prospecção</p>
             </div>
           </button>
         )}
@@ -272,22 +272,22 @@ export function CompanyPage() {
         {/* Links — formato pills clicáveis com destaque */}
         <div className="flex gap-2 flex-wrap">
           {lead.website && !lead.website.includes('instagram.com') && (
-            <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+            <a href={lead.website} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
               Website
             </a>
           )}
           {lead.instagram && (
-            <a href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram}`} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+            <a href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram}`} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
               @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?#].*/,'')}
             </a>
           )}
           {lead.linkedin && (
-            <a href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/in/${lead.linkedin}`} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+            <a href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/in/${lead.linkedin}`} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
               LinkedIn
             </a>
           )}
           {lead.facebook && (
-            <a href={lead.facebook} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
+            <a href={lead.facebook} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
               Facebook
             </a>
           )}
@@ -363,11 +363,11 @@ export function CompanyPage() {
           <div className="space-y-5">
             {/* Tags/Pills */}
             <div className="flex flex-wrap gap-1.5">
-              <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.tier}</span>
-              <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.segment}</span>
-              {lead.yearsInMarket && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.yearsInMarket}+ anos</span>}
-              {lead.employees && <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.employees} func.</span>}
-              {travaDominante && <span className="text-[11px] px-2.5 py-1 rounded-full bg-red/10 border border-red/20 text-red font-medium">{travaDominante.codigo} {travaDominante.nome}</span>}
+              <span className="text-label px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.tier}</span>
+              <span className="text-label px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.segment}</span>
+              {lead.yearsInMarket && <span className="text-label px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.yearsInMarket}+ anos</span>}
+              {lead.employees && <span className="text-label px-2.5 py-1 rounded-full bg-surface-md border border-border text-text-secondary">{lead.employees} func.</span>}
+              {travaDominante && <span className="text-label px-2.5 py-1 rounded-full bg-red/10 border border-red/20 text-red font-medium">{travaDominante.codigo} {travaDominante.nome}</span>}
             </div>
 
             {/* Business summary */}
@@ -382,7 +382,7 @@ export function CompanyPage() {
                 <span className="font-mono text-base font-bold text-red">
                   {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
                 </span>
-                <p className="text-[10px] text-text-muted mt-1">Baseado em 10-15% do faturamento anual estimado</p>
+                <p className="text-caption text-text-muted mt-1">Baseado em 10-15% do faturamento anual estimado</p>
               </div>
             )}
 
@@ -395,7 +395,7 @@ export function CompanyPage() {
                 <span className="text-warning">⚠</span>
                 <div>
                   <p className="text-xs font-semibold text-warning">Sem decisor cadastrado</p>
-                  <p className="text-[11px] text-text-muted">Toque para adicionar nome e WhatsApp do decisor</p>
+                  <p className="text-label text-text-muted">Toque para adicionar nome e WhatsApp do decisor</p>
                 </div>
               </button>
             )}
@@ -426,7 +426,7 @@ export function CompanyPage() {
             {/* Dados cadastrais CNPJa */}
             {(lead.capitalSocial || lead.legalNature || lead.registrationStatus || lead.taxRegime || lead.simplesOptant !== undefined || lead.isHeadquarters !== undefined) && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Dados Cadastrais</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Dados Cadastrais</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                   {lead.registrationStatus && (
                     <div className="text-xs"><span className="text-text-muted">Situacao: </span><span className={cn('font-medium', lead.registrationStatus === 'Ativa' ? 'text-success' : 'text-error')}>{lead.registrationStatus}</span></div>
@@ -449,23 +449,23 @@ export function CompanyPage() {
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {lead.isHeadquarters !== undefined && (
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.isHeadquarters ? 'bg-red-subtle border-red/20 text-red' : 'bg-surface-md border-border text-text-muted')}>{lead.isHeadquarters ? 'Matriz' : 'Filial'}</span>
+                    <span className={cn('text-caption px-2 py-0.5 rounded-full border', lead.isHeadquarters ? 'bg-red-subtle border-red/20 text-red' : 'bg-surface-md border-border text-text-muted')}>{lead.isHeadquarters ? 'Matriz' : 'Filial'}</span>
                   )}
                   {lead.simplesOptant && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">Simples Nacional</span>
+                    <span className="text-caption px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">Simples Nacional</span>
                   )}
                   {lead.phoneType && (
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full border', lead.phoneType === 'MOBILE' ? 'bg-whatsapp/10 border-whatsapp/20 text-whatsapp' : 'bg-surface-md border-border text-text-muted')}>{lead.phoneType === 'MOBILE' ? 'Celular' : 'Fixo'}</span>
+                    <span className={cn('text-caption px-2 py-0.5 rounded-full border', lead.phoneType === 'MOBILE' ? 'bg-whatsapp/10 border-whatsapp/20 text-whatsapp' : 'bg-surface-md border-border text-text-muted')}>{lead.phoneType === 'MOBILE' ? 'Celular' : 'Fixo'}</span>
                   )}
                   {lead.emailDomain && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-md border border-border text-text-muted">{lead.emailDomain}</span>
+                    <span className="text-caption px-2 py-0.5 rounded-full bg-surface-md border border-border text-text-muted">{lead.emailDomain}</span>
                   )}
                 </div>
                 {(lead.zipCode || lead.district) && (
                   <div className="text-xs"><span className="text-text-muted">Bairro/CEP: </span><span className="text-text-primary">{[lead.district, lead.zipCode].filter(Boolean).join(' · ')}</span></div>
                 )}
                 {lead.cnpjaLastUpdate && (
-                  <div className="text-[10px] text-text-muted">Atualizado: {new Date(lead.cnpjaLastUpdate).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-caption text-text-muted">Atualizado: {new Date(lead.cnpjaLastUpdate).toLocaleDateString('pt-BR')}</div>
                 )}
               </div>
             )}
@@ -473,7 +473,7 @@ export function CompanyPage() {
             {/* Socios (Partners table) */}
             {(partners && partners.length > 0) && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({partners.length})</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({partners.length})</p>
                 <div className="space-y-1.5">
                   {partners.map((p) => (
                     <div key={p.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
@@ -482,7 +482,7 @@ export function CompanyPage() {
                         {p.qualification && <span className="text-text-muted ml-1.5">· {p.qualification}</span>}
                       </div>
                       {p.personType && (
-                        <span className={cn('text-[9px] px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-white/5 text-text-secondary' : p.personType === 'LEGAL' ? 'bg-source-assertiva/10 text-source-assertiva' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
+                        <span className={cn('text-micro px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-white/5 text-text-secondary' : p.personType === 'LEGAL' ? 'bg-source-assertiva/10 text-source-assertiva' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
                       )}
                     </div>
                   ))}
@@ -493,7 +493,7 @@ export function CompanyPage() {
             {/* Contatos com badges Assertiva */}
             {contacts && contacts.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Contatos ({contacts.length})</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Contatos ({contacts.length})</p>
                 <div className="space-y-1.5">
                   {contacts.map((c) => (
                     <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
@@ -502,9 +502,9 @@ export function CompanyPage() {
                         {c.role && <span className="text-text-muted shrink-0">· {c.role}</span>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {c.whatsappConfirmed && <span className="text-[9px] px-1.5 py-0.5 rounded bg-whatsapp/15 text-whatsapp font-medium">WA</span>}
-                        {c.phoneIsHot && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-medium">Hot</span>}
-                        {c.source && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-md text-text-muted">{c.source}</span>}
+                        {c.whatsappConfirmed && <span className="text-micro px-1.5 py-0.5 rounded bg-whatsapp/15 text-whatsapp font-medium">WA</span>}
+                        {c.phoneIsHot && <span className="text-micro px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-medium">Hot</span>}
+                        {c.source && <span className="text-micro px-1.5 py-0.5 rounded bg-surface-md text-text-muted">{c.source}</span>}
                       </div>
                     </div>
                   ))}
@@ -515,10 +515,10 @@ export function CompanyPage() {
             {/* Timeline de Enriquecimento */}
             {enrichmentLog && enrichmentLog.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Enriquecimento ({enrichmentLog.length} etapas)</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Enriquecimento ({enrichmentLog.length} etapas)</p>
                 <div className="space-y-1">
                   {enrichmentLog.map((entry) => (
-                    <div key={entry.id} className="flex items-center gap-2 text-[11px]">
+                    <div key={entry.id} className="flex items-center gap-2 text-label">
                       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', entry.status === 'done' ? 'bg-success' : entry.status === 'error' ? 'bg-error' : 'bg-text-muted')} />
                       <span className={cn('font-medium', entry.source?.includes('cnpja') ? 'text-source-cnpja' : entry.source?.includes('assertiva') ? 'text-source-assertiva' : entry.source?.includes('apify') ? 'text-source-apify' : 'text-text-secondary')}>{entry.source}</span>
                       <span className="text-text-muted truncate">{entry.detail}</span>
@@ -532,22 +532,22 @@ export function CompanyPage() {
             {/* Social links (red bordered pills) */}
             <div className="flex flex-wrap gap-2">
               {lead.website && !lead.website.includes('instagram.com') && (
-                <a href={lead.website} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                <a href={lead.website} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
                   Website
                 </a>
               )}
               {lead.instagram && (
-                <a href={lead.instagram} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                <a href={lead.instagram} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
                   @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?].*/,'')}
                 </a>
               )}
               {lead.linkedin && (
-                <a href={lead.linkedin} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                <a href={lead.linkedin} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
                   LinkedIn
                 </a>
               )}
               {lead.facebook && (
-                <a href={lead.facebook} target="_blank" rel="noopener" className="text-[11px] text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
+                <a href={lead.facebook} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
                   Facebook
                 </a>
               )}
@@ -634,7 +634,7 @@ export function CompanyPage() {
                       }}
                     />
                     {/* Hover tooltip */}
-                    <span className="absolute -top-8 right-0 bg-surface-md px-2.5 py-1 rounded text-[11px] text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <span className="absolute -top-8 right-0 bg-surface-md px-2.5 py-1 rounded text-label text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       Peso: {dim.weight}
                     </span>
                   </div>

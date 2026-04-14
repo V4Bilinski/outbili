@@ -100,18 +100,18 @@ function LeadTable({ leads }: { leads: Lead[] }) {
   return (
     <div className="overflow-x-auto">
       {/* Indicador mobile para colunas ocultas */}
-      <p className="text-[10px] text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
+      <p className="text-caption text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
         <ChevronRight className="h-3 w-3" /> Toque para abrir a ficha completa
       </p>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10">#</th>
-            <th className="text-left py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Nome</th>
-            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
-            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Score</th>
-            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Status</th>
-            <th className="text-center py-3 px-4 text-[11px] font-medium text-text-muted uppercase tracking-wider">Temperatura</th>
+            <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider w-10">#</th>
+            <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Nome</th>
+            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
+            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Score</th>
+            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Status</th>
+            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Temperatura</th>
           </tr>
         </thead>
         <tbody>
@@ -125,17 +125,22 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
-                    {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
-                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
+                    {lead.enrichmentStatus === 'complete' && <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
+                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
                     {(() => {
                       const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
                       if (!abbrev) return null
                       return (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
+                        <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
                       )
                     })()}
+                    {(() => {
+                      const days = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0
+                      if (days < 7 || lead.status === 'Fechado' || lead.status === 'Perdido') return null
+                      return <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${days >= 14 ? 'text-error bg-error/10' : 'text-warning bg-warning/10'}`}>{days}d parado</span>
+                    })()}
                   </div>
-                  <p className="text-[11px] text-text-muted mt-0.5">
+                  <p className="text-label text-text-muted mt-0.5">
                     {lead.segment || 'Segmento pendente'}
                     {lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
                     {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
@@ -158,7 +163,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.Frio}`}>
+                  <span className={`inline-block text-label font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.Frio}`}>
                     {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                   </span>
                 </td>

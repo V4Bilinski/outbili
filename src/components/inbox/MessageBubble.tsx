@@ -54,9 +54,9 @@ export const MessageBubble = memo(function MessageBubble({
     return (
       <div className="flex justify-center my-1 px-16">
         <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 max-w-md">
-          <p className="text-[11px] text-amber-400 font-medium mb-0.5">Nota interna</p>
+          <p className="text-label text-amber-400 font-medium mb-0.5">Nota interna</p>
           <p className="text-[12px] text-amber-200/80 whitespace-pre-wrap">{message.content}</p>
-          <p className="text-[10px] text-amber-400/50 mt-1 text-right">{formatTime(message.created_at)}</p>
+          <p className="text-caption text-amber-400/50 mt-1 text-right">{formatTime(message.created_at)}</p>
         </div>
       </div>
     )
@@ -112,7 +112,7 @@ export const MessageBubble = memo(function MessageBubble({
             <FileText className="h-8 w-8 text-[var(--wa-text-secondary)] shrink-0" />
             <div className="min-w-0">
               <p className="text-[13px] text-[var(--wa-text)] truncate">{message.content || 'Documento'}</p>
-              <p className="text-[11px] text-[var(--wa-text-secondary)]">Abrir documento</p>
+              <p className="text-label text-[var(--wa-text-secondary)]">Abrir documento</p>
             </div>
           </a>
         )}
@@ -152,7 +152,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <div className="space-y-1 pt-1 border-t" style={{ borderColor: 'var(--wa-border)' }}>
                       {sections.map((section, si) => (
                         <div key={si}>
-                          {typeof section.title === 'string' && <p className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] px-2 py-1">{section.title}</p>}
+                          {typeof section.title === 'string' && <p className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] px-2 py-1">{section.title}</p>}
                           {Array.isArray(section.rows) && (section.rows as Array<Record<string, string>>).map((row, ri) => (
                             <div key={ri} className="px-2 py-1.5 rounded-lg text-[12px]" style={{ color: 'var(--wa-text)' }}>
                               <span className="font-medium">{String(row.title || '')}</span>
@@ -174,7 +174,7 @@ export const MessageBubble = memo(function MessageBubble({
           'flex items-center justify-end gap-1 mt-0.5',
           '-mb-0.5',
         )}>
-          <span className="text-[11px] leading-none" style={{ color: 'var(--wa-timestamp)' }}>
+          <span className="text-label leading-none" style={{ color: 'var(--wa-timestamp)' }}>
             {formatTime(message.created_at)}
           </span>
           {isOutbound && <DeliveryIcon status={message.delivery_status} />}

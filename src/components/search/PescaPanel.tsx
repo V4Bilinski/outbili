@@ -314,7 +314,7 @@ export function PescaPanel() {
                   <div key={i} className={cn('h-2 w-8 rounded-full transition-all duration-500', i <= wizardStep ? 'bg-red shadow-sm shadow-red/30' : 'bg-white/[0.06]')} />
                 ))}
               </div>
-              {completionPct === 100 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Pronto</span>}
+              {completionPct === 100 && <span className="text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Pronto</span>}
             </div>
           </div>
 
@@ -326,9 +326,9 @@ export function PescaPanel() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-text-primary">Qual segmento?</p>
-                <p className="text-[11px] text-text-muted">Selecione um ou mais setores de atuação</p>
+                <p className="text-label text-text-muted">Selecione um ou mais setores de atuação</p>
               </div>
-              {segments.length > 0 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</span>}
+              {segments.length > 0 && <span className="text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</span>}
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {SEGMENTS.map(seg => (
@@ -344,7 +344,7 @@ export function PescaPanel() {
                   )}
                 >
                   <span className="text-lg">{seg.slug === 'estetica' ? '💆' : seg.slug === 'odontologia' ? '🦷' : seg.slug === 'varejo' ? '🛒' : seg.slug === 'farmacia' ? '💊' : seg.slug === 'movelaria' ? '🛋' : seg.slug === 'servicos' ? '⚙' : seg.slug === 'alimentacao' ? '🍽' : seg.slug === 'saude' ? '🏥' : seg.slug === 'educacao' ? '📚' : seg.slug === 'tecnologia' ? '💻' : seg.slug === 'automotivo' ? '🚗' : seg.slug === 'petshop' ? '🐾' : seg.slug === 'fitness' ? '💪' : seg.slug === 'beleza' ? '💅' : seg.slug === 'imobiliario' ? '🏠' : seg.slug === 'construcao' ? '🔨' : seg.slug === 'moda' ? '👗' : seg.slug === 'decoracao' ? '🎨' : seg.slug === 'agronegocio' ? '🌾' : seg.slug === 'logistica' ? '📦' : '🏢'}</span>
-                  <span className="text-[11px] font-medium leading-tight">{seg.name}</span>
+                  <span className="text-label font-medium leading-tight">{seg.name}</span>
                 </button>
               ))}
             </div>
@@ -358,9 +358,9 @@ export function PescaPanel() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-text-primary">Onde buscar?</p>
-                <p className="text-[11px] text-text-muted">Estado e cidade (opcional)</p>
+                <p className="text-label text-text-muted">Estado e cidade (opcional)</p>
               </div>
-              {states.length > 0 && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{states.length} estado{states.length > 1 ? 's' : ''}</span>}
+              {states.length > 0 && <span className="text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{states.length} estado{states.length > 1 ? 's' : ''}</span>}
             </div>
             {/* Estados principais — nome completo */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
@@ -380,7 +380,7 @@ export function PescaPanel() {
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     <span>{stateObj?.name || uf}</span>
-                    <span className="text-[10px] opacity-50 ml-auto">{uf}</span>
+                    <span className="text-caption opacity-50 ml-auto">{uf}</span>
                   </button>
                 )
               })}
@@ -400,14 +400,14 @@ export function PescaPanel() {
                     onClick={() => toggleState(s.uf)}
                     aria-pressed={states.includes(s.uf)}
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border',
+                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer border',
                       states.includes(s.uf)
                         ? 'bg-red/15 text-red border-red/30'
                         : 'bg-white/[0.02] text-text-muted border-border hover:text-text-secondary',
                     )}
                   >
                     <span>{s.name}</span>
-                    <span className="text-[9px] opacity-40 ml-auto">{s.uf}</span>
+                    <span className="text-micro opacity-40 ml-auto">{s.uf}</span>
                   </button>
                 ))}
               </div>
@@ -415,7 +415,7 @@ export function PescaPanel() {
             {/* Cidades — dropdown multi-select compacto */}
             {states.length > 0 && availableCities.length > 0 && (
               <div className="relative animate-[fade-in_0.2s_ease-out]">
-                <label className="text-[11px] font-medium text-text-muted mb-1.5 block">Cidades (opcional)</label>
+                <label className="text-label font-medium text-text-muted mb-1.5 block">Cidades (opcional)</label>
                 {/* Trigger */}
                 <button
                   onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
@@ -430,7 +430,7 @@ export function PescaPanel() {
                   ) : (
                     <div className="flex flex-wrap gap-1 flex-1">
                       {cities.map(c => (
-                        <span key={c} className="text-[10px] font-medium bg-red/15 text-red px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span key={c} className="text-caption font-medium bg-red/15 text-red px-2 py-0.5 rounded-full flex items-center gap-1">
                           {c}
                           <button
                             onClick={e => { e.stopPropagation(); toggleCity(c) }}
@@ -460,7 +460,7 @@ export function PescaPanel() {
                           {cities.includes(c) && <CheckCircle className="h-3 w-3 text-white" />}
                         </div>
                         <span className="flex-1">{c}</span>
-                        <span className="text-[10px] text-text-muted">{states.find(uf => (STATE_CITIES[uf] || []).some(city => city.name === c))}</span>
+                        <span className="text-caption text-text-muted">{states.find(uf => (STATE_CITIES[uf] || []).some(city => city.name === c))}</span>
                       </button>
                     ))}
                   </div>
@@ -477,7 +477,7 @@ export function PescaPanel() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-text-primary">Qual porte?</p>
-                <p className="text-[11px] text-text-muted">Tamanho das empresas que quer encontrar</p>
+                <p className="text-label text-text-muted">Tamanho das empresas que quer encontrar</p>
               </div>
             </div>
             <div className="grid grid-cols-5 gap-2 mb-3">
@@ -493,8 +493,8 @@ export function PescaPanel() {
                   )}
                 >
                   <span className="text-lg">{porte.icon}</span>
-                  <span className="text-[11px] font-semibold">{porte.label}</span>
-                  <span className="text-[9px] opacity-60">{porte.desc}</span>
+                  <span className="text-label font-semibold">{porte.label}</span>
+                  <span className="text-micro opacity-60">{porte.desc}</span>
                 </button>
               ))}
             </div>
@@ -507,13 +507,13 @@ export function PescaPanel() {
               />
               <div className="flex-1">
                 <span className="text-xs text-text-secondary font-medium">Excluir MEI</span>
-                <span className="text-[10px] text-text-muted block">Microempreendedor individual (faturamento ate R$ 81k/ano)</span>
+                <span className="text-caption text-text-muted block">Microempreendedor individual (faturamento ate R$ 81k/ano)</span>
               </div>
               <div className="relative">
                 <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center text-text-muted hover:text-text-secondary transition-colors cursor-help" aria-label="O que e MEI?">
-                  <span className="text-[10px] font-bold">?</span>
+                  <span className="text-caption font-bold">?</span>
                 </div>
-                <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 rounded-lg bg-surface border border-border shadow-xl shadow-black/30 text-[10px] text-text-secondary opacity-0 invisible group-hover/mei:opacity-100 group-hover/mei:visible transition-all z-30 pointer-events-none">
+                <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 rounded-lg bg-surface border border-border shadow-xl shadow-black/30 text-caption text-text-secondary opacity-0 invisible group-hover/mei:opacity-100 group-hover/mei:visible transition-all z-30 pointer-events-none">
                   <p className="font-semibold text-text-primary mb-1">MEI = Microempreendedor Individual</p>
                   <p>Empresas com faturamento ate R$ 81.000/ano. Geralmente sao profissionais autonomos sem estrutura para investir em marketing digital.</p>
                 </div>
@@ -524,7 +524,7 @@ export function PescaPanel() {
           {/* Estimativa pre-busca */}
           {canStart && (
             <div className="text-center py-1.5 animate-[fade-in_0.3s_ease-out]">
-              <p className="text-[10px] text-text-muted">
+              <p className="text-caption text-text-muted">
                 Estimativa: <span className="font-semibold text-text-secondary">~50-150 empresas</span> com telefone
                 {states.length === 1 ? ` em ${states[0]}` : states.length > 1 ? ` em ${states.length} estados` : ''}
                 {' · '}Tempo: ~2-4 min
@@ -558,11 +558,11 @@ export function PescaPanel() {
 
           {/* Footer — fontes de dados */}
           <div className="flex items-center justify-center gap-3 mt-3">
-            <span className="text-[10px] text-source-cnpja/60 font-medium">CNPJa API</span>
-            <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-source-assertiva/60 font-medium">Assertiva</span>
-            <span className="text-[10px] text-text-muted/40">→</span>
-            <span className="text-[10px] text-success/60 font-medium">Airtable</span>
+            <span className="text-caption text-source-cnpja/60 font-medium">CNPJa API</span>
+            <span className="text-caption text-text-muted/40">→</span>
+            <span className="text-caption text-source-assertiva/60 font-medium">Assertiva</span>
+            <span className="text-caption text-text-muted/40">→</span>
+            <span className="text-caption text-success/60 font-medium">Airtable</span>
           </div>
         </Card>
       </div>
@@ -589,7 +589,7 @@ export function PescaPanel() {
           </div>
           <div className="text-right">
             <p className="text-xs font-mono text-text-secondary">{formatElapsed(elapsed)}</p>
-            <button onClick={cancel} className="text-[10px] text-red hover:text-red-vivid cursor-pointer mt-0.5">
+            <button onClick={cancel} className="text-caption text-red hover:text-red-vivid cursor-pointer mt-0.5">
               Cancelar
             </button>
           </div>
@@ -617,7 +617,7 @@ export function PescaPanel() {
                   <p className={cn('text-xs font-medium', hasWarning ? 'text-warning' : isActive ? 'text-text-primary' : isCompleted ? 'text-success' : 'text-text-muted')}>
                     {PHASE_LABELS[step]}
                   </p>
-                  {hasWarning && <p className="text-[10px] text-warning/70 mt-0.5 truncate">{assertivaWarning}</p>}
+                  {hasWarning && <p className="text-caption text-warning/70 mt-0.5 truncate">{assertivaWarning}</p>}
                 </div>
                 <span className="text-xs font-mono text-text-muted shrink-0">
                   {step === 'searching' && progress.found > 0 && `${progress.found}`}
@@ -673,23 +673,23 @@ export function PescaPanel() {
         {/* Resumo dos filtros usados */}
         {(segments.length > 0 || states.length > 0) && (
           <div className="rounded-lg bg-white/[0.03] border border-border p-3 mb-4 space-y-1.5">
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Filtros usados</p>
+            <p className="text-caption font-bold text-text-muted uppercase tracking-wider">Filtros usados</p>
             <div className="flex flex-wrap gap-1.5">
               {segments.map(s => (
-                <span key={s} className="text-[10px] font-medium bg-red/10 text-red px-2 py-0.5 rounded-full">{s}</span>
+                <span key={s} className="text-caption font-medium bg-red/10 text-red px-2 py-0.5 rounded-full">{s}</span>
               ))}
               {states.map(s => (
-                <span key={s} className="text-[10px] font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">{s}</span>
+                <span key={s} className="text-caption font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">{s}</span>
               ))}
               {selectedPorte !== 'qualquer' && (
-                <span className="text-[10px] font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">
+                <span className="text-caption font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">
                   {PORTE_OPTIONS.find(p => p.id === selectedPorte)?.label || selectedPorte}
                 </span>
               )}
-              {excludeMei && <span className="text-[10px] font-medium bg-white/[0.06] text-text-muted px-2 py-0.5 rounded-full">Sem MEI</span>}
+              {excludeMei && <span className="text-caption font-medium bg-white/[0.06] text-text-muted px-2 py-0.5 rounded-full">Sem MEI</span>}
             </div>
             {!isNoResults && error && (
-              <p className="text-[10px] text-error/70 font-mono mt-1">{error}</p>
+              <p className="text-caption text-error/70 font-mono mt-1">{error}</p>
             )}
           </div>
         )}
@@ -743,24 +743,24 @@ export function PescaPanel() {
         <div className="p-3 rounded-xl bg-[#25D366]/8 border border-[#25D366]/20 text-center">
           <Phone className="h-4 w-4 text-whatsapp mx-auto mb-1" />
           <p className="text-2xl font-bold font-heading text-whatsapp">{leadsWithWhatsapp.length}</p>
-          <p className="text-[10px] text-text-muted">com WhatsApp</p>
-          <p className="text-[10px] font-medium text-whatsapp mt-0.5">{leads.length > 0 ? Math.round(leadsWithWhatsapp.length / leads.length * 100) : 0}% taxa</p>
+          <p className="text-caption text-text-muted">com WhatsApp</p>
+          <p className="text-caption font-medium text-whatsapp mt-0.5">{leads.length > 0 ? Math.round(leadsWithWhatsapp.length / leads.length * 100) : 0}% taxa</p>
         </div>
         <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
           <User className="h-4 w-4 text-success mx-auto mb-1" />
           <p className="text-2xl font-bold font-heading text-success">{leadsWithDecisor.length}</p>
-          <p className="text-[10px] text-text-muted">com Decisor</p>
-          <p className="text-[10px] font-medium text-success mt-0.5">{leads.length > 0 ? Math.round(leadsWithDecisor.length / leads.length * 100) : 0}% taxa</p>
+          <p className="text-caption text-text-muted">com Decisor</p>
+          <p className="text-caption font-medium text-success mt-0.5">{leads.length > 0 ? Math.round(leadsWithDecisor.length / leads.length * 100) : 0}% taxa</p>
         </div>
         <div className="p-3 rounded-xl bg-warning/5 border border-warning/20 text-center">
           <DollarSign className="h-4 w-4 text-warning mx-auto mb-1" />
           <p className="text-2xl font-bold font-heading text-warning">{leads.filter(l => l.capitalSocial).length}</p>
-          <p className="text-[10px] text-text-muted">com Capital</p>
+          <p className="text-caption text-text-muted">com Capital</p>
         </div>
         <div className="p-3 rounded-xl bg-red/5 border border-red/20 text-center">
           <Building2 className="h-4 w-4 text-red mx-auto mb-1" />
           <p className="text-2xl font-bold font-heading text-text-primary">{leads.length}</p>
-          <p className="text-[10px] text-text-muted">total extraido</p>
+          <p className="text-caption text-text-muted">total extraido</p>
         </div>
       </div>
 
@@ -775,9 +775,9 @@ export function PescaPanel() {
           {qualityCounts.bronze > 0 && <div className="bg-text-muted/30 transition-all" style={{ width: `${qualityCounts.bronze / leads.length * 100}%` }} />}
         </div>
         <div className="flex gap-4 mt-2">
-          <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-success" /> Pronto ({qualityCounts.gold})</span>
-          <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-warning" /> Parcial ({qualityCounts.silver})</span>
-          <span className="flex items-center gap-1.5 text-[10px] text-text-muted"><span className="w-2 h-2 rounded-full bg-text-muted/30" /> Básico ({qualityCounts.bronze})</span>
+          <span className="flex items-center gap-1.5 text-caption text-text-muted"><span className="w-2 h-2 rounded-full bg-success" /> Pronto ({qualityCounts.gold})</span>
+          <span className="flex items-center gap-1.5 text-caption text-text-muted"><span className="w-2 h-2 rounded-full bg-warning" /> Parcial ({qualityCounts.silver})</span>
+          <span className="flex items-center gap-1.5 text-caption text-text-muted"><span className="w-2 h-2 rounded-full bg-text-muted/30" /> Básico ({qualityCounts.bronze})</span>
         </div>
       </Card>
 
@@ -808,7 +808,7 @@ export function PescaPanel() {
                 key={f.key}
                 onClick={() => setDataFilter(f.key)}
                 className={cn(
-                  'px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border whitespace-nowrap',
+                  'px-2.5 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer border whitespace-nowrap',
                   dataFilter === f.key
                     ? 'bg-red/15 text-red border-red/30'
                     : 'bg-white/[0.02] text-text-muted border-border hover:border-border-strong hover:text-text-secondary',
@@ -820,7 +820,7 @@ export function PescaPanel() {
           </div>
         </div>
 
-        <p className="text-[10px] text-text-muted mb-2">
+        <p className="text-caption text-text-muted mb-2">
           {filteredLeads.length} de {leads.length} leads {dataFilter !== 'all' ? `(filtro: ${dataFilter === 'with-whatsapp' ? 'com WhatsApp' : dataFilter === 'with-decisor' ? 'com decisor' : 'completos'})` : ''}
         </p>
 
@@ -858,7 +858,7 @@ export function PescaPanel() {
                       {/* Empresa */}
                       <td className="px-3 py-2.5">
                         <p className="text-text-primary font-medium truncate max-w-[180px]">{lead.tradeName || lead.companyName}</p>
-                        {lead.segment && <p className="text-[10px] text-text-muted truncate max-w-[180px]">{lead.segment}</p>}
+                        {lead.segment && <p className="text-caption text-text-muted truncate max-w-[180px]">{lead.segment}</p>}
                       </td>
                       {/* CNPJ */}
                       <td className="px-3 py-2.5">
@@ -876,7 +876,7 @@ export function PescaPanel() {
                         {lead.decisorName ? (
                           <div>
                             <p className="text-text-primary truncate max-w-[130px]">{lead.decisorName}</p>
-                            {lead.decisorRole && <p className="text-[10px] text-text-muted truncate max-w-[130px]">{lead.decisorRole}</p>}
+                            {lead.decisorRole && <p className="text-caption text-text-muted truncate max-w-[130px]">{lead.decisorRole}</p>}
                           </div>
                         ) : (
                           <span className="text-text-muted">-</span>
@@ -889,7 +889,7 @@ export function PescaPanel() {
                             href={formatWhatsappLink(lead.whatsapp)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-whatsapp/10 text-whatsapp hover:bg-whatsapp/20 font-mono text-[11px] transition-all"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-whatsapp/10 text-whatsapp hover:bg-whatsapp/20 font-mono text-label transition-all"
                           >
                             <Phone className="h-3 w-3" />
                             {lead.whatsapp.replace(/^55/, '')}

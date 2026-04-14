@@ -9,7 +9,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="w-6 h-0.5 bg-red" />
-      <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">
+      <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">
         {children}
       </span>
     </div>
@@ -138,7 +138,7 @@ export function InstitucionalPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red opacity-60" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red" />
               </span>
-              <span className="text-[11px] uppercase tracking-[0.15em] text-text-muted font-medium">
+              <span className="text-label uppercase tracking-[0.15em] text-text-muted font-medium">
                 Sistema de inteligência comercial
               </span>
             </div>
@@ -256,7 +256,7 @@ export function InstitucionalPage() {
 
                 {/* Tag */}
                 <div className="mt-8">
-                  <span className="inline-flex items-center bg-red/[0.15] text-[#FF6666] border border-red/30 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
+                  <span className="inline-flex items-center bg-red/[0.15] text-[#FF6666] border border-red/30 rounded-full px-3 py-1 text-label font-semibold tracking-wider uppercase">
                     Canal próprio. Receita própria.
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export function InstitucionalPage() {
                       <step.icon className="h-4 w-4 text-red" />
                     </div>
                     <div>
-                      <p className="font-mono text-[11px] text-red/40 mb-1">{step.num}</p>
+                      <p className="font-mono text-label text-red/40 mb-1">{step.num}</p>
                       <p className="font-semibold text-sm text-text-primary">{step.name}</p>
                       <p className="text-[12px] text-text-muted mt-1 leading-relaxed">{step.desc}</p>
                     </div>
@@ -399,7 +399,7 @@ export function InstitucionalPage() {
 
                     {/* Critical badge */}
                     {trap.highlight && (
-                      <span className="inline-flex items-center self-start bg-red/20 text-red border border-red/40 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
+                      <span className="inline-flex items-center self-start bg-red/20 text-red border border-red/40 rounded-full px-3 py-1 text-caption font-bold tracking-wider uppercase">
                         Trava crítica
                       </span>
                     )}
@@ -439,7 +439,7 @@ export function InstitucionalPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-text-primary">CNPJa API</h3>
-                      <span className="text-[10px] font-mono text-text-muted">Fonte cadastral</span>
+                      <span className="text-caption font-mono text-text-muted">Fonte cadastral</span>
                     </div>
                   </div>
                   <p className="text-text-muted text-sm leading-relaxed">
@@ -449,7 +449,7 @@ export function InstitucionalPage() {
                     {['CNPJ', 'QSA', 'Sócios', 'Endereço', 'CNAE'].map((tag) => (
                       <span
                         key={tag}
-                        className="bg-red/[0.10] text-[#FF6666] border border-red/20 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wider"
+                        className="bg-red/[0.10] text-[#FF6666] border border-red/20 rounded-full px-2.5 py-0.5 text-caption font-semibold tracking-wider"
                       >
                         {tag}
                       </span>
@@ -471,7 +471,7 @@ export function InstitucionalPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-text-primary">Assertiva Localize</h3>
-                      <span className="text-[10px] font-mono text-text-muted">Enriquecimento em cascata</span>
+                      <span className="text-caption font-mono text-text-muted">Enriquecimento em cascata</span>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -485,7 +485,7 @@ export function InstitucionalPage() {
                           <CheckCircle className="h-3 w-3 text-red" />
                         </div>
                         <div>
-                          <span className="text-[11px] font-mono text-red/60">{item.level}: </span>
+                          <span className="text-label font-mono text-red/60">{item.level}: </span>
                           <span className="text-sm text-text-secondary">{item.desc}</span>
                         </div>
                       </div>
@@ -610,7 +610,7 @@ export function InstitucionalPage() {
 
           <AnimateIn delay={320}>
             <img src="/outbili/logo-white.png" alt="V4 Bilinski &amp; Co" className="h-16 md:h-20 w-auto mx-auto mb-4 opacity-60" />
-            <p className="text-[11px] text-text-muted tracking-[0.15em] uppercase">
+            <p className="text-label text-text-muted tracking-[0.15em] uppercase">
               OUTBILI — Sistema de inteligência comercial
             </p>
           </AnimateIn>

@@ -109,7 +109,7 @@ function TagInput({ label, placeholder, tags, setTags, suggestions, suggestionsL
       </div>
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[240px] overflow-y-auto">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-2">{suggestionsLabel}</p>
+          <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-2">{suggestionsLabel}</p>
           {filtered.map((item) => (
             <button key={item} onClick={() => { addTag(item); setOpen(false) }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer transition-colors">{item}</button>
           ))}
@@ -141,18 +141,18 @@ function StateMultiSelect({ selected, setSelected }: { selected: string[]; setSe
       </button>
       {open && (
         <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-surface-md border border-border shadow-xl shadow-black/30 py-2 max-h-[300px] overflow-y-auto">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Estados com maior volume</p>
+          <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Estados com maior volume</p>
           {recommended.map((state) => (
             <button key={state.uf} onClick={() => toggle(state.uf)} className={cn('flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors', selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
-              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
+              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-caption transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
               {state.name} <span className="text-text-muted text-xs">({state.uf})</span>
             </button>
           ))}
           <div className="border-t border-border my-2" />
-          <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Demais estados</p>
+          <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium px-3 pb-1.5">Demais estados</p>
           {others.map((state) => (
             <button key={state.uf} onClick={() => toggle(state.uf)} className={cn('flex items-center gap-2.5 w-full px-3 py-2 text-sm cursor-pointer transition-colors', selected.includes(state.uf) ? 'text-red bg-red/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
-              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-[10px] transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
+              <div className={cn('w-4 h-4 rounded border flex items-center justify-center text-caption transition-colors', selected.includes(state.uf) ? 'bg-red border-red text-white' : 'border-border')}>{selected.includes(state.uf) && '✓'}</div>
               {state.name} <span className="text-text-muted text-xs">({state.uf})</span>
             </button>
           ))}
@@ -610,7 +610,7 @@ export function SearchPage() {
             <Search className="h-3.5 w-3.5" />
             <div className="text-left">
               <span className="block leading-tight">Pesquisa em massa</span>
-              <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'pesca' ? 'text-white/70' : 'text-text-muted')}>CNPJa + Assertiva</span>
+              <span className={cn('block text-caption font-normal leading-tight', searchMode === 'pesca' ? 'text-white/70' : 'text-text-muted')}>CNPJa + Assertiva</span>
             </div>
           </button>
           <button
@@ -620,7 +620,7 @@ export function SearchPage() {
             <UserPlus className="h-3.5 w-3.5" />
             <div className="text-left">
               <span className="block leading-tight">Cadastro manual</span>
-              <span className={cn('block text-[10px] font-normal leading-tight', searchMode === 'specific' ? 'text-white/70' : 'text-text-muted')}>Lead especifico</span>
+              <span className={cn('block text-caption font-normal leading-tight', searchMode === 'specific' ? 'text-white/70' : 'text-text-muted')}>Lead especifico</span>
             </div>
           </button>
         </div>
@@ -661,12 +661,12 @@ export function SearchPage() {
             {/* Dynamic enrichment preview pills */}
             {specificName && (specificCnpj.replace(/\D/g, '').length >= 2 || specificName.length >= 3) && (
               <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/10">
-                <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
+                <p className="text-label text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
                   <Sparkles className="h-3 w-3" /> {specificCnpj ? 'Com nome + CNPJ buscamos automaticamente:' : 'Com o nome buscamos automaticamente:'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {['Razão social', 'Sócios', 'Endereço', 'Porte', 'Capital social', 'Regime tributário', 'CNAE', 'Geolocalização', 'Google Maps', 'Website', 'Redes sociais', 'Instagram', 'LinkedIn', 'Decisores', 'Emails', 'Telefones'].map((pill) => (
-                    <span key={pill} className="inline-flex items-center gap-1 text-[10px] text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
+                    <span key={pill} className="inline-flex items-center gap-1 text-caption text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
                       <Sparkles className="h-2.5 w-2.5 text-amber-400/60" />
                       {pill}
                     </span>
@@ -689,7 +689,7 @@ export function SearchPage() {
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium px-2">ou importe uma lista</span>
+              <span className="text-caption uppercase tracking-[0.15em] text-text-muted font-medium px-2">ou importe uma lista</span>
               <div className="h-px flex-1 bg-border" />
             </div>
 
@@ -710,7 +710,7 @@ export function SearchPage() {
                 <p className="text-sm font-medium text-text-primary">
                   {fileDragging ? 'Solte o arquivo aqui' : 'Enviar documento'}
                 </p>
-                <p className="text-[11px] text-text-muted mt-0.5">
+                <p className="text-label text-text-muted mt-0.5">
                   CSV, Excel, PDF, TXT, MD — até {MAX_FILE_LEADS} leads por vez
                 </p>
                 <input
@@ -732,7 +732,7 @@ export function SearchPage() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-text-primary">{fileParseResult?.fileName || 'Processando...'}</p>
-                    <p className="text-[11px] text-amber-300 animate-pulse">Analisando estrutura e identificando leads...</p>
+                    <p className="text-label text-amber-300 animate-pulse">Analisando estrutura e identificando leads...</p>
                   </div>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden">
@@ -751,7 +751,7 @@ export function SearchPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-text-primary truncate">{fileParseResult.fileName}</p>
-                    <p className="text-[11px] text-success">
+                    <p className="text-label text-success">
                       {fileParseResult.fileType} · {fileParseResult.companies.length} leads identificados
                     </p>
                   </div>
@@ -767,7 +767,7 @@ export function SearchPage() {
                     const labels: Record<string, string> = { companyName: 'Empresa', cnpj: 'CNPJ', phone: 'Telefone', email: 'E-mail', website: 'Website', city: 'Cidade', segment: 'Segmento', contactName: 'Contato' }
                     return (
                       <span key={key} className={cn(
-                        'text-[10px] px-2 py-0.5 rounded-lg border',
+                        'text-caption px-2 py-0.5 rounded-lg border',
                         found ? 'text-success bg-success/8 border-success/15 font-medium' : 'text-text-muted bg-white/[0.02] border-border/50 opacity-40',
                       )}>
                         {found ? '✓' : '·'} {labels[key]}
@@ -779,10 +779,10 @@ export function SearchPage() {
                 {/* Lead list with checkboxes */}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] text-text-muted">{fileSelected.size} de {fileParseResult.companies.length} selecionados</span>
+                    <span className="text-label text-text-muted">{fileSelected.size} de {fileParseResult.companies.length} selecionados</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setFileSelected(new Set(fileParseResult.companies.map((_, i) => i)))} className="text-[11px] text-red cursor-pointer hover:underline">Todos</button>
-                      <button onClick={() => setFileSelected(new Set())} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhum</button>
+                      <button onClick={() => setFileSelected(new Set(fileParseResult.companies.map((_, i) => i)))} className="text-label text-red cursor-pointer hover:underline">Todos</button>
+                      <button onClick={() => setFileSelected(new Set())} className="text-label text-text-muted cursor-pointer hover:underline">Nenhum</button>
                     </div>
                   </div>
                   <div className="max-h-[200px] overflow-y-auto space-y-1 rounded-xl">
@@ -803,11 +803,11 @@ export function SearchPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-medium text-text-primary truncate">{company.companyName}</p>
                           <div className="flex flex-wrap gap-1 mt-0.5">
-                            {company.cnpj && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded font-mono">{company.cnpj}</span>}
-                            {company.phone && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
-                            {company.email && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.email}</span>}
-                            {company.city && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}</span>}
-                            {company.segment && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.segment}</span>}
+                            {company.cnpj && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded font-mono">{company.cnpj}</span>}
+                            {company.phone && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
+                            {company.email && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.email}</span>}
+                            {company.city && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}</span>}
+                            {company.segment && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.segment}</span>}
                           </div>
                         </div>
                       </label>
@@ -822,7 +822,7 @@ export function SearchPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Loader2 className="h-4 w-4 text-red animate-spin" />
                         <span className="text-text-primary font-medium">Importando e enriquecendo...</span>
-                        <span className="text-[11px] text-text-muted ml-auto font-mono">{fileImportProgress}%</span>
+                        <span className="text-label text-text-muted ml-auto font-mono">{fileImportProgress}%</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                         <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-300" style={{ width: `${fileImportProgress}%` }} />
@@ -852,12 +852,12 @@ export function SearchPage() {
                 <MapPin className="h-3.5 w-3.5 text-red" />
                 <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localização</p>
                 {sectionFilledCounts.location > 0 && (
-                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.location}</span>
+                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.location}</span>
                 )}
                 <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('location') && 'rotate-180')} />
               </button>
               {!expandedSections.has('location') && (
-                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                   {sectionFilledCounts.location > 0
                     ? [specificCity, specificState, specificAddress].filter(Boolean).join(' · ')
                     : 'Opcional — a IA busca esses dados automaticamente'}
@@ -888,12 +888,12 @@ export function SearchPage() {
                 <Globe className="h-3.5 w-3.5 text-red" />
                 <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Presença digital</p>
                 {sectionFilledCounts.digital > 0 && (
-                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.digital}</span>
+                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.digital}</span>
                 )}
                 <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('digital') && 'rotate-180')} />
               </button>
               {!expandedSections.has('digital') && (
-                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                   {sectionFilledCounts.digital > 0
                     ? [specificWebsite, specificInstagram, specificLinkedin, specificFacebook].filter(Boolean).join(' · ')
                     : 'Opcional — a IA busca esses dados automaticamente'}
@@ -929,12 +929,12 @@ export function SearchPage() {
                 <CircleDot className="h-3.5 w-3.5 text-red" />
                 <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Métricas do negócio</p>
                 {sectionFilledCounts.metrics > 0 && (
-                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.metrics}</span>
+                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.metrics}</span>
                 )}
                 <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('metrics') && 'rotate-180')} />
               </button>
               {!expandedSections.has('metrics') && (
-                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                   {specificRevenue
                     ? `R$ ${(parseInt(specificRevenue) / 1000).toFixed(0)}k/mes`
                     : 'Opcional — a IA busca esses dados automaticamente'}
@@ -964,12 +964,12 @@ export function SearchPage() {
                 <Phone className="h-3.5 w-3.5 text-red" />
                 <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Contato do decisor</p>
                 {sectionFilledCounts.contact > 0 && (
-                  <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.contact}</span>
+                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.contact}</span>
                 )}
                 <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('contact') && 'rotate-180')} />
               </button>
               {!expandedSections.has('contact') && (
-                <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                   {sectionFilledCounts.contact > 0
                     ? [specificContact, specificContactRole, specificPhone].filter(Boolean).join(' · ')
                     : 'Opcional — a IA busca esses dados automaticamente'}
@@ -1006,8 +1006,8 @@ export function SearchPage() {
               <div className="mb-4 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[11px] text-amber-300 font-medium">{dupWarning}</p>
-                  <button onClick={() => { setDupWarning(null); setDupOverride(false) }} className="text-[11px] text-text-muted hover:text-text-secondary mt-1 cursor-pointer">Cancelar</button>
+                  <p className="text-label text-amber-300 font-medium">{dupWarning}</p>
+                  <button onClick={() => { setDupWarning(null); setDupOverride(false) }} className="text-label text-text-muted hover:text-text-secondary mt-1 cursor-pointer">Cancelar</button>
                 </div>
               </div>
             )}
@@ -1015,20 +1015,20 @@ export function SearchPage() {
               <Button size="lg" icon={<Sparkles className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || (specificCnpj.length > 0 && specificCnpj.replace(/\D/g, '').length !== 14) || isCreatingSpecific || enrichment.isEnriching}>
                 Salvar e enriquecer com IA
               </Button>
-              {enrichment.isEnriching && <span className="text-[11px] text-amber-400 animate-pulse">Enriquecendo...</span>}
+              {enrichment.isEnriching && <span className="text-label text-amber-400 animate-pulse">Enriquecendo...</span>}
             </div>
             {/* CNPJ validation indicator */}
             <div className="mt-2">
               {specificCnpj && specificCnpj.replace(/\D/g, '').length < 14 && (
-                <p className="text-[11px] text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 dígitos)</p>
+                <p className="text-label text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 dígitos)</p>
               )}
               {specificCnpj && specificCnpj.replace(/\D/g, '').length === 14 && (
-                <p className="text-[11px] text-success flex items-center gap-1">
+                <p className="text-label text-success flex items-center gap-1">
                   <CheckCircle className="h-3 w-3" /> CNPJ válido — pronto para pesquisa
                 </p>
               )}
               {!specificCnpj && specificName && (
-                <p className="text-[11px] text-text-muted">Sem CNPJ — a IA busca os dados pelo nome da empresa</p>
+                <p className="text-label text-text-muted">Sem CNPJ — a IA busca os dados pelo nome da empresa</p>
               )}
             </div>
           </div>
@@ -1046,10 +1046,10 @@ export function SearchPage() {
 
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                <p className="text-[11px] uppercase tracking-[0.12em] text-amber-300 font-semibold">
+                <p className="text-label uppercase tracking-[0.12em] text-amber-300 font-semibold">
                   Enriquecimento {enrichment.progress.isDone ? 'concluído' : 'em andamento'}
                 </p>
-                <span className="text-[10px] text-text-muted ml-auto font-mono">
+                <span className="text-caption text-text-muted ml-auto font-mono">
                   {enrichment.progress.currentStep}/{enrichment.progress.totalSteps}
                 </span>
               </div>
@@ -1058,11 +1058,11 @@ export function SearchPage() {
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-3 w-3 text-text-muted" />
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 1: APIs Públicas (gratuitas)</p>
+                  <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 1: APIs Públicas (gratuitas)</p>
                 </div>
                 <div className="space-y-1 pl-1">
                   {enrichment.progress.steps.slice(0, 4).map((step) => (
-                    <div key={step.source} className="flex items-center gap-2 text-[11px]">
+                    <div key={step.source} className="flex items-center gap-2 text-label">
                       {step.status === 'running' && <Loader2 className="h-3 w-3 text-amber-400 animate-spin shrink-0" />}
                       {step.status === 'done' && <CheckCircle className="h-3 w-3 text-success shrink-0" />}
                       {step.status === 'error' && <AlertCircle className="h-3 w-3 text-error shrink-0" />}
@@ -1078,12 +1078,12 @@ export function SearchPage() {
                         {step.label}
                       </span>
                       {(step.status === 'pending' || step.status === 'running') && step.estimatedMs && (
-                        <span className="text-[9px] text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
+                        <span className="text-micro text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
                       )}
                       {step.status === 'done' && step.detail && (
-                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
+                        <span className="text-micro text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
                       )}
-                      {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
+                      {step.status === 'skipped' && <span className="text-micro text-text-muted">(sem dados)</span>}
                     </div>
                   ))}
                 </div>
@@ -1096,11 +1096,11 @@ export function SearchPage() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-3 w-3 text-text-muted" />
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 2: Inteligência de Mercado (APIs externas)</p>
+                  <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-semibold">Fase 2: Inteligência de Mercado (APIs externas)</p>
                 </div>
                 <div className="space-y-1 pl-1">
                   {enrichment.progress.steps.slice(4).map((step) => (
-                    <div key={step.source} className="flex items-center gap-2 text-[11px]">
+                    <div key={step.source} className="flex items-center gap-2 text-label">
                       {step.status === 'running' && <Loader2 className="h-3 w-3 text-amber-400 animate-spin shrink-0" />}
                       {step.status === 'done' && <CheckCircle className="h-3 w-3 text-success shrink-0" />}
                       {step.status === 'error' && <AlertCircle className="h-3 w-3 text-error shrink-0" />}
@@ -1116,12 +1116,12 @@ export function SearchPage() {
                         {step.label}
                       </span>
                       {(step.status === 'pending' || step.status === 'running') && step.estimatedMs && (
-                        <span className="text-[9px] text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
+                        <span className="text-micro text-text-muted ml-auto">~{Math.round(step.estimatedMs / 1000)}s</span>
                       )}
                       {step.status === 'done' && step.detail && (
-                        <span className="text-[9px] text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
+                        <span className="text-micro text-amber-300/70 bg-amber-400/5 border border-amber-400/10 rounded px-1.5 py-0.5 ml-auto">{step.detail}</span>
                       )}
-                      {step.status === 'skipped' && <span className="text-[9px] text-text-muted">(sem dados)</span>}
+                      {step.status === 'skipped' && <span className="text-micro text-text-muted">(sem dados)</span>}
                     </div>
                   ))}
                 </div>
@@ -1135,7 +1135,7 @@ export function SearchPage() {
                       <CheckCircle className="h-4 w-4 text-success" />
                       <span className="text-[12px] text-success font-semibold">Lead enriquecido com sucesso!</span>
                     </div>
-                    <div className="space-y-1 text-[11px] text-text-secondary">
+                    <div className="space-y-1 text-label text-text-secondary">
                       <p>Dados encontrados: <strong className="text-text-primary">{enrichment.progress.steps.filter(s => s.status === 'done').length} de {enrichment.progress.totalSteps} fontes</strong></p>
                       <p>Contatos descobertos: <strong className="text-text-primary">{enrichment.progress.steps.filter(s => s.status === 'done' && s.detail?.toLowerCase().includes('contato')).length > 0 ? 'Sim' : 'Verificar no lead'}</strong></p>
                     </div>
@@ -1177,7 +1177,7 @@ export function SearchPage() {
             <p className="text-xs text-text-muted mt-0.5">Defina o perfil ideal e encontre dezenas de leads qualificados automaticamente.</p>
           </div>
           {activeFilters > 0 && (
-            <span className="ml-auto text-[11px] text-red font-medium bg-red/10 border border-red/20 px-2.5 py-1 rounded-full shrink-0">
+            <span className="ml-auto text-label text-red font-medium bg-red/10 border border-red/20 px-2.5 py-1 rounded-full shrink-0">
               {activeFilters} filtro{activeFilters > 1 ? 's' : ''}
             </span>
           )}
@@ -1195,12 +1195,12 @@ export function SearchPage() {
         {/* Preview pills — what the AI will search for */}
         {segments.length > 0 && (
           <div className="mt-4 p-3 rounded-xl bg-amber-400/5 border border-amber-400/10 animate-[fade-in_0.3s_ease-out]">
-            <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
+            <p className="text-label text-amber-300 font-medium flex items-center gap-1.5 mb-2.5">
               <Sparkles className="h-3 w-3" /> Para cada lead encontrado, a IA busca automaticamente:
             </p>
             <div className="flex flex-wrap gap-1.5">
               {['Google Maps', 'Website', 'WhatsApp', 'Instagram', 'CNPJ', 'Faturamento', 'Decisores', 'Score SPICED'].map((pill) => (
-                <span key={pill} className="inline-flex items-center gap-1 text-[10px] text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
+                <span key={pill} className="inline-flex items-center gap-1 text-caption text-amber-300/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2 py-0.5">
                   <Sparkles className="h-2.5 w-2.5 text-amber-400/60" />
                   {pill}
                 </span>
@@ -1217,12 +1217,12 @@ export function SearchPage() {
               <MapPin className="h-3.5 w-3.5 text-red" />
               <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localização</p>
               {city && (
-                <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">1</span>
+                <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">1</span>
               )}
               <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-location') && 'rotate-180')} />
             </button>
             {!expandedSections.has('mass-location') && (
-              <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+              <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                 {city ? city : 'Opcional — refine por cidade para resultados mais precisos'}
               </p>
             )}
@@ -1240,12 +1240,12 @@ export function SearchPage() {
               <Hash className="h-3.5 w-3.5 text-red" />
               <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Palavras-chave</p>
               {keywords.length > 0 && (
-                <span className="text-[10px] bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{keywords.length}</span>
+                <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{keywords.length}</span>
               )}
               <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-keywords') && 'rotate-180')} />
             </button>
             {!expandedSections.has('mass-keywords') && (
-              <p className="text-[10px] text-text-muted px-4 pb-3 -mt-1">
+              <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
                 {keywords.length > 0 ? keywords.join(', ') : 'Opcional — refine com termos específicos do nicho'}
               </p>
             )}
@@ -1259,7 +1259,7 @@ export function SearchPage() {
             <button type="button" onClick={() => toggleSection('mass-revenue')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
               <CircleDot className="h-3.5 w-3.5 text-red" />
               <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Faixa de faturamento</p>
-              <span className="text-[10px] text-text-muted font-mono ml-1">
+              <span className="text-caption text-text-muted font-mono ml-1">
                 {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label || ''} — {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label || ''}
               </span>
               <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-revenue') && 'rotate-180')} />
@@ -1285,35 +1285,35 @@ export function SearchPage() {
         {activeFilters > 0 && (
           <div className="mt-5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out]">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-semibold">Resumo da pesquisa</p>
-              <button onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin('70000'); setRevenueMax('2000000') }} className="text-[10px] text-text-muted hover:text-red cursor-pointer transition-colors">Limpar tudo</button>
+              <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-semibold">Resumo da pesquisa</p>
+              <button onClick={() => { setSegments([]); setStates([]); setCity(''); setKeywords([]); setRevenueMin('70000'); setRevenueMax('2000000') }} className="text-caption text-text-muted hover:text-red cursor-pointer transition-colors">Limpar tudo</button>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {segments.map((s) => (
-                <span key={`seg-${s}`} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span key={`seg-${s}`} className="inline-flex items-center gap-1 bg-red/10 text-red border border-red/20 rounded-lg px-2.5 py-1 text-label font-medium animate-[scale-in_0.2s_ease-out]">
                   {s}
                   <button onClick={() => setSegments(segments.filter((x) => x !== s))} className="cursor-pointer hover:text-red-vivid"><X className="h-3 w-3" /></button>
                 </span>
               ))}
               {states.map((s) => (
-                <span key={`st-${s}`} className="inline-flex items-center gap-1 bg-tag-location/10 text-tag-location border border-tag-location/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span key={`st-${s}`} className="inline-flex items-center gap-1 bg-tag-location/10 text-tag-location border border-tag-location/20 rounded-lg px-2.5 py-1 text-label font-medium animate-[scale-in_0.2s_ease-out]">
                   {s}
                   <button onClick={() => setStates(states.filter((x) => x !== s))} className="cursor-pointer hover:text-info"><X className="h-3 w-3" /></button>
                 </span>
               ))}
               {city && (
-                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg px-2.5 py-1 text-label font-medium animate-[scale-in_0.2s_ease-out]">
                   <MapPin className="h-3 w-3" /> {city}
                   <button onClick={() => setCity('')} className="cursor-pointer hover:text-emerald-300"><X className="h-3 w-3" /></button>
                 </span>
               )}
               {keywords.map((k) => (
-                <span key={`kw-${k}`} className="inline-flex items-center gap-1 bg-tag-keyword/10 text-tag-keyword border border-tag-keyword/20 rounded-lg px-2.5 py-1 text-[11px] font-medium animate-[scale-in_0.2s_ease-out]">
+                <span key={`kw-${k}`} className="inline-flex items-center gap-1 bg-tag-keyword/10 text-tag-keyword border border-tag-keyword/20 rounded-lg px-2.5 py-1 text-label font-medium animate-[scale-in_0.2s_ease-out]">
                   {k}
                   <button onClick={() => setKeywords(keywords.filter((x) => x !== k))} className="cursor-pointer hover:text-tag-keyword"><X className="h-3 w-3" /></button>
                 </span>
               ))}
-              <span className="inline-flex items-center gap-1 bg-white/5 text-text-muted border border-border rounded-lg px-2.5 py-1 text-[11px]">
+              <span className="inline-flex items-center gap-1 bg-white/5 text-text-muted border border-border rounded-lg px-2.5 py-1 text-label">
                 {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label} — {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label}
               </span>
             </div>
@@ -1329,7 +1329,7 @@ export function SearchPage() {
             {n8n.phase === 'done' && <Button variant="ghost" size="sm" onClick={n8n.reset}>Nova pesquisa</Button>}
           </div>
           {segments.length === 0 && (
-            <p className="text-[11px] text-text-muted mt-2">Selecione pelo menos um segmento para iniciar</p>
+            <p className="text-label text-text-muted mt-2">Selecione pelo menos um segmento para iniciar</p>
           )}
         </div>
       </Card>
@@ -1339,7 +1339,7 @@ export function SearchPage() {
         <div className="animate-[fade-in_0.5s_ease-out]">
           <div className="flex items-center gap-2 mb-3">
             <History className="h-4 w-4 text-text-muted" />
-            <span className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">Pesquisas recentes</span>
+            <span className="text-label uppercase tracking-[0.12em] text-text-muted font-medium">Pesquisas recentes</span>
           </div>
           <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
             {history.slice(0, 5).map((entry) => (
@@ -1349,10 +1349,10 @@ export function SearchPage() {
                 className="flex-shrink-0 p-3.5 rounded-xl bg-white/[0.02] border border-border hover:border-red/30 hover:bg-white/[0.03] transition-all duration-200 cursor-pointer text-left group"
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  {entry.segments.map((s) => <span key={s} className="text-[10px] text-red bg-red/10 border border-red/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
-                  {entry.states.map((s) => <span key={s} className="text-[10px] text-tag-location bg-tag-location/10 border border-tag-location/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
+                  {entry.segments.map((s) => <span key={s} className="text-caption text-red bg-red/10 border border-red/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
+                  {entry.states.map((s) => <span key={s} className="text-caption text-tag-location bg-tag-location/10 border border-tag-location/20 px-2 py-0.5 rounded-md font-medium">{s}</span>)}
                 </div>
-                <p className="text-[10px] text-text-muted group-hover:text-text-secondary transition-colors">
+                <p className="text-caption text-text-muted group-hover:text-text-secondary transition-colors">
                   {entry.city && <><MapPin className="h-2.5 w-2.5 inline mr-0.5" />{entry.city} · </>}{new Date(entry.date).toLocaleDateString('pt-BR')}
                 </p>
               </button>
@@ -1411,7 +1411,7 @@ export function SearchPage() {
             ].map((step, i) => {
               const isActive = !step.done && (i === 0 || (n8n.elapsed > [0, 3, 20, 60, 120][i]))
               return (
-                <div key={step.label} className="flex items-center gap-2.5 text-[11px]">
+                <div key={step.label} className="flex items-center gap-2.5 text-label">
                   {step.done ? (
                     <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
                   ) : isActive ? (
@@ -1433,13 +1433,13 @@ export function SearchPage() {
 
           {/* Curiosity message */}
           <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
-            <p className="text-[11px] text-text-secondary animate-[fade-in_0.5s_ease-out]" key={Math.floor(n8n.elapsed / 4)}>
+            <p className="text-label text-text-secondary animate-[fade-in_0.5s_ease-out]" key={Math.floor(n8n.elapsed / 4)}>
               <Sparkles className="h-3 w-3 text-amber-400 inline mr-1.5" />
               {CURIOSITY_MESSAGES[Math.floor(n8n.elapsed / 4) % CURIOSITY_MESSAGES.length]}
             </p>
           </div>
 
-          <p className="text-[10px] text-text-muted mt-3 text-center">A pesquisa roda em background. Os leads serao salvos automaticamente no Airtable.</p>
+          <p className="text-caption text-text-muted mt-3 text-center">A pesquisa roda em background. Os leads serao salvos automaticamente no Airtable.</p>
         </Card>
         )
       })()}
@@ -1489,15 +1489,15 @@ export function SearchPage() {
           <div className="grid grid-cols-3 gap-3 mt-4 mb-5">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
               <p className="text-lg font-bold font-mono text-red">{n8n.leadsCreated}</p>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider">Leads salvos</p>
+              <p className="text-caption text-text-muted uppercase tracking-wider">Leads salvos</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
               <p className="text-lg font-bold font-mono text-amber-400">{n8n.elapsed}s</p>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider">Tempo total</p>
+              <p className="text-caption text-text-muted uppercase tracking-wider">Tempo total</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
               <p className="text-lg font-bold font-mono text-success">{segments.length}</p>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider">Segmentos</p>
+              <p className="text-caption text-text-muted uppercase tracking-wider">Segmentos</p>
             </div>
           </div>
 
@@ -1593,7 +1593,7 @@ export function SearchPage() {
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-success/5 border border-success/20">
                       <CheckCircle className="h-4 w-4 text-success shrink-0" />
                       <span className="text-xs text-success font-medium">{done.length} lead{done.length > 1 ? 's' : ''} enriquecido{done.length > 1 ? 's' : ''}</span>
-                      <span className="text-[10px] text-success/60 ml-auto">{done.reduce((a, q) => a + q.sourcesFound, 0)} fontes</span>
+                      <span className="text-caption text-success/60 ml-auto">{done.reduce((a, q) => a + q.sourcesFound, 0)} fontes</span>
                     </div>
                   )}
 
@@ -1602,7 +1602,7 @@ export function SearchPage() {
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-error/5 border border-error/20">
                       <AlertCircle className="h-4 w-4 text-error shrink-0" />
                       <span className="text-xs text-error font-medium">{errored.length} com erro</span>
-                      <span className="text-[10px] text-error/60 ml-auto truncate max-w-[200px]">{errored[0]?.error}</span>
+                      <span className="text-caption text-error/60 ml-auto truncate max-w-[200px]">{errored[0]?.error}</span>
                     </div>
                   )}
 
@@ -1612,7 +1612,7 @@ export function SearchPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <Loader2 className="h-4 w-4 text-amber-400 animate-spin shrink-0" />
                         <p className="text-xs font-medium text-amber-300 truncate flex-1">{lead.companyName}</p>
-                        <span className="text-[10px] text-text-muted font-mono">{massEnrichment.completedLeads + active.indexOf(lead) + 1}/{massEnrichment.totalLeads}</span>
+                        <span className="text-caption text-text-muted font-mono">{massEnrichment.completedLeads + active.indexOf(lead) + 1}/{massEnrichment.totalLeads}</span>
                       </div>
                       {lead.progress && (
                         <>
@@ -1632,7 +1632,7 @@ export function SearchPage() {
                               />
                             ))}
                           </div>
-                          <p className="text-[10px] text-text-muted">
+                          <p className="text-caption text-text-muted">
                             {lead.progress.steps.find((s) => s.status === 'running')?.label || 'Processando...'}
                           </p>
                         </>
@@ -1647,7 +1647,7 @@ export function SearchPage() {
                         <span className="text-[8px] text-text-muted font-mono">{queued.length}</span>
                       </div>
                       <span className="text-xs text-text-muted">{queued.length} na fila</span>
-                      <span className="text-[10px] text-text-muted ml-auto truncate max-w-[200px]">
+                      <span className="text-caption text-text-muted ml-auto truncate max-w-[200px]">
                         {queued.slice(0, 3).map((q) => q.companyName).join(', ')}{queued.length > 3 ? '...' : ''}
                       </span>
                     </div>
@@ -1662,19 +1662,19 @@ export function SearchPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
                     <p className="text-lg font-bold font-mono text-success">{massEnrichment.completedLeads}</p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Enriquecidos</p>
+                    <p className="text-caption text-text-muted uppercase tracking-wider">Enriquecidos</p>
                   </div>
                   <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/20 text-center">
                     <p className="text-lg font-bold font-mono text-amber-400">
                       {massEnrichment.queue.reduce((acc, q) => acc + q.sourcesFound, 0)}
                     </p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Fontes coletadas</p>
+                    <p className="text-caption text-text-muted uppercase tracking-wider">Fontes coletadas</p>
                   </div>
                   <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
                     <p className="text-lg font-bold font-mono text-red">
                       {massEnrichment.queue.filter((q) => q.sourcesFound >= 3).length}
                     </p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Score completo</p>
+                    <p className="text-caption text-text-muted uppercase tracking-wider">Score completo</p>
                   </div>
                 </div>
                 <div className="flex gap-3 justify-center mt-4">

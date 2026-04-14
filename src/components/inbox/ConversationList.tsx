@@ -36,7 +36,7 @@ function ReplyStatusTabs({
           {tab.label}
           {tab.count > 0 && (
             <span className={cn(
-              'ml-1 text-[10px] font-bold',
+              'ml-1 text-caption font-bold',
               active === tab.id ? 'text-[var(--wa-unread-badge)]' : 'text-[var(--wa-text-secondary)]',
             )}>
               {tab.count}
@@ -90,7 +90,7 @@ export function ConversationList({
       <div className="h-[60px] px-4 flex items-center justify-between bg-[var(--wa-panel-header)] shrink-0">
         <h2 className="text-[16px] font-semibold text-[var(--wa-text)]">Inbox</h2>
         <div className="flex items-center gap-1">
-          <span className="text-[11px] font-mono text-[var(--wa-text-secondary)]">
+          <span className="text-label font-mono text-[var(--wa-text-secondary)]">
             {conversations.length} conversa{conversations.length !== 1 ? 's' : ''}
           </span>
         </div>

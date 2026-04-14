@@ -147,7 +147,7 @@ export function ReportsPage() {
                 key={opt.days}
                 onClick={() => setPeriodDays(opt.days)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer',
+                  'px-3 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer',
                   periodDays === opt.days ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary',
                 )}
               >
@@ -173,9 +173,9 @@ export function ReportsPage() {
           <div key={kpi.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.accent} backdrop-blur-xl border border-border p-5`}>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted font-medium">{kpi.label}</p>
+                <p className="text-label uppercase tracking-[0.12em] text-text-muted font-medium">{kpi.label}</p>
                 <p className={`text-3xl font-bold font-mono mt-1.5 ${kpi.color}`}>{kpi.value}</p>
-                <p className="text-[11px] text-text-muted mt-0.5">{kpi.sub}</p>
+                <p className="text-label text-text-muted mt-0.5">{kpi.sub}</p>
               </div>
               <div className="p-2 rounded-xl bg-white/[0.04]">
                 <kpi.icon className={`h-4 w-4 ${kpi.color} opacity-60`} />
@@ -206,37 +206,37 @@ export function ReportsPage() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-text-primary">{totalSent}</p>
-              <p className="text-[10px] text-text-muted uppercase">Enviados</p>
+              <p className="text-caption text-text-muted uppercase">Enviados</p>
             </div>
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-success">{totalDelivered}</p>
-              <p className="text-[10px] text-text-muted uppercase">Entregues</p>
-              {totalSent > 0 && <p className="text-[11px] font-mono text-success">{Math.round((totalDelivered / totalSent) * 100)}%</p>}
+              <p className="text-caption text-text-muted uppercase">Entregues</p>
+              {totalSent > 0 && <p className="text-label font-mono text-success">{Math.round((totalDelivered / totalSent) * 100)}%</p>}
             </div>
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-info">{totalRead}</p>
-              <p className="text-[10px] text-text-muted uppercase">Lidos</p>
-              {totalDelivered > 0 && <p className="text-[11px] font-mono text-info">{Math.round((totalRead / totalDelivered) * 100)}%</p>}
+              <p className="text-caption text-text-muted uppercase">Lidos</p>
+              {totalDelivered > 0 && <p className="text-label font-mono text-info">{Math.round((totalRead / totalDelivered) * 100)}%</p>}
             </div>
           </div>
           {/* ROI estimado */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-warning">R$ {estimatedCost.toFixed(0)}</p>
-              <p className="text-[10px] text-text-muted uppercase">Custo estimado</p>
-              <p className="text-[9px] text-text-muted mt-0.5">R$ 0,15/msg média</p>
+              <p className="text-caption text-text-muted uppercase">Custo estimado</p>
+              <p className="text-micro text-text-muted mt-0.5">R$ 0,15/msg média</p>
             </div>
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-text-primary">R$ {costPerDelivery.toFixed(2)}</p>
-              <p className="text-[10px] text-text-muted uppercase">Custo/entrega</p>
+              <p className="text-caption text-text-muted uppercase">Custo/entrega</p>
             </div>
             <div className="text-center p-3 rounded-xl bg-white/[0.02] border border-border">
               <p className="text-2xl font-bold font-mono text-text-primary">R$ {costPerRead.toFixed(2)}</p>
-              <p className="text-[10px] text-text-muted uppercase">Custo/leitura</p>
+              <p className="text-caption text-text-muted uppercase">Custo/leitura</p>
             </div>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[11px] text-text-muted mb-1">Campanhas</p>
+            <p className="text-label text-text-muted mb-1">Campanhas</p>
             <p className="text-sm text-text-secondary">
               {campaigns.length} campanhas · {completedCampaigns.length} concluídas · {campaigns.filter((c) => c.status === 'SENDING').length} em envio · {totalFailed} falhas
             </p>
@@ -255,7 +255,7 @@ export function ReportsPage() {
                   <span className="text-xs text-text-secondary w-24 text-right truncate">{seg.name}</span>
                   <div className="flex-1 h-5 rounded-lg bg-white/5 overflow-hidden relative">
                     <div className="h-full rounded-lg bg-red/60" style={{ width: `${(seg.total / Math.max(...segmentData.map((s) => s.total), 1)) * 100}%` }} />
-                    <span className="absolute inset-0 flex items-center px-2 text-[10px] font-mono text-white">
+                    <span className="absolute inset-0 flex items-center px-2 text-caption font-mono text-white">
                       {seg.total} leads · {seg.hot} Quentes · {seg.conversionRate}% conv.
                     </span>
                   </div>
@@ -295,27 +295,27 @@ export function ReportsPage() {
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Valor do pipeline ativo</p>
+            <p className="text-caption uppercase tracking-wider text-text-muted mb-1">Valor do pipeline ativo</p>
             <p className="text-xl font-bold font-mono text-success">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(pipelineValue)}
               <span className="text-xs text-text-muted font-normal">/mês</span>
             </p>
-            <p className="text-[10px] text-text-muted mt-1">Baseado em 12% do faturamento dos leads ativos (benchmark V4)</p>
+            <p className="text-caption text-text-muted mt-1">Baseado em 12% do faturamento dos leads ativos (benchmark V4)</p>
           </div>
 
           <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Projeção de fechamento</p>
+            <p className="text-caption uppercase tracking-wider text-text-muted mb-1">Projeção de fechamento</p>
             <p className="text-xl font-bold font-mono text-red">
               {projectedMonthlyClose}
               <span className="text-xs text-text-muted font-normal"> leads/mês</span>
             </p>
-            <p className="text-[10px] text-text-muted mt-1">Projeção baseada na sua taxa atual: {closeRate}% das reuniões convertem</p>
+            <p className="text-caption text-text-muted mt-1">Projeção baseada na sua taxa atual: {closeRate}% das reuniões convertem</p>
           </div>
 
           <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Score médio leads Quentes</p>
+            <p className="text-caption uppercase tracking-wider text-text-muted mb-1">Score médio leads Quentes</p>
             <p className="text-xl font-bold font-mono text-hot">{avgScoreHot}/5</p>
-            <p className="text-[10px] text-text-muted mt-1">{hotLeads} leads Quentes ativos no pipeline</p>
+            <p className="text-caption text-text-muted mt-1">{hotLeads} leads Quentes ativos no pipeline</p>
           </div>
         </div>
 

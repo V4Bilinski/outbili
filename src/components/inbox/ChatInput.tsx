@@ -79,8 +79,8 @@ export function ChatInput({
               className="w-full text-left px-3 py-2 hover:bg-[var(--wa-hover)] transition-colors"
             >
               <span className="text-[13px] font-medium text-[var(--wa-text)]">{qr.title}</span>
-              {qr.shortcut && <span className="text-[11px] text-[var(--wa-text-secondary)] ml-2">/{qr.shortcut}</span>}
-              <p className="text-[11px] text-[var(--wa-text-secondary)] truncate">{qr.content.slice(0, 60)}</p>
+              {qr.shortcut && <span className="text-label text-[var(--wa-text-secondary)] ml-2">/{qr.shortcut}</span>}
+              <p className="text-label text-[var(--wa-text-secondary)] truncate">{qr.content.slice(0, 60)}</p>
             </button>
           ))}
         </div>

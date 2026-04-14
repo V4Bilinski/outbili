@@ -34,7 +34,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-hidden">
         {!collapsed && (
-          <p className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3 animate-[fade-in_0.2s_ease-out]">Menu</p>
+          <p className="text-caption uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3 animate-[fade-in_0.2s_ease-out]">Menu</p>
         )}
         {navItems.map((item) => {
           const disabled = item.adminOnly && !isAdmin
@@ -117,13 +117,13 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
         {/* User info + logout */}
         {user && (
           <div className={cn('flex items-center gap-2 px-3 py-2', collapsed && 'justify-center px-2')}>
-            <div className="w-7 h-7 rounded-full bg-red/20 flex items-center justify-center text-[11px] font-bold text-red shrink-0">
+            <div className="w-7 h-7 rounded-full bg-red/20 flex items-center justify-center text-label font-bold text-red shrink-0">
               {user.fullName?.charAt(0)?.toUpperCase() || '?'}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-text-primary truncate">{user.fullName}</p>
-                <p className="text-[9px] text-text-muted truncate">{user.email}</p>
+                <p className="text-label font-medium text-text-primary truncate">{user.fullName}</p>
+                <p className="text-micro text-text-muted truncate">{user.email}</p>
               </div>
             )}
             <button

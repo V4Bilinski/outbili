@@ -58,7 +58,7 @@ function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: Za
       {/* Nome + Template */}
       <td className="py-4 px-4">
         <p className="text-sm font-medium text-text-primary group-hover:text-white transition-colors">{campaign.name}</p>
-        <p className="text-[11px] text-text-muted mt-0.5">{campaign.templateName}</p>
+        <p className="text-label text-text-muted mt-0.5">{campaign.templateName}</p>
       </td>
 
       {/* Status */}
@@ -243,7 +243,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
               <span className={kpi.iconColor}>{kpi.icon}</span>
             </div>
             <p className="text-3xl font-bold font-mono text-text-primary">{kpi.value}</p>
-            <p className="text-[11px] text-text-muted mt-1 leading-tight">{kpi.sub}</p>
+            <p className="text-label text-text-muted mt-1 leading-tight">{kpi.sub}</p>
           </div>
         ))}
       </div>
@@ -254,7 +254,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
           <div className="flex items-center justify-between mb-4">
             <div>
               <CardTitle>Velocidade do disparo</CardTitle>
-              <p className="text-[11px] text-text-muted mt-0.5">Conta apenas o período do primeiro envio até o último envio (sent-only).</p>
+              <p className="text-label text-text-muted mt-0.5">Conta apenas o período do primeiro envio até o último envio (sent-only).</p>
             </div>
             <Badge variant="outline" size="sm">DADOS: AVANÇADOS</Badge>
           </div>
@@ -267,7 +267,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
                   <p className="text-2xl font-bold font-mono text-text-primary">
                     {velocity.throughput} msg/s <span className="text-lg text-text-secondary">({velocity.throughputMin} msg/min)</span>
                   </p>
-                  <p className="text-[11px] text-text-muted mt-1">Baseline (mediana): 1.30 msg/s</p>
+                  <p className="text-label text-text-muted mt-1">Baseline (mediana): 1.30 msg/s</p>
                 </div>
                 <CheckCircle className="h-5 w-5 text-success shrink-0" />
               </div>
@@ -278,7 +278,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
                 <div>
                   <p className="text-xs text-text-muted mb-1">Tempo total</p>
                   <p className="text-2xl font-bold font-mono text-text-primary">{velocity.totalTime}</p>
-                  <p className="text-[11px] text-text-muted mt-1">Do primeiro envio até o último envio</p>
+                  <p className="text-label text-text-muted mt-1">Do primeiro envio até o último envio</p>
                 </div>
                 <Clock className="h-5 w-5 text-text-muted shrink-0" />
               </div>
@@ -292,7 +292,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CardTitle>Logs de Envio</CardTitle>
-            <span className="px-2 py-0.5 rounded-full bg-white/5 text-[11px] font-mono text-text-secondary">{messages.length}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/5 text-label font-mono text-text-secondary">{messages.length}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -362,12 +362,12 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatário</th>
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Telefone</th>
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Status</th>
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horário</th>
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Info</th>
-                    <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Ações</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Destinatário</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Telefone</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Status</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Horário</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Info</th>
+                    <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-2 px-4">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -398,7 +398,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
             </div>
             {filteredMessages.length > LOG_PAGE_SIZE && (
               <div className="flex items-center justify-between pt-3 border-t border-border mt-3">
-                <span className="text-[11px] text-text-muted">
+                <span className="text-label text-text-muted">
                   {(logPage - 1) * LOG_PAGE_SIZE + 1}–{Math.min(logPage * LOG_PAGE_SIZE, filteredMessages.length)} de {filteredMessages.length}
                 </span>
                 <div className="flex gap-1.5">
@@ -455,7 +455,7 @@ function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | nul
         </div>
         <div>
           <p className="text-xs font-semibold text-text-primary">BilinskiZap</p>
-          <p className="text-[10px] text-text-muted">Preview do template</p>
+          <p className="text-caption text-text-muted">Preview do template</p>
         </div>
         <Badge variant="info" size="sm" className="ml-auto">{template.category}</Badge>
       </div>
@@ -476,7 +476,7 @@ function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | nul
             })}
           </p>
         )}
-        {footer?.text && <p className="text-[11px] text-text-muted italic">{footer.text}</p>}
+        {footer?.text && <p className="text-label text-text-muted italic">{footer.text}</p>}
         {buttons?.buttons && buttons.buttons.length > 0 && (
           <div className="space-y-1 pt-1 border-t border-white/5">
             {buttons.buttons.map((btn, i) => (
@@ -487,7 +487,7 @@ function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | nul
           </div>
         )}
       </div>
-      <p className="text-[9px] text-text-muted text-center mt-2">Status: {template.status}</p>
+      <p className="text-micro text-text-muted text-center mt-2">Status: {template.status}</p>
     </div>
   )
 }
@@ -683,7 +683,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                 >
                   {isDone ? <CheckCircle className="h-4 w-4" /> : s}
                 </button>
-                <span className={cn('text-[10px] font-medium transition-colors whitespace-nowrap', isActive ? 'text-red' : isDone ? 'text-success' : 'text-text-muted')}>
+                <span className={cn('text-caption font-medium transition-colors whitespace-nowrap', isActive ? 'text-red' : isDone ? 'text-success' : 'text-text-muted')}>
                   {label}
                 </span>
               </div>
@@ -697,11 +697,11 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
       {step === 1 && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da campanha</label>
+            <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da campanha</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Cadência Odontologia D+0" className={inputClass} />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Agendar para (opcional)</label>
+            <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Agendar para (opcional)</label>
             <div className="flex gap-2">
               <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className={cn(inputClass, 'flex-1')} />
               <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={cn(inputClass, 'w-auto min-w-[200px]')}>
@@ -714,14 +714,14 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               </select>
             </div>
             {scheduledAt && (
-              <p className="text-[10px] text-text-muted mt-1">
+              <p className="text-caption text-text-muted mt-1">
                 Destinatarios receberao no horario de {timezone.split('/')[1].replace('_', ' ')}
               </p>
             )}
           </div>
           {/* Campaign mode toggle */}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
-            <span className="text-[11px] text-text-muted">Tipo:</span>
+            <span className="text-label text-text-muted">Tipo:</span>
             <button
               onClick={() => setIsCadence(false)}
               className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors', !isCadence ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary')}
@@ -752,7 +752,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
           {!isCadence && (
           <div className="grid md:grid-cols-[1fr,320px] gap-4">
             <div className="space-y-3">
-              <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium block">Selecionar template</label>
+              <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium block">Selecionar template</label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
@@ -787,7 +787,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                         </Badge>
                       </div>
                       {t.components?.find((c) => c.type === 'BODY')?.text && (
-                        <p className="text-[11px] text-text-muted mt-1 line-clamp-2">
+                        <p className="text-label text-text-muted mt-1 line-clamp-2">
                           {t.components.find((c) => c.type === 'BODY')!.text!.slice(0, 120)}...
                         </p>
                       )}
@@ -797,11 +797,11 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               </div>
             </div>
             <div>
-              <label className="text-[11px] uppercase tracking-[0.1em] text-text-muted font-medium mb-3 block">Preview</label>
+              <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-3 block">Preview</label>
               <TemplatePreview template={selectedTemplate} sampleLead={selectedLeadIds.length > 0 ? leadsWithContacts.find(l => l.id === selectedLeadIds[0]) : undefined} />
               {selectedTemplate && variableCount > 0 && (
                 <div className="mt-2 p-2 rounded-lg bg-info/5 border border-info/15">
-                  <p className="text-[10px] text-info font-medium">
+                  <p className="text-caption text-info font-medium">
                     {variableCount} variável(is) — serão preenchidas automaticamente com dados do lead
                   </p>
                 </div>
@@ -817,7 +817,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               Teste A/B
             </label>
             {isABTest && (
-              <span className="text-[10px] text-text-muted">Divide o público em dois grupos com templates diferentes</span>
+              <span className="text-caption text-text-muted">Divide o público em dois grupos com templates diferentes</span>
             )}
           </div>
 
@@ -825,8 +825,8 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
           {isABTest && (
             <div className="p-3 rounded-xl bg-white/[0.02] border border-border space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-text-primary">Variante B</span>
-                <div className="flex items-center gap-2 text-[10px]">
+                <span className="text-label font-semibold text-text-primary">Variante B</span>
+                <div className="flex items-center gap-2 text-caption">
                   <span className="text-text-muted">A: {abSplit}%</span>
                   <input type="range" min={20} max={80} step={10} value={abSplit} onChange={(e) => setAbSplit(Number(e.target.value))} className="w-20 accent-red" />
                   <span className="text-text-muted">B: {100 - abSplit}%</span>
@@ -874,7 +874,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
             </label>
           </div>
           <div className="p-2.5 rounded-lg bg-info/5 border border-info/15">
-            <p className="text-[10px] text-info">
+            <p className="text-caption text-info">
               <Shield className="inline h-3 w-3 mr-1" />
               Contatos com opt-out serão filtrados automaticamente na etapa de validação (Precheck).
             </p>
@@ -886,14 +886,14 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               <span className="font-semibold text-red">{selectedLeadIds.length} selecionados</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedLeadIds(filteredLeads.map((l) => l.id))} className="text-[11px] text-red cursor-pointer hover:underline">Todos</button>
-              <button onClick={() => setSelectedLeadIds([])} className="text-[11px] text-text-muted cursor-pointer hover:underline">Nenhum</button>
+              <button onClick={() => setSelectedLeadIds(filteredLeads.map((l) => l.id))} className="text-label text-red cursor-pointer hover:underline">Todos</button>
+              <button onClick={() => setSelectedLeadIds([])} className="text-label text-text-muted cursor-pointer hover:underline">Nenhum</button>
             </div>
           </div>
           {/* Cooldown warning */}
           {hasRecentCampaigns && (
             <div className="p-2.5 rounded-lg bg-warning/5 border border-warning/15">
-              <p className="text-[10px] text-warning">
+              <p className="text-caption text-warning">
                 <Clock className="inline h-3 w-3 mr-1" />
                 Campanhas concluidas nas ultimas 24h detectadas. Contatos duplicados serao filtrados no Precheck para evitar spam.
               </p>
@@ -933,25 +933,25 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                         </Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                        <span className="text-[11px] text-text-muted">{lead.segment || 'Segmento pendente'}</span>
-                        <span className="text-[11px] text-text-muted">Score {lead.score}</span>
+                        <span className="text-label text-text-muted">{lead.segment || 'Segmento pendente'}</span>
+                        <span className="text-label text-text-muted">Score {lead.score}</span>
                       </div>
                       {lead.decisorContact ? (
                         <div className="flex flex-wrap gap-2 mt-1">
-                          <span className="inline-flex items-center gap-1 text-[10px] text-success bg-success/8 px-1.5 py-0.5 rounded-md">
+                          <span className="inline-flex items-center gap-1 text-caption text-success bg-success/8 px-1.5 py-0.5 rounded-md">
                             <Phone className="h-2.5 w-2.5" />
                             {lead.decisorContact.name || 'Decisor'}
                             {lead.decisorContact.role ? ` (${lead.decisorContact.role})` : ''}
                           </span>
                           {lead.decisorContact.email && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-info bg-info/8 px-1.5 py-0.5 rounded-md">
+                            <span className="inline-flex items-center gap-1 text-caption text-info bg-info/8 px-1.5 py-0.5 rounded-md">
                               <Mail className="h-2.5 w-2.5" />
                               {lead.decisorContact.email}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-warning mt-1 inline-block">Sem contato WhatsApp</span>
+                        <span className="text-caption text-warning mt-1 inline-block">Sem contato WhatsApp</span>
                       )}
                     </div>
                   </label>
@@ -1034,15 +1034,15 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <p className="text-lg font-bold font-mono text-text-primary">{precheckResult.totals.total}</p>
-                  <p className="text-[10px] text-text-muted">Total</p>
+                  <p className="text-caption text-text-muted">Total</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold font-mono text-success">{precheckResult.totals.valid}</p>
-                  <p className="text-[10px] text-text-muted">Válidos</p>
+                  <p className="text-caption text-text-muted">Válidos</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold font-mono text-warning">{precheckResult.totals.skipped}</p>
-                  <p className="text-[10px] text-text-muted">Ignorados</p>
+                  <p className="text-caption text-text-muted">Ignorados</p>
                 </div>
               </div>
             </div>
@@ -1054,12 +1054,12 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               </p>
               <div className="space-y-1.5">
                 {Array.from({ length: variableCount }, (_, i) => i + 1).map(n => (
-                  <div key={n} className="flex items-center gap-2 text-[11px]">
+                  <div key={n} className="flex items-center gap-2 text-label">
                     <span className="text-text-muted font-mono w-10 shrink-0">{`{{${n}}}`}</span>
                     <span className="text-text-muted">→</span>
                     <select
                       defaultValue={n === 1 ? 'decisorName' : n === 2 ? 'companyName' : n === 3 ? 'segment' : n === 4 ? 'city' : 'custom'}
-                      className="flex-1 h-7 rounded-lg bg-white/[0.03] border border-border text-[11px] text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
+                      className="flex-1 h-7 rounded-lg bg-white/[0.03] border border-border text-label text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
                     >
                       <option value="decisorName">Nome do decisor</option>
                       <option value="companyName">Nome da empresa</option>
@@ -1262,13 +1262,13 @@ export function CampaignsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Nome</th>
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Status</th>
-                      <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Destinatários</th>
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Entrega</th>
-                      <th className="text-center text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Envio</th>
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Criado em</th>
-                      <th className="text-left text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Ações</th>
+                      <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Nome</th>
+                      <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Status</th>
+                      <th className="text-center text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Destinatários</th>
+                      <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Entrega</th>
+                      <th className="text-center text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Envio</th>
+                      <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Criado em</th>
+                      <th className="text-left text-caption uppercase tracking-[0.12em] text-text-muted font-medium py-3 px-4">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1298,7 +1298,7 @@ export function CampaignsPage() {
               </div>
 
               {/* Summary footer */}
-              <div className="border-t border-border px-4 py-3 flex items-center justify-between text-[11px] text-text-muted">
+              <div className="border-t border-border px-4 py-3 flex items-center justify-between text-label text-text-muted">
                 <span>{filteredCampaigns.length} de {campaigns.length} campanhas</span>
                 <div className="flex items-center gap-4">
                   <span>Entrega média: <span className="font-mono font-semibold text-success">{globalStats.avgDelivery}%</span></span>
@@ -1323,7 +1323,7 @@ export function CampaignsPage() {
               <div className="p-2.5 rounded-xl bg-error/10"><Trash2 className="h-5 w-5 text-error" /></div>
               <div>
                 <p className="text-sm font-bold text-text-primary">Excluir campanha</p>
-                <p className="text-[11px] text-text-muted">Esta ação não pode ser desfeita</p>
+                <p className="text-label text-text-muted">Esta ação não pode ser desfeita</p>
               </div>
             </div>
             <p className="text-sm text-text-secondary mb-4">

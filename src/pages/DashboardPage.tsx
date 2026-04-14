@@ -59,7 +59,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
             <CountUpValue end={total} className="text-5xl md:text-6xl font-bold font-mono text-text-primary tracking-tighter leading-none" isInView={isInView} />
             <div>
               <p className="text-sm font-semibold text-text-secondary">leads no pipeline</p>
-              <p className="text-[11px] text-text-muted mt-0.5">
+              <p className="text-label text-text-muted mt-0.5">
                 {closedCount > 0 && <span className="text-success">{closedCount} fechado{closedCount > 1 ? 's' : ''} </span>}
                 {meetingsCount > 0 && <span>· {meetingsCount} em reunião </span>}
                 {contactedCount > 0 && <span>· {contactedCount} em contato</span>}
@@ -77,7 +77,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
                 { label: 'Frios', count: coldCount, color: 'bg-text-muted/60', textColor: 'text-text-muted' },
               ].map((t) => (
                 <div key={t.label} className="flex items-center gap-2">
-                  <span className="text-[10px] text-text-muted">{t.label}</span>
+                  <span className="text-caption text-text-muted">{t.label}</span>
                   <span className={`text-xs font-mono font-bold ${t.textColor}`}>{t.count}</span>
                   <div className="w-12 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                     <div className={`h-full rounded-full ${t.color} transition-all duration-700`} style={{ width: total > 0 ? `${(t.count / total) * 100}%` : '0%' }} />
@@ -92,11 +92,11 @@ function KPICards({ leads }: { leads: Lead[] }) {
         {total > 0 && (
           <div className="mt-5 space-y-2">
             <div className="flex items-center justify-between px-0.5">
-              <p className="text-[10px] text-text-muted uppercase tracking-[0.08em] font-medium">Distribuição de temperatura</p>
+              <p className="text-caption text-text-muted uppercase tracking-[0.08em] font-medium">Distribuição de temperatura</p>
               <div className="flex items-center gap-3">
-                {hotPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-hot font-medium"><span className="w-2 h-2 rounded-full bg-hot" />{hotPct}% Quentes</span>}
-                {warmPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-warm font-medium"><span className="w-2 h-2 rounded-full bg-warm" />{warmPct}% Mornos</span>}
-                {coldPct > 0 && <span className="flex items-center gap-1.5 text-[10px] text-text-muted font-medium"><span className="w-2 h-2 rounded-full bg-text-muted/60" />{coldPct}% Frios</span>}
+                {hotPct > 0 && <span className="flex items-center gap-1.5 text-caption text-hot font-medium"><span className="w-2 h-2 rounded-full bg-hot" />{hotPct}% Quentes</span>}
+                {warmPct > 0 && <span className="flex items-center gap-1.5 text-caption text-warm font-medium"><span className="w-2 h-2 rounded-full bg-warm" />{warmPct}% Mornos</span>}
+                {coldPct > 0 && <span className="flex items-center gap-1.5 text-caption text-text-muted font-medium"><span className="w-2 h-2 rounded-full bg-text-muted/60" />{coldPct}% Frios</span>}
               </div>
             </div>
             {/* Tanque */}
@@ -163,12 +163,12 @@ function KPICards({ leads }: { leads: Lead[] }) {
           >
             {/* Número + label */}
             <div className="flex items-center justify-between mb-2">
-              <p className={`text-[10px] uppercase tracking-[0.1em] font-semibold ${card.color}`}>{card.label}</p>
+              <p className={`text-caption uppercase tracking-[0.1em] font-semibold ${card.color}`}>{card.label}</p>
               <card.icon className={`h-4 w-4 ${card.color} opacity-40 group-hover:opacity-70 transition-opacity`} />
             </div>
             <div className="flex items-baseline gap-2">
               <CountUpValue end={card.value} className={`text-3xl font-bold font-mono tracking-tight ${card.color}`} isInView={isInView} />
-              {card.pct > 0 && <span className={`text-[11px] font-mono ${card.color} opacity-50`}>{card.pct}%</span>}
+              {card.pct > 0 && <span className={`text-label font-mono ${card.color} opacity-50`}>{card.pct}%</span>}
             </div>
 
             {/* Micro-barra de proporção dentro do card */}
@@ -177,7 +177,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
             </div>
 
             {/* Hint narrativo */}
-            <p className="text-[10px] text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">{card.hint}</p>
+            <p className="text-caption text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">{card.hint}</p>
           </button>
         ))}
       </div>
@@ -214,13 +214,15 @@ function NextActions({ leads }: { leads: Lead[] }) {
     <Card className="p-0 overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <CardTitle>Próximas ações</CardTitle>
-        <span className="text-[11px] text-text-muted font-mono">{sorted.length} requerem ação</span>
+        <span className="text-label text-text-muted font-mono">{sorted.length} requerem ação</span>
       </div>
       <div className="divide-y divide-border">
         {sorted.map((lead) => {
           const action = getAction(lead)
           const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
           const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
+          const daysIdle = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0
+          const isStale = daysIdle >= 7
 
           return (
             <div
@@ -240,6 +242,9 @@ function NextActions({ leads }: { leads: Lead[] }) {
                     <Badge variant={tempVariant} size="sm">
                       {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                     </Badge>
+                    {isStale && (
+                      <span className="text-micro font-bold text-error bg-error/10 px-1.5 py-0.5 rounded">{daysIdle}d parado</span>
+                    )}
                   </div>
                   <p className="text-xs text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
                 </div>
@@ -345,7 +350,7 @@ function CampaignStats() {
           <div key={s.label} className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
             <s.icon className={`h-4 w-4 mx-auto mb-1.5 ${s.color} opacity-60`} />
             <p className="text-lg font-bold font-mono text-text-primary">{s.value}</p>
-            <p className="text-[10px] text-text-muted uppercase tracking-wider">{s.label}</p>
+            <p className="text-caption text-text-muted uppercase tracking-wider">{s.label}</p>
           </div>
         ))}
       </div>
@@ -377,7 +382,7 @@ function QuickActions() {
             </div>
             <div>
               <p className="text-sm font-medium text-text-primary">{action.label}</p>
-              <p className="text-[11px] text-text-muted">{action.desc}</p>
+              <p className="text-label text-text-muted">{action.desc}</p>
             </div>
           </button>
         ))}
@@ -415,7 +420,7 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-6 h-0.5 bg-red" />
-          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">DIAGNÓSTICO DE TRAVAS</span>
+          <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">DIAGNÓSTICO DE TRAVAS</span>
         </div>
         <CardTitle>Diagnóstico de Travas</CardTitle>
         <p className="text-xs text-text-muted mt-1">Distribuição dos prospects por trava detectada</p>
@@ -439,13 +444,13 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
             >
               <div className={`w-full h-0.5 ${isBottleneck ? 'bg-red' : count > 0 ? 'bg-red/30' : 'bg-border/20'}`} />
               <div className="flex flex-col items-center justify-center p-3">
-                <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
+                <span className={`text-caption font-bold font-mono uppercase tracking-wider ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
                   T{key}
                 </span>
                 <span className={`text-2xl font-bold font-mono mt-1 ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-primary' : 'text-text-muted/30'}`}>
                   {count}
                 </span>
-                <span className={`text-[9px] text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
+                <span className={`text-micro text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
                   {meta?.short}
                 </span>
                 {isBottleneck && (
@@ -496,7 +501,7 @@ function AssemblyLine({ leads }: { leads: Lead[] }) {
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-6 h-0.5 bg-red" />
-          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">LINHA DE MONTAGEM</span>
+          <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">LINHA DE MONTAGEM</span>
         </div>
         <CardTitle>Linha de Montagem</CardTitle>
         <p className="text-xs text-text-muted mt-1">Fluxo das 5 estações</p>
@@ -525,7 +530,7 @@ function AssemblyLine({ leads }: { leads: Lead[] }) {
                   <span className={`text-2xl font-bold font-mono ${isBottleneck ? 'text-red' : station.count > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
                     {station.count}
                   </span>
-                  <span className={`text-[10px] text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
+                  <span className={`text-caption text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
                     {station.name}
                   </span>
                   {isBottleneck && (
@@ -590,7 +595,7 @@ function LTPPipeline({ leads }: { leads: Lead[] }) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-6 h-0.5 bg-red" />
-            <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">LTP DO PIPELINE</span>
+            <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">LTP DO PIPELINE</span>
           </div>
           <CardTitle>LTP do Pipeline</CardTitle>
           <div className="flex items-center gap-1 mt-1">
@@ -619,11 +624,11 @@ function LTPPipeline({ leads }: { leads: Lead[] }) {
             {s.highlight && (
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(204,0,0,0.12) 0%, transparent 70%)' }} />
             )}
-            <p className="text-[10px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2">{s.label}</p>
+            <p className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-2">{s.label}</p>
             <p className={`text-2xl font-bold font-mono tracking-tight ${s.highlight ? 'text-red' : 'text-text-primary'}`}>
               {s.value}
             </p>
-            <p className="text-[11px] text-text-muted mt-1">{s.sub}</p>
+            <p className="text-label text-text-muted mt-1">{s.sub}</p>
           </div>
         ))}
       </div>
@@ -669,7 +674,7 @@ export function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-red" />
-              <span className="text-[11px] uppercase tracking-[0.15em] text-red font-semibold">Sistema de prospecção outbound</span>
+              <span className="text-label uppercase tracking-[0.15em] text-red font-semibold">Sistema de prospecção outbound</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold font-heading gradient-text mb-3">
               Bem-vindo ao OUTBILI
@@ -763,9 +768,9 @@ export function DashboardPage() {
             { label: 'Taxa de conversão', value: '—', sub: 'Aparece após seu primeiro fechamento' },
           ].map((stat) => (
             <div key={stat.label} className="p-4 rounded-2xl bg-white/[0.015] border border-border">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>
+              <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>
               <p className="text-2xl font-bold font-mono text-text-muted/40 mt-1">{stat.value}</p>
-              <p className="text-[10px] text-text-muted mt-0.5">{stat.sub}</p>
+              <p className="text-caption text-text-muted mt-0.5">{stat.sub}</p>
             </div>
           ))}
         </div>

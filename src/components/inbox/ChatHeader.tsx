@@ -67,7 +67,7 @@ export function ChatHeader({
           <p className="text-[15px] font-medium text-[var(--wa-text)] truncate">{displayName}</p>
           {/* Priority badge */}
           {conversation.priority !== 'normal' && (
-            <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded', priorityCfg.color, 'bg-current/10')}>
+            <span className={cn('text-caption font-semibold px-1.5 py-0.5 rounded', priorityCfg.color, 'bg-current/10')}>
               {priorityCfg.label}
             </span>
           )}
@@ -86,8 +86,8 @@ export function ChatHeader({
           ) : (
             <span className="flex items-center gap-1 text-[12px] text-amber-400"><User className="h-3 w-3" /> Humano</span>
           )}
-          {isPaused && <span className="text-[10px] text-amber-400 px-1 py-0.5 rounded bg-amber-400/10">Pausado</span>}
-          {isClosed && <span className="text-[10px] text-red-400 px-1 py-0.5 rounded bg-red-400/10">Fechada</span>}
+          {isPaused && <span className="text-caption text-amber-400 px-1 py-0.5 rounded bg-amber-400/10">Pausado</span>}
+          {isClosed && <span className="text-caption text-red-400 px-1 py-0.5 rounded bg-red-400/10">Fechada</span>}
           <span className="text-[12px] text-[var(--wa-text-secondary)]">{conversation.phone}</span>
         </div>
       </div>
@@ -126,14 +126,14 @@ export function ChatHeader({
           <div className="absolute top-[56px] right-3 z-50 w-56 py-1.5 rounded-lg shadow-xl border" style={{ backgroundColor: 'var(--wa-panel)', borderColor: 'var(--wa-border)' }}>
             {/* Priority */}
             <div className="px-3 py-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium mb-1 flex items-center gap-1"><Flag className="h-3 w-3" /> Prioridade</p>
+              <p className="text-caption uppercase tracking-wider text-[var(--wa-text-secondary)] font-medium mb-1 flex items-center gap-1"><Flag className="h-3 w-3" /> Prioridade</p>
               <div className="flex gap-1">
                 {(['low', 'normal', 'high', 'urgent'] as ConversationPriority[]).map(p => (
                   <button
                     key={p}
                     onClick={() => { onSetPriority(p); setShowMenu(false) }}
                     className={cn(
-                      'px-2 py-1 rounded text-[11px] font-medium transition-colors',
+                      'px-2 py-1 rounded text-label font-medium transition-colors',
                       conversation.priority === p
                         ? 'bg-[var(--wa-unread-badge)]/15 text-[var(--wa-unread-badge)]'
                         : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]',

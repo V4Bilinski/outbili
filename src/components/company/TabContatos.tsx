@@ -137,7 +137,7 @@ export function TabContatos({ lead }: { lead: Lead }) {
           </div>
           <div>
             <h3 className="text-sm font-semibold font-heading">Contatos</h3>
-            <p className="text-[11px] text-text-muted">
+            <p className="text-label text-text-muted">
               {contactCount === 0 ? 'Nenhum cadastrado' : `${contactCount} contato${contactCount > 1 ? 's' : ''}`}
               {contactCount > 0 && !hasDecisor && ' · sem decisor'}
             </p>

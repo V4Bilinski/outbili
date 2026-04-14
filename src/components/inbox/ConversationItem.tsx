@@ -75,7 +75,7 @@ export const ConversationItem = memo(function ConversationItem({
             {displayName}
           </span>
           <span className={cn(
-            'text-[11px] shrink-0',
+            'text-label shrink-0',
             hasUnread ? 'text-[var(--wa-unread-badge)] font-medium' : 'text-[var(--wa-text-secondary)]',
           )}>
             {timeAgo}
@@ -86,7 +86,7 @@ export const ConversationItem = memo(function ConversationItem({
             {getPreviewPrefix(conversation.last_message_preview)}
           </span>
           {hasUnread && (
-            <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-[var(--wa-unread-badge)] text-white text-[11px] font-bold flex items-center justify-center">
+            <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-[var(--wa-unread-badge)] text-white text-label font-bold flex items-center justify-center">
               {conversation.unread_count > 99 ? '99+' : conversation.unread_count}
             </span>
           )}
