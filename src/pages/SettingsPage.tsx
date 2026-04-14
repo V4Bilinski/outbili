@@ -4,16 +4,16 @@ import { Button } from '../components/ui/Button'
 import { useZapHealth, useZapContactStats, useZapTemplates } from '../hooks/useBilinskiZap'
 import { CheckCircle, AlertCircle, Loader2, RefreshCw, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { toast } from 'sonner'
 
 export function SettingsPage() {
+  const navigate = useNavigate()
   const airtablePat = import.meta.env.VITE_AIRTABLE_PAT
   const airtableBaseId = import.meta.env.VITE_AIRTABLE_BASE_ID
   const bilinskizapUrl = import.meta.env.VITE_BILINSKIZAP_URL
   const bilinskizapKey = import.meta.env.VITE_BILINSKIZAP_API_KEY
-  const apifyToken = import.meta.env.VITE_APIFY_TOKEN
-
   const { data: zapHealthy, isLoading: healthLoading } = useZapHealth()
   const { data: contactStats } = useZapContactStats()
   const { data: templates } = useZapTemplates()
@@ -36,10 +36,6 @@ export function SettingsPage() {
         })
         if (res.ok) toast.success('BilinskiZap conectado com sucesso')
         else toast.error(`BilinskiZap erro: ${res.status}`)
-      } else if (name === 'Apify') {
-        const res = await fetch(`https://api.apify.com/v2/user/me?token=${apifyToken}`)
-        if (res.ok) toast.success('Apify conectado com sucesso')
-        else toast.error(`Apify erro: ${res.status}`)
       }
     } catch (err: any) {
       toast.error(`Erro ao testar ${name}: ${err.message}`)
@@ -64,14 +60,6 @@ export function SettingsPage() {
       status: zapHealthy ? 'Conectado' : bilinskizapKey ? 'Erro de conexão' : 'API key pendente',
       details: contactStats ? `${contactStats.total} contatos · ${contactStats.optIn} opt-in` : bilinskizapUrl || undefined,
       errorHint: !bilinskizapKey ? 'Adicione VITE_BILINSKIZAP_API_KEY no .env.local' : !zapHealthy ? `Verifique se ${bilinskizapUrl} está acessível` : undefined,
-    },
-    {
-      name: 'Apify',
-      desc: 'Coleta de dados: Google, Instagram e websites',
-      connected: !!apifyToken,
-      status: apifyToken ? 'Conectado' : 'Token ausente',
-      details: apifyToken ? '3 actors configurados' : undefined,
-      errorHint: !apifyToken ? 'Adicione VITE_APIFY_TOKEN no .env.local' : undefined,
     },
   ]
 
@@ -168,6 +156,68 @@ export function SettingsPage() {
             <p className="text-sm font-semibold">OUTBILI v1.0</p>
             <p className="text-[11px] text-text-muted">Inteligência comercial para prospecção outbound · V4 Bilinski &amp;Co</p>
           </div>
+        </div>
+      </Card>
+
+      {/* Sobre o OUTBILI — Manifesto condensado */}
+      <Card>
+        <CardTitle className="mb-6">Sobre o OUTBILI</CardTitle>
+
+        {/* Missão */}
+        <div className="mb-6 border-l-2 border-white/10 pl-4">
+          <p className="text-base font-semibold text-text-primary leading-snug">
+            "Do CNPJ ao contrato. Sem lista fria. Sem achismo. Sem trava."
+          </p>
+          <p className="text-[11px] text-text-muted mt-2 leading-relaxed">
+            Sistema de inteligência comercial da V4 Bilinski &amp; Co. Fábrica de Receita operacionalizada em software.
+          </p>
+        </div>
+
+        {/* Compromissos */}
+        <div className="mb-6">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-3">
+            5 Compromissos
+          </p>
+          <ol className="space-y-2">
+            {[
+              'Não pescar sem qualificar.',
+              'Não reunir sem preparar.',
+              'Não avançar sem completar.',
+              'Não depender de um canal.',
+              'Throughput primeiro.',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-[10px] font-mono text-text-muted mt-0.5 w-4 shrink-0">{i + 1}.</span>
+                <span className="text-sm text-text-secondary">{item}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Links */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => navigate('/glossario')}
+          >
+            Glossário
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => navigate('/institucional')}
+          >
+            Página institucional
+          </Button>
+        </div>
+
+        {/* Rodapé */}
+        <div className="border-t border-border pt-4">
+          <p className="text-[11px] text-text-muted leading-relaxed italic">
+            "A maioria das empresas não tem problema de mercado. Tem problema de sistema de receita. Nós resolvemos o nosso."
+          </p>
+          <p className="text-[10px] text-text-muted mt-1">— V4 Bilinski &amp; Co</p>
         </div>
       </Card>
     </div>

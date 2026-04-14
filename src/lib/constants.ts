@@ -22,10 +22,10 @@ export const SEGMENTS = [
 ] as const
 
 export const TIERS = [
-  { name: 'Micro+', range: 'R$ 70k-100k', wtp: '12-15%', min: 70000, max: 100000 },
-  { name: 'Small', range: 'R$ 100k-200k', wtp: '12-15%', min: 100000, max: 200000 },
-  { name: 'Medium-', range: 'R$ 200k-830k', wtp: '10-12%', min: 200000, max: 830000 },
-  { name: 'Medium=', range: 'R$ 830k-2M', wtp: '8-10%', min: 830000, max: 2000000 },
+  { name: 'Micro+', range: 'R$ 70k-100k', ltp: '12-15%', min: 70000, max: 100000 },
+  { name: 'Small', range: 'R$ 100k-200k', ltp: '12-15%', min: 100000, max: 200000 },
+  { name: 'Medium-', range: 'R$ 200k-830k', ltp: '10-12%', min: 200000, max: 830000 },
+  { name: 'Medium=', range: 'R$ 830k-2M', ltp: '8-10%', min: 830000, max: 2000000 },
 ] as const
 
 export const LEAD_STATUSES = [

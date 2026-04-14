@@ -126,7 +126,7 @@ export function ReportsPage() {
   const avgScoreHot = hotLeads > 0 ? (allLeads.filter((l) => l.temperature === 'Quente').reduce((a, l) => a + (l.score || 0), 0) / hotLeads).toFixed(1) : '0'
   const pipelineValue = allLeads
     .filter((l) => l.status !== 'Fechado' && l.status !== 'Perdido')
-    .reduce((a, l) => a + (l.monthlyRevenue || 0) * 0.12, 0) // 12% WTP estimate
+    .reduce((a, l) => a + (l.monthlyRevenue || 0) * 0.12, 0) // 12% LTP estimate
   const projectedMonthlyClose = reunioes > 0 ? Math.round(reunioes * (closeRate / 100)) : 0
 
   return (

@@ -74,6 +74,20 @@ function LeadFilters({
   )
 }
 
+// --- Trap badge helpers ---
+function getTrapAbbrev(trap?: string): string | null {
+  if (!trap) return null
+  const match = trap.match(/^(T\d+)/)
+  return match ? match[1] : null
+}
+
+function trapBadgeClass(abbrev: string): string {
+  const num = parseInt(abbrev.replace('T', ''), 10)
+  if (num >= 7) return 'text-red bg-red/10'
+  if (num >= 4) return 'text-orange-400 bg-orange-400/10'
+  return 'text-amber-400 bg-amber-400/10'
+}
+
 // --- Table view ---
 function LeadTable({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
@@ -109,10 +123,17 @@ function LeadTable({ leads }: { leads: Lead[] }) {
               <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}>
                 <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
                 <td className="py-4 px-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
                     {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
                     {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
+                    {(() => {
+                      const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
+                      if (!abbrev) return null
+                      return (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
+                      )
+                    })()}
                   </div>
                   <p className="text-[11px] text-text-muted mt-0.5">
                     {lead.segment || 'Segmento pendente'}

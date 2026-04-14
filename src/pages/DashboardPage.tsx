@@ -5,11 +5,11 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Flame, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle, Snowflake } from 'lucide-react'
+import { Flame, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
-import { LEAD_STATUSES } from '../lib/constants'
-import { calculateSpicedScore } from '../lib/utils'
+import { LEAD_STATUSES, TIERS } from '../lib/constants'
+import { calculateSpicedScore, formatCurrency } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
@@ -386,6 +386,251 @@ function QuickActions() {
   )
 }
 
+// --- Trap short names mapped to T1-T8 ---
+const TRAP_META: Record<string, { short: string }> = {
+  '1': { short: 'Aquisição' },
+  '2': { short: 'Conversão' },
+  '3': { short: 'Ticket Médio' },
+  '4': { short: 'Recorrência' },
+  '5': { short: 'Margem' },
+  '6': { short: 'Posicionamento' },
+  '7': { short: 'Escalabilidade' },
+  '8': { short: 'Dependência' },
+}
+
+function TrapDiagnostic({ leads }: { leads: Lead[] }) {
+  const counts: Record<string, number> = {}
+  for (const lead of leads) {
+    if (!lead.hypotheticalTrap) continue
+    const match = lead.hypotheticalTrap.match(/T(\d)/)
+    if (!match) continue
+    const key = match[1]
+    counts[key] = (counts[key] || 0) + 1
+  }
+
+  const maxCount = Math.max(0, ...Object.values(counts))
+
+  return (
+    <Card>
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-0.5 bg-red" />
+          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">DIAGNÓSTICO DE TRAVAS</span>
+        </div>
+        <CardTitle>Diagnóstico de Travas</CardTitle>
+        <p className="text-xs text-text-muted mt-1">Distribuição dos prospects por trava detectada</p>
+      </div>
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+        {Array.from({ length: 8 }, (_, i) => {
+          const key = String(i + 1)
+          const count = counts[key] || 0
+          const isBottleneck = maxCount > 0 && count === maxCount
+          const meta = TRAP_META[key]
+          return (
+            <div
+              key={key}
+              className={`relative overflow-hidden flex flex-col items-center justify-center rounded-xl border transition-all duration-200 ${
+                isBottleneck
+                  ? 'border-red/60 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.3)] hover:shadow-[0_0_28px_rgba(204,0,0,0.4)] hover:-translate-y-0.5'
+                  : count > 0
+                  ? 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+                  : 'border-border/40 bg-transparent opacity-40'
+              }`}
+            >
+              <div className={`w-full h-0.5 ${isBottleneck ? 'bg-red' : count > 0 ? 'bg-red/30' : 'bg-border/20'}`} />
+              <div className="flex flex-col items-center justify-center p-3">
+                <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
+                  T{key}
+                </span>
+                <span className={`text-2xl font-bold font-mono mt-1 ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-primary' : 'text-text-muted/30'}`}>
+                  {count}
+                </span>
+                <span className={`text-[9px] text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
+                  {meta?.short}
+                </span>
+                {isBottleneck && (
+                  <span className="text-[8px] font-semibold text-red mt-1 uppercase tracking-wide">gargalo</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
+function AssemblyLine({ leads }: { leads: Lead[] }) {
+  const stations = [
+    {
+      name: 'Pesquisa',
+      icon: Search,
+      count: leads.filter((l) => l.status === 'Novo').length,
+    },
+    {
+      name: 'Enriquecimento',
+      icon: Database,
+      count: leads.filter((l) => l.enrichmentStatus !== 'complete' && l.status !== 'Novo').length,
+    },
+    {
+      name: 'Qualificação',
+      icon: Filter,
+      count: leads.filter((l) => l.status === 'Qualificado').length,
+    },
+    {
+      name: 'Inteligência',
+      icon: Brain,
+      count: leads.filter((l) => l.status === 'Contactado' || l.status === 'Respondeu' || l.status === 'Reunião').length,
+    },
+    {
+      name: 'Prospecção',
+      icon: Send,
+      count: leads.filter((l) => l.status === 'Proposta').length,
+    },
+  ]
+
+  const maxCount = Math.max(0, ...stations.map((s) => s.count))
+
+  return (
+    <Card>
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-0.5 bg-red" />
+          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">LINHA DE MONTAGEM</span>
+        </div>
+        <CardTitle>Linha de Montagem</CardTitle>
+        <p className="text-xs text-text-muted mt-1">Fluxo das 5 estações</p>
+      </div>
+      <div className="flex items-stretch gap-0 overflow-x-auto">
+        {stations.map((station, i) => {
+          const isBottleneck = maxCount > 0 && station.count === maxCount
+          return (
+            <div key={station.name} className="flex items-center min-w-0 flex-1">
+              <div
+                className={`relative overflow-hidden flex flex-col items-center justify-center rounded-xl border flex-1 transition-all duration-200 ${
+                  isBottleneck
+                    ? 'border-red/40 bg-red/[0.07] shadow-[0_0_16px_rgba(204,0,0,0.25)] hover:shadow-[0_0_20px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
+                    : station.count > 0
+                    ? 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+                    : 'border-border/40 bg-transparent opacity-50'
+                }`}
+              >
+                <div className={`w-full h-1 rounded-t-xl ${isBottleneck ? 'bg-red' : station.count > 0 ? 'bg-red/20' : 'bg-border/10'}`} />
+                <div className="flex flex-col items-center justify-center p-4">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-lg mb-2 ${isBottleneck ? 'bg-red/20' : station.count > 0 ? 'bg-red/10' : 'bg-white/[0.02]'}`}>
+                    <station.icon
+                      className={`h-5 w-5 ${isBottleneck ? 'text-red' : station.count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}
+                    />
+                  </div>
+                  <span className={`text-2xl font-bold font-mono ${isBottleneck ? 'text-red' : station.count > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
+                    {station.count}
+                  </span>
+                  <span className={`text-[10px] text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
+                    {station.name}
+                  </span>
+                  {isBottleneck && (
+                    <span className="text-[8px] font-semibold text-red mt-1 uppercase tracking-wide">gargalo</span>
+                  )}
+                </div>
+              </div>
+              {i < stations.length - 1 && (
+                <ArrowRight className="h-4 w-4 text-red/40 mx-1 shrink-0" />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
+function LTPPipeline({ leads }: { leads: Lead[] }) {
+  const activeLeads = leads.filter((l) => l.status !== 'Fechado' && l.status !== 'Perdido')
+
+  let totalLTP = 0
+  let hotLTP = 0
+  let countWithRevenue = 0
+
+  for (const lead of activeLeads) {
+    if (!lead.monthlyRevenue) continue
+    const revenue = lead.monthlyRevenue
+    const tier = TIERS.find((t) => revenue >= t.min && revenue < t.max) || TIERS[TIERS.length - 1]
+    const [ltpMin, ltpMax] = tier.ltp.split('-').map((v) => parseFloat(v) / 100)
+    const ltpMid = (ltpMin + ltpMax) / 2
+    const ltp = revenue * ltpMid * 12
+    totalLTP += ltp
+    countWithRevenue++
+    if (lead.temperature === 'Quente') hotLTP += ltp
+  }
+
+  const avgLTP = countWithRevenue > 0 ? totalLTP / countWithRevenue : 0
+
+  const stats = [
+    {
+      label: 'LTP Total Pipeline',
+      value: formatCurrency(totalLTP),
+      sub: `${countWithRevenue} leads com faturamento`,
+    },
+    {
+      label: 'LTP Leads Quentes',
+      value: formatCurrency(hotLTP),
+      sub: 'Receita projetada prioridade',
+      highlight: true,
+    },
+    {
+      label: 'LTP Médio por Lead',
+      value: formatCurrency(avgLTP),
+      sub: 'Valor médio de contrato projetado',
+    },
+  ]
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-0.5 bg-red" />
+            <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red">LTP DO PIPELINE</span>
+          </div>
+          <CardTitle>LTP do Pipeline</CardTitle>
+          <div className="flex items-center gap-1 mt-1">
+            <p className="text-xs text-text-muted">Lifetime Throughput do Projeto</p>
+            <div className="border-l-4 border-red/60 pl-2 ml-1">
+              <span
+                title="Receita projetada ao longo dos contratos, calculada com base no faturamento mensal e percentual de captura por tier"
+                className="flex items-center cursor-help"
+              >
+                <Info className="h-3 w-3 text-text-muted/60" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className={`relative overflow-hidden p-4 rounded-xl border transition-all duration-200 ${
+              s.highlight
+                ? 'border-red/40 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.2)] hover:shadow-[0_0_28px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
+                : 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+            }`}
+          >
+            {s.highlight && (
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(204,0,0,0.12) 0%, transparent 70%)' }} />
+            )}
+            <p className="text-[10px] uppercase tracking-[0.1em] text-text-muted font-medium mb-2">{s.label}</p>
+            <p className={`text-2xl font-bold font-mono tracking-tight ${s.highlight ? 'text-red' : 'text-text-primary'}`}>
+              {s.value}
+            </p>
+            <p className="text-[11px] text-text-muted mt-1">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
   const navigate = useNavigate()
@@ -565,6 +810,19 @@ export function DashboardPage() {
           <QuickActions />
         </AnimateIn>
       </div>
+
+      {/* Fábrica de Receita */}
+      <AnimateIn delay={100}>
+        <TrapDiagnostic leads={allLeads} />
+      </AnimateIn>
+
+      <AnimateIn delay={150}>
+        <AssemblyLine leads={allLeads} />
+      </AnimateIn>
+
+      <AnimateIn delay={200}>
+        <LTPPipeline leads={allLeads} />
+      </AnimateIn>
 
       <ImportModal open={showImport} onClose={() => setShowImport(false)} onEnrichRequest={handleEnrichRequest} />
     </div>

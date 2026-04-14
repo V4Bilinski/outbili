@@ -590,12 +590,6 @@ export function InstitucionalPage() {
           </AnimateIn>
 
           <AnimateIn delay={160}>
-            <p className="text-sm text-text-muted mb-14 font-medium tracking-wider uppercase">
-              V4 Bilinski &amp; Co
-            </p>
-          </AnimateIn>
-
-          <AnimateIn delay={240}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
               <button
                 onClick={() => navigate('/login')}
@@ -615,7 +609,7 @@ export function InstitucionalPage() {
           </AnimateIn>
 
           <AnimateIn delay={320}>
-            <img src="/outbili/logo-white.png" alt="V4 Bilinski &amp; Co" className="h-7 w-auto mx-auto mb-3 opacity-50" />
+            <img src="/outbili/logo-white.png" alt="V4 Bilinski &amp; Co" className="h-16 md:h-20 w-auto mx-auto mb-4 opacity-60" />
             <p className="text-[11px] text-text-muted tracking-[0.15em] uppercase">
               OUTBILI — Sistema de inteligência comercial
             </p>

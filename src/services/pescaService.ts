@@ -397,7 +397,8 @@ export async function enrichBatchWithAssertiva(
               : `https://${assertivaData._site}`
           }
 
-          leadUpdate.enrichmentStatus = 'assertiva' as any
+          // CNPJa já rodou (lead foi salvo com 'cnpja') + Assertiva concluiu = complete
+          leadUpdate.enrichmentStatus = 'complete' as any
 
           // Decisores com telefone/WhatsApp — atualizar Contacts
           const protocolo = assertivaData?._protocolo

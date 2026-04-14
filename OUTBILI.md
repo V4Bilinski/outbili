@@ -6,7 +6,10 @@ Este arquivo é a fonte de verdade do projeto OUTBILI. Toda execução, decisão
 
 ## O que é o OUTBILI
 
-Sistema de inteligência comercial e prospecção B2B da V4 Bilinski &Co. Permite pesquisar, enriquecer, qualificar e prospectar leads com IA.
+Sistema de inteligência comercial e prospecção B2B da V4 Bilinski & Co. Permite pesquisar, enriquecer, qualificar e prospectar leads com IA.
+
+**Localização:** V4 Bilinski & Co — São Paulo, Berrini (Zona Sul de SP).
+Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" em qualquer documento, copy, texto de interface ou comunicação do projeto.
 
 **URL de produção:** https://v4bilinski.github.io/outbili/
 
@@ -40,7 +43,6 @@ Sistema de inteligência comercial e prospecção B2B da V4 Bilinski &Co. Permit
 | Banco de dados | Airtable (REST API) |
 | Enriquecimento (cadastral) | CNPJa API (searchOffice + mapCnpjaToLead) |
 | Enriquecimento (telefone/WhatsApp) | Assertiva Localize (via Worker proxy + n8n fallback) |
-| Enriquecimento (social/digital) | Apify Actors |
 | WhatsApp | BilinskiZap API |
 | Ícones | Lucide React |
 | Fontes | Plus Jakarta Sans, Inter, JetBrains Mono |
@@ -68,7 +70,7 @@ src/
     ImportModal.tsx    # Modal de importação de leads por arquivo
   hooks/              # useLeads, useLeadEnrichment, useMassEnrichment, useReEnrichment, useAuth, etc.
   services/           # leadService, contactService, enrichmentService, campaignService
-  lib/                # airtable, apify, file-parser, n8n-webhook, bilinskizap, utils
+  lib/                # airtable, file-parser, n8n-webhook, bilinskizap, utils
   types/index.ts      # Interfaces: Lead, Contact, Campaign, Activity, etc.
 ```
 
@@ -84,9 +86,6 @@ Configuradas como secrets no GitHub Actions (Settings > Secrets > Actions):
 | `VITE_AIRTABLE_BASE_ID` | ID da base Airtable |
 | `VITE_BILINSKIZAP_URL` | URL BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave BilinskiZap |
-| `VITE_APIFY_TOKEN` | Token Apify |
-| `VITE_VIBEPROSPECTING_URL` | URL VibeProspecting |
-| `VITE_VIBEPROSPECTING_TOKEN` | Token VibeProspecting |
 | `VITE_N8N_WEBHOOK_URL` | Webhook n8n |
 | `VITE_CNPJA_API_KEY` | Chave API CNPJa |
 | `VITE_ASSERTIVA_CLIENT_ID` | Client ID Assertiva OAuth2 |
@@ -139,13 +138,13 @@ npm run preview   # Preview do build local
 - Documentos do projeto: português com acentuação completa, nunca sem acentos
 
 ### Enriquecimento de leads
-- Pipeline em 3 fases: CNPJa (cadastral central) → Assertiva (telefones/WhatsApp) → Apify (social/digital)
+- Pipeline em 2 fases: CNPJa (cadastral central) → Assertiva (telefones/WhatsApp)
 - Fluxo de status: `none` → `cnpja` → `assertiva` → `complete`
 - **Prioridade de dados:** decisor (nome) + WhatsApp/telefone são campos obrigatórios
 - **Prioridade de telefone:** Assertiva WhatsApp validado > CNPJa celular (MOBILE) > CNPJa fixo (LANDLINE)
 - **Assertiva employees:** `_quantidadeFuncionarios` SEMPRE sobrescreve estimate CNPJa (dado real RAIS/CAGED)
 - Lógica em `src/services/enrichmentService.ts` e `src/hooks/useLeadEnrichment.ts`
-- Re-enriquecimento via `reEnrichLead()` (CNPJa + Assertiva only, sem Apify) e `src/hooks/useReEnrichment.ts`
+- Re-enriquecimento via `reEnrichLead()` (CNPJa + Assertiva) e `src/hooks/useReEnrichment.ts`
 - Enriquecimento em massa via `src/hooks/useMassEnrichment.ts`
 - Diagnóstico via `leadNeedsReEnrich()` helper
 - Upload de arquivos (CSV, Excel, PDF, TXT, MD) via `src/lib/file-parser.ts`
@@ -284,5 +283,4 @@ Padrões definidos pela auditoria Copy Squad (2026-04-14). Para novas telas ou c
 | `OUTBILI.md` | Documento-mãe — diretrizes gerais |
 | `docs/guides/OUTBILI-SYSTEM-GUIDE.md` | Guia do sistema — funcionalidades, arquitetura, fluxos |
 | `docs/guides/GAP-ANALYSIS-OUTBILI.md` | Análise de gaps (o que falta implementar) |
-| `docs/planejamento-tatico-pesca-prospeccao.md` | Planejamento tático do módulo PESCA |
 | `docs/airtable-formulas-views.md` | Fórmulas e views do Airtable |

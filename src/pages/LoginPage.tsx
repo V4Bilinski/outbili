@@ -63,7 +63,15 @@ export function LoginPage() {
             </div>
             <span className="text-2xl font-bold font-heading text-text-primary tracking-tight">OUTBILI</span>
           </div>
-          <p className="text-xs text-text-muted animate-[fade-in_0.7s_ease-out]">Inteligência comercial para prospecção outbound · Bilinski&Co</p>
+          <p className="text-sm font-semibold text-text-primary leading-snug animate-[fade-in_0.7s_ease-out] mt-1">
+            Do CNPJ ao contrato.
+          </p>
+          <p className="text-xs text-text-secondary leading-snug animate-[fade-in_0.8s_ease-out] mt-0.5">
+            Sem lista fria. Sem achismo. Sem trava.
+          </p>
+          <p className="text-xs text-text-muted animate-[fade-in_0.9s_ease-out] mt-1">
+            Sistema de inteligência comercial — V4 Bilinski &amp; Co
+          </p>
         </div>
 
         {/* Card */}
