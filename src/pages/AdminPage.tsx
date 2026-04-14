@@ -5,7 +5,8 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw } from 'lucide-react'
+import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { useReEnrichment } from '../hooks/useReEnrichment'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 
@@ -39,7 +40,8 @@ export function AdminPage() {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<string>('')
-  const [tab, setTab] = useState<'activity' | 'users'>('activity')
+  const [tab, setTab] = useState<'activity' | 'users' | 'enrichment'>('activity')
+  const { state: reEnrichState, diagnostics, diagLoading, loadDiagnostics, startReEnrich, abort } = useReEnrichment()
 
   const loadData = async () => {
     setLoading(true)
@@ -148,6 +150,13 @@ export function AdminPage() {
         >
           <Users className="h-4 w-4" /> Usuários
         </button>
+        <button
+          onClick={() => { setTab('enrichment'); loadDiagnostics() }}
+          className={cn('flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
+            tab === 'enrichment' ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary')}
+        >
+          <Database className="h-4 w-4" /> Enriquecimento
+        </button>
       </div>
 
       {/* Activity Log */}
@@ -196,6 +205,161 @@ export function AdminPage() {
             )}
           </div>
         </Card>
+      )}
+
+      {/* Enrichment */}
+      {tab === 'enrichment' && (
+        <div className="space-y-4">
+          {/* Diagnostico */}
+          {diagLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-20" />)}
+            </div>
+          ) : diagnostics ? (
+            <>
+              <Card>
+                <CardTitle className="mb-3">Diagnostico de dados</CardTitle>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+                    <p className="text-2xl font-bold font-mono">{diagnostics.totalLeads}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Total de leads</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-error/5 border border-error/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-error">{diagnostics.missingEmployees}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Sem funcionarios</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-error/5 border border-error/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-error">{diagnostics.missingFoundingDate}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Sem data abertura</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-warning/5 border border-warning/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-warning">{diagnostics.estimateOnly}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Apenas estimativa</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-info/5 border border-info/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-info">{diagnostics.needsReEnrich}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Precisam re-enriquecer</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-success">{diagnostics.alreadyComplete}</p>
+                    <p className="text-[10px] text-text-muted uppercase">Ja completos</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Acoes */}
+              <Card>
+                <CardTitle className="mb-3">Re-enriquecimento em lote</CardTitle>
+                <p className="text-xs text-text-muted mb-4">
+                  Atualiza dados de funcionarios, data de abertura e anos no mercado usando CNPJa + Assertiva. Dados reais substituem estimativas.
+                </p>
+                <div className="flex gap-3 flex-wrap">
+                  <Button
+                    variant="primary"
+                    icon={<Database className="h-4 w-4" />}
+                    disabled={reEnrichState.isRunning || diagnostics.needsReEnrich === 0}
+                    onClick={() => startReEnrich('missing')}
+                  >
+                    Re-enriquecer dados faltantes ({diagnostics.needsReEnrich})
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={<RefreshCw className="h-4 w-4" />}
+                    disabled={reEnrichState.isRunning || diagnostics.totalLeads === 0}
+                    onClick={() => {
+                      if (confirm(`Forcar re-enriquecimento de TODOS os ${diagnostics.totalLeads} leads? Isso consome creditos de API.`)) {
+                        startReEnrich('all')
+                      }
+                    }}
+                  >
+                    Forcar re-enriquecimento total
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    icon={<RefreshCw className="h-3.5 w-3.5" />}
+                    onClick={loadDiagnostics}
+                    disabled={diagLoading}
+                  >
+                    Atualizar diagnostico
+                  </Button>
+                </div>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <p className="text-sm text-text-muted text-center py-8">Clique na aba para carregar diagnostico</p>
+            </Card>
+          )}
+
+          {/* Progresso */}
+          {reEnrichState.isRunning && (
+            <Card>
+              <div className="flex items-center justify-between mb-3">
+                <CardTitle>Processando...</CardTitle>
+                <Button size="sm" variant="danger" onClick={abort}>Parar</Button>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-4 w-4 text-red animate-spin" />
+                  <span className="text-sm text-text-primary truncate">{reEnrichState.currentLead}</span>
+                </div>
+                {/* Progress bar */}
+                <div className="w-full h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-red to-red-vivid rounded-full transition-all duration-500"
+                    style={{ width: `${reEnrichState.total > 0 ? ((reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped) / reEnrichState.total) * 100 : 0}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-4 text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-success" /> {reEnrichState.completed} atualizados
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <XCircle className="h-3 w-3 text-error" /> {reEnrichState.failed} erros
+                  </span>
+                  <span>{reEnrichState.skipped} pulados</span>
+                  <span className="ml-auto">
+                    {reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped}/{reEnrichState.total}
+                    {reEnrichState.etaSeconds > 0 && ` · ETA ${Math.ceil(reEnrichState.etaSeconds / 60)} min`}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Resultado final */}
+          {!reEnrichState.isRunning && reEnrichState.results.length > 0 && (
+            <Card>
+              <CardTitle className="mb-3">Resultado do re-enriquecimento</CardTitle>
+              <div className="flex items-center gap-4 mb-3 text-sm">
+                <span className="text-success font-semibold">{reEnrichState.completed} atualizados</span>
+                <span className="text-error font-semibold">{reEnrichState.failed} erros</span>
+                <span className="text-text-muted">{reEnrichState.skipped} pulados</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-1">
+                {reEnrichState.results.filter(r => !r.skipped).map((r) => (
+                  <div key={r.leadId} className="flex items-center gap-2 text-[11px] py-1 border-b border-border/50">
+                    {r.error ? (
+                      <XCircle className="h-3 w-3 text-error shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="h-3 w-3 text-success shrink-0" />
+                    )}
+                    <span className="text-text-secondary font-mono truncate">{r.leadId.slice(0, 8)}</span>
+                    <span className="text-text-muted">
+                      {r.error || `${Object.keys(r.updated).length} campos via ${r.source}`}
+                    </span>
+                    {r.updated.employees && (
+                      <Badge variant="info" size="sm">{r.updated.employees} func</Badge>
+                    )}
+                    {r.updated.yearsInMarket !== undefined && (
+                      <Badge variant="default" size="sm">{r.updated.yearsInMarket} anos</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Users Management */}

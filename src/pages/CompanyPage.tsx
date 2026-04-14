@@ -262,8 +262,8 @@ export function CompanyPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-' },
-            { label: 'Funcionários', value: lead.employees || '-' },
-            { label: 'Anos no mercado', value: yearsInMarket ?? '-' },
+            { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est.)' : ''}` : '-' },
+            { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-' },
             { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true },
           ].map((stat: any) => (
             <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`}>

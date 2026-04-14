@@ -1143,7 +1143,8 @@ export async function enrichLead(
       }
 
       // Mapear dados cadastrais da Assertiva (campos antes ignorados)
-      if (assertivaData?._quantidadeFuncionarios && !merged.employees) {
+      // Assertiva _quantidadeFuncionarios SEMPRE sobrescreve estimate do CNPJa (dado real RAIS/CAGED)
+      if (assertivaData?._quantidadeFuncionarios) {
         merged.employees = Number(assertivaData._quantidadeFuncionarios)
       }
       if (assertivaData?._cnaeDescricao && !merged.segment) {
@@ -1938,4 +1939,123 @@ function levenshtein(a: string, b: string): number {
     }
   }
   return matrix[b.length][a.length]
+}
+
+// ========== RE-ENRICHMENT: Atualizar campos faltantes via CNPJa + Assertiva ==========
+
+export interface ReEnrichResult {
+  leadId: string
+  updated: Partial<Lead>
+  source: 'cnpja' | 'assertiva' | 'both'
+  skipped: boolean
+  error?: string
+}
+
+const ESTIMATE_VALUES = new Set([5, 30, 100])
+
+export function leadNeedsReEnrich(lead: Lead, forceAll: boolean): boolean {
+  if (!lead.cnpj) return false
+  if (forceAll) return true
+  const hasEstimateOnly = lead.employees && ESTIMATE_VALUES.has(lead.employees) &&
+    !['assertiva', 'complete'].includes(lead.enrichmentStatus || '')
+  return !lead.employees || !lead.foundingDate || !lead.yearsInMarket || !!hasEstimateOnly
+}
+
+export async function reEnrichLead(
+  leadId: string,
+  lead: Partial<Lead>,
+  _options?: { forceAll?: boolean },
+): Promise<ReEnrichResult> {
+  if (!lead.cnpj) {
+    return { leadId, updated: {}, source: 'cnpja', skipped: true, error: 'Sem CNPJ' }
+  }
+
+  const merged: Partial<Lead> = {}
+  let source: 'cnpja' | 'assertiva' | 'both' = 'cnpja'
+
+  // Fase 1: CNPJa — foundingDate, yearsInMarket, employees (estimate)
+  try {
+    const office = await searchOffice(lead.cnpj)
+    const cnpjaFields = mapCnpjaToLead(office)
+
+    if (cnpjaFields.foundingDate) {
+      merged.foundingDate = cnpjaFields.foundingDate
+      // Sempre recalcular yearsInMarket da foundingDate (valor atual)
+      const founded = new Date(cnpjaFields.foundingDate)
+      if (!isNaN(founded.getTime()) && founded.getTime() < Date.now()) {
+        merged.yearsInMarket = Math.floor((Date.now() - founded.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      }
+    }
+    if (cnpjaFields.employees && cnpjaFields.employees > 0) {
+      merged.employees = cnpjaFields.employees
+    }
+    // Preencher campos extras que possam estar faltando
+    if (cnpjaFields.capitalSocial && !lead.capitalSocial) merged.capitalSocial = cnpjaFields.capitalSocial
+    if (cnpjaFields.tradeName && !lead.tradeName) merged.tradeName = cnpjaFields.tradeName
+    if (cnpjaFields.legalNature && !lead.legalNature) merged.legalNature = cnpjaFields.legalNature
+    if (cnpjaFields.registrationStatus && !lead.registrationStatus) merged.registrationStatus = cnpjaFields.registrationStatus
+    if (cnpjaFields.cnaePrimary && !lead.cnaePrimary) merged.cnaePrimary = cnpjaFields.cnaePrimary
+    if (cnpjaFields.taxRegime && !lead.taxRegime) merged.taxRegime = cnpjaFields.taxRegime
+    if (cnpjaFields.address && !lead.address) merged.address = cnpjaFields.address
+    if (cnpjaFields.city && !lead.city) merged.city = cnpjaFields.city
+    if (cnpjaFields.state && !lead.state) merged.state = cnpjaFields.state
+    if (cnpjaFields.rfPhone && !lead.rfPhone) merged.rfPhone = cnpjaFields.rfPhone
+    if (cnpjaFields.rfEmail && !lead.rfEmail) merged.rfEmail = cnpjaFields.rfEmail
+  } catch (err) {
+    console.warn(`reEnrichLead CNPJa falhou para ${lead.cnpj}:`, err)
+  }
+
+  // Fase 2: Assertiva — employees real (_quantidadeFuncionarios) sobrescreve estimate
+  try {
+    const assertivaData = await assertivaLookupCnpj(lead.cnpj) as any
+    if (assertivaData?._quantidadeFuncionarios) {
+      const realEmployees = Number(assertivaData._quantidadeFuncionarios)
+      if (realEmployees > 0 && !isNaN(realEmployees)) {
+        merged.employees = realEmployees
+        source = source === 'cnpja' ? 'both' : 'assertiva'
+      }
+    }
+    // Telefone com WhatsApp validado
+    if (assertivaData?.telefones?.length) {
+      const bestPhone = extractBestPhone(assertivaData.telefones)
+      if (bestPhone.whatsapp && !lead.rfPhone) {
+        merged.rfPhone = bestPhone.whatsapp
+      }
+    }
+    if (assertivaData?._site && !lead.website) {
+      merged.website = assertivaData._site.startsWith('http') ? assertivaData._site : `https://${assertivaData._site}`
+    }
+
+    if (source !== 'both') source = 'assertiva'
+  } catch (err) {
+    console.warn(`reEnrichLead Assertiva falhou para ${lead.cnpj}:`, err)
+  }
+
+  // Validacao final
+  if (merged.employees && (merged.employees <= 0 || isNaN(merged.employees))) {
+    delete merged.employees
+  }
+  if (merged.foundingDate) {
+    const d = new Date(merged.foundingDate)
+    if (isNaN(d.getTime()) || d.getTime() > Date.now()) {
+      delete merged.foundingDate
+      delete merged.yearsInMarket
+    }
+  }
+
+  // Se nao ha nada para atualizar, skip
+  if (Object.keys(merged).length === 0) {
+    return { leadId, updated: {}, source, skipped: true }
+  }
+
+  // Atualizar enrichmentStatus se melhorou
+  if (!lead.enrichmentStatus || lead.enrichmentStatus === 'none' || lead.enrichmentStatus === 'cnpja') {
+    merged.enrichmentStatus = source === 'both' || source === 'assertiva' ? 'assertiva' : 'cnpja'
+  }
+
+  // Persistir no Airtable
+  await updateLead(leadId, merged)
+  await logEnrichmentStep(leadId, 're-enrich', 'done', `${Object.keys(merged).length} campos atualizados via ${source}`).catch(() => {})
+
+  return { leadId, updated: merged, source, skipped: false }
 }
