@@ -27,9 +27,8 @@ async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> & { _partners?:
       _cnpjaOffice: office,
     } as any
   } catch (cnpjaError) {
-    // Fallback: APIs legadas (serao removidas na Fase 6)
-    console.warn('CNPJa falhou, usando fallback legado:', cnpjaError)
-    return enrichByCnpjLegacy(clean)
+    console.warn('CNPJa falhou:', cnpjaError)
+    return null
   }
 }
 
@@ -252,7 +251,6 @@ export async function enrichLead(
   // ========== FASE 1: CNPJa (fonte central unica) ==========
 
   // Step 1: CNPJa — dados cadastrais + socios + CNAE + endereço
-  let cnpjCep = ''
   if (leadData.cnpj) {
     step('cnpj').status = 'running'
     notify()
@@ -271,8 +269,6 @@ export async function enrichLead(
         for (const key of cnpjaFields) {
           mergeField(key, (cnpjData as any)[key])
         }
-
-        cnpjCep = (cnpjData as any)._cep || (cnpjData as any).zipCode || ''
 
         // Criar Partners na tabela relacional (se CNPJa retornou socios)
         const partnersData = (cnpjData as any)._partners
@@ -574,48 +570,6 @@ export function formatPhone(phone: string): string {
   }
   if (digits.length >= 10) return digits.startsWith('55') ? digits : '55' + digits
   return digits
-}
-
-function estimateEmployees(porte: string): number {
-  const p = porte.toLowerCase()
-  if (p.includes('mei') || p.includes('micro')) return 3
-  if (p.includes('pequen')) return 15
-  if (p.includes('medi') || p.includes('médio')) return 80
-  if (p.includes('grand')) return 300
-  return 10
-}
-
-function yearsSince(dateStr: string): number {
-  try {
-    const d = new Date(dateStr)
-    return Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-  } catch {
-    return 0
-  }
-}
-
-function similarity(a: string, b: string): number {
-  if (a === b) return 1
-  if (!a || !b) return 0
-  const longer = a.length > b.length ? a : b
-  const shorter = a.length > b.length ? b : a
-  if (longer.length === 0) return 1
-  const editDistance = levenshtein(longer, shorter)
-  return (longer.length - editDistance) / longer.length
-}
-
-function levenshtein(a: string, b: string): number {
-  const matrix: number[][] = []
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i]
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      matrix[i][j] = b[i - 1] === a[j - 1]
-        ? matrix[i - 1][j - 1]
-        : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
-    }
-  }
-  return matrix[b.length][a.length]
 }
 
 // ========== RE-ENRICHMENT: Atualizar campos faltantes via CNPJa + Assertiva ==========

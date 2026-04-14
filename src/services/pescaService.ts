@@ -189,26 +189,90 @@ export async function fallbackEnrichLeads(
       }
     } catch { /* nivel 2 falhou, tentar nivel 3 */ }
 
-    // NIVEL 3: Assertiva CPF do decisor (telefone pessoal — melhor contato possivel)
+    // NIVEL 3: Assertiva CPF do decisor (telefone pessoal — celular OU fixo)
     if (decisorCpf && decisorCpf.length === 11) {
       try {
         const cpfData = await lookupCpf(decisorCpf) as any
         const telefones = cpfData?.resposta?.telefones
         if (telefones) {
-          const celulares = telefones.celulares || []
+          // Prioridade: celular (WhatsApp) > fixo pessoal
+          const celulares = telefones.celulares || telefones.moveis || []
+          const fixos = telefones.fixos || []
+          let found = false
+
+          // Tentar celular primeiro
           for (const cel of celulares) {
             const num = cel.numero?.replace(/\D/g, '') || ''
             if (num.length >= 10) {
               lead.whatsapp = formatPhone(num)
-              // Atualizar nome do decisor se disponivel
-              if (!lead.decisorName && cpfData?.resposta?.dadosCadastrais?.nome) {
-                lead.decisorName = cpfData.resposta.dadosCadastrais.nome
-              }
+              found = true
               break
             }
           }
+
+          // Se não achou celular, pegar fixo pessoal como fallback
+          if (!found && fixos.length > 0) {
+            const num = fixos[0].numero?.replace(/\D/g, '') || ''
+            if (num.length >= 10) {
+              lead.phone = lead.phone || formatPhone(num)
+              found = true
+            }
+          }
+
+          // Atualizar nome do decisor se disponível
+          if (found && !lead.decisorName && cpfData?.resposta?.dadosCadastrais?.nome) {
+            lead.decisorName = cpfData.resposta.dadosCadastrais.nome
+          }
         }
-      } catch { /* nivel 3 falhou — lead fica sem celular */ }
+      } catch { /* nivel 3 falhou, tentar nivel 4 */ }
+    }
+
+    // NIVEL 4: Assertiva CPF de TODOS os sócios (varredura completa)
+    // Se nenhum nível anterior encontrou celular, buscar CPF de cada sócio até achar
+    if (!lead.whatsapp && !lead.phone) {
+      try {
+        const cnpj = lead.cnpj.replace(/\D/g, '')
+        const assertivaData = await assertivaLookupCnpj(cnpj) as any
+        const socios = assertivaData?.socios || []
+
+        for (const socio of socios) {
+          if (lead.whatsapp) break
+          const cpf = socio?.cpf?.replace(/\D/g, '')
+          if (!cpf || cpf.length !== 11 || cpf === decisorCpf) continue
+
+          try {
+            const cpfData = await lookupCpf(cpf) as any
+            const telefones = cpfData?.resposta?.telefones
+            if (telefones) {
+              const celulares = telefones.celulares || telefones.moveis || []
+              const fixos = telefones.fixos || []
+
+              for (const cel of celulares) {
+                const num = cel.numero?.replace(/\D/g, '') || ''
+                if (num.length >= 10) {
+                  lead.whatsapp = formatPhone(num)
+                  if (!lead.decisorName && socio.nome) {
+                    lead.decisorName = socio.nome
+                    lead.decisorRole = socio.qualificacao || 'Sócio'
+                  }
+                  break
+                }
+              }
+
+              if (!lead.whatsapp && fixos.length > 0) {
+                const num = fixos[0].numero?.replace(/\D/g, '') || ''
+                if (num.length >= 10) {
+                  lead.phone = formatPhone(num)
+                  if (!lead.decisorName && socio.nome) {
+                    lead.decisorName = socio.nome
+                    lead.decisorRole = socio.qualificacao || 'Sócio'
+                  }
+                }
+              }
+            }
+          } catch { /* CPF deste sócio falhou, tentar próximo */ }
+        }
+      } catch { /* varredura de sócios falhou */ }
     }
 
     enrichedCount++
@@ -381,15 +445,50 @@ export async function enrichBatchWithAssertiva(
                   leadUpdate.linkedin = cpfData.redesSociais.linkedin
                 }
               }
-              // Telefone pessoal como fallback
+              // Telefone pessoal como fallback (celular > fixo — PROIBIDO ficar sem telefone)
               if (cpfData.telefones?.length && !leadUpdate.rfPhone) {
                 const personalPhone = extractBestPhone(cpfData.telefones)
-                if (personalPhone.whatsapp) leadUpdate.rfPhone = personalPhone.whatsapp
+                if (personalPhone.whatsapp) {
+                  leadUpdate.rfPhone = personalPhone.whatsapp
+                } else if (personalPhone.landline) {
+                  leadUpdate.rfPhone = personalPhone.landline
+                }
               }
             } catch { /* CPF lookup complementar */ }
           }
 
-          // Atualizar lead com dados do CPF
+          // NÍVEL 4: Se AINDA não tem telefone, varrer CPF de TODOS os sócios
+          if (!leadUpdate.rfPhone && !leadRecord.fields.rfPhone) {
+            const socios = assertivaData?.socios || []
+            for (const socio of socios) {
+              if (leadUpdate.rfPhone) break
+              const cpf = socio?.cpf?.replace(/\D/g, '')
+              if (!cpf || cpf.length !== 11) continue
+              try {
+                const cpfData = await lookupCpf(cpf) as any
+                const tels = cpfData?.resposta?.telefones || cpfData?.telefones
+                if (tels) {
+                  const celulares = tels.celulares || tels.moveis || []
+                  const fixos = tels.fixos || []
+                  for (const cel of celulares) {
+                    const num = cel.numero?.replace(/\D/g, '') || ''
+                    if (num.length >= 10) {
+                      leadUpdate.rfPhone = formatPhone(num)
+                      break
+                    }
+                  }
+                  if (!leadUpdate.rfPhone && fixos.length > 0) {
+                    const num = fixos[0].numero?.replace(/\D/g, '') || ''
+                    if (num.length >= 10) {
+                      leadUpdate.rfPhone = formatPhone(num)
+                    }
+                  }
+                }
+              } catch { /* sócio sem dados, tentar próximo */ }
+            }
+          }
+
+          // Atualizar lead com dados completos
           await updateRecords<Lead>('Leads', [{ id: leadId, fields: leadUpdate }])
 
           enrichedCount++

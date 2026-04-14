@@ -138,7 +138,6 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
   const temGoogleMeuNegocio = cadastro.temGoogleMeuNegocio ?? undefined
   const porteEmpresa = cadastro.porteEmpresa || undefined
   const situacaoCadastral = cadastro.situacaoCadastral || undefined
-  const dataSituacaoCadastral = cadastro.dataSituacaoCadastral || undefined
 
   // Enderecos com geolocalização (resp.enderecos inclui latitude/longitude)
   const enderecos = Array.isArray(resp.enderecos) ? resp.enderecos : []
