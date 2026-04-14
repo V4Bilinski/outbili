@@ -425,7 +425,7 @@ export interface AssertivaCompanyResult {
   telefones: AssertivaPhone[]
   emails: Array<{ endereco: string }>
   socios: Array<{ nome: string; cpf?: string; qualificacao?: string }>
-  // Campos internos (prefixo _) — extraídos da resposta raw
+  // Campos internos (prefixo _) — extraídos da resposta raw do Worker Cloudflare
   _protocolo?: string
   _site?: string
   _cnaeDescricao?: string
@@ -437,4 +437,13 @@ export interface AssertivaCompanyResult {
   _rendaPresumida?: number
   _hasWhatsappBusiness?: boolean
   _indicadorAtividade?: string
+  _temGoogleMeuNegocio?: boolean
+  _porteEmpresa?: string
+  _endereco?: {
+    cidade?: string
+    uf?: string
+    bairro?: string
+    latitude?: string
+    longitude?: string
+  }
 }

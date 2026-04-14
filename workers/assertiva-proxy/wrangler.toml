@@ -1,0 +1,11 @@
+name = "outbili"
+main = "worker.js"
+compatibility_date = "2024-12-01"
+account_id = "" # Preencher com account ID do Cloudflare
+
+[vars]
+ASSERTIVA_BASE_URL = "https://api.assertivasolucoes.com.br"
+
+# Secrets (configurar via `wrangler secret put`):
+# ASSERTIVA_CLIENT_ID
+# ASSERTIVA_CLIENT_SECRET

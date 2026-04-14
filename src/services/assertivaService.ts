@@ -87,26 +87,9 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
 
   const raw = await assertivaViaProxy<any>('lookup-cnpj', { cnpj: cleanCnpj })
 
-  // Mapear resposta — proxy retorna dados ja processados pelo n8n ou raw da Assertiva
+  // Mapear resposta — Worker Cloudflare retorna resposta RAW completa da Assertiva
   const resp = raw.resposta || raw
   const cadastro = resp.dadosCadastrais || {}
-
-  // Debug: logar campos disponíveis para mapear extração expandida
-  if (typeof window !== 'undefined') {
-    const availableFields = Object.keys(resp).filter(k => resp[k] != null)
-    const cadastroFields = Object.keys(cadastro).filter(k => cadastro[k] != null)
-    console.log('[Assertiva] Campos resp:', availableFields.join(', '))
-    console.log('[Assertiva] Campos cadastro:', cadastroFields.join(', '))
-    if (resp.redesSociais || cadastro.redesSociais || resp.midiasSociais) {
-      console.log('[Assertiva] Redes sociais:', JSON.stringify(resp.redesSociais || cadastro.redesSociais || resp.midiasSociais))
-    }
-    if (resp.faturamentoPresumido || cadastro.faturamentoPresumido || resp.faturamento) {
-      console.log('[Assertiva] Faturamento:', resp.faturamentoPresumido || cadastro.faturamentoPresumido || resp.faturamento)
-    }
-    if (resp.scoreCredito || cadastro.scoreCredito) {
-      console.log('[Assertiva] Score crédito:', resp.scoreCredito || cadastro.scoreCredito)
-    }
-  }
   const celulares = (resp.telefones?.celulares || []).map((t: any) => ({
     numero: t.numero?.replace(/\D/g, '') || '',
     tipo: 'celular' as const,
@@ -132,43 +115,43 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     qualificacao: s.qualificacao || s.cargo || '',
   }))
 
-  // Extrair redes sociais (podem vir em resp.redesSociais, cadastro.redesSociais, ou resp.midiasSociais)
-  const rawSociais = resp.redesSociais || cadastro.redesSociais || resp.midiasSociais || {}
+  // Redes sociais — resp.redesSociais e um ARRAY de objetos (confirmado via Worker)
+  // Formato: [{ tipo: "instagram", url: "..." }, { tipo: "facebook", url: "..." }]
+  // Pode estar vazio dependendo do tier Assertiva contratado
+  const rawSociaisArr = Array.isArray(resp.redesSociais) ? resp.redesSociais : []
   const redesSociais: AssertivaSocialLinks = {}
-  if (typeof rawSociais === 'object' && rawSociais !== null) {
-    redesSociais.instagram = rawSociais.instagram || rawSociais.instagramUrl || undefined
-    redesSociais.facebook = rawSociais.facebook || rawSociais.facebookUrl || undefined
-    redesSociais.linkedin = rawSociais.linkedin || rawSociais.linkedinUrl || undefined
-    redesSociais.twitter = rawSociais.twitter || rawSociais.twitterUrl || undefined
-    redesSociais.youtube = rawSociais.youtube || rawSociais.youtubeUrl || undefined
+  for (const rede of rawSociaisArr) {
+    const tipo = (rede.tipo || rede.rede || rede.nome || '').toLowerCase()
+    const url = rede.url || rede.link || rede.perfil || ''
+    if (!url) continue
+    if (tipo.includes('instagram')) redesSociais.instagram = url
+    else if (tipo.includes('facebook')) redesSociais.facebook = url
+    else if (tipo.includes('linkedin')) redesSociais.linkedin = url
+    else if (tipo.includes('twitter') || tipo.includes('x.com')) redesSociais.twitter = url
+    else if (tipo.includes('youtube')) redesSociais.youtube = url
   }
 
   // Detectar WhatsApp Business em telefones fixos
   const hasWhatsappBusiness = fixos.some((f: AssertivaPhone) => f.whatsapp === true)
 
-  // Faturamento — pode vir em diferentes paths da resposta
+  // Campos extras do cadastro (confirmados via Worker)
+  const temGoogleMeuNegocio = cadastro.temGoogleMeuNegocio ?? undefined
+  const porteEmpresa = cadastro.porteEmpresa || undefined
+  const situacaoCadastral = cadastro.situacaoCadastral || undefined
+  const dataSituacaoCadastral = cadastro.dataSituacaoCadastral || undefined
+
+  // Enderecos com geolocalização (resp.enderecos inclui latitude/longitude)
+  const enderecos = Array.isArray(resp.enderecos) ? resp.enderecos : []
+  const primeiroEndereco = enderecos[0] || null
+
+  // Faturamento/score — podem nao existir no tier atual (graceful)
   const faturamentoPresumido = resp.faturamentoPresumido
     || cadastro.faturamentoPresumido
-    || resp.faturamento?.valorPresumido
-    || cadastro.receitaBruta
     || undefined
-
-  // Score de crédito
-  const scoreCredito = resp.scoreCredito?.valor
-    || resp.scoreCredito
-    || cadastro.scoreCredito
-    || undefined
-
-  // Renda presumida
-  const rendaPresumida = resp.rendaPresumida
-    || cadastro.rendaPresumida
-    || undefined
-
-  // Indicador de atividade
-  const indicadorAtividade = resp.indicadorAtividade
-    || cadastro.indicadorAtividade
-    || cadastro.situacaoAtividade
-    || undefined
+  const scoreCredito = typeof (resp.scoreCredito?.valor ?? resp.scoreCredito) === 'number'
+    ? (resp.scoreCredito?.valor ?? resp.scoreCredito)
+    : undefined
+  const rendaPresumida = resp.rendaPresumida || cadastro.rendaPresumida || undefined
 
   return {
     razaoSocial: cadastro.razaoSocial,
@@ -187,7 +170,17 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     _scoreCredito: typeof scoreCredito === 'number' ? scoreCredito : undefined,
     _rendaPresumida: typeof rendaPresumida === 'number' ? rendaPresumida : undefined,
     _hasWhatsappBusiness: hasWhatsappBusiness || undefined,
-    _indicadorAtividade: indicadorAtividade,
+    _indicadorAtividade: situacaoCadastral,
+    // Campos extras descobertos via Worker (usados pelo SPICED)
+    _temGoogleMeuNegocio: temGoogleMeuNegocio,
+    _porteEmpresa: porteEmpresa,
+    _endereco: primeiroEndereco ? {
+      cidade: primeiroEndereco.cidade,
+      uf: primeiroEndereco.uf,
+      bairro: primeiroEndereco.bairro,
+      latitude: primeiroEndereco.latitude,
+      longitude: primeiroEndereco.longitude,
+    } : undefined,
   } satisfies AssertivaCompanyResult
 }
 
