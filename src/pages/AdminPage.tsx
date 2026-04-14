@@ -5,8 +5,9 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight } from 'lucide-react'
 import { useReEnrichment } from '../hooks/useReEnrichment'
+import { useSpicedRecalc } from '../hooks/useSpicedRecalc'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 
@@ -42,6 +43,7 @@ export function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [tab, setTab] = useState<'activity' | 'users' | 'enrichment'>('activity')
   const { state: reEnrichState, diagnostics, diagLoading, loadDiagnostics, startReEnrich, abort } = useReEnrichment()
+  const { progress: recalcProgress, recalcAll } = useSpicedRecalc()
 
   const loadData = async () => {
     setLoading(true)
@@ -283,6 +285,106 @@ export function AdminPage() {
                     Atualizar diagnostico
                   </Button>
                 </div>
+              </Card>
+
+              {/* Recalculo SPICED v2 */}
+              <Card>
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="h-4 w-4 text-warning" />
+                  <CardTitle>Recalcular SPICED v2 em massa</CardTitle>
+                </div>
+                <p className="text-xs text-text-muted mb-4">
+                  Recalcula score e temperatura de todos os leads usando a nova formula SPICED v2 (CNPJa + Assertiva only). Nao consome creditos de API — usa apenas os dados ja existentes no Airtable.
+                </p>
+
+                {!recalcProgress.isRunning && !recalcProgress.isDone && (
+                  <Button
+                    variant="primary"
+                    icon={<Zap className="h-4 w-4" />}
+                    disabled={recalcProgress.isRunning || diagnostics.totalLeads === 0}
+                    onClick={() => {
+                      if (confirm(`Recalcular SPICED de ${diagnostics.totalLeads} leads? Scores e temperaturas serao atualizados.`)) {
+                        recalcAll()
+                        toast.success('Recalculo SPICED iniciado')
+                      }
+                    }}
+                  >
+                    Recalcular SPICED de {diagnostics.totalLeads} leads
+                  </Button>
+                )}
+
+                {/* Progresso */}
+                {recalcProgress.isRunning && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="h-4 w-4 text-warning animate-spin" />
+                      <span className="text-sm text-text-primary truncate">{recalcProgress.currentLead}</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-white/[0.05] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-warning to-red rounded-full transition-all duration-300"
+                        style={{ width: `${recalcProgress.total > 0 ? (recalcProgress.processed / recalcProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-4 text-[11px] text-text-muted">
+                      <span className="text-success">{recalcProgress.updated} atualizados</span>
+                      <span>{recalcProgress.skipped} sem mudanca</span>
+                      <span className="ml-auto">{recalcProgress.processed}/{recalcProgress.total}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Resultado */}
+                {recalcProgress.isDone && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-success/5 border border-success/20">
+                      <CheckCircle2 className="h-5 w-5 text-success" />
+                      <div>
+                        <p className="text-sm font-semibold text-text-primary">Recalculo concluido</p>
+                        <p className="text-xs text-text-muted">
+                          {recalcProgress.updated} leads atualizados · {recalcProgress.skipped} sem mudanca · {recalcProgress.total} total
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tabela de mudancas */}
+                    {recalcProgress.changes.length > 0 && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+                          Leads com score/temperatura alterados ({recalcProgress.changes.length})
+                        </p>
+                        <div className="max-h-64 overflow-y-auto rounded-lg border border-border">
+                          <table className="w-full text-xs">
+                            <thead className="bg-surface-md sticky top-0">
+                              <tr className="border-b border-border">
+                                <th className="text-left py-2 px-3 text-text-muted font-medium">Empresa</th>
+                                <th className="text-center py-2 px-3 text-text-muted font-medium">Score</th>
+                                <th className="text-center py-2 px-3 text-text-muted font-medium">Temperatura</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {recalcProgress.changes.map((c) => (
+                                <tr key={c.id} className="border-b border-border/30">
+                                  <td className="py-2 px-3 text-text-primary font-medium truncate max-w-[200px]">{c.name}</td>
+                                  <td className="py-2 px-3 text-center">
+                                    <span className="font-mono text-text-muted">{c.oldScore}</span>
+                                    <ArrowRight className="h-3 w-3 inline mx-1 text-text-muted" />
+                                    <span className={cn('font-mono font-bold', c.newScore >= 4 ? 'text-hot' : c.newScore >= 3 ? 'text-warm' : 'text-success')}>{c.newScore}</span>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <span className="text-text-muted">{c.oldTemp}</span>
+                                    <ArrowRight className="h-3 w-3 inline mx-1 text-text-muted" />
+                                    <span className={cn('font-bold', c.newTemp === 'Quente' ? 'text-hot' : c.newTemp === 'Morno' ? 'text-warm' : 'text-success')}>{c.newTemp}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             </>
           ) : (

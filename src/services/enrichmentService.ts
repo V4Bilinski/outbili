@@ -81,7 +81,7 @@ export type EnrichmentProgress = {
  *                     whatsappBusiness (fixos), telefones validados
  *   Assertiva CPF  → rendaEstimada, redesSociais pessoais, linkedin, whatsapp pessoal
  */
-function calculateSpicedScore(leadData: Partial<Lead>, merged: Partial<Lead>): { spicedS: number; spicedP: number; spicedI: number; spicedC: number; spicedD: number } {
+export function calculateSpicedDimensions(leadData: Partial<Lead>, merged: Partial<Lead> = {}): { spicedS: number; spicedP: number; spicedI: number; spicedC: number; spicedD: number } {
   const data = { ...leadData, ...merged }
 
   const yearsInMarket = data.yearsInMarket
@@ -446,7 +446,7 @@ export async function enrichLead(
   }
 
   // --- Auto-score SPICED ---
-  const spiced = calculateSpicedScore(leadData, merged)
+  const spiced = calculateSpicedDimensions(leadData, merged)
 
   // --- Reclassify misplaced URLs (e.g., Instagram URL in website field) ---
   const finalData = { ...leadData, ...merged }
