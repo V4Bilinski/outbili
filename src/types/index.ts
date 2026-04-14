@@ -111,6 +111,46 @@ export interface Contact {
   createdAt?: string
 }
 
+// --- Fábrica de Receita: Diagnóstico de Travas ---
+export interface TravaDetectada {
+  codigo: string
+  nome: string
+  severidade: 'CRITICA' | 'ALTA' | 'MEDIA'
+  sinaisDetectados: string[]
+  impactoEstimado: string
+  step: { situacao: string; trava: string; estrategia: string; produto: string }
+  acaoImediata: string
+}
+
+// --- Projeção Competitiva ---
+export interface ProjecaoCompetitiva {
+  nichoAnalise: {
+    segmento: string
+    benchmarkDigital: Array<{ dimensao: string; leadNivel: string; benchmarkNivel: string; gap: string }>
+    oportunidadesMercado: string[]
+  }
+  projecaoDestrava: {
+    cenarios: Array<{ label: string; impactoMes: number; impactoAno: number; travasResolvidas: string[]; descricao: string }>
+  }
+  comparativoCompetitivo: {
+    leadDimensoes: Record<string, string>
+    benchmarkSegmento: Record<string, string>
+    gapsParaResolver: Array<{ dimensao: string; de: string; para: string; comoProduto: string }>
+  }
+}
+
+// --- Playbook BDR ---
+export interface PlaybookBDR {
+  contexto: string
+  travaPrincipal: string
+  canais: {
+    whatsapp: { abertura: string; followUp: string; objecoes: Record<string, string>; cta: string }
+    linkedin: { conexao: string; inmail: string; comentario: string }
+    ligacao: { abertura: string; qualificacao: string[]; gatilho: string; objecoes: Record<string, string>; fechamento: string }
+  }
+  produtoRecomendado: { nome: string; faixa: string; justificativa: string }
+}
+
 export interface Campaign {
   id: string
   name: string

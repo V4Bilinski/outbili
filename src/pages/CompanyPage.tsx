@@ -17,10 +17,9 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
-import { TabProjecao } from '../components/company/TabProjecao'
-import { TabVulnerabilidades } from '../components/company/TabVulnerabilidades'
-import { TabCompetitiva } from '../components/company/TabCompetitiva'
-import { TabArgumentos } from '../components/company/TabArgumentos'
+import { TabTravas } from '../components/company/TabTravas'
+import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
+import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
 
 const PRIMARY_TABS = [
   { id: 'resumo', label: 'Resumo' },
@@ -29,10 +28,9 @@ const PRIMARY_TABS = [
 ] as const
 
 const SECONDARY_TABS = [
-  { id: 'vulnerabilidades', label: 'Vulnerabilidades' },
-  { id: 'projecao', label: 'Projeção' },
-  { id: 'competitiva', label: 'Competitiva' },
-  { id: 'argumentos', label: 'Objeções & Respostas' },
+  { id: 'travas', label: 'Diagnóstico de Travas' },
+  { id: 'projecao-competitiva', label: 'Projeção Competitiva' },
+  { id: 'playbook-bdr', label: 'Playbook BDR' },
 ] as const
 
 
@@ -729,17 +727,14 @@ export function CompanyPage() {
         {/* Tab: Reunião */}
         {activeTab === 'reuniao' && <TabReuniao lead={lead} />}
 
-        {/* Tab: Projeção */}
-        {activeTab === 'projecao' && <TabProjecao lead={lead} />}
+        {/* Tab: Diagnóstico de Travas */}
+        {activeTab === 'travas' && <TabTravas lead={lead} />}
 
-        {/* Tab: Vulnerabilidades */}
-        {activeTab === 'vulnerabilidades' && <TabVulnerabilidades lead={lead} />}
+        {/* Tab: Projeção Competitiva */}
+        {activeTab === 'projecao-competitiva' && <TabProjecaoCompetitiva lead={lead} />}
 
-        {/* Tab: Competitiva */}
-        {activeTab === 'competitiva' && <TabCompetitiva lead={lead} />}
-
-        {/* Tab: Argumentos */}
-        {activeTab === 'argumentos' && <TabArgumentos lead={lead} />}
+        {/* Tab: Playbook BDR */}
+        {activeTab === 'playbook-bdr' && <TabPlaybookBDR lead={lead} />}
 
 
         </div>
