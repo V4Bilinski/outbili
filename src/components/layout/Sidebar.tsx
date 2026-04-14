@@ -10,7 +10,7 @@ const navItems = [
   { to: '/search', icon: Search, label: 'Pesquisa' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
-  { to: '/inbox', icon: MessageSquare, label: 'Inbox' },
+  { to: '/inbox', icon: MessageSquare, label: 'Mensagens' },
   { to: '/campaigns', icon: Smartphone, label: 'Campanhas' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]

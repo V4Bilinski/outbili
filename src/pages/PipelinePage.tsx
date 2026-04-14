@@ -274,7 +274,7 @@ export function PipelinePage() {
     const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
     createActivity({ leadId: lead.id, type: 'status_change', description: desc }).catch(() => {})
 
-    toast.success(to === 'Fechado' ? `${lead.companyName} — Negócio fechado!` : `${lead.companyName} movido para ${toLabel}`)
+    toast.success(to === 'Fechado' ? `🏆 ${lead.companyName} — Negócio fechado! Parabéns!` : `${lead.companyName} movido para ${toLabel}`)
     setPendingMove(null)
   }, [pendingMove, updateLead])
 

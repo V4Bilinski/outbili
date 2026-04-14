@@ -241,8 +241,8 @@ export function CompanyPage() {
               <Badge variant={tempVariant} pulse={lead.temperature === 'Quente'}>
                 {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </Badge>
-              <Badge variant="outline">{lead.tier}</Badge>
-              <Badge variant="outline">{lead.segment}</Badge>
+              <Badge variant="outline" title="Classificação por porte/faturamento da empresa">{lead.tier}</Badge>
+              <Badge variant="outline" title="Segmento de atuação (CNAE)">{lead.segment}</Badge>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
@@ -254,7 +254,7 @@ export function CompanyPage() {
           </div>
           <div className="text-right shrink-0">
             <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
-            <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">SPICED</p>
+            <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
             <p className="text-[10px] text-text-muted mt-0.5">{score >= 4 ? 'Lead qualificado' : score >= 3 ? 'Potencial médio' : score >= 2 ? 'Necessita qualificação' : 'Prioridade baixa'}</p>
           </div>
         </div>
@@ -262,12 +262,12 @@ export function CompanyPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-' },
-            { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est. via CNPJá)' : ''}` : '-' },
-            { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-' },
-            { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true },
+            { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-', tooltip: lead.monthlyRevenue ? 'Receita mensal × 12 meses' : 'Capital social registrado na Receita Federal' },
+            { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est. via CNPJá)' : ''}` : '-', tooltip: 'Quantidade de funcionários estimada ou confirmada' },
+            { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-', tooltip: yearsInMarket != null ? (yearsInMarket >= 10 ? 'Empresa consolidada' : yearsInMarket >= 3 ? 'Empresa em crescimento' : 'Empresa recente') : '' },
+            { label: 'Trava dominante', value: lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || lead.status, isHighlight: true, tooltip: 'Principal barreira de receita identificada pela análise' },
           ].map((stat: any) => (
-            <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`}>
+            <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`} title={stat.tooltip || ''}>
               <p className="text-[10px] uppercase tracking-wider text-text-muted">{stat.label}</p>
               <p className={`text-lg font-bold font-mono mt-0.5 ${stat.isHighlight ? 'text-red text-sm' : ''}`}>{stat.value}</p>
             </div>
@@ -485,8 +485,8 @@ export function CompanyPage() {
               >
                 <span className="text-warning">⚠</span>
                 <div>
-                  <p className="text-xs font-semibold text-warning">Decisor não cadastrado</p>
-                  <p className="text-[11px] text-text-muted">Toque para adicionar na aba Contatos</p>
+                  <p className="text-xs font-semibold text-warning">Sem decisor cadastrado</p>
+                  <p className="text-[11px] text-text-muted">Toque para adicionar nome e WhatsApp do decisor</p>
                 </div>
               </button>
             )}

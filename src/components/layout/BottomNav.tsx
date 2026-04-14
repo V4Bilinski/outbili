@@ -8,7 +8,7 @@ const items = [
   { to: '/search', icon: Search, label: 'Busca' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
-  { to: '/inbox', icon: MessageSquare, label: 'Inbox' },
+  { to: '/inbox', icon: MessageSquare, label: 'Msgs' },
 ]
 
 export function BottomNav() {
