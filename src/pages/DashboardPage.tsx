@@ -1,6 +1,5 @@
 import { useLeads } from '../hooks/useLeads'
 import { Card, CardTitle } from '../components/ui/Card'
-import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
@@ -227,23 +226,20 @@ function NextActions({ leads }: { leads: Lead[] }) {
               className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
               onClick={() => navigate(`/leads/${lead.id}`)}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-caption font-bold font-mono shrink-0 ${
-                  lead.temperature === 'Quente' ? 'bg-hot/12 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/12 text-warm' : 'bg-cold/12 text-cold'
-                }`}>
-                  {score}
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-semibold text-text-primary truncate">{lead.companyName}</p>
-                    <Badge variant={tempVariant} size="sm">
+                    <p className="text-sm font-bold text-text-primary truncate">{lead.companyName}</p>
+                    <span className={`text-micro font-medium px-1.5 py-0.5 rounded shrink-0 ${
+                      lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
+                    }`}>
                       {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-                    </Badge>
+                    </span>
                     {isStale && (
                       <span className="text-micro font-bold text-error bg-error/10 px-1.5 py-0.5 rounded">{daysIdle}d parado</span>
                     )}
                   </div>
-                  <p className="text-caption text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
+                  <p className="text-label text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
