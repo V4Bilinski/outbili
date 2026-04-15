@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useZapCampaigns, useZapCampaignMessages, useZapTemplates, useCreateZapCampaign, useDispatchZapCampaign, usePauseZapCampaign, useResumeZapCampaign, useCancelZapCampaign, useImportZapContacts } from '../hooks/useBilinskiZap'
+import { useCampaignMetas, useSaveCampaignMeta } from '../hooks/useCampaignMeta'
 import { useLeads } from '../hooks/useLeads'
 import { getContacts } from '../services/contactService'
 import { precheckCampaign, calculateDeliveryRate, calculateReadRate, type ZapCampaign, type ZapTemplate } from '../lib/bilinskizap'
+import { VARIABLE_FIELD_OPTIONS, DEFAULT_VARIABLE_MAPPING, resolveVariables, resolveVariableLabel } from '../lib/template-variables'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -12,13 +14,13 @@ import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
 import { cn } from '../lib/cn'
 import { SEGMENTS, TEMPERATURES } from '../lib/constants'
-import type { Lead, Contact } from '../types'
+import type { Lead, Contact, CampaignMeta } from '../types'
 import { CadenceBuilder, type CadenceStep } from '../components/campaigns/CadenceBuilder'
 import {
   Smartphone, Plus, Send, Pause, Play, X, CheckCircle, AlertTriangle,
   Filter, Users, Zap, Search, Shield, ArrowRight, Download,
   Phone, Mail, Loader2, RefreshCw, Copy, Trash2, Clock, Eye,
-  ArrowLeft, CircleAlert,
+  ArrowLeft, CircleAlert, Target,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,22 +47,38 @@ const MSG_STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'w
 // ============================================================
 // CAMPAIGN TABLE ROW
 // ============================================================
-function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: ZapCampaign; onView: () => void; onDuplicate: () => void; onDelete: () => void }) {
+function CampaignRow({ campaign, meta, onView, onDuplicate, onDelete }: { campaign: ZapCampaign; meta?: CampaignMeta; onView: () => void; onDuplicate: () => void; onDelete: () => void }) {
   const status = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT
   const deliveryRate = calculateDeliveryRate(campaign)
   const sendTime = campaign.startedAt && campaign.completedAt
     ? `${Math.round((new Date(campaign.completedAt).getTime() - new Date(campaign.startedAt).getTime()) / 1000)}s`
     : campaign.startedAt ? 'Enviando agora...' : '-'
 
+  const topSegments = meta?.segmentBreakdown
+    ? Object.entries(meta.segmentBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    : []
+
   return (
     <tr
       onClick={onView}
       className="border-b border-border hover:bg-white/[0.02] cursor-pointer transition-colors group"
     >
-      {/* Nome + Template */}
+      {/* Nome + Template + Segmentos PESCA */}
       <td className="py-4 px-4">
         <p className="text-sm font-medium text-text-primary group-hover:text-white transition-colors">{campaign.name}</p>
-        <p className="text-label text-text-muted mt-0.5">{campaign.templateName}</p>
+        <p className="text-label text-text-muted mt-0.5">
+          {campaign.templateName}
+          {meta && ` · ${meta.totalLeadsTargeted} leads`}
+        </p>
+        {topSegments.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {topSegments.map(([seg, count]) => (
+              <span key={seg} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/[0.04] text-caption text-text-muted">
+                {seg} ({count})
+              </span>
+            ))}
+          </div>
+        )}
       </td>
 
       {/* Status */}
@@ -134,7 +152,7 @@ function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: Za
 // ============================================================
 // CAMPAIGN DETAIL — KPIs + Velocity + Logs
 // ============================================================
-function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: () => void }) {
+function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; meta?: CampaignMeta; onBack: () => void }) {
   const { data: messagesData, isLoading: loadingMessages } = useZapCampaignMessages(campaign.id)
   const pause = usePauseZapCampaign()
   const resume = useResumeZapCampaign()
@@ -249,6 +267,72 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
           </div>
         ))}
       </div>
+
+      {/* Leads PESCA Alvo */}
+      {meta && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-red" />
+              <CardTitle>Leads PESCA Alvo</CardTitle>
+            </div>
+            <Badge variant="outline" size="sm">{meta.totalLeadsTargeted} leads</Badge>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            {/* Segmentos */}
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-xs text-text-muted font-medium mb-2">Segmentos</p>
+              <div className="space-y-1.5">
+                {Object.entries(meta.segmentBreakdown).length > 0
+                  ? Object.entries(meta.segmentBreakdown).sort((a, b) => b[1] - a[1]).map(([seg, count]) => (
+                    <div key={seg} className="flex items-center justify-between">
+                      <span className="text-sm text-text-primary">{seg}</span>
+                      <span className="text-sm font-mono text-text-secondary">{count}</span>
+                    </div>
+                  ))
+                  : <p className="text-label text-text-muted">Sem dados</p>
+                }
+              </div>
+            </div>
+            {/* Tiers */}
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-xs text-text-muted font-medium mb-2">Tiers</p>
+              <div className="space-y-1.5">
+                {Object.entries(meta.tierBreakdown).length > 0
+                  ? Object.entries(meta.tierBreakdown).sort((a, b) => b[1] - a[1]).map(([tier, count]) => (
+                    <div key={tier} className="flex items-center justify-between">
+                      <span className="text-sm text-text-primary">{tier}</span>
+                      <span className="text-sm font-mono text-text-secondary">{count}</span>
+                    </div>
+                  ))
+                  : <p className="text-label text-text-muted">Sem dados</p>
+                }
+              </div>
+            </div>
+            {/* Mapeamento de variáveis */}
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+              <p className="text-xs text-text-muted font-medium mb-2">Variáveis do template</p>
+              <div className="space-y-1.5">
+                {Object.entries(meta.variableMapping).map(([num, field]) => (
+                  <div key={num} className="flex items-center gap-2">
+                    <span className="text-sm font-mono text-text-muted">{`{{${num}}}`}</span>
+                    <span className="text-text-muted">→</span>
+                    <span className="text-sm text-text-primary">{resolveVariableLabel(field)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {meta.filters && (meta.filters.temperature || meta.filters.segment) && (
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
+              <span className="text-label text-text-muted">Filtros aplicados:</span>
+              {meta.filters.temperature && <Badge variant="default" size="sm">Temp: {meta.filters.temperature}</Badge>}
+              {meta.filters.segment && <Badge variant="default" size="sm">Seg: {meta.filters.segment}</Badge>}
+              {meta.filters.contactOnly && <Badge variant="default" size="sm">Somente c/ WhatsApp</Badge>}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Velocidade do disparo */}
       {velocity && (
@@ -434,7 +518,7 @@ function CampaignDetail({ campaign, onBack }: { campaign: ZapCampaign; onBack: (
 // ============================================================
 // TEMPLATE PREVIEW
 // ============================================================
-function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | null; sampleLead?: { decisorContact?: { name: string }; companyName: string; segment?: string; city?: string } }) {
+function TemplatePreview({ template, sampleLead, variableMapping }: { template: ZapTemplate | null; sampleLead?: Lead & { decisorContact?: Contact }; variableMapping?: Record<string, string> }) {
   if (!template) {
     return (
       <div className="p-4 rounded-xl bg-white/[0.02] border border-border text-center">
@@ -467,14 +551,10 @@ function TemplatePreview({ template, sampleLead }: { template: ZapTemplate | nul
         {body?.text && (
           <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
             {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => {
-              if (!sampleLead) return `[Variável ${n}]`
-              const map: Record<string, string> = {
-                '1': sampleLead.decisorContact?.name || '[Nome do decisor]',
-                '2': sampleLead.companyName || '[Empresa]',
-                '3': sampleLead.segment || '[Segmento]',
-                '4': sampleLead.city || '[Cidade]',
-              }
-              return map[n] || `[Variável ${n}]`
+              if (!sampleLead) return `[${resolveVariableLabel((variableMapping || DEFAULT_VARIABLE_MAPPING)[n] || '')}]`
+              const mapping = variableMapping || DEFAULT_VARIABLE_MAPPING
+              const resolved = resolveVariables(mapping, sampleLead as Lead & { decisorContact?: Contact })
+              return resolved[n] || `[Variável ${n}]`
             })}
           </p>
         )}
@@ -525,6 +605,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
   const [cadenceSteps, setCadenceSteps] = useState<CadenceStep[]>([
     { id: 'step-1', templateName: '', delayHours: 0, condition: 'always' as const },
   ])
+  const [variableMapping, setVariableMapping] = useState<Record<string, string>>({ ...DEFAULT_VARIABLE_MAPPING })
 
   const { data: leads } = useLeads()
   const { data: templates } = useZapTemplates()
@@ -532,6 +613,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
   const createCampaign = useCreateZapCampaign()
   const dispatch = useDispatchZapCampaign()
   const importZapContacts = useImportZapContacts()
+  const saveMeta = useSaveCampaignMeta()
 
   // Cooldown: check if recent campaigns exist (for warning display)
   const hasRecentCampaigns = useMemo(() => {
@@ -648,6 +730,33 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
         })),
       )
       const campaign = await createCampaign.mutateAsync({ name, templateName, contacts, scheduledAt: scheduledAt || undefined })
+
+      // Salvar metadados PESCA vinculados à campanha
+      const selectedLeads = leadsWithContacts.filter((l) => selectedLeadIds.includes(l.id))
+      const segmentBreakdown: Record<string, number> = {}
+      const tierBreakdown: Record<string, number> = {}
+      for (const lead of selectedLeads) {
+        const seg = lead.segment || 'Sem segmento'
+        const tier = lead.tier || 'Sem tier'
+        segmentBreakdown[seg] = (segmentBreakdown[seg] || 0) + 1
+        tierBreakdown[tier] = (tierBreakdown[tier] || 0) + 1
+      }
+
+      saveMeta.mutate({
+        zapCampaignId: campaign.id,
+        leadIds: selectedLeadIds,
+        templateName,
+        variableMapping,
+        filters: {
+          temperature: tempFilter !== 'all' ? tempFilter : undefined,
+          segment: segFilter !== 'all' ? segFilter : undefined,
+          contactOnly,
+        },
+        totalLeadsTargeted: selectedLeadIds.length,
+        segmentBreakdown,
+        tierBreakdown,
+      })
+
       if (!scheduledAt) {
         await dispatch.mutateAsync({ campaignId: campaign.id, templateName })
       }
@@ -800,7 +909,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
             </div>
             <div>
               <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-3 block">Preview</label>
-              <TemplatePreview template={selectedTemplate} sampleLead={selectedLeadIds.length > 0 ? leadsWithContacts.find(l => l.id === selectedLeadIds[0]) : undefined} />
+              <TemplatePreview template={selectedTemplate} sampleLead={selectedLeadIds.length > 0 ? leadsWithContacts.find(l => l.id === selectedLeadIds[0]) : undefined} variableMapping={variableMapping} />
               {selectedTemplate && variableCount > 0 && (
                 <div className="mt-2 p-2 rounded-lg bg-info/5 border border-info/15">
                   <p className="text-caption text-info font-medium">
@@ -1060,19 +1169,13 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                     <span className="text-text-muted font-mono w-10 shrink-0">{`{{${n}}}`}</span>
                     <span className="text-text-muted">→</span>
                     <select
-                      defaultValue={n === 1 ? 'decisorName' : n === 2 ? 'companyName' : n === 3 ? 'segment' : n === 4 ? 'city' : 'custom'}
+                      value={variableMapping[String(n)] || 'decisorName'}
+                      onChange={(e) => setVariableMapping((prev) => ({ ...prev, [String(n)]: e.target.value }))}
                       className="flex-1 h-7 rounded-lg bg-white/[0.03] border border-border text-label text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
                     >
-                      <option value="decisorName">Nome do decisor</option>
-                      <option value="companyName">Nome da empresa</option>
-                      <option value="segment">Segmento</option>
-                      <option value="city">Cidade</option>
-                      <option value="state">Estado</option>
-                      <option value="score">Score SPICED</option>
-                      <option value="tier">Tier</option>
-                      <option value="email">Email</option>
-                      <option value="phone">Telefone</option>
-                      <option value="custom">Campo personalizado</option>
+                      {VARIABLE_FIELD_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
                 ))}
@@ -1101,6 +1204,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
 // ============================================================
 export function CampaignsPage() {
   const { data, isLoading, refetch } = useZapCampaigns()
+  const { data: metas, isLoading: metasLoading } = useCampaignMetas()
   const cancelCampaign = useCancelZapCampaign()
   const [showBuilder, setShowBuilder] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState<ZapCampaign | null>(null)
@@ -1112,7 +1216,19 @@ export function CampaignsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('recent')
 
-  const campaigns = data?.data || []
+  const allCampaigns = data?.data || []
+
+  // Map campaign ID -> meta (deve vir antes de campaigns)
+  const metaMap = useMemo(() => {
+    const map = new Map<string, CampaignMeta>()
+    for (const m of metas || []) map.set(m.zapCampaignId, m)
+    return map
+  }, [metas])
+
+  // Somente campanhas vinculadas a leads PESCA (com CampaignMeta)
+  const campaigns = useMemo(() => {
+    return allCampaigns.filter((c) => metaMap.has(c.id))
+  }, [allCampaigns, metaMap])
 
   // Filtered + sorted campaigns
   const filteredCampaigns = useMemo(() => {
@@ -1146,6 +1262,20 @@ export function CampaignsPage() {
     return filtered
   }, [campaigns, search, statusFilter, sortBy])
 
+  // PESCA stats
+  const pescaStats = useMemo(() => {
+    const allMetas = metas || []
+    const totalLeads = new Set(allMetas.flatMap((m) => m.leadIds)).size
+    const allSegments = new Set<string>()
+    for (const m of allMetas) {
+      for (const seg of Object.keys(m.segmentBreakdown)) allSegments.add(seg)
+    }
+    const templateUsage: Record<string, number> = {}
+    for (const m of allMetas) templateUsage[m.templateName] = (templateUsage[m.templateName] || 0) + 1
+    const topTemplate = Object.entries(templateUsage).sort((a, b) => b[1] - a[1])[0]
+    return { totalLeads, segmentCount: allSegments.size, topTemplate: topTemplate?.[0] || '-' }
+  }, [metas])
+
   // Global stats
   const globalStats = useMemo(() => {
     const total = campaigns.length
@@ -1166,7 +1296,7 @@ export function CampaignsPage() {
     return counts
   }, [campaigns])
 
-  if (isLoading) {
+  if (isLoading || metasLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10" />
@@ -1178,7 +1308,7 @@ export function CampaignsPage() {
 
   // Detail view
   if (selectedCampaign) {
-    return <CampaignDetail campaign={selectedCampaign} onBack={() => setSelectedCampaign(null)} />
+    return <CampaignDetail campaign={selectedCampaign} meta={metaMap.get(selectedCampaign.id)} onBack={() => setSelectedCampaign(null)} />
   }
 
   return (
@@ -1187,8 +1317,8 @@ export function CampaignsPage() {
       <AnimateIn>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold font-heading gradient-text">Campanhas</h1>
-            <p className="text-xs text-text-muted mt-0.5">Gerencie e acompanhe seus disparos de mensagens</p>
+            <h1 className="text-xl font-bold font-heading gradient-text">Disparos PESCA</h1>
+            <p className="text-xs text-text-muted mt-0.5">WhatsApp em massa para leads qualificados da prospecção</p>
           </div>
           <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
             Nova campanha
@@ -1258,8 +1388,8 @@ export function CampaignsPage() {
           {campaigns.length === 0 ? (
             <EmptyState
               icon={Smartphone}
-              title="Nenhuma campanha ainda"
-              description="Crie sua primeira cadência WhatsApp para os leads qualificados."
+              title="Nenhum disparo ainda"
+              description="Crie seu primeiro disparo WhatsApp para os leads qualificados da PESCA."
               action={{ label: 'Nova campanha', onClick: () => setShowBuilder(true) }}
             />
           ) : (
@@ -1289,6 +1419,7 @@ export function CampaignsPage() {
                         <CampaignRow
                           key={campaign.id}
                           campaign={campaign}
+                          meta={metaMap.get(campaign.id)}
                           onView={() => setSelectedCampaign(campaign)}
                           onDuplicate={() => {
                             setDuplicateTemplate(campaign.templateName)
@@ -1307,9 +1438,10 @@ export function CampaignsPage() {
               <div className="border-t border-border px-4 py-3 flex items-center justify-between text-label text-text-muted">
                 <span>{filteredCampaigns.length} de {campaigns.length} campanhas</span>
                 <div className="flex items-center gap-4">
-                  <span>Entrega média: <span className="font-mono font-semibold text-success">{globalStats.avgDelivery}%</span></span>
-                  <span>Leitura média: <span className="font-mono font-semibold text-info">{globalStats.avgRead}%</span></span>
-                  <span>Total enviadas: <span className="font-mono font-semibold text-text-primary">{globalStats.totalSent}</span></span>
+                  <span>Leads PESCA: <span className="font-mono font-semibold text-red">{pescaStats.totalLeads}</span></span>
+                  <span>Segmentos: <span className="font-mono font-semibold text-text-primary">{pescaStats.segmentCount}</span></span>
+                  <span>Entrega: <span className="font-mono font-semibold text-success">{globalStats.avgDelivery}%</span></span>
+                  <span>Leitura: <span className="font-mono font-semibold text-info">{globalStats.avgRead}%</span></span>
                   {globalStats.sending > 0 && (
                     <span className="text-warning font-semibold">{globalStats.sending} em andamento</span>
                   )}

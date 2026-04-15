@@ -16,7 +16,6 @@ import type { Lead } from '../types'
 // --- Pipeline columns (all statuses from prospect to close) ---
 const PIPELINE_COLUMNS = [
   { value: 'Novo', label: 'Prospecção', color: 'var(--color-stage-prospect)', accent: 'border-l-stage-prospect' },
-  { value: 'Qualificado', label: 'Qualificação', color: 'var(--color-stage-qualified)', accent: 'border-l-stage-qualified' },
   { value: 'Contactado', label: 'Contactado', color: 'var(--color-stage-contacted)', accent: 'border-l-stage-contacted' },
   { value: 'Respondeu', label: 'Respondeu', color: 'var(--color-stage-replied)', accent: 'border-l-stage-replied' },
   { value: 'Reunião', label: 'Reunião', color: 'var(--color-stage-meeting)', accent: 'border-l-stage-meeting' },
@@ -27,16 +26,6 @@ const PIPELINE_COLUMNS = [
 // --- Stage gate checklists (required: true = obrigatório, false = opcional) ---
 interface GateCheck { text: string; required: boolean }
 const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
-  Qualificado: {
-    emoji: '🎯',
-    title: 'Qualificar lead',
-    checks: [
-      { text: 'CNPJ validado e empresa ativa', required: true },
-      { text: 'Faturamento estimado compatível com ICP', required: true },
-      { text: 'Decisor identificado (nome + cargo)', required: true },
-      { text: 'Score SPICED >= 3.0', required: false },
-    ],
-  },
   Contactado: {
     emoji: '📞',
     title: 'Registrar primeiro contato',
@@ -301,7 +290,7 @@ export function PipelinePage() {
     if (to === 'Fechado') {
       toast.success(`🏆 ${lead.companyName} — Negócio fechado! Parabéns!`, { duration: 5000 })
     } else {
-      const emoji = to === 'Reunião' ? '📅' : to === 'Proposta' ? '📝' : to === 'Qualificado' ? '🎯' : '✅'
+      const emoji = to === 'Reunião' ? '📅' : to === 'Proposta' ? '📝' : '✅'
       toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })
     }
     setPendingMove(null)

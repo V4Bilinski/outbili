@@ -151,36 +151,20 @@ export interface PlaybookBDR {
   produtoRecomendado: { nome: string; faixa: string; justificativa: string }
 }
 
-export interface Campaign {
+export interface CampaignMeta {
   id: string
-  name: string
-  type: 'cadencia_outbound' | 'follow_up' | 'reengajamento'
-  status: 'Rascunho' | 'Ativa' | 'Pausada' | 'Concluída' | 'Cancelada'
-  segment?: string
-  steps?: string
-  totalLeads?: number
-  messagesSent?: number
-  delivered?: number
-  read?: number
-  responses?: number
-  leadIds?: string[]
-  createdAt?: string
-}
-
-export interface Message {
-  id: string
-  campaignId: string
-  contactId: string
-  leadId?: string
-  stepNumber: number
-  content: string
-  status: 'Pendente' | 'Enviado' | 'Entregue' | 'Lido' | 'Respondeu' | 'Falhou'
-  bilinskizapMessageId?: string
-  scheduledAt?: string
-  sentAt?: string
-  deliveredAt?: string
-  readAt?: string
-  errorMessage?: string
+  zapCampaignId: string
+  leadIds: string[]
+  templateName: string
+  variableMapping: Record<string, string>
+  filters: {
+    temperature?: string
+    segment?: string
+    contactOnly?: boolean
+  }
+  totalLeadsTargeted: number
+  segmentBreakdown: Record<string, number>
+  tierBreakdown: Record<string, number>
   createdAt?: string
 }
 
