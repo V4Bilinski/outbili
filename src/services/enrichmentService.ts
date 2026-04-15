@@ -543,7 +543,8 @@ export async function enrichLead(
   updateFields.score = Math.round((spiced.spicedS * 0.25 + spiced.spicedP * 0.25 + spiced.spicedI * 0.20 + spiced.spicedC * 0.15 + spiced.spicedD * 0.15) * 10) / 10
   const cnpjDone = steps.find(s => s.source === 'cnpj')?.status === 'done'
   const assertivaDone = steps.find(s => s.source === 'assertiva')?.status === 'done'
-  updateFields.enrichmentStatus = (cnpjDone && assertivaDone) ? 'complete' : cnpjDone ? 'cnpja' : assertivaDone ? 'assertiva' : 'none'
+  const hasPhone = !!(updateFields.rfPhone || leadData.rfPhone)
+  updateFields.enrichmentStatus = (cnpjDone && assertivaDone) || hasPhone ? 'complete' : cnpjDone ? 'cnpja' : assertivaDone ? 'assertiva' : 'none'
 
   // Build business summary from enrichment sources
   if (!leadData.businessSummary && !merged.businessSummary) {

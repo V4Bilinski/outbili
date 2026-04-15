@@ -656,7 +656,7 @@ export async function savePescaToAirtable(
         capitalSocial: lead.capitalSocial,
         foundingDate: lead.foundingDate,
         cnaePrimary: lead.cnaePrimary,
-        enrichmentStatus: 'cnpja',
+        enrichmentStatus: (lead.whatsapp || lead.phone) ? 'complete' : 'cnpja',
         partners: lead.decisorName ? JSON.stringify([{ nome_socio: lead.decisorName, qualificacao_socio: lead.decisorRole || '' }]) : undefined,
       } as Partial<Lead>,
     }))
