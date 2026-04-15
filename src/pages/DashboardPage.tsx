@@ -14,6 +14,7 @@ import { useMassEnrichment } from '../hooks/useMassEnrichment'
 import { useCountUp } from '../hooks/useCountUp'
 import { useInView } from '../hooks/useInView'
 import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 
 function CountUpValue({ end, className, isInView }: { end: number; className: string; isInView: boolean }) {
   const value = useCountUp({ end, duration: 1200, enabled: isInView })
@@ -679,6 +680,8 @@ export function DashboardPage() {
       </AnimateIn>
 
       {/* CampaignStats, PipelineFunnel e QuickActions ocultos — funcionalidades em desenvolvimento */}
+
+      <SectionDivider />
 
       {/* Fábrica de Receita */}
       <AnimateIn delay={100}>
