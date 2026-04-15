@@ -65,7 +65,7 @@ function CampaignRow({ campaign, onView, onDuplicate, onDelete }: { campaign: Za
 
       {/* Status */}
       <td className="py-4 px-4">
-        <Badge variant={status.variant} size="sm">{status.label}</Badge>
+        <Badge variant={status.variant} size="xs">{status.label}</Badge>
       </td>
 
       {/* Destinatários */}
