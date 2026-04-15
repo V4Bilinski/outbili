@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLead, useDeleteLead, useUpdateLead } from '../hooks/useLeads'
-import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
@@ -182,23 +181,25 @@ export function CompanyPage() {
       <Card className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <Badge variant={tempVariant} size="sm" pulse={lead.temperature === 'Quente'}>
-                {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-              </Badge>
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+                lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
+              }`}>
+                {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
+              </span>
               {/* Status editável */}
               <div className="relative">
                 <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2 py-px text-caption font-semibold uppercase tracking-wider cursor-pointer transition-all border',
-                    lead.status === 'Fechado' ? 'bg-success/12 text-success border-success/20' :
-                    lead.status === 'Perdido' ? 'bg-error/12 text-error border-error/20' :
-                    'bg-white/5 text-text-secondary border-white/8 hover:border-red/30',
+                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-micro font-medium cursor-pointer transition-all',
+                    lead.status === 'Fechado' ? 'bg-success/15 text-success' :
+                    lead.status === 'Perdido' ? 'bg-error/15 text-error' :
+                    'bg-white/5 text-text-secondary hover:bg-white/8',
                   )}
                 >
                   {LEAD_STATUSES.find(s => s.value === lead.status)?.label || lead.status || 'Novo'}
-                  <ChevronRight className={cn('h-2.5 w-2.5 transition-transform', showStatusMenu && 'rotate-90')} />
+                  <ChevronRight className={cn('h-2 w-2 transition-transform', showStatusMenu && 'rotate-90')} />
                 </button>
                 {showStatusMenu && (
                   <>
@@ -227,8 +228,8 @@ export function CompanyPage() {
                   </>
                 )}
               </div>
-              <Badge variant="outline" size="sm">{lead.tier}</Badge>
-              <Badge variant="outline" size="sm">{lead.segment}</Badge>
+              <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
+              <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
@@ -646,9 +647,11 @@ export function CompanyPage() {
                 {score}/5
               </span>
               <span className="text-base text-text-muted">—</span>
-              <Badge variant={tempVariant} pulse={lead.temperature === 'Quente'} className="text-xs px-3 py-1">
-                {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-              </Badge>
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+                lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
+              }`}>
+                {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
+              </span>
             </div>
 
             {/* Dimensões */}
