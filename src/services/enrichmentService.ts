@@ -187,6 +187,83 @@ export function calculateSpicedDimensions(leadData: Partial<Lead>, merged: Parti
   return { spicedS: cap(spicedS), spicedP: cap(spicedP), spicedI: cap(spicedI), spicedC: cap(spicedC), spicedD: cap(spicedD) }
 }
 
+export function generateSpicedDescriptions(leadData: Partial<Lead>): Record<string, string> {
+  const data = leadData
+  const yearsInMarket = data.yearsInMarket
+    ?? (data.foundingDate
+      ? Math.floor((Date.now() - new Date(data.foundingDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : undefined)
+
+  const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+
+  // S — Situação
+  const sFragments: string[] = []
+  if (data.employees && data.employees > 20) sFragments.push(`Equipe com ${data.employees} colaboradores`)
+  else if (data.employees && data.employees > 5) sFragments.push(`Equipe de ${data.employees} colaboradores`)
+  if (yearsInMarket && yearsInMarket > 3) sFragments.push(`${yearsInMarket} anos no mercado`)
+  else if (yearsInMarket !== undefined) sFragments.push(`${yearsInMarket} ano(s) no mercado`)
+  if (data.city && data.state) sFragments.push(`Localizada em ${data.city}, ${data.state}`)
+  if (data.capitalSocial && data.capitalSocial >= 100000) sFragments.push(`Capital social de ${fmt(data.capitalSocial)}`)
+  if (data.isHeadquarters) sFragments.push('Matriz (sede principal)')
+
+  // P — Dor
+  const pFragments: string[] = []
+  if (!data.website) pFragments.push('Sem website identificado')
+  if (!data.instagram) pFragments.push('Sem presença no Instagram')
+  const emailDomain = data.emailDomain || (data.rfEmail?.split('@')[1]) || ''
+  const isGenericEmail = /gmail|hotmail|yahoo|outlook|live|bol|uol|terra|ig\./i.test(emailDomain)
+  if (isGenericEmail) pFragments.push('E-mail genérico indica marketing amador')
+  else if (!emailDomain) pFragments.push('Sem e-mail corporativo identificado')
+  if (data.phoneType === 'LANDLINE' || (!data.assertivaWhatsappFlag && data.rfPhone)) pFragments.push('Apenas telefone fixo, sem WhatsApp')
+  if (data.capitalSocial && data.capitalSocial < 50000 && yearsInMarket && yearsInMarket > 5) pFragments.push(`Capital social baixo com ${yearsInMarket} anos — possível estagnação`)
+  if (data.simplesOptant && data.employees && data.employees > 10) pFragments.push(`Simples Nacional com ${data.employees}+ funcionários — pode limitar crescimento`)
+
+  // I — Impacto
+  const iFragments: string[] = []
+  const revenue = data.monthlyRevenue || 0
+  const rendaDecisor = data.assertivaIncomeEstimate || 0
+  if (revenue > 0) {
+    iFragments.push(`Faturamento estimado de ${fmt(revenue)}/mês`)
+  } else if (rendaDecisor > 0) {
+    iFragments.push(`Renda do decisor estimada em ${fmt(rendaDecisor)}`)
+  } else if (data.capitalSocial) {
+    iFragments.push(`Capital social de ${fmt(data.capitalSocial)}`)
+  }
+  if (data.taxRegime === 'lucro_presumido') iFragments.push('Regime Lucro Presumido indica operação estruturada')
+  else if (data.taxRegime === 'lucro_real') iFragments.push('Regime Lucro Real indica operação de grande porte')
+  if (data.employees && data.employees > 50) iFragments.push(`Operação com ${data.employees} colaboradores indica escala`)
+
+  // CE — Evento Crítico
+  const cFragments: string[] = []
+  if (yearsInMarket !== undefined && yearsInMarket < 2) cFragments.push('Empresa nova — momento de decisão')
+  if (data.assertivaWhatsappFlag) cFragments.push('WhatsApp do decisor confirmado — canal aberto')
+  if (data.statusDate) {
+    const statusDate = new Date(data.statusDate)
+    const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
+    if (!isNaN(statusDate.getTime()) && statusDate > sixMonthsAgo) cFragments.push('Mudança de status cadastral recente — momento de transição')
+  }
+  if (data.registrationStatus === 'Ativa' && yearsInMarket !== undefined && yearsInMarket < 1) cFragments.push('Empresa recém-ativada')
+
+  // D — Decisão
+  const dFragments: string[] = []
+  if (data.cnpj) dFragments.push('CNPJ identificado')
+  if (data.partners) dFragments.push('Sócios/QSA mapeados')
+  if (data.rfEmail || data.assertivaEmailValidated) dFragments.push('E-mail de contato disponível')
+  if (data.assertivaWhatsappFlag) dFragments.push('WhatsApp do decisor confirmado')
+  if (data.linkedin) dFragments.push('LinkedIn identificado')
+  if (data.website) dFragments.push('Website ativo')
+
+  const join = (fragments: string[]) => fragments.length > 0 ? fragments.join('. ') + '.' : 'Dados insuficientes para análise.'
+
+  return {
+    S: join(sFragments),
+    P: join(pFragments),
+    I: join(iFragments),
+    C: join(cFragments),
+    D: join(dFragments),
+  }
+}
+
 export async function enrichLead(
   leadId: string,
   leadData: Partial<Lead>,

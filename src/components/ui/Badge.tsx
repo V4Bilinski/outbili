@@ -6,7 +6,7 @@ interface BadgeProps {
   children: React.ReactNode
   variant?: BadgeVariant
   pulse?: boolean
-  size?: 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md'
   className?: string
 }
 
@@ -27,7 +27,7 @@ export function Badge({ children, variant = 'default', pulse = false, size = 'md
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full font-semibold uppercase tracking-wider',
-        size === 'sm' ? 'px-2 py-px text-caption' : 'px-2.5 py-0.5 text-label',
+        size === 'xs' ? 'px-1.5 py-px text-micro' : size === 'sm' ? 'px-2 py-px text-caption' : 'px-2.5 py-0.5 text-label',
         variantStyles[variant],
         pulse && 'animate-[pulse-glow_2s_ease-in-out_infinite]',
         className,

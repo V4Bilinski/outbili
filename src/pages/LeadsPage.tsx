@@ -146,7 +146,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                     {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
                   </p>
                 </td>
-                <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs text-text-secondary">{lead.tier}</span></td>
+                <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs font-semibold text-text-primary">{lead.tier}</span></td>
                 <td className="py-4 px-4">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-16 h-2 rounded-full bg-white/5 overflow-hidden">
@@ -157,7 +157,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 </td>
                 <td className="py-4 px-4 text-center hidden md:table-cell">
                   {statusInfo && (
-                    <Badge variant={lead.status === 'Fechado' ? 'success' : lead.status === 'Perdido' ? 'error' : 'default'} size="sm">
+                    <Badge variant={lead.status === 'Fechado' ? 'success' : lead.status === 'Perdido' ? 'error' : 'default'} size="xs">
                       {statusInfo.label}
                     </Badge>
                   )}

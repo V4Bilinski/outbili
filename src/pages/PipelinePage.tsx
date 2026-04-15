@@ -224,6 +224,8 @@ function trapBadgeClass(abbrev: string): string {
 function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => void }) {
   const navigate = useNavigate()
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
+  const trapAbbrev = getTrapAbbrev(lead.hypotheticalTrap)
+  const scoreColorClass = score >= 3.7 ? 'text-red bg-red/10' : score >= 2.5 ? 'text-warning bg-warning/10' : 'text-cold bg-cold/10'
 
   return (
     <div
@@ -239,11 +241,18 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       onClick={() => navigate(`/leads/${lead.id}`)}
       className="p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
     >
-      <div className="flex items-start justify-between mb-1.5">
-        <Badge variant={lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'} size="sm">
-          {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-        </Badge>
-        <span className="text-xs font-mono font-bold text-text-muted">{score.toFixed(1)}</span>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className={`text-base font-bold font-mono px-2 py-0.5 rounded-md ${scoreColorClass}`}>{score.toFixed(1)}</span>
+        <div className="flex items-center gap-1.5">
+          {trapAbbrev && (
+            <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
+          )}
+          <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+            lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
+          }`}>
+            {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
+          </span>
+        </div>
       </div>
       <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
       <p className="text-label text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
@@ -255,13 +264,6 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
           <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
         )}
-        {(() => {
-          const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
-          if (!abbrev) return null
-          return (
-            <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
-          )
-        })()}
       </div>
     </div>
   )

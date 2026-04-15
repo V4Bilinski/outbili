@@ -12,6 +12,7 @@ import { getPartners } from '../services/partnerService'
 import { getEnrichmentLog } from '../services/enrichmentLogService'
 import { useQuery } from '@tanstack/react-query'
 import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
+import { generateSpicedDescriptions } from '../services/enrichmentService'
 import { LEAD_STATUSES } from '../lib/constants'
 import { createActivity } from '../services/activityService'
 import { useState } from 'react'
@@ -96,6 +97,7 @@ export function CompanyPage() {
   const discoveryQuestions = parseJsonField<string[]>(lead.discoveryQuestions, generateDiscoveryQuestions(lead))
   const eligibility = parseJsonField<{ label: string; value: boolean }[]>(lead.eligibilityChecklist, generateEligibilityChecklist(lead))
   const spicedNotes = parseJsonField<Record<string, string>>(lead.spicedNotes, {})
+  const spicedDescriptions = generateSpicedDescriptions(lead)
 
   return (
     <div className="space-y-4 animate-[fade-in_0.4s_ease-out]">
@@ -181,7 +183,7 @@ export function CompanyPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className={`text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded ${
+              <span className={`text-[11px] leading-tight font-medium px-2 py-0.5 rounded ${
                 lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
@@ -191,7 +193,7 @@ export function CompanyPage() {
                 <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] leading-tight font-medium cursor-pointer transition-all',
+                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-tight font-medium cursor-pointer transition-all',
                     lead.status === 'Fechado' ? 'bg-success/15 text-success' :
                     lead.status === 'Perdido' ? 'bg-error/15 text-error' :
                     'bg-white/5 text-text-secondary hover:bg-white/8',
@@ -227,8 +229,8 @@ export function CompanyPage() {
                   </>
                 )}
               </div>
-              <span className="text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
-              <span className="text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
+              <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
+              <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
@@ -239,7 +241,7 @@ export function CompanyPage() {
             )}
           </div>
           <div className="text-right shrink-0">
-            <p className="text-2xl md:text-3xl font-bold font-mono text-red leading-none">{score}</p>
+            <p className="text-xl md:text-2xl font-bold font-mono text-red leading-none">{score}</p>
             <p className="text-caption uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
             <p className="text-caption text-text-muted mt-0.5">{score >= 3.7 ? 'Lead qualificado' : score >= 2.5 ? 'Potencial médio' : 'Necessita qualificação'}</p>
           </div>
@@ -695,10 +697,10 @@ export function CompanyPage() {
                     </span>
                   </div>
 
-                  {/* Justification text */}
-                  {spicedNotes[dim.noteKey] && (
-                    <p className="text-[15px] text-text-secondary leading-[1.8]">
-                      {spicedNotes[dim.noteKey]}
+                  {/* Justification text — manual notes or auto-generated */}
+                  {(spicedNotes[dim.noteKey] || spicedDescriptions[dim.noteKey]) && (
+                    <p className="text-sm text-text-secondary leading-relaxed mt-1">
+                      {spicedNotes[dim.noteKey] || spicedDescriptions[dim.noteKey]}
                     </p>
                   )}
                 </div>
