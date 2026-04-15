@@ -6,7 +6,7 @@ import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Targe
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
 import { TIERS } from '../lib/constants'
-import { calculateSpicedScore, formatCurrency } from '../lib/utils'
+import { formatCurrency } from '../lib/utils'
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
 import { useState, useCallback } from 'react'
@@ -215,8 +215,6 @@ function NextActions({ leads }: { leads: Lead[] }) {
       <div className="divide-y divide-border">
         {sorted.map((lead) => {
           const action = getAction(lead)
-          const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
-          const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
           const daysIdle = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0
           const isStale = daysIdle >= 7
 

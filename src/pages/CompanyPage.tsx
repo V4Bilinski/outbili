@@ -77,7 +77,6 @@ export function CompanyPage() {
   }
 
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
-  const tempVariant = lead.temperature === 'Quente' ? 'hot' : lead.temperature === 'Morno' ? 'warm' : 'cold'
 
   // Trava dominante: detectar via Fábrica de Receita (dados reais do lead)
   const travasDetectadas = detectTravas(lead)
