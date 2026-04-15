@@ -7,9 +7,9 @@ export function EmptyChat() {
         <div className="w-16 h-16 rounded-full bg-[var(--wa-unread-badge)]/10 flex items-center justify-center mx-auto mb-4">
           <MessageSquare className="h-8 w-8" style={{ color: 'var(--wa-unread-badge)' }} />
         </div>
-        <h3 className="text-xl font-medium text-[var(--wa-text)] mb-2">Mensagens WhatsApp</h3>
+        <h3 className="text-xl font-medium text-[var(--wa-text)] mb-2">Mensagens PESCA</h3>
         <p className="text-[14px] text-[var(--wa-text-secondary)] leading-relaxed">
-          Selecione uma conversa ao lado para visualizar mensagens e interagir com seus contatos.
+          Selecione uma conversa ao lado para visualizar mensagens dos leads prospectados via PESCA.
         </p>
       </div>
     </div>

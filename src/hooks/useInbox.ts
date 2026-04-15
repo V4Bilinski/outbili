@@ -54,7 +54,10 @@ export function useInbox() {
     refetchInterval: 8_000,
   })
 
-  const conversations = conversationsQuery.data?.conversations || []
+  // Mostrar apenas conversas vinculadas a leads PESCA (com leadId nos custom_fields do contato)
+  const conversations = (conversationsQuery.data?.conversations || []).filter(
+    (c) => c.contact?.custom_fields?.leadId,
+  )
 
   // Selected conversation detail
   const conversationQuery = useQuery({
@@ -220,6 +223,13 @@ export function useInbox() {
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0)
 
+  // Recalcular contagens baseado nas conversas filtradas (PESCA-only)
+  const pescaReplyCounts = {
+    all: conversations.length,
+    replied: conversations.filter((c) => c.reply_status === 'replied').length,
+    unreplied: conversations.filter((c) => c.reply_status === 'unreplied').length,
+  }
+
   return {
     // Selection
     selectedId,
@@ -267,7 +277,7 @@ export function useInbox() {
     labels: labelsQuery.data || [],
     quickReplies: quickRepliesQuery.data || [],
     totalUnread,
-    replyCounts: countsQuery.data || { all: 0, replied: 0, unreplied: 0 },
+    replyCounts: pescaReplyCounts,
 
     // Theme
     theme,

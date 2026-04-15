@@ -88,7 +88,7 @@ export function ConversationList({
     <div className="flex flex-col h-full bg-[var(--wa-panel)] border-r" style={{ borderColor: 'var(--wa-border)' }}>
       {/* Header */}
       <div className="h-[60px] px-4 flex items-center justify-between bg-[var(--wa-panel-header)] shrink-0">
-        <h2 className="text-[16px] font-semibold text-[var(--wa-text)]">Inbox</h2>
+        <h2 className="text-[16px] font-semibold text-[var(--wa-text)]">Mensagens PESCA</h2>
         <div className="flex items-center gap-1">
           <span className="text-label font-mono text-[var(--wa-text-secondary)]">
             {conversations.length} conversa{conversations.length !== 1 ? 's' : ''}
