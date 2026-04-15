@@ -1,10 +1,11 @@
 import { listAllRecords, createRecords, getRecord, updateRecords } from '../lib/airtable'
 import { getCnaeCodesForCnpja } from '../lib/cnae-mapping'
-import { formatPhone } from './enrichmentService'
+import { formatPhone, calculateSpicedDimensions } from './enrichmentService'
 import { detectTravas } from './strategicAnalysisService'
 import { searchOffice, searchOfficesPaginated, mapCnpjaToLead, extractPartners } from './cnpjaService'
 import { lookupCnpj as assertivaLookupCnpj, getDecisionMakers, extractBestPhone, lookupCpf } from './assertivaService'
 import { TIERS } from '../lib/constants'
+import { calculateSpicedScore, getTemperatureFromScore } from '../lib/utils'
 import type { Lead, Contact, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
 // --- Fase 1: Busca em massa via CNPJa API (GET /office) ---
@@ -638,28 +639,53 @@ export async function savePescaToAirtable(
     if (signal?.aborted) break
 
     const batch = validLeads.slice(i, i + 10)
-    const records = batch.map((lead) => ({
-      fields: {
-        companyName: lead.companyName,
-        tradeName: lead.tradeName,
-        cnpj: lead.cnpj || undefined,
-        segment: lead.segment || '',
-        status: 'Novo',
-        score: 0,
-        temperature: 'Frio',
-        tier: calculateTier(lead.capitalSocial),
-        state: lead.state,
-        city: lead.city,
-        address: lead.address,
-        rfPhone: lead.whatsapp || lead.phone,
-        rfEmail: lead.email,
+    const records = batch.map((lead) => {
+      // Montar dados parciais para calculo SPICED com dados CNPJa disponiveis
+      const partialLead: Partial<Lead> = {
+        cnpj: lead.cnpj,
         capitalSocial: lead.capitalSocial,
         foundingDate: lead.foundingDate,
-        cnaePrimary: lead.cnaePrimary,
-        enrichmentStatus: (lead.whatsapp || lead.phone) ? 'complete' : 'cnpja',
-        partners: lead.decisorName ? JSON.stringify([{ nome_socio: lead.decisorName, qualificacao_socio: lead.decisorRole || '' }]) : undefined,
-      } as Partial<Lead>,
-    }))
+        city: lead.city,
+        state: lead.state,
+        rfEmail: lead.email,
+        rfPhone: lead.whatsapp || lead.phone,
+        partners: lead.decisorName ? JSON.stringify([{ nome_socio: lead.decisorName }]) : undefined,
+        phoneType: lead.whatsapp ? 'MOBILE' : (lead.phone ? 'LANDLINE' : undefined),
+      }
+
+      // Calcular SPICED automaticamente com dados disponiveis
+      const spiced = calculateSpicedDimensions(partialLead)
+      const score = calculateSpicedScore(spiced.spicedS, spiced.spicedP, spiced.spicedI, spiced.spicedC, spiced.spicedD)
+      const temperature = getTemperatureFromScore(score)
+
+      return {
+        fields: {
+          companyName: lead.companyName,
+          tradeName: lead.tradeName,
+          cnpj: lead.cnpj || undefined,
+          segment: lead.segment || '',
+          status: 'Novo',
+          score,
+          temperature,
+          spicedS: spiced.spicedS,
+          spicedP: spiced.spicedP,
+          spicedI: spiced.spicedI,
+          spicedC: spiced.spicedC,
+          spicedD: spiced.spicedD,
+          tier: calculateTier(lead.capitalSocial),
+          state: lead.state,
+          city: lead.city,
+          address: lead.address,
+          rfPhone: lead.whatsapp || lead.phone,
+          rfEmail: lead.email,
+          capitalSocial: lead.capitalSocial,
+          foundingDate: lead.foundingDate,
+          cnaePrimary: lead.cnaePrimary,
+          enrichmentStatus: (lead.whatsapp || lead.phone) ? 'complete' : 'cnpja',
+          partners: lead.decisorName ? JSON.stringify([{ nome_socio: lead.decisorName, qualificacao_socio: lead.decisorRole || '' }]) : undefined,
+        } as Partial<Lead>,
+      }
+    })
 
     try {
       const created = await createRecords<Lead>('Leads', records)

@@ -12,6 +12,8 @@ import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
 import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
+import { calculateSpicedDimensions } from '../services/enrichmentService'
+import { calculateSpicedScore, getTemperatureFromScore } from '../lib/utils'
 import { toast } from 'sonner'
 import { parseFile, ACCEPTED_FORMATS, type ParseResult } from '../lib/file-parser'
 
@@ -379,14 +381,32 @@ export function SearchPage() {
 
     for (const company of companies) {
       try {
+        // Calcular SPICED automaticamente com dados disponiveis do arquivo
+        const partialForSpiced: Record<string, any> = {
+          cnpj: company.cnpj?.replace(/\D/g, '') || '',
+          city: company.city,
+          state: company.state,
+          website: company.website,
+          instagram: company.instagram,
+          linkedin: company.linkedin,
+          rfEmail: company.email,
+        }
+        const spiced = calculateSpicedDimensions(partialForSpiced)
+        const spicedScore = calculateSpicedScore(spiced.spicedS, spiced.spicedP, spiced.spicedI, spiced.spicedC, spiced.spicedD)
+
         const leadData: Record<string, any> = {
           companyName: company.companyName,
           cnpj: company.cnpj?.replace(/\D/g, '') || '',
           segment: company.segment || specificSegment || '',
           tier: 'Small',
           status: 'Novo',
-          score: 0,
-          temperature: 'Morno',
+          score: spicedScore,
+          temperature: getTemperatureFromScore(spicedScore),
+          spicedS: spiced.spicedS,
+          spicedP: spiced.spicedP,
+          spicedI: spiced.spicedI,
+          spicedC: spiced.spicedC,
+          spicedD: spiced.spicedD,
           ...(company.website && { website: company.website }),
           ...(company.instagram && { instagram: company.instagram }),
           ...(company.linkedin && { linkedin: company.linkedin }),
@@ -547,6 +567,31 @@ export function SearchPage() {
       const realCompanyName = cnpjaData?.companyName || specificName
       const tradeName = cnpjaData?.tradeName || ''
 
+      // Calcular SPICED com todos os dados disponiveis (manual + CNPJa + Assertiva)
+      const spicedInput: Record<string, any> = {
+        cnpj: cnpjClean,
+        capitalSocial: cnpjaData?.capitalSocial,
+        foundingDate: cnpjaData?.foundingDate,
+        city: specificCity || cnpjaData?.city,
+        state: specificState || cnpjaData?.state,
+        rfEmail: cnpjaData?.rfEmail,
+        rfPhone: cnpjaData?.rfPhone,
+        website: specificWebsite || cnpjaData?.website,
+        instagram: specificInstagram,
+        linkedin: specificLinkedin,
+        employees: cnpjaData?.employees || (revenue && revenue >= 120000 ? 8 : 5),
+        monthlyRevenue: revenue,
+        partners: decisorName ? JSON.stringify([{ nome_socio: decisorName }]) : undefined,
+        assertivaWhatsappFlag: assertivaData?.assertivaWhatsappFlag,
+        assertivaIncomeEstimate: assertivaData?.assertivaIncomeEstimate,
+        registrationStatus: cnpjaData?.registrationStatus,
+        isHeadquarters: cnpjaData?.isHeadquarters,
+        simplesOptant: cnpjaData?.simplesOptant,
+        taxRegime: cnpjaData?.taxRegime,
+      }
+      const spiced = calculateSpicedDimensions(spicedInput)
+      const spicedScore = calculateSpicedScore(spiced.spicedS, spiced.spicedP, spiced.spicedI, spiced.spicedC, spiced.spicedD)
+
       const leadData: Record<string, any> = {
         companyName: realCompanyName,
         ...(tradeName && { tradeName }),
@@ -558,8 +603,13 @@ export function SearchPage() {
         employees: cnpjaData?.employees || (revenue && revenue >= 120000 ? 8 : 5),
         yearsInMarket: cnpjaData?.yearsInMarket || (revenue && revenue >= 120000 ? 7 : 5),
         status: 'Novo',
-        score: 0,
-        temperature: 'Morno',
+        score: spicedScore,
+        temperature: getTemperatureFromScore(spicedScore),
+        spicedS: spiced.spicedS,
+        spicedP: spiced.spicedP,
+        spicedI: spiced.spicedI,
+        spicedC: spiced.spicedC,
+        spicedD: spiced.spicedD,
         ...(specificWebsite || cnpjaData?.website ? { website: specificWebsite || cnpjaData?.website } : {}),
         ...(specificInstagram && { instagram: specificInstagram }),
         ...(specificLinkedin && { linkedin: specificLinkedin }),
@@ -606,7 +656,7 @@ export function SearchPage() {
       try {
         lead = await createLead(leadData as any)
       } catch {
-        const minimalData = { companyName: realCompanyName, cnpj: cnpjClean, score: 0 }
+        const minimalData = { companyName: realCompanyName, cnpj: cnpjClean, score: spicedScore, temperature: getTemperatureFromScore(spicedScore), spicedS: spiced.spicedS, spicedP: spiced.spicedP, spicedI: spiced.spicedI, spicedC: spiced.spicedC, spicedD: spiced.spicedD }
         lead = await createLead(minimalData as any)
         toast.warning('Salvo com dados básicos — campos extras não suportados pelo Airtable')
       }
