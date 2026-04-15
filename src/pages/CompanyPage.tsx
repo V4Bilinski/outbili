@@ -181,7 +181,7 @@ export function CompanyPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+              <span className={`text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded ${
                 lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
@@ -191,7 +191,7 @@ export function CompanyPage() {
                 <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-micro font-medium cursor-pointer transition-all',
+                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] leading-tight font-medium cursor-pointer transition-all',
                     lead.status === 'Fechado' ? 'bg-success/15 text-success' :
                     lead.status === 'Perdido' ? 'bg-error/15 text-error' :
                     'bg-white/5 text-text-secondary hover:bg-white/8',
@@ -227,8 +227,8 @@ export function CompanyPage() {
                   </>
                 )}
               </div>
-              <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
-              <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
+              <span className="text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
+              <span className="text-[9px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
