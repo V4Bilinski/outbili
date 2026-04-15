@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
+import { useAuth } from '../lib/auth-context'
 import { createActivity } from '../services/activityService'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
@@ -73,10 +74,11 @@ const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCh
   },
 }
 
-// --- Stage gate slide-over (painel lateral para nao bloquear visao do kanban) ---
-function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
+// --- Stage gate popup (card centralizado para validar movimentação) ---
+function StageGatePopup({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
   lead: Lead; fromStatus: string; toStatus: string; onConfirm: (notes: string) => void; onCancel: () => void
 }) {
+  const { user } = useAuth()
   const gate = STAGE_GATES[toStatus]
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState('')
@@ -88,22 +90,25 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
   const toColor = PIPELINE_COLUMNS.find((s) => s.value === toStatus)?.color || '#FF6B1A'
   const isCelebration = toStatus === 'Fechado'
 
+  const now = new Date()
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} às ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
   const toggle = (idx: number) => {
     setChecked((prev) => { const next = new Set(prev); next.has(idx) ? next.delete(idx) : next.add(idx); return next })
   }
 
   return (
-    <div className="fixed inset-0 z-[60] animate-[fade-in_0.15s_ease-out]">
-      {/* Backdrop semi-transparente — usuario ainda ve o kanban */}
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      {/* Slide-over lateral */}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center animate-[fade-in_0.15s_ease-out]">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      {/* Popup card centralizado */}
       <div className={cn(
-        'absolute right-0 top-0 bottom-0 w-full max-w-sm border-l shadow-2xl shadow-black/40 overflow-y-auto animate-[slide-in-right_0.3s_cubic-bezier(0.16,1,0.3,1)]',
+        'relative w-full max-w-md mx-4 rounded-2xl border shadow-2xl shadow-black/50 overflow-y-auto max-h-[90vh] animate-[scale-in_0.2s_ease-out]',
         isCelebration
-          ? 'bg-gradient-to-b from-amber-900/90 to-surface border-amber-400/20'
+          ? 'bg-gradient-to-b from-amber-900/95 to-surface border-amber-400/20'
           : 'bg-surface border-border',
       )}>
-        <div className="p-5 space-y-4">
+        <div className="p-6 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -178,7 +183,7 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
 
           {/* Notes */}
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
-            className="w-full rounded-lg bg-white/[0.03] border border-border text-label text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
+            className="w-full rounded-xl bg-white/[0.03] border border-border text-label text-text-primary placeholder:text-text-muted p-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -187,6 +192,12 @@ function StageGateSlideOver({ lead, fromStatus, toStatus, onConfirm, onCancel }:
               icon={isCelebration ? <Trophy className="h-4 w-4" /> : allRequiredDone ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
               {isCelebration ? 'Fechar negócio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatório${requiredCount - requiredChecked > 1 ? 's' : ''}`}
             </Button>
+          </div>
+
+          {/* Registro de autor e data */}
+          <div className="pt-3 border-t border-border/50">
+            <p className="text-caption text-text-muted">Criado em: {dateStr}</p>
+            <p className="text-caption text-text-muted">Criado por: {user?.fullName || user?.email || 'Usuário'}</p>
           </div>
         </div>
       </div>
@@ -424,9 +435,9 @@ export function PipelinePage() {
         </div>
       )}
 
-      {/* Stage gate slide-over */}
+      {/* Stage gate popup */}
       {pendingMove && (
-        <StageGateSlideOver
+        <StageGatePopup
           lead={pendingMove.lead}
           fromStatus={pendingMove.from}
           toStatus={pendingMove.to}

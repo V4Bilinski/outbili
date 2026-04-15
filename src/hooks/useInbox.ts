@@ -213,8 +213,8 @@ export function useInbox() {
     mutationFn: () => suggestReply(selectedId!),
   })
 
-  // Reply counts (for sidebar badge)
-  const countsQuery = useQuery({
+  // Reply counts (for sidebar badge) — kept as background refetch
+  useQuery({
     queryKey: ['inbox-reply-counts'],
     queryFn: getReplyStatusCounts,
     staleTime: 15_000,
