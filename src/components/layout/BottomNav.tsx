@@ -2,20 +2,18 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Search, Users, MessageSquare, Columns3, BarChart3 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '../../lib/auth-context'
 
 const allItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Home', adminOnly: false },
-  { to: '/search', icon: Search, label: 'Busca', adminOnly: false },
-  { to: '/leads', icon: Users, label: 'Leads', adminOnly: false },
-  { to: '/pipeline', icon: Columns3, label: 'Pipeline', adminOnly: true },
-  { to: '/inbox', icon: MessageSquare, label: 'Msgs', adminOnly: true },
-  { to: '/reports', icon: BarChart3, label: 'Reports', adminOnly: false },
+  { to: '/', icon: LayoutDashboard, label: 'Home', locked: false },
+  { to: '/search', icon: Search, label: 'Busca', locked: false },
+  { to: '/leads', icon: Users, label: 'Leads', locked: false },
+  { to: '/pipeline', icon: Columns3, label: 'Pipeline', locked: true },
+  { to: '/inbox', icon: MessageSquare, label: 'Msgs', locked: true },
+  { to: '/reports', icon: BarChart3, label: 'Reports', locked: false },
 ]
 
 export function BottomNav() {
-  const { isAdmin } = useAuth()
-  const items = allItems.filter((item) => !item.adminOnly || isAdmin).slice(0, 5)
+  const items = allItems.filter((item) => !item.locked).slice(0, 5)
   const location = useLocation()
   const navRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })

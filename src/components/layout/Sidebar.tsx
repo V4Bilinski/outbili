@@ -9,9 +9,9 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/search', icon: Search, label: 'Pesquisa' },
   { to: '/leads', icon: Users, label: 'Leads' },
-  { to: '/pipeline', icon: Columns3, label: 'Pipeline', adminOnly: true },
-  { to: '/inbox', icon: MessageSquare, label: 'Mensagens', adminOnly: true },
-  { to: '/campaigns', icon: Smartphone, label: 'Campanhas', adminOnly: true },
+  { to: '/pipeline', icon: Columns3, label: 'Pipeline', locked: true },
+  { to: '/inbox', icon: MessageSquare, label: 'Mensagens', locked: true },
+  { to: '/campaigns', icon: Smartphone, label: 'Campanhas', locked: true },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]
 
@@ -37,7 +37,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
           <p className="text-caption uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3 animate-[fade-in_0.2s_ease-out]">Menu</p>
         )}
         {navItems.map((item) => {
-          const disabled = item.adminOnly && !isAdmin
+          const disabled = item.locked
           if (disabled) {
             return (
               <div

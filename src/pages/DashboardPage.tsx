@@ -1,16 +1,13 @@
 import { useLeads } from '../hooks/useLeads'
-import { useZapCampaigns } from '../hooks/useBilinskiZap'
-// bilinskizap metrics are computed inline in CampaignStats
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Flame, Search, FileDown, Plus, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, CheckCircle, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
+import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
-import { LEAD_STATUSES, TIERS } from '../lib/constants'
+import { TIERS } from '../lib/constants'
 import { calculateSpicedScore, formatCurrency } from '../lib/utils'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
 import { useState, useCallback } from 'react'
@@ -274,122 +271,6 @@ function NextActions({ leads }: { leads: Lead[] }) {
   )
 }
 
-function PipelineFunnel({ leads }: { leads: Lead[] }) {
-  const statusCounts = LEAD_STATUSES.map((s) => ({
-    name: s.label,
-    count: leads.filter((l) => l.status === s.value).length,
-    color: s.color,
-  })).filter((s) => s.count > 0)
-
-  if (statusCounts.length === 0) return null
-
-  return (
-    <Card>
-      <CardTitle className="mb-5">Pipeline</CardTitle>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={statusCounts} layout="vertical" margin={{ left: 0, right: 16 }}>
-          <XAxis type="number" tick={{ fill: '#52525B', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-          <YAxis type="category" dataKey="name" tick={{ fill: '#A1A1AA', fontSize: 11 }} width={85} axisLine={false} tickLine={false} />
-          <Tooltip
-            contentStyle={{
-              background: 'rgba(15, 15, 18, 0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              color: '#F4F4F5',
-              fontSize: 12,
-              padding: '8px 12px',
-            }}
-            cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-          />
-          <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={20}>
-            {statusCounts.map((entry, i) => (
-              <Cell key={i} fill={entry.color} opacity={0.8} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  )
-}
-
-function CampaignStats() {
-  const navigate = useNavigate()
-  const { data: campaignsData } = useZapCampaigns()
-  const campaigns = campaignsData?.data || []
-
-  if (campaigns.length === 0) return null
-
-  const totalSent = campaigns.reduce((a, c) => a + c.sent, 0)
-  const totalDelivered = campaigns.reduce((a, c) => a + c.delivered, 0)
-  const totalRead = campaigns.reduce((a, c) => a + c.read, 0)
-  const sending = campaigns.filter((c) => c.status === 'SENDING').length
-  const avgDelivery = totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0
-  const avgRead = totalDelivered > 0 ? Math.round((totalRead / totalDelivered) * 100) : 0
-
-  const stats = [
-    { label: 'Campanhas', value: campaigns.length, icon: Smartphone, color: 'text-text-primary' },
-    { label: 'Enviadas', value: totalSent, icon: Send, color: 'text-info' },
-    { label: 'Entrega', value: `${avgDelivery}%`, icon: CheckCircle, color: avgDelivery >= 80 ? 'text-success' : avgDelivery >= 50 ? 'text-warning' : 'text-error' },
-    { label: 'Leitura', value: `${avgRead}%`, icon: Eye, color: avgRead >= 50 ? 'text-success' : avgRead >= 25 ? 'text-warning' : 'text-text-muted' },
-  ]
-
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <CardTitle>Campanhas WhatsApp</CardTitle>
-          {sending > 0 && <Badge variant="warning" size="sm">{sending} ativa{sending > 1 ? 's' : ''}</Badge>}
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => navigate('/campaigns')}>
-          Ver campanhas
-        </Button>
-      </div>
-      <div className="grid grid-cols-4 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
-            <s.icon className={`h-4 w-4 mx-auto mb-1.5 ${s.color} opacity-60`} />
-            <p className="text-lg font-bold font-mono text-text-primary">{s.value}</p>
-            <p className="text-caption text-text-muted uppercase tracking-wider">{s.label}</p>
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
-}
-
-function QuickActions() {
-  const navigate = useNavigate()
-  const actions = [
-    { label: 'Nova pesquisa', desc: 'Encontrar empresas por segmento e estado via CNPJa', icon: Search, onClick: () => navigate('/search') },
-    { label: 'Importar relatório', desc: 'Importe sua lista (Excel, CSV, HTML ou PDF)', icon: FileDown, onClick: () => navigate('/search') },
-    { label: 'Nova cadência', desc: 'Criar sequência WhatsApp com template aprovado', icon: Plus, onClick: () => navigate('/campaigns/new') },
-    { label: 'Ver pipeline', desc: 'Funil visual — arraste leads entre etapas', icon: Target, onClick: () => navigate('/pipeline') },
-  ]
-
-  return (
-    <Card>
-      <CardTitle className="mb-4">Ações rápidas</CardTitle>
-      <div className="space-y-1.5">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            onClick={action.onClick}
-            className="flex items-center gap-3 w-full p-3 rounded-xl text-left hover:bg-white/[0.03] transition-all duration-200 cursor-pointer group"
-          >
-            <div className="p-2 rounded-lg bg-red-subtle group-hover:bg-red/12 transition-colors">
-              <action.icon className="h-4 w-4 text-red" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-primary">{action.label}</p>
-              <p className="text-label text-text-muted">{action.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </Card>
-  )
-}
 
 // --- Trap short names mapped to T1-T8 ---
 const TRAP_META: Record<string, { short: string }> = {
@@ -803,18 +684,7 @@ export function DashboardPage() {
         <NextActions leads={allLeads} />
       </AnimateIn>
 
-      <AnimateIn delay={150}>
-        <CampaignStats />
-      </AnimateIn>
-
-      <div className="grid md:grid-cols-2 gap-5">
-        <AnimateIn delay={0}>
-          <PipelineFunnel leads={allLeads} />
-        </AnimateIn>
-        <AnimateIn delay={80}>
-          <QuickActions />
-        </AnimateIn>
-      </div>
+      {/* CampaignStats, PipelineFunnel e QuickActions ocultos — funcionalidades em desenvolvimento */}
 
       {/* Fábrica de Receita */}
       <AnimateIn delay={100}>
