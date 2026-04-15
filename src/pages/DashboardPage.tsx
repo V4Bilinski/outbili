@@ -227,15 +227,15 @@ function NextActions({ leads }: { leads: Lead[] }) {
               className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
               onClick={() => navigate(`/leads/${lead.id}`)}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-caption font-bold font-mono shrink-0 ${
                   lead.temperature === 'Quente' ? 'bg-hot/12 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/12 text-warm' : 'bg-cold/12 text-cold'
                 }`}>
                   {score}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-text-primary truncate">{lead.companyName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-text-primary truncate">{lead.companyName}</p>
                     <Badge variant={tempVariant} size="sm">
                       {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                     </Badge>
@@ -243,7 +243,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
                       <span className="text-micro font-bold text-error bg-error/10 px-1.5 py-0.5 rounded">{daysIdle}d parado</span>
                     )}
                   </div>
-                  <p className="text-xs text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
+                  <p className="text-caption text-text-muted mt-0.5">{action.text} · {lead.segment}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">

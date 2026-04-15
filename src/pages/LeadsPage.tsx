@@ -163,7 +163,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-label font-bold px-3 py-1 rounded-md ${tempColors[lead.temperature] || tempColors.Frio}`}>
+                  <span className={`inline-block text-caption font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${tempColors[lead.temperature] || tempColors.Frio}`}>
                     {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                   </span>
                 </td>

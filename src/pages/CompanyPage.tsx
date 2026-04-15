@@ -183,7 +183,7 @@ export function CompanyPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <Badge variant={tempVariant} pulse={lead.temperature === 'Quente'}>
+              <Badge variant={tempVariant} size="sm" pulse={lead.temperature === 'Quente'}>
                 {lead.temperature === 'Quente' ? '🔥' : lead.temperature === 'Morno' ? '🟡' : '⚪'} {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </Badge>
               {/* Status editável */}
@@ -191,14 +191,14 @@ export function CompanyPage() {
                 <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-label font-semibold uppercase tracking-wider cursor-pointer transition-all border',
+                    'inline-flex items-center gap-1 rounded-full px-2 py-px text-caption font-semibold uppercase tracking-wider cursor-pointer transition-all border',
                     lead.status === 'Fechado' ? 'bg-success/12 text-success border-success/20' :
                     lead.status === 'Perdido' ? 'bg-error/12 text-error border-error/20' :
                     'bg-white/5 text-text-secondary border-white/8 hover:border-red/30',
                   )}
                 >
                   {LEAD_STATUSES.find(s => s.value === lead.status)?.label || lead.status || 'Novo'}
-                  <ChevronRight className={cn('h-3 w-3 transition-transform', showStatusMenu && 'rotate-90')} />
+                  <ChevronRight className={cn('h-2.5 w-2.5 transition-transform', showStatusMenu && 'rotate-90')} />
                 </button>
                 {showStatusMenu && (
                   <>
@@ -227,8 +227,8 @@ export function CompanyPage() {
                   </>
                 )}
               </div>
-              <Badge variant="outline">{lead.tier}</Badge>
-              <Badge variant="outline">{lead.segment}</Badge>
+              <Badge variant="outline" size="sm">{lead.tier}</Badge>
+              <Badge variant="outline" size="sm">{lead.segment}</Badge>
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
