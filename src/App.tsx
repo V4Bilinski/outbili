@@ -7,6 +7,9 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LeadsPage } from './pages/LeadsPage'
 import { CompanyPage } from './pages/CompanyPage'
 import { SearchPage } from './pages/SearchPage'
+import { PipelinePage } from './pages/PipelinePage'
+import { CampaignsPage } from './pages/CampaignsPage'
+import { InboxPage } from './pages/InboxPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AdminPage } from './pages/AdminPage'
@@ -62,12 +65,12 @@ export default function App() {
               <Route index element={<DashboardPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="leads/:id" element={<CompanyPage />} />
-              <Route path="pipeline" element={<Navigate to="/" replace />} />
+              <Route path="pipeline" element={<PipelinePage />} />
               <Route path="search" element={<SearchPage />} />
-              <Route path="campaigns" element={<Navigate to="/" replace />} />
-              <Route path="inbox" element={<Navigate to="/" replace />} />
-              <Route path="campaigns/new" element={<Navigate to="/" replace />} />
-              <Route path="campaigns/:id" element={<Navigate to="/" replace />} />
+              <Route path="campaigns" element={<CampaignsPage />} />
+              <Route path="inbox" element={<InboxPage />} />
+              <Route path="campaigns/new" element={<CampaignsPage />} />
+              <Route path="campaigns/:id" element={<CampaignsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="glossario" element={<GlossarioPage />} />
               <Route path="settings" element={<SettingsPage />} />

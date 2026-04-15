@@ -7,8 +7,8 @@ const allItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home', locked: false },
   { to: '/search', icon: Search, label: 'Busca', locked: false },
   { to: '/leads', icon: Users, label: 'Leads', locked: false },
-  { to: '/pipeline', icon: Columns3, label: 'Pipeline', locked: true },
-  { to: '/inbox', icon: MessageSquare, label: 'Msgs', locked: true },
+  { to: '/pipeline', icon: Columns3, label: 'Pipeline', locked: false },
+  { to: '/inbox', icon: MessageSquare, label: 'Msgs', locked: false },
   { to: '/reports', icon: BarChart3, label: 'Reports', locked: false },
 ]
 
