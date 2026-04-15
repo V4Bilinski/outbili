@@ -5,6 +5,8 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight } from 'lucide-react'
 import { useReEnrichment } from '../hooks/useReEnrichment'
 import { useSpicedRecalc } from '../hooks/useSpicedRecalc'
@@ -101,22 +103,27 @@ export function AdminPage() {
   }
 
   return (
-    <div className="space-y-5 animate-[fade-in_0.4s_ease-out]">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-red" />
-            <h1 className="text-xl font-bold font-heading gradient-text">Administração</h1>
+      <AnimateIn>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-red" />
+              <h1 className="text-xl font-bold font-heading gradient-text">Administração</h1>
+            </div>
+            <p className="text-xs text-text-muted mt-0.5">Usuários, atividades e controle de acesso</p>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">Usuários, atividades e controle de acesso</p>
+          <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3.5 w-3.5" />} onClick={loadData}>
+            Atualizar
+          </Button>
         </div>
-        <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3.5 w-3.5" />} onClick={loadData}>
-          Atualizar
-        </Button>
-      </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* KPIs */}
+      <AnimateIn delay={80}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
           <p className="text-2xl font-bold font-mono">{users.length}</p>
@@ -135,8 +142,12 @@ export function AdminPage() {
           <p className="text-caption text-text-muted uppercase">Logins</p>
         </div>
       </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Tabs */}
+      <AnimateIn delay={120}>
       <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1 w-fit">
         <button
           onClick={() => setTab('activity')}
@@ -510,6 +521,7 @@ export function AdminPage() {
           </div>
         </Card>
       )}
+      </AnimateIn>
     </div>
   )
 }

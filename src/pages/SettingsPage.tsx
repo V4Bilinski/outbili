@@ -1,6 +1,8 @@
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 import { useZapHealth, useZapContactStats, useZapTemplates } from '../hooks/useBilinskiZap'
 import { CheckCircle, AlertCircle, Loader2, RefreshCw, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
@@ -64,12 +66,17 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
-      <div>
-        <h1 className="text-xl font-bold font-heading gradient-text">Configurações</h1>
-        <p className="text-xs text-text-muted mt-0.5">Conexões, templates e configurações do sistema</p>
-      </div>
+    <div className="space-y-6">
+      <AnimateIn>
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Configurações</h1>
+          <p className="text-xs text-text-muted mt-0.5">Conexões, templates e configurações do sistema</p>
+        </div>
+      </AnimateIn>
 
+      <SectionDivider />
+
+      <AnimateIn delay={80}>
       <Card>
         <CardTitle className="mb-5">Conexões API</CardTitle>
         <div className="space-y-3">
@@ -127,9 +134,13 @@ export function SettingsPage() {
           ))}
         </div>
       </Card>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Templates */}
       {templates && templates.length > 0 && (
+        <AnimateIn delay={120}>
         <Card>
           <CardTitle className="mb-4">Templates WhatsApp ({templates.length})</CardTitle>
           <div className="space-y-2">
@@ -146,8 +157,12 @@ export function SettingsPage() {
             ))}
           </div>
         </Card>
+        </AnimateIn>
       )}
 
+      <SectionDivider />
+
+      <AnimateIn delay={160}>
       <Card>
         <CardTitle className="mb-4">Sobre</CardTitle>
         <div className="flex items-center gap-4">
@@ -158,8 +173,12 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Sobre o OUTBILI — Manifesto condensado */}
+      <AnimateIn delay={200}>
       <Card>
         <CardTitle className="mb-6">Sobre o OUTBILI</CardTitle>
 
@@ -220,6 +239,7 @@ export function SettingsPage() {
           <p className="text-caption text-text-muted mt-1">— V4 Bilinski &amp; Co</p>
         </div>
       </Card>
+      </AnimateIn>
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { Card } from '../components/ui/Card'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 
 interface GlossaryTerm {
   term: string
@@ -83,22 +85,28 @@ export function GlossarioPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary font-heading">Glossário</h1>
-        <p className="text-sm text-text-muted mt-1">Termos e conceitos do OUTBILI e da metodologia V4</p>
-      </div>
+      <AnimateIn>
+        <div>
+          <h1 className="text-xl font-bold font-heading gradient-text">Glossário</h1>
+          <p className="text-xs text-text-muted mt-0.5">Termos e conceitos do OUTBILI e da metodologia V4</p>
+        </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Search */}
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Buscar termo ou definição..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-colors"
-        />
-      </div>
+      <AnimateIn delay={80}>
+        <div className="relative max-w-lg">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar termo ou definição..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-red/30 focus:ring-1 focus:ring-red/20 transition-colors"
+          />
+        </div>
+      </AnimateIn>
 
       {/* Count */}
       {search && (
@@ -111,14 +119,16 @@ export function GlossarioPage() {
 
       {/* Terms list */}
       <div className="space-y-3">
-        {filtered.map((item) => (
-          <Card key={item.term} className="space-y-2">
-            <h2 className="text-base font-bold text-text-primary tracking-tight">{item.term}</h2>
-            <p className="text-sm text-text-secondary leading-relaxed">{item.definition}</p>
-            <p className="text-xs text-text-muted italic border-l-2 border-border pl-3">
-              {item.example}
-            </p>
-          </Card>
+        {filtered.map((item, index) => (
+          <AnimateIn key={item.term} delay={100 + Math.min(index, 10) * 40}>
+            <Card className="space-y-2 hover:border-border-strong hover:-translate-y-0.5 transition-all duration-300">
+              <h2 className="text-base font-bold text-text-primary tracking-tight">{item.term}</h2>
+              <p className="text-sm text-text-secondary leading-relaxed">{item.definition}</p>
+              <p className="text-xs text-text-muted italic border-l-2 border-red/20 pl-3">
+                {item.example}
+              </p>
+            </Card>
+          </AnimateIn>
         ))}
 
         {filtered.length === 0 && (

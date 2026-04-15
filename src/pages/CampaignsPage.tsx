@@ -8,6 +8,8 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 import { cn } from '../lib/cn'
 import { SEGMENTS, TEMPERATURES } from '../lib/constants'
 import type { Lead, Contact } from '../types'
@@ -1180,20 +1182,24 @@ export function CampaignsPage() {
   }
 
   return (
-    <div className="space-y-5 animate-[fade-in_0.4s_ease-out]">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-heading">Campanhas</h1>
-          <p className="text-xs text-text-muted mt-0.5">Gerencie e acompanhe seus disparos de mensagens</p>
+      <AnimateIn>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold font-heading gradient-text">Campanhas</h1>
+            <p className="text-xs text-text-muted mt-0.5">Gerencie e acompanhe seus disparos de mensagens</p>
+          </div>
+          <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
+            Nova campanha
+          </Button>
         </div>
-        <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
-          Nova campanha
-        </Button>
-      </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Wizard */}
-      {showBuilder && <NewCampaignWizard onClose={() => { setShowBuilder(false); setDuplicateTemplate('') }} initialTemplate={duplicateTemplate} />}
+      {showBuilder && <AnimateIn delay={80}><NewCampaignWizard onClose={() => { setShowBuilder(false); setDuplicateTemplate('') }} initialTemplate={duplicateTemplate} /></AnimateIn>}
 
       {!showBuilder && (
         <>

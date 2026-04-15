@@ -2,6 +2,8 @@ import { useLeads } from '../hooks/useLeads'
 import { useZapCampaigns } from '../hooks/useBilinskiZap'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 import { SEGMENTS } from '../lib/constants'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import { TrendingUp, Target, Zap, AlertTriangle, Trophy, Activity, Download } from 'lucide-react'
@@ -130,7 +132,8 @@ export function ReportsPage() {
   const projectedMonthlyClose = reunioes > 0 ? Math.round(reunioes * (closeRate / 100)) : 0
 
   return (
-    <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
+    <div className="space-y-6">
+      <AnimateIn>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold font-heading gradient-text">Relatórios de performance</h1>
@@ -161,8 +164,12 @@ export function ReportsPage() {
           </Button>
         </div>
       </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Strategic KPIs */}
+      <AnimateIn delay={80}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total no pipeline', value: totalLeads, sub: `${hotLeads} Quentes · ${warmLeads} Mornos`, icon: Target, color: 'text-text-primary', accent: 'from-white/5 to-transparent' },
@@ -184,8 +191,12 @@ export function ReportsPage() {
           </div>
         ))}
       </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Conversion Funnel + WhatsApp Metrics */}
+      <AnimateIn delay={120}>
       <div className="grid md:grid-cols-2 gap-5">
         <Card>
           <CardTitle className="mb-4">Funil de conversão</CardTitle>
@@ -243,8 +254,12 @@ export function ReportsPage() {
           </div>
         </Card>
       </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* Segment Analysis + Temperature Distribution */}
+      <AnimateIn delay={160}>
       <div className="grid md:grid-cols-2 gap-5">
         <Card>
           <CardTitle className="mb-4">Performance por segmento</CardTitle>
@@ -339,6 +354,7 @@ export function ReportsPage() {
           </ul>
         </div>
       </Card>
+      </AnimateIn>
     </div>
   )
 }

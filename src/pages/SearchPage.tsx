@@ -1,4 +1,6 @@
 import { Card, CardTitle } from '../components/ui/Card'
+import { AnimateIn } from '../components/ui/AnimateIn'
+import { SectionDivider } from '../components/ui/SectionLabel'
 import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
 import { PescaPanel } from '../components/search/PescaPanel'
 import { Button } from '../components/ui/Button'
@@ -652,7 +654,8 @@ export function SearchPage() {
   }
 
   return (
-    <div className="space-y-6 animate-[fade-in_0.4s_ease-out]">
+    <div className="space-y-6">
+      <AnimateIn>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold font-heading gradient-text">Pesquisa de leads</h1>
@@ -682,9 +685,12 @@ export function SearchPage() {
           </button>
         </div>
       </div>
+      </AnimateIn>
+
+      <SectionDivider />
 
       {/* PESCA panel */}
-      {searchMode === 'pesca' && <PescaPanel />}
+      {searchMode === 'pesca' && <AnimateIn delay={80}><PescaPanel /></AnimateIn>}
 
       {/* Specific lead form */}
       {searchMode === 'specific' && (
