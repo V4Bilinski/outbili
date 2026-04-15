@@ -272,6 +272,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
 export function PipelinePage() {
   const { data: leads, isLoading } = useLeads()
   const updateLead = useUpdateLead()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const dragLeadId = useRef<string | null>(null)
   const [overColumn, setOverColumn] = useState<string | null>(null)
@@ -296,7 +297,7 @@ export function PipelinePage() {
     const fromLabel = PIPELINE_COLUMNS.find((s) => s.value === from)?.label || from
     const toLabel = PIPELINE_COLUMNS.find((s) => s.value === to)?.label || to
     const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
-    createActivity({ leadId: lead.id, type: 'status_change', description: desc }).catch(() => {})
+    createActivity({ leadId: lead.id, type: 'status_change', description: desc, createdBy: user?.fullName || user?.email || 'Sistema' }).catch(() => {})
 
     if (to === 'Fechado') {
       toast.success(`🏆 ${lead.companyName} — Negócio fechado! Parabéns!`, { duration: 5000 })

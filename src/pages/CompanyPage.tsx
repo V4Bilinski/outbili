@@ -3,7 +3,8 @@ import { useLead, useDeleteLead, useUpdateLead } from '../hooks/useLeads'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight, Search } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight, Search, CheckCircle } from 'lucide-react'
+import type { Lead, Contact, Activity } from '../types'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
@@ -14,7 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
 import { generateSpicedDescriptions } from '../services/enrichmentService'
 import { LEAD_STATUSES } from '../lib/constants'
-import { createActivity } from '../services/activityService'
+import { createActivity, getActivities } from '../services/activityService'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -32,6 +33,184 @@ const ALL_TABS = [
   { id: 'playbook-bdr', label: 'Playbook', group: 'analise' },
 ] as const
 
+// --- Histórico das Fases (jornada do lead no pipeline) ---
+function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: Activity[]; contacts: Contact[] }) {
+  const [expandedPhase, setExpandedPhase] = useState<string | null>(null)
+  const mainContact = contacts?.find((c) => c.contactType === 'decisor') || contacts?.[0]
+
+  // Montar fases: sempre começa com "Cadastro Inicial" + status_changes
+  const phases: Array<{
+    id: string
+    label: string
+    status: 'completed' | 'current'
+    description?: string
+    createdBy?: string
+    createdAt?: string
+    notes?: string
+  }> = []
+
+  // Fase 0: Cadastro inicial
+  phases.push({
+    id: 'cadastro',
+    label: 'Cadastro Inicial',
+    status: 'completed',
+    description: `Lead criado via ${lead.enrichmentStatus === 'complete' ? 'pesquisa em massa' : 'cadastro manual'}`,
+    createdBy: 'Sistema',
+    createdAt: lead.createdAt,
+  })
+
+  // Fases de movimentação do pipeline (status_change activities)
+  const statusChanges = activities.filter((a) => a.type === 'status_change')
+  for (const activity of statusChanges) {
+    const match = activity.description?.match(/Movido de (.+) para (.+?)(\n|$)/)
+    const toStage = match ? match[2].trim() : activity.description || 'Movimentação'
+    const notesMatch = activity.description?.split('\n\n')
+    const notes = notesMatch && notesMatch.length > 1 ? notesMatch.slice(1).join('\n') : undefined
+
+    phases.push({
+      id: activity.id,
+      label: toStage,
+      status: 'completed',
+      description: activity.description?.split('\n')[0] || '',
+      createdBy: activity.createdBy || 'Usuário',
+      createdAt: activity.createdAt,
+      notes,
+    })
+  }
+
+  // Fase atual
+  if (lead.status && lead.status !== 'Novo') {
+    const alreadyHasCurrentStage = phases.some(p => p.label === lead.status)
+    if (!alreadyHasCurrentStage) {
+      phases.push({
+        id: 'current',
+        label: lead.status,
+        status: 'current',
+      })
+    }
+  }
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '—'
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return '—'
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }
+
+  return (
+    <div className="border-t border-border pt-5">
+      <button
+        onClick={() => setExpandedPhase(expandedPhase === 'history' ? null : 'history')}
+        className="flex items-center justify-between w-full cursor-pointer group"
+      >
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-white/[0.03]">
+            <svg className="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <span className="text-sm font-semibold text-text-primary">Histórico das Fases</span>
+          <span className="text-caption text-text-muted">({phases.length})</span>
+        </div>
+        <ChevronRight className={cn('h-4 w-4 text-text-muted transition-transform duration-200', expandedPhase === 'history' && 'rotate-90')} />
+      </button>
+
+      {expandedPhase === 'history' && (
+        <div className="mt-4 space-y-2 animate-[fade-in_0.2s_ease-out]">
+          {phases.map((phase, idx) => (
+            <PhaseCard
+              key={phase.id}
+              phase={phase}
+              lead={lead}
+              mainContact={mainContact}
+              isFirst={idx === 0}
+              formatDate={formatDate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
+  phase: { id: string; label: string; status: string; description?: string; createdBy?: string; createdAt?: string; notes?: string }
+  lead: Lead
+  mainContact?: Contact
+  isFirst: boolean
+  formatDate: (d?: string) => string
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className={cn(
+            'text-micro font-bold px-2 py-0.5 rounded',
+            phase.status === 'current' ? 'bg-red/10 text-red' : 'bg-success/10 text-success',
+          )}>
+            {isFirst ? 'Lead' : 'Pipeline'}
+          </span>
+          <span className="text-sm font-medium text-text-primary">{phase.label}</span>
+          {phase.status === 'completed' && (
+            <CheckCircle className="h-3.5 w-3.5 text-success" />
+          )}
+        </div>
+        <ChevronRight className={cn('h-3.5 w-3.5 text-text-muted transition-transform duration-200', expanded && 'rotate-90')} />
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 animate-[fade-in_0.2s_ease-out]">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-caption">
+            <div>
+              <span className="text-text-muted">Empresa: </span>
+              <span className="text-text-primary">{lead.companyName}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Stakeholder: </span>
+              <span className="text-text-primary">{mainContact?.name || '—'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Telefone: </span>
+              <span className="text-text-primary">{mainContact?.whatsapp || lead.rfPhone || '—'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Email: </span>
+              <span className="text-text-primary">{mainContact?.email || lead.rfEmail || '—'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Origem: </span>
+              <span className="text-text-primary">{lead.enrichmentStatus === 'complete' ? 'Pesca CNPJa' : 'Cadastro manual'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Segmento: </span>
+              <span className="text-text-primary">{lead.segment || '—'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Faturamento: </span>
+              <span className="text-text-primary">{lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue) + '/mês' : lead.tier || '—'}</span>
+            </div>
+            <div>
+              <span className="text-text-muted">Score: </span>
+              <span className="text-text-primary">{lead.score || '—'} · {lead.temperature}</span>
+            </div>
+          </div>
+          {phase.notes && (
+            <div className="mt-2 p-2 rounded-lg bg-white/[0.02] border border-border/50">
+              <p className="text-caption text-text-secondary italic">{phase.notes}</p>
+            </div>
+          )}
+          <div className="mt-2 pt-2 border-t border-border/30">
+            <p className="text-caption text-text-muted">Criado em: {formatDate(phase.createdAt)}</p>
+            <p className="text-caption text-text-muted">Criado por: {phase.createdBy || '—'}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function CompanyPage() {
   const { id } = useParams()
@@ -40,6 +219,7 @@ export function CompanyPage() {
   const { data: contacts } = useContacts(id)
   const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
+  const { data: activities } = useQuery({ queryKey: ['activities', id], queryFn: () => getActivities(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
   const [_showMoreTabs, _setShowMoreTabs] = useState(false) // legacy — tabs agora são inline
   const [showActionMenu, setShowActionMenu] = useState(false)
@@ -632,6 +812,9 @@ export function CompanyPage() {
                 <p className="text-[13px] text-text-secondary">{lead.techStack}</p>
               </div>
             )}
+
+            {/* Histórico das Fases */}
+            <PhaseHistory lead={lead} activities={activities || []} contacts={contacts || []} />
           </div>
         )}
 
