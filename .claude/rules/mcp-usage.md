@@ -36,7 +36,13 @@ AIOX uses Docker MCP Toolkit as the primary MCP infrastructure:
 |-----|---------|
 | **EXA** | Web search, research, company/competitor analysis |
 | **Context7** | Library documentation lookup |
-| **Apify** | Web scraping, Actors, social media data extraction |
+
+### External APIs (Direct Integration in App)
+
+| API | Purpose |
+|-----|---------|
+| **CNPJa** | Fonte UNICA de dados cadastrais (CNPJ, socios, QSA, endereco) |
+| **Assertiva Localize** | Enriquecimento: telefones, emails, decisores, WhatsApp confirmado |
 
 ## CRITICAL: Tool Selection Priority
 
@@ -59,6 +65,11 @@ ALWAYS prefer native Claude Code tools over MCP servers:
 3. Task specifically requires Docker container operations
 4. Accessing MCPs running inside Docker (EXA, Context7)
 5. User asks to run something inside a Docker container
+
+### Data Enrichment (NOT via MCP — direct app integration):
+- **CNPJa:** Dados cadastrais de empresas (CNPJ lookup, socios, QSA). Fonte unica e central.
+- **Assertiva Localize:** Enriquecimento de contatos (telefones, emails, decisores, WhatsApp confirmado).
+- Ambas sao integradas diretamente no app React/services, NAO via MCP.
 
 ### NEVER use docker-gateway for:
 - Reading local files (use `Read` tool)
@@ -108,35 +119,6 @@ mcp__docker-gateway__resolve-library-id
 mcp__docker-gateway__get-library-docs
 ```
 
-## Apify MCP Usage (via Docker)
-
-### Use Apify for:
-1. Searching Actors in Apify Store (web scrapers, automation tools)
-2. Running web scrapers for social media (Instagram, TikTok, LinkedIn, etc.)
-3. Extracting data from e-commerce sites
-4. Automated data collection from any website
-5. RAG-enabled web browsing for AI context
-
-### Access pattern (7 tools available):
-
-```text
-mcp__docker-gateway__apify-slash-rag-web-browser  # RAG-enabled web browsing
-mcp__docker-gateway__search-actors                 # Search for Actors
-mcp__docker-gateway__call-actor                    # Run an Actor
-mcp__docker-gateway__fetch-actor-details           # Get Actor info/schema
-mcp__docker-gateway__get-actor-output              # Get results from Actor run
-mcp__docker-gateway__search-apify-docs             # Search Apify documentation
-mcp__docker-gateway__fetch-apify-docs              # Fetch documentation page
-```
-
-### When to use Apify vs other tools:
-| Task | Tool |
-|------|------|
-| General web search | EXA (`web_search_exa`) |
-| Scrape specific website | Apify (`call-actor`) |
-| Social media data extraction | Apify (use specialized Actors) |
-| Library documentation | Context7 |
-
 ---
 
 ## Rationale
@@ -145,7 +127,7 @@ mcp__docker-gateway__fetch-apify-docs              # Fetch documentation page
 - **docker-gateway** executes inside Docker containers (Linux)
 - Using docker-gateway for local operations causes path mismatches and failures
 - Native tools are faster and more reliable for local file operations
-- EXA, Context7, and Apify run inside Docker for isolation and consistent environment
+- EXA and Context7 run inside Docker for isolation and consistent environment
 - playwright runs directly for better browser integration with host system
 
 ---
@@ -169,7 +151,7 @@ mcp__docker-gateway__fetch-apify-docs              # Fetch documentation page
       value: 'actual-token-value'
 ```
 
-**Affected MCPs:** Any MCP requiring authentication (Apify, Notion, Slack, etc.)
+**Affected MCPs:** Any MCP requiring authentication (Notion, Slack, etc.)
 
 **Working MCPs:** EXA works because its key is in `~/.docker/mcp/config.yaml` under `apiKeys`
 

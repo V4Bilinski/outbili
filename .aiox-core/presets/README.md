@@ -132,8 +132,6 @@ mcp:
   enabled:
     - exa
     - context7
-  disabled:
-    - apify
 ```
 
 ### Creating a New Preset

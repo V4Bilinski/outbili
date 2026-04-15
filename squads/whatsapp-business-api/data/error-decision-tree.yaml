@@ -1,0 +1,261 @@
+# Error Decision Tree — WhatsApp Business API Squad
+# Maps error codes to diagnosis, action, and retry strategy
+
+error_categories:
+  rate_limit:
+    description: "Rate limiting and throughput errors"
+    errors:
+      - code: 130429
+        title: "Rate limit hit"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 2
+        max_retries: 5
+        action: "Reduce sending rate. Apply AIMD -40% decrease."
+        agent: cloud-api-architect
+
+      - code: 131047
+        title: "Re-engagement message limit"
+        retryable: false
+        action: "Contact has not interacted. Wait for user-initiated message or use template."
+        agent: campaign-optimizer
+
+      - code: 131056
+        title: "Pair rate limit (business to user)"
+        retryable: true
+        strategy: "skip_pair_1h"
+        action: "Skip this specific contact for 1 hour, continue with others."
+        agent: integration-engineer
+
+  recipient:
+    description: "Recipient-related errors"
+    errors:
+      - code: 131051
+        title: "No WhatsApp account"
+        retryable: false
+        action: "Mark contact as invalid. Remove from active send lists."
+        agent: cloud-api-architect
+
+      - code: 131026
+        title: "Recipient blocked business"
+        retryable: false
+        action: "Remove from all send lists. Respect opt-out."
+        agent: compliance-guardian
+
+      - code: 131053
+        title: "Invalid phone number"
+        retryable: false
+        action: "Validate E.164 format. Must be digits only, no + prefix."
+        agent: cloud-api-architect
+
+  template:
+    description: "Template-related errors"
+    errors:
+      - code: 132000
+        title: "Template parameter count mismatch"
+        retryable: false
+        action: "Verify parameter count matches template definition. Check positional order."
+        agent: template-strategist
+
+      - code: 132001
+        title: "Template does not exist"
+        retryable: false
+        action: "Check template name (lowercase + underscores). Verify language code."
+        agent: template-strategist
+
+      - code: 132005
+        title: "Template hydration failed"
+        retryable: false
+        action: "Parameter values are invalid. Check types and formats."
+        agent: template-strategist
+
+      - code: 132012
+        title: "Template parameter format error"
+        retryable: false
+        action: "Component parameters missing or incorrectly structured."
+        agent: template-strategist
+
+      - code: 132015
+        title: "Template paused"
+        retryable: false
+        action: "Template paused due to quality. Use alternative template or appeal."
+        agent: campaign-optimizer
+
+      - code: 132016
+        title: "Template disabled"
+        retryable: false
+        action: "Template permanently disabled. Create new template."
+        agent: template-strategist
+
+  payment:
+    description: "Payment and billing errors"
+    errors:
+      - code: 131042
+        title: "Payment method unavailable"
+        retryable: false
+        action: "Business account payment pending. Alert business owner to resolve billing."
+        agent: whatsapp-chief
+
+  auth:
+    description: "Authentication and account errors"
+    errors:
+      - code: 131031
+        title: "Account not registered"
+        retryable: false
+        action: "Business phone number not properly registered. Re-register via API."
+        agent: integration-engineer
+
+      - code: 131048
+        title: "Spam rate limit"
+        retryable: false
+        action: "Account flagged for spam. STOP all sending. Review content quality."
+        agent: compliance-guardian
+
+      - code: 368
+        title: "Temporarily blocked"
+        retryable: true
+        strategy: "wait_and_appeal"
+        wait_hours: 24
+        action: "Account temporarily blocked. Wait 24h. If persistent, file appeal."
+        agent: whatsapp-chief
+
+  system:
+    description: "System and format errors"
+    errors:
+      - code: 131009
+        title: "Invalid parameter format"
+        retryable: false
+        action: "Check E.164 phone format, messaging_product field, and payload structure."
+        agent: cloud-api-architect
+
+      - code: 131021
+        title: "Recipient cannot receive (server issue)"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 5
+        max_retries: 3
+        action: "Temporary server issue. Retry with backoff."
+        agent: integration-engineer
+
+      - code: 500
+        title: "Internal server error"
+        retryable: true
+        strategy: "immediate_retry"
+        max_retries: 3
+        action: "Meta server error. Retry immediately, max 3 times."
+        agent: integration-engineer
+
+      - code: 503
+        title: "Service unavailable"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 5
+        max_retries: 3
+        action: "Meta service down. Retry with longer backoff."
+        agent: integration-engineer
+
+  # ═══ NEW from OpenAPI v23.0 ═══
+
+  calls:
+    description: "Call-related errors (NEW in v23.0)"
+    errors:
+      - code: 138006
+        title: "Missing call permission from WhatsApp user"
+        retryable: false
+        action: "User has not granted call permission. Send call_permission_request interactive message first."
+        agent: cloud-api-architect
+
+  generic_graph:
+    description: "Generic Graph API errors"
+    errors:
+      - code: 1
+        title: "Unknown error"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 2
+        max_retries: 3
+        action: "Unexpected server error. Retry with backoff."
+        agent: integration-engineer
+        error_type: "OAuthException"
+
+      - code: 2
+        title: "GraphMethodException — unexpected error"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 2
+        max_retries: 3
+        action: "Server-side error. Retry with backoff."
+        agent: integration-engineer
+        error_type: "GraphMethodException"
+
+      - code: 4
+        title: "App-level rate limit"
+        retryable: true
+        strategy: "exponential_backoff"
+        base_delay: 5
+        max_retries: 5
+        action: "Application-level rate limit hit. Reduce overall API call frequency."
+        agent: integration-engineer
+        subcodes:
+          2390008: "Call permission check rate limit exceeded"
+          2446079: "QR code rate limit exceeded"
+
+      - code: 10
+        title: "Feature not supported / permission scope error"
+        retryable: false
+        action: "Feature not enabled or permission not granted. Check app permissions and phone number capabilities."
+        agent: cloud-api-architect
+
+      - code: 100
+        title: "Invalid parameter"
+        retryable: false
+        action: "Malformed request. Check JSON structure, required fields, and parameter types."
+        agent: cloud-api-architect
+        error_type: "OAuthException"
+
+      - code: 104
+        title: "Missing access token"
+        retryable: false
+        action: "No Bearer token in Authorization header. Check credential configuration."
+        agent: integration-engineer
+
+      - code: 190
+        title: "Invalid OAuth access token"
+        retryable: false
+        action: "Token expired or invalid. Refresh token from Supabase settings."
+        agent: integration-engineer
+        subcodes:
+          463: "OAuth token expired — needs refresh"
+
+      - code: 200
+        title: "Permission denied"
+        retryable: false
+        action: "Insufficient permissions. Check app roles and WABA permission tasks."
+        agent: cloud-api-architect
+        subcodes:
+          1349174: "Permission denied for phone number resource"
+
+      - code: 803
+        title: "Phone number not found"
+        retryable: false
+        action: "Phone number ID does not exist or is not accessible. Verify phone_number_id."
+        agent: cloud-api-architect
+        error_type: "GraphMethodException"
+
+decision_flow:
+  - step: 1
+    question: "Is error code in retryable list?"
+    yes: "Apply retry strategy with specified backoff"
+    no: "Go to step 2"
+  - step: 2
+    question: "Is it a recipient error (131xxx with 'recipient' category)?"
+    yes: "Mark contact appropriately (invalid, blocked, no WhatsApp). Remove from active lists."
+    no: "Go to step 3"
+  - step: 3
+    question: "Is it a template error (132xxx)?"
+    yes: "Route to @template-strategist for template fix. Do NOT retry same payload."
+    no: "Go to step 4"
+  - step: 4
+    question: "Is it a payment/account error?"
+    yes: "Escalate to business owner. No technical fix available."
+    no: "Route to @cloud-api-architect for investigation"

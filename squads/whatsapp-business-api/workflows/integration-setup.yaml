@@ -1,0 +1,109 @@
+name: integration-setup
+version: 2.0.0
+description: "Setup completo de integração WhatsApp Business API: do zero à produção"
+
+steps:
+  - id: account-setup
+    task: tasks/diagnose-account.md
+    tier: 1
+    agents: [whatsapp-chief]
+    required: true
+    description: "Diagnosticar e configurar conta WABA, business ID, phone number ID"
+    outputs:
+      - waba_id
+      - business_id
+      - phone_number_id
+      - display_name
+      - verification_status
+
+  - id: credential-configuration
+    task: tasks/setup-webhook.md
+    tier: 2
+    agents: [integration-engineer]
+    required: true
+    depends_on: [account-setup]
+    description: "Configurar credenciais no Supabase settings: access token, app secret, verify token"
+    inputs:
+      - from: account-setup.waba_id
+      - from: account-setup.business_id
+    outputs:
+      - access_token_configured
+      - supabase_settings_stored
+      - token_rotation_scheduled
+
+  - id: webhook-setup
+    task: tasks/setup-webhook.md
+    tier: 2
+    agents: [integration-engineer]
+    required: true
+    depends_on: [credential-configuration]
+    description: "Setup completo de webhook: URL, verify token, signature verification, deduplication"
+    inputs:
+      - from: credential-configuration.access_token_configured
+    outputs:
+      - webhook_url
+      - verify_token
+      - hmac_verification_active
+      - deduplication_active
+
+  - id: template-creation
+    task: workflows/template-lifecycle.yaml
+    tier: workflow
+    agents: [template-strategist]
+    required: true
+    depends_on: [account-setup]
+    description: "Criar primeiro template via workflow template-lifecycle (nested workflow)"
+    inputs:
+      - from: account-setup.waba_id
+      - from: account-setup.phone_number_id
+    outputs:
+      - approved_templates
+      - template_ids
+
+  - id: test-messages
+    task: tasks/cloud-api-reference.md
+    tier: 2
+    agents: [cloud-api-architect]
+    required: true
+    depends_on: [webhook-setup, template-creation]
+    description: "Enviar mensagens de teste, confirmar entrega e recepção de webhook"
+    inputs:
+      - from: webhook-setup.webhook_url
+      - from: template-creation.template_ids
+      - from: account-setup.phone_number_id
+    outputs:
+      - test_results
+      - message_delivery_confirmed
+      - webhook_reception_confirmed
+
+  - id: compliance-check
+    task: tasks/compliance-check.md
+    tier: 0
+    agents: [compliance-guardian]
+    required: true
+    depends_on: [test-messages]
+    description: "Validação final de compliance antes do go-live"
+    quality_gate:
+      checklist: checklists/compliance-checklist.md
+      minimum_pass: 100
+      max_retries: 1
+
+  - id: go-live
+    task: tasks/diagnose-account.md
+    tier: 1
+    agents: [whatsapp-chief]
+    required: true
+    depends_on: [compliance-check, test-messages]
+    description: "Go-live: verificação final, ativação em produção, monitoramento configurado"
+    conditions:
+      - compliance-check.result == "APPROVED"
+      - test-messages.message_delivery_confirmed == true
+      - test-messages.webhook_reception_confirmed == true
+    quality_gate:
+      checklist: checklists/go-live-checklist.md
+      minimum_pass: 100
+      max_retries: 1
+    outputs:
+      - production_status
+      - tier_level
+      - monitoring_configured

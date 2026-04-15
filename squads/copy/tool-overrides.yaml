@@ -1,0 +1,58 @@
+# =============================================================================
+# Squad Tool Override — Copy
+# =============================================================================
+
+extends: tool-registry
+
+overrides:
+  profiles:
+    copy-chief:
+      always_loaded:
+        - Read
+        - Write
+        - Edit
+        - Bash
+        - Grep
+        - Glob
+      frequently_used:
+        - WebSearch
+        - WebFetch
+      deferred: []
+
+    copywriter:
+      always_loaded:
+        - Read
+        - Write
+        - Edit
+        - Grep
+        - Glob
+      frequently_used:
+        - WebSearch
+        - WebFetch
+      deferred: []
+
+  task_bindings:
+    diagnose-copy:
+      required:
+        - Read
+        - Write
+      optional:
+        - WebSearch
+      execution_mode: direct
+
+    create-copy:
+      required:
+        - Read
+        - Write
+        - Edit
+      optional:
+        - WebSearch
+        - WebFetch
+      execution_mode: direct
+
+    audit-copy:
+      required:
+        - Read
+        - Write
+      optional: []
+      execution_mode: direct

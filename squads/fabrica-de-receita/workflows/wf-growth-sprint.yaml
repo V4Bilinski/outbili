@@ -1,0 +1,273 @@
+# Workflow: Growth Sprint
+# 5 fases: Audit → Priorizacao → Experimento → Medicao → Iterate
+
+workflow:
+  name: wf-growth-sprint
+  display_name: "Growth Sprint (5 fases, 4 semanas)"
+  version: "1.0.0"
+  description: |
+    Workflow de sprint de growth para executar ciclos rapidos de experimentos.
+    Cada sprint dura 4 semanas e segue o metodo cientifico aplicado a growth:
+    (1) Audit do estado atual, (2) Priorizacao de hipoteses, (3) Execucao do
+    experimento, (4) Medicao de resultados, (5) Iteracao — escalar o que funcionou,
+    abandonar o que nao funcionou, formular nova hipotese.
+    Pode ser executado como sub-workflow dentro do wf-destrava-receita ou de forma
+    independente para times que querem implantar cultura de growth.
+
+  use_cases:
+    - Sub-workflow de uma alavanca dentro do ciclo 90 dias
+    - Sprint independente para testar nova oferta ou canal
+    - Processo de CRO (Conversion Rate Optimization)
+    - Validacao de hipotese antes de escalar investimento
+
+phases:
+  - id: growth-audit
+    name: "Fase 1: Audit do Estado Atual (Semana 1)"
+    task: growth-audit.md
+    agents: [orchestrator, traffic-hunter, conversion-optimizer, retention-architect, roi-analyst]
+    description: |
+      Auditoria rapida do pilar V4 mais relevante para o sprint (nao precisa ser
+      auditoria completa — focar no pilar que contem a alavanca do sprint).
+      Coletar metricas baseline para medir impacto do experimento.
+    inputs:
+      - Pilar V4 alvo do sprint (Trafego / Engajamento / Conversao / Retencao)
+      - Metricas atuais do pilar alvo
+      - Hipotese inicial (o que acreditamos que esta causando o problema)
+    outputs:
+      - Scorecard do pilar auditado
+      - Baseline de metricas (D0 do experimento)
+      - Lista de hipoteses priorizaveis
+    duration: "5 dias uteis"
+    gate:
+      type: decision
+      options:
+        AUDITORIA_COMPLETA: "Baseline coletado, hipoteses mapeadas. Ir para Fase 2"
+        DADOS_INSUFICIENTES: "Sem dados suficientes. Implantar tracking primeiro"
+    next:
+      AUDITORIA_COMPLETA: priorizacao-hipoteses
+      DADOS_INSUFICIENTES: implantar-tracking
+
+  - id: implantar-tracking
+    name: "Fase 1b: Implantar Tracking"
+    task: null
+    agents: [ai-marketing-engineer, roi-analyst]
+    description: |
+      Quando o cliente nao tem dados suficientes para medir o experimento, implantar
+      tracking minimo necessario antes de executar qualquer experimento.
+      Sem metricas nao ha como saber se o experimento funcionou.
+    outputs:
+      - Pixel/GTM configurado
+      - Eventos de conversao rastreados
+      - Dashboard basico configurado
+    duration: "3-5 dias uteis"
+    gate:
+      type: decision
+      options:
+        TRACKING_OK: "Tracking funcionando. Voltar para audit"
+        BLOQUEIO_TECNICO: "Bloqueio tecnico — escalar para dev do cliente"
+    next:
+      TRACKING_OK: growth-audit
+      BLOQUEIO_TECNICO: end-bloqueado
+
+  - id: priorizacao-hipoteses
+    name: "Fase 2: Priorizacao de Hipoteses (Semana 1-2)"
+    task: null
+    agents: [conversion-optimizer, fabrica-de-receita-master]
+    description: |
+      A partir das hipoteses levantadas na auditoria, priorizar qual experimento
+      executar no sprint usando o framework ICE (Impact, Confidence, Ease).
+      Selecionar apenas 1 hipotese principal por sprint (foco e lei).
+    framework: ICE_scoring
+    ice_description: |
+      I — Impact: Se funcionar, qual o impacto na metrica principal? (1-10)
+      C — Confidence: Qual a probabilidade de funcionar com base em dados? (1-10)
+      E — Ease: Qual a facilidade/velocidade de executar? (1-10)
+      Score ICE = (I + C + E) / 3
+    inputs:
+      - Lista de hipoteses da auditoria
+      - Metricas do pilar alvo
+      - Restricoes de tempo e budget
+    outputs:
+      - Tabela ICE com todas as hipoteses rankeadas
+      - Hipotese vencedora selecionada
+      - Hipotese formatada como statement: |
+          "Acreditamos que [acao] vai resultar em [resultado mensuravel]
+           para [segmento de usuarios] porque [razao baseada em dados].
+           Vamos medir isso usando [metrica] ao longo de [X dias]."
+    duration: "2-3 dias uteis"
+    gate:
+      type: checklist
+      threshold: 5
+      max: 5
+      checks:
+        - Apenas 1 hipotese selecionada (nao 2 ou 3)
+        - Hipotese tem metrica mensuravel definida
+        - Periodo do experimento definido (minimo 7 dias)
+        - Criterio de sucesso definido (ex: CVR +15%)
+        - Criterio de fracasso definido (ex: CVR nao muda apos 14 dias)
+      options:
+        APROVADO: "5/5 criterios. Partir para execucao"
+        REVISAR: "< 5 criterios. Ajustar hipotese antes de executar"
+    next:
+      APROVADO: execucao-experimento
+      REVISAR: priorizacao-hipoteses
+
+  - id: execucao-experimento
+    name: "Fase 3: Execucao do Experimento (Semana 2-3)"
+    task: null
+    agents: [conversion-optimizer, traffic-hunter, content-engine, ai-marketing-engineer]
+    description: |
+      Executar o experimento conforme a hipotese aprovada. O agente responsavel
+      depende do tipo de experimento (pilar V4). Monitorar metricas diariamente
+      durante a execucao — nao pausar antes do tempo minimo definido.
+    experiment_types:
+      trafego:
+        agents: [traffic-hunter]
+        exemplos: ["Novo criativo Meta Ads", "Nova keyword Google Ads", "Novo canal de trafego"]
+        minimo: "7 dias (fase de aprendizado do algoritmo)"
+      engajamento:
+        agents: [content-engine]
+        exemplos: ["Novo subject line de email", "Novo lead magnet", "Nova sequencia de nurture"]
+        minimo: "7 dias (amostra estatistica minima)"
+      conversao:
+        agents: [conversion-optimizer]
+        exemplos: ["Nova headline LP", "Novo CTA", "Nova proposta de valor", "Remover campo do form"]
+        minimo: "7-14 dias (100+ visitantes por variante minimo)"
+      retencao:
+        agents: [guardiao-retencao, retention-architect]
+        exemplos: ["Novo onboarding", "Nova mensagem de health score", "Programa de expansao"]
+        minimo: "30 dias (ciclo de comportamento do cliente)"
+    monitoring:
+      frequency: diaria
+      alerta: "Parar experimento se metrica principal cair > 30% vs baseline"
+      nao_fazer: "Nao pausar experimento antes do tempo minimo sem dados que justifiquem"
+    duration: "7-14 dias"
+    gate:
+      type: decision
+      label: "Experimento concluido?"
+      options:
+        CONCLUIDO: "Periodo minimo atingido com amostra suficiente. Ir para Fase 4"
+        EM_ANDAMENTO: "Ainda no periodo minimo. Aguardar"
+        PARADO_PREMATURAMENTE: "Experimento pausado antes do tempo. Registrar motivo"
+        ERRO_TECNICO: "Problema tecnico na execucao. Corrigir e reiniciar"
+    next:
+      CONCLUIDO: medicao-resultados
+      EM_ANDAMENTO: execucao-experimento
+      PARADO_PREMATURAMENTE: medicao-resultados
+      ERRO_TECNICO: execucao-experimento
+
+  - id: medicao-resultados
+    name: "Fase 4: Medicao de Resultados (Semana 3-4)"
+    task: roi-analysis.md
+    agents: [roi-analyst, conversion-optimizer]
+    description: |
+      Medir os resultados do experimento vs baseline e vs criterio de sucesso definido.
+      Calcular significancia estatistica se possivel. Classificar o experimento
+      como WIN, LOSS ou INCONCLUSIVO.
+    statistical_significance:
+      minimo: "95% de confianca para declarar WIN ou LOSS"
+      quando_nao_ha: "Usar regra pratica: variacao > 20% por 7+ dias = sinal"
+    inputs:
+      - Metrica principal baseline (D0)
+      - Metrica principal pos-experimento
+      - Criterio de sucesso pre-definido
+    outputs:
+      - Resultado do experimento (WIN / LOSS / INCONCLUSIVO)
+      - Delta da metrica principal (em % e em R$)
+      - Insights secundarios identificados
+      - Documentacao para base de conhecimento
+    gate:
+      type: decision
+      label: "Resultado do experimento"
+      options:
+        WIN: "Experimento venceu. Escalar!"
+        WIN_PEQUENO: "Melhora pequena mas consistente. Escalar com cautela"
+        LOSS: "Experimento perdeu. Aprender e formular nova hipotese"
+        INCONCLUSIVO: "Sem sinal claro. Repetir com amostra maior ou descartar"
+    next:
+      WIN: iteracao-escalar
+      WIN_PEQUENO: iteracao-escalar
+      LOSS: iteracao-nova-hipotese
+      INCONCLUSIVO: iteracao-nova-hipotese
+
+  - id: iteracao-escalar
+    name: "Fase 5a: Iteracao — Escalar o que Funcionou"
+    task: null
+    agents: [fabrica-de-receita-master, traffic-hunter, conversion-optimizer]
+    description: |
+      Experimento ganhou. Agora escalar: aumentar budget, aplicar em mais canais,
+      tornar padrao no processo, e formular proxima hipotese para continuar
+      melhorando a mesma metrica ou avançar para o proximo pilar.
+    actions:
+      - Tornar a variante vencedora o novo padrao (substituir controle)
+      - Documentar o WIN no playbook de growth
+      - Calcular o impacto anualizado do resultado
+      - Definir proxima hipotese para o mesmo pilar (doublar o resultado)
+      - OU decidir passar para o proximo pilar / proxima trava
+    outputs:
+      - Novo padrao documentado
+      - WIN registrado no playbook
+      - Proxima hipotese formulada para o proximo sprint
+    gate:
+      type: decision
+      options:
+        CONTINUAR_MESMO_PILAR: "Mais oportunidade no mesmo pilar. Novo sprint aqui"
+        PROXIMO_PILAR: "Pilar saturado. Passar para proximo pilar V4"
+        FIM_DO_CICLO: "Sprint concluido, integrar no ciclo 90 dias principal"
+    next:
+      CONTINUAR_MESMO_PILAR: priorizacao-hipoteses
+      PROXIMO_PILAR: growth-audit
+      FIM_DO_CICLO: end
+
+  - id: iteracao-nova-hipotese
+    name: "Fase 5b: Iteracao — Aprender e Nova Hipotese"
+    task: null
+    agents: [conversion-optimizer, fabrica-de-receita-master]
+    description: |
+      Experimento perdeu ou foi inconclusivo. Extrair o maximo de aprendizado
+      antes de formular a proxima hipotese. Um LOSS bem documentado vale tanto
+      quanto um WIN — evita repetir o mesmo erro.
+    actions:
+      - Documentar o LOSS com motivo hipotetico
+      - Perguntar: o que esse resultado nos ensina sobre o comportamento do ICP?
+      - Formular nova hipotese com base no aprendizado
+      - Verificar se a metrica baseline mudou (as vezes o mercado muda)
+    outputs:
+      - LOSS documentado no playbook (aprendizados)
+      - Nova hipotese formulada
+      - Analise: a trava diagnosticada ainda e o gargalo principal?
+    gate:
+      type: decision
+      options:
+        NOVA_HIPOTESE_PRONTA: "Nova hipotese formulada. Novo sprint"
+        REDIAGNOSTICAR: "Resultados sugerem que a trava mudou. Re-diagnosticar"
+        FIM_DO_CICLO: "Sprint concluido. Integrar aprendizados no ciclo 90 dias"
+    next:
+      NOVA_HIPOTESE_PRONTA: priorizacao-hipoteses
+      REDIAGNOSTICAR: end-rediagnosticar
+      FIM_DO_CICLO: end
+
+  - id: end-bloqueado
+    name: "Fim — Bloqueio Tecnico"
+    task: null
+    note: "Sprint pausado por bloqueio tecnico. Escalar para time de dev do cliente."
+
+  - id: end-rediagnosticar
+    name: "Fim — Re-diagnosticar"
+    task: null
+    note: "Resultados indicam mudanca de trava. Reiniciar pelo wf-diagnostico-pipeline."
+
+  - id: end
+    name: "Fim do Growth Sprint"
+    task: null
+    note: "Sprint concluido. Resultados integrados ao ciclo 90 dias e playbook atualizado."
+
+settings:
+  sprint_duration: "4 semanas (20 dias uteis)"
+  max_hipoteses_por_sprint: 1
+  min_experiment_duration_days: 7
+  statistical_significance_target: 0.95
+  framework_priorizacao: ICE
+  documentacao_obrigatoria: true
+  playbook_update_on_win: true
+  playbook_update_on_loss: true

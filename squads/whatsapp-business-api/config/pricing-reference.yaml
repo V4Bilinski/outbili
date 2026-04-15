@@ -1,0 +1,51 @@
+# Pricing Reference — WhatsApp Business API (Brazil)
+# Source: arsenal/produto/pricing-and-conversations.md
+
+conversation_categories:
+  marketing:
+    description: "Promotions, announcements, re-engagement, product launches"
+    price_brl: 0.47
+    requires_template: true
+    requires_opt_in: true
+    quality_impact: "HIGH — directly affects quality score"
+    best_for: "Broadcasts, re-engagement campaigns"
+
+  utility:
+    description: "Confirmations, updates, reminders, status notifications"
+    price_brl: 0.15
+    requires_template: true
+    requires_opt_in: true
+    quality_impact: "LOW — minimal quality score impact"
+    best_for: "Order updates, appointment reminders, shipping notifications"
+    note: "FREE within 24h service window (since July 2025)"
+
+  authentication:
+    description: "OTP, verification codes, 2FA"
+    price_brl: 0.12
+    requires_template: true
+    requires_opt_in: true
+    quality_impact: "NONE"
+    best_for: "Login verification, password reset, account confirmation"
+
+  service:
+    description: "Responses within 24h customer-initiated window"
+    price_brl: 0.00
+    requires_template: false
+    requires_opt_in: false
+    quality_impact: "NONE"
+    free_quota: "1000 conversations/month"
+    best_for: "Customer support, FAQs, live chat"
+
+cost_optimization:
+  utility_over_marketing: "Utility is ~7.8x cheaper than marketing"
+  service_window_strategy: "Use utility template as opener, then free service messages for 24h"
+  authentication_cheapest: "Use for all verification flows"
+  batch_discount: "Volume pricing available for 100K+ conversations/month"
+
+billing_rules:
+  - "Conversations are billed, not individual messages"
+  - "A conversation starts with the first template sent (or first reply in service)"
+  - "Conversation window lasts 24 hours from first message"
+  - "Multiple messages within the same window = 1 conversation charge"
+  - "Service conversations: 1000 free/month, then paid"
+  - "Free tier entry point conversations are included in the 1000 free"

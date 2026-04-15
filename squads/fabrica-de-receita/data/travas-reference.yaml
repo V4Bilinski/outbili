@@ -1,0 +1,189 @@
+---
+# Referência das 8 Travas — Fábrica de Receita
+# Squad Growth V4 | Metodologia Destrava Receita
+# Versão: 1.0.0
+
+travas:
+  - id: T1
+    nome: Posicionamento e Proposta de Valor
+    descricao: >
+      O negócio não tem clareza sobre quem serve, qual problema resolve e por que é
+      a melhor escolha. A proposta de valor é genérica, indiferenciada ou não ressoa
+      com o ICP. Resulta em dificuldade de aquisição e baixa conversão mesmo com tráfego.
+    sintomas:
+      - Taxa de conversão de leads abaixo de 2%
+      - Leads chegam mas não entendem o produto/serviço
+      - Concorrência por preço constante
+      - Mensagem de marketing inconsistente entre canais
+      - Alto CAC sem clareza do motivo
+    agente_responsavel: "@growth-strategist"
+    agentes_suporte:
+      - "@especialista-spiced"
+      - "@estrategista-receita"
+      - "@copy-chief"
+    metricas_validacao:
+      - "Taxa de conversão lead → cliente >= 5%"
+      - "Clareza de proposta de valor (teste com 5 prospects)"
+      - "NPS de posicionamento >= 7"
+      - "Diferenciação mapeada vs. top 3 concorrentes"
+
+  - id: T2
+    nome: Tráfego e Aquisição
+    descricao: >
+      O negócio não gera volume suficiente de tráfego qualificado ou depende
+      de uma única fonte de aquisição. CAC alto, ROAS baixo, canais não diversificados
+      ou ausência de motor de aquisição previsível.
+    sintomas:
+      - Menos de 1.000 sessões/mês (B2C) ou 200 sessões/mês (B2B)
+      - Dependência de 1 único canal (ex: só indicação)
+      - ROAS abaixo de 2x em canais pagos
+      - CAC acima de 30% do LTV
+      - Ausência de SEO ou presença orgânica
+    agente_responsavel: "@traffic-hunter"
+    agentes_suporte:
+      - "@fabricante-aquisicao"
+      - "@conversion-optimizer"
+      - "@ai-marketing-engineer"
+    metricas_validacao:
+      - "Volume de sessões com crescimento >= 20% MoM"
+      - "CAC <= 25% do LTV"
+      - "ROAS >= 3x em canais pagos principais"
+      - "Pelo menos 2 canais de aquisição ativos"
+
+  - id: T3
+    nome: Engajamento e Nutrição
+    descricao: >
+      Leads chegam mas não são nutridos adequadamente. Baixo engajamento com
+      conteúdo, e-mails ignorados, ausência de sequência de nutrição ou conteúdo
+      que não educa nem aproxima o lead da compra.
+    sintomas:
+      - Taxa de abertura de e-mails abaixo de 15%
+      - CTR abaixo de 1%
+      - Leads esfriando antes de chegar ao comercial
+      - Ausência de sequência de nutrição automatizada
+      - Conteúdo genérico sem personalização por segmento
+    agente_responsavel: "@content-engine"
+    agentes_suporte:
+      - "@campaign-optimizer"
+      - "@automation-engineer"
+      - "@retention-architect"
+    metricas_validacao:
+      - "Taxa de abertura de e-mail >= 25%"
+      - "CTR >= 2.5%"
+      - "Sequência de nutrição com >= 5 touchpoints"
+      - "Lead scoring implementado e funcional"
+
+  - id: T4
+    nome: Conversão e Fechamento
+    descricao: >
+      O funil tem tráfego e engajamento, mas não converte. Processo de vendas
+      ineficiente, copy de vendas fraco, objeções não tratadas, falta de urgência
+      ou ausência de provas sociais convincentes.
+    sintomas:
+      - Taxa de conversão BoFu abaixo de 5% (B2C) ou 10% (B2B)
+      - Ciclo de vendas acima de 30 dias sem justificativa
+      - Alto volume de propostas enviadas com baixo fechamento
+      - Objeções recorrentes não endereçadas no funil
+      - Abandono de carrinho acima de 70% (e-commerce)
+    agente_responsavel: "@maquina-comercial"
+    agentes_suporte:
+      - "@conversion-optimizer"
+      - "@sales-deal-strategist"
+      - "@gary-bencivenga"
+    metricas_validacao:
+      - "Taxa de conversão BoFu >= 10% (B2C) ou 20% (B2B)"
+      - "Ciclo de vendas reduzido em >= 30%"
+      - "Taxa de fechamento de propostas >= 30%"
+      - "Abandono de carrinho <= 50%"
+
+  - id: T5
+    nome: Oferta e Precificação
+    descricao: >
+      O produto ou serviço não está empacotado de forma atraente ou o preço
+      não reflete o valor percebido. Oferta complexa, difícil de entender,
+      sem âncora de preço adequada ou sem diferenciação por tier.
+    sintomas:
+      - Resistência constante a preço
+      - Dificuldade em explicar o produto em 30 segundos
+      - Ausência de tiers ou pacotes claros
+      - Ticket médio abaixo do potencial do segmento
+      - Clientes não percebem ROI claro
+    agente_responsavel: "@hormozi"
+    agentes_suporte:
+      - "@goldratt"
+      - "@estrategista-receita"
+      - "@sales-proposal-strategist"
+    metricas_validacao:
+      - "Ticket médio aumentado em >= 20%"
+      - "Tempo de explicação da oferta <= 2 minutos"
+      - "Pelo menos 3 tiers ou pacotes definidos"
+      - "ROI documentado e apresentável para cada oferta"
+
+  - id: T6
+    nome: Processo Comercial
+    descricao: >
+      O time de vendas não tem processo definido, playbook ou cadência. Dependência
+      de pessoas-chave, ausência de CRM, falta de previsibilidade no pipeline e
+      inconsistência na abordagem de vendas.
+    sintomas:
+      - Pipeline sem previsibilidade (variação > 40% entre meses)
+      - Ausência de CRM ou CRM não utilizado
+      - Processo de vendas dependente de 1-2 pessoas
+      - Sem script ou playbook de vendas
+      - Taxa de follow-up abaixo de 60%
+    agente_responsavel: "@sales-pipeline-architect"
+    agentes_suporte:
+      - "@crm-master"
+      - "@sales-coach"
+      - "@sales-pipeline-analyst"
+    metricas_validacao:
+      - "Pipeline com precisão de forecast >= 80%"
+      - "CRM com >= 90% das oportunidades registradas"
+      - "Playbook de vendas documentado e em uso"
+      - "Taxa de follow-up >= 80%"
+
+  - id: T7
+    nome: Time e Execução
+    descricao: >
+      O negócio tem estratégia mas não executa. Falta capacidade de time,
+      estrutura de squad, rituais de acompanhamento ou cultura de dados para
+      tomar decisões rápidas. Gargalo operacional que limita crescimento.
+    sintomas:
+      - OKRs definidos mas não acompanhados
+      - Projetos atrasando consistentemente
+      - Decisões baseadas em intuição, não dados
+      - Time sem rituais de review e retrospectiva
+      - Sobrecarga concentrada em poucas pessoas
+    agente_responsavel: "@revenue-team-architect"
+    agentes_suporte:
+      - "@people-performance-coach"
+      - "@production-ops-manager"
+      - "@project-delivery-manager"
+    metricas_validacao:
+      - "OKRs com check-in semanal documentado"
+      - "Projetos entregues no prazo >= 70%"
+      - "Dashboard de dados atualizado diariamente"
+      - "Rituais semanais de review implementados"
+
+  - id: T8
+    nome: Retencao e LTV
+    descricao: >
+      O negócio adquire clientes mas não os retém. Alto churn, baixo LTV,
+      ausência de programas de fidelização, upsell/cross-sell inexistente
+      ou experiência do cliente que não gera advocacy.
+    sintomas:
+      - Churn mensal acima de 5% (SaaS) ou 15% (serviços)
+      - LTV/CAC ratio abaixo de 3x
+      - Ausência de programa de upsell/cross-sell
+      - NPS abaixo de 30
+      - Clientes que somem sem feedback
+    agente_responsavel: "@guardiao-retencao"
+    agentes_suporte:
+      - "@retention-architect"
+      - "@cs-retention-strategist"
+      - "@revenue-ops-analyst"
+    metricas_validacao:
+      - "Churn mensal <= 2% (SaaS) ou <= 8% (serviços)"
+      - "LTV/CAC ratio >= 4x"
+      - "Receita de expansão >= 20% da receita total"
+      - "NPS >= 50"

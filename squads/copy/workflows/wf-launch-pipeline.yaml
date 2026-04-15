@@ -1,0 +1,325 @@
+id: wf-launch-pipeline
+name: Launch Pipeline — Jeff Walker Product Launch Formula (PLF)
+version: "1.0"
+description: >
+  Pipeline completo de lancamento baseado no Product Launch Formula de Jeff Walker.
+  6 fases: Pre-Pre-Launch → PLC1 → PLC2 → PLC3 → Open Cart → Close Cart.
+  Cada fase tem sua propria sequencia de emails, conteudo e objetivos.
+
+agents_required:
+  - "@jeff-walker"      # arquiteto e orquestrador do PLF
+  - "@copy-chief"       # revisao e quality gates
+  - "@eugene-schwartz"  # awareness e sofisticacao inicial
+  - "@gary-halbert"     # emails narrativos e storytelling
+  - "@gary-bencivenga"  # bullets, fascinations e proof
+  - "@dan-kennedy"      # emails de urgencia e fechamento
+  - "@claude-hopkins"   # Hopkins Audit nos emails principais
+  - "@ry-schwartz"      # enrollment copy para abertura de carrinho
+
+inputs:
+  product_name:
+    type: string
+    required: true
+  product_price:
+    type: number
+    required: true
+  launch_start_date:
+    type: date
+    required: true
+  list_size:
+    type: number
+    required: false
+    description: "Tamanho da lista para ajuste de expectativas"
+  niche:
+    type: string
+    required: true
+  big_promise:
+    type: string
+    required: true
+    description: "Promessa central do produto/lancamento"
+  unique_mechanism:
+    type: string
+    required: false
+    description: "O que faz esse produto diferente de tudo que existe"
+
+outputs:
+  email_sequence_complete:
+    type: artifact
+    description: "Todas as sequencias de email por fase"
+  plc_scripts:
+    type: artifact
+    description: "Scripts dos 3 PLCs (Pre-Launch Contents)"
+  sales_page:
+    type: artifact
+    description: "Sales page para abertura de carrinho"
+  launch_calendar:
+    type: json
+    description: "Calendario completo do lancamento com datas e entregas"
+
+phases:
+  - id: phase-0-setup
+    name: "Fase 0 — Planejamento Estrategico"
+    agent: "@jeff-walker"
+    description: >
+      Definir a estrutura completa do lancamento: datas, metas, hooks por fase,
+      sequencia de revelacoes e logica de abertura de carrinho.
+    tasks:
+      - id: launch-calendar
+        name: "Montar calendario do lancamento"
+        output: launch_calendar
+      - id: hook-sequence
+        name: "Definir sequencia de hooks por PLC"
+        description: >
+          PLC1: Oportunidade (The Opportunity)
+          PLC2: Transformacao (The Transformation)
+          PLC3: Propriedade (The Ownership Experience)
+        output: hooks_per_plc
+      - id: story-arc
+        name: "Definir arco narrativo do lancamento"
+        output: story_arc
+      - id: objection-map
+        name: "Mapear objecoes por fase"
+        output: objections_by_phase
+
+  - id: phase-1-pre-pre-launch
+    name: "Fase 1 — Pre-Pre-Launch"
+    agent: "@gary-halbert"
+    duration: "7-14 dias antes do PLC1"
+    description: >
+      Criar antecipacao e curiosidade antes de revelar o que vem.
+      Objetivo: aquecer a lista, gerar buzz, criar expectativa.
+      NAO revelar o produto ainda. Focar na promessa e na transformacao.
+    emails:
+      - id: ppl-email-1
+        name: "Teaser — Algo esta chegando"
+        objective: "Criar curiosidade e antecipacao"
+        trigger_type: "curiosity + exclusivity"
+        subject_line_angle: "Algo que nunca compartilhei antes..."
+        template_ref: "email-sequence-tmpl.md"
+      - id: ppl-email-2
+        name: "A historia que muda tudo"
+        objective: "Conectar emocionalmente, estabelecer credibilidade"
+        trigger_type: "storytelling + authority"
+        subject_line_angle: "Como [transformacao] foi possivel (historia pessoal)"
+        template_ref: "email-sequence-tmpl.md"
+      - id: ppl-email-3
+        name: "Convite para o PLC1"
+        objective: "Gerar cliques para o primeiro video/conteudo"
+        trigger_type: "desire to belong + fear of missing"
+        subject_line_angle: "Vagas limitadas para quem quer [resultado]"
+        template_ref: "email-sequence-tmpl.md"
+    quality_gate:
+      check: "3 emails completos com subject lines e previews definidos"
+      on_fail: "Completar emails ausentes antes de avancar"
+
+  - id: phase-2-plc1
+    name: "Fase 2 — PLC1 (Pre-Launch Content 1)"
+    agent: "@jeff-walker"
+    support_agent: "@gary-halbert"
+    duration: "Lancamento do PLC1 + 3 dias de followup"
+    description: >
+      Primeiro conteudo de pre-lancamento. Foco em OPORTUNIDADE.
+      Mostrar que existe uma grande oportunidade que a maioria nao ve.
+      Nao vender ainda. Entregar valor real. Criar desejo de mais.
+    plc1_script:
+      hook: "A oportunidade que [nicho] esta ignorando"
+      content_type: "video, post longo, ou webinar"
+      structure:
+        - "Hook poderoso (primeiros 30 segundos se video)"
+        - "A grande oportunidade (o que poucos veem)"
+        - "Por que e o momento certo AGORA"
+        - "Prova de que funciona (cases, dados)"
+        - "Preview do que vem no PLC2"
+        - "CTA: comentar / responder / se inscrever"
+      output: plc1_script
+    emails:
+      - id: plc1-launch-email
+        name: "Lancamento do PLC1"
+        objective: "Levar para o conteudo, gerar engajamento"
+        agent: "@gary-halbert"
+      - id: plc1-day2-email
+        name: "Dia 2 — Destaque de comentarios"
+        objective: "Prova social, re-engajar quem nao viu"
+        agent: "@robert-collier"
+      - id: plc1-day3-email
+        name: "Dia 3 — Teaser do PLC2"
+        objective: "Manter momentum, antecipar proximo conteudo"
+        agent: "@dan-kennedy"
+    quality_gate:
+      check: "Script PLC1 aprovado + 3 emails completos"
+      hop_audit_required: false
+
+  - id: phase-3-plc2
+    name: "Fase 3 — PLC2 (Pre-Launch Content 2)"
+    agent: "@jeff-walker"
+    support_agent: "@gary-bencivenga"
+    duration: "Lancamento do PLC2 + 3 dias de followup"
+    description: >
+      Segundo conteudo. Foco em TRANSFORMACAO.
+      Mostrar como a transformacao acontece na pratica.
+      Introduzir o mecanismo unico. Revelar parcialmente o produto.
+    plc2_script:
+      hook: "Como exatamente [transformacao] acontece"
+      content_type: "video detalhado ou masterclass"
+      structure:
+        - "Recap rapido do PLC1"
+        - "O mecanismo unico (como funciona de verdade)"
+        - "Casos de transformacao (antes/depois detalhados)"
+        - "Os 3 maiores erros que impedem o resultado"
+        - "Como o produto resolve cada um desses erros"
+        - "Preview do que vem no PLC3 + antecipacao do produto"
+      output: plc2_script
+    emails:
+      - id: plc2-launch-email
+        name: "Lancamento do PLC2"
+        objective: "Alta entrega de valor, posicionar o mecanismo"
+        agent: "@gary-bencivenga"
+      - id: plc2-day2-email
+        name: "Dia 2 — FAQ e objecoes"
+        objective: "Resolver objecoes que surgiram nos comentarios"
+        agent: "@robert-collier"
+      - id: plc2-day3-email
+        name: "Dia 3 — Teaser do PLC3 + hint do produto"
+        objective: "Criar antecipacao maxima para o PLC3"
+        agent: "@dan-kennedy"
+    quality_gate:
+      check: "Script PLC2 aprovado + 3 emails completos"
+      hop_audit_required: false
+
+  - id: phase-4-plc3
+    name: "Fase 4 — PLC3 (Pre-Launch Content 3)"
+    agent: "@jeff-walker"
+    support_agent: "@ry-schwartz"
+    duration: "Lancamento do PLC3 + 2-3 dias antes do cart open"
+    description: >
+      Terceiro conteudo. Foco em POSSE (Ownership Experience).
+      Mostrar como e ter o produto. Criar desejo de pertencer.
+      Revelar o produto completamente. Preparar para abertura do carrinho.
+    plc3_script:
+      hook: "Como e ter [produto] na sua vida"
+      content_type: "video de venda suave ou Q&A ao vivo"
+      structure:
+        - "Celebrar a jornada ate aqui"
+        - "Mostrar a experiencia de ser cliente (o que eles vao ter)"
+        - "Depoimentos e cases de clientes atuais"
+        - "Revelar detalhes do produto (bônus, suporte, comunidade)"
+        - "Anuncio oficial: carrinho abre em [data]"
+        - "CTA: lista de espera VIP"
+      output: plc3_script
+    emails:
+      - id: plc3-launch-email
+        name: "Lancamento do PLC3 + anuncio do cart"
+        objective: "Revelacao do produto, criar fila VIP"
+        agent: "@ry-schwartz"
+      - id: plc3-day2-email
+        name: "Dia 2 — Lembrete do carrinho que abre"
+        objective: "Criar antecipacao para abertura"
+        agent: "@dan-kennedy"
+    quality_gate:
+      check: "Script PLC3 aprovado + 2 emails completos + sales page rascunhada"
+      on_fail: "Completar sales page antes de abrir carrinho"
+
+  - id: phase-5-open-cart
+    name: "Fase 5 — Open Cart (Abertura de Carrinho)"
+    agent: "@ry-schwartz"
+    support_agents: ["@gary-bencivenga", "@dan-kennedy"]
+    duration: "Dia 1 ao Dia 5-7 (tipicamente 5-7 dias aberto)"
+    description: >
+      Periodo de vendas. Carrinho aberto. Foco em conversao maxima.
+      Sequencia de emails diarios. Sales page no ar. Urgencia real.
+    sales_page:
+      agent: "@gary-bencivenga"
+      template_ref: "sales-page-tmpl.md"
+      quality_gates:
+        - "Hopkins Audit >= 85/100"
+        - "Sugarman Triggers >= 80%"
+    emails:
+      - id: cart-day1-morning
+        name: "Dia 1 Manha — Carrinho ABERTO"
+        objective: "Anuncio de abertura, maxima energia"
+        agent: "@ry-schwartz"
+        tone: "celebracao + urgencia suave"
+      - id: cart-day1-evening
+        name: "Dia 1 Tarde — Lembrete + primeiros resultados"
+        objective: "Prova social imediata, FOMO"
+        agent: "@gary-halbert"
+      - id: cart-day2-email
+        name: "Dia 2 — Historia de transformacao"
+        objective: "Re-engajar quem nao comprou, novo angulo"
+        agent: "@gary-halbert"
+      - id: cart-day3-email
+        name: "Dia 3 — Objecoes e FAQ"
+        objective: "Eliminar ultima resistencia"
+        agent: "@robert-collier"
+      - id: cart-day4-email
+        name: "Dia 4 — Bonus exclusivo (se houver)"
+        objective: "Novo motivo de compra para indecisos"
+        agent: "@gary-bencivenga"
+      - id: cart-day5-email
+        name: "Dia 5 — Urgencia crescente"
+        objective: "Ativar medo de perder"
+        agent: "@dan-kennedy"
+    quality_gate:
+      check: "Sales page com Hopkins >= 85 + Sugarman >= 80% + todos os emails"
+      hop_audit_required: true
+      sugarman_check_required: true
+
+  - id: phase-6-close-cart
+    name: "Fase 6 — Close Cart (Fechamento de Carrinho)"
+    agent: "@dan-kennedy"
+    support_agent: "@gary-halbert"
+    duration: "Ultimas 24-48 horas"
+    description: >
+      Sequencia de fechamento. Urgencia maxima e real.
+      3-4 emails nas ultimas 24 horas. Nao mentir nunca sobre prazo.
+    emails:
+      - id: close-48h
+        name: "48h para fechar"
+        objective: "Aviso antecipado, urgencia real"
+        agent: "@dan-kennedy"
+      - id: close-24h
+        name: "24h para fechar — Ultima chance"
+        objective: "Urgencia maxima, remover objecoes finais"
+        agent: "@dan-kennedy"
+      - id: close-morning
+        name: "Manha do ultimo dia"
+        objective: "Lembrete + historia de quem ja comprou"
+        agent: "@gary-halbert"
+      - id: close-2h
+        name: "2h para fechar — Contagem regressiva"
+        objective: "FOMO absoluto, CTA direto"
+        agent: "@dan-kennedy"
+      - id: close-final
+        name: "Carrinho FECHADO"
+        objective: "Confirmar fechamento, manter lista aquecida"
+        agent: "@jeff-walker"
+        note: "Email opcional mas recomendado para respeitar lista"
+    quality_gate:
+      check: "4 emails de fechamento completos com datas/horas definidas"
+      on_fail: "Completar sequencia antes de iniciar o close"
+
+quality_gates_summary:
+  gate_1_sales_page:
+    phase: "Open Cart"
+    agent: "@claude-hopkins"
+    threshold: 85
+  gate_2_sugarman:
+    phase: "Open Cart"
+    agent: "@copy-chief"
+    threshold: "80%"
+  gate_3_sequence_complete:
+    phase: "Cada fase"
+    check: "Todos os emails da fase concluidos antes de avancar"
+
+plf_principles:
+  - "Criar antecipacao antes de revelar"
+  - "Entregar valor real em cada PLC (nao apenas teaser)"
+  - "Urgencia deve ser REAL (nunca falsa)"
+  - "Storytelling conecta todas as fases"
+  - "Cada email tem UM unico objetivo"
+  - "Responder comentarios e engajar cria prova social"
+
+estimated_duration:
+  total_launch: "21-30 dias (pre-pre-launch ao close)"
+  prep_time: "2-4 semanas antes do lancamento"
+  email_count: "18-22 emails total"

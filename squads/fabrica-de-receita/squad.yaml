@@ -1,0 +1,143 @@
+name: fabrica-de-receita
+version: 1.0.0
+description: |
+  Fabrica de Receita — Squad de Growth, Performance e Revenue. 20 agentes,
+  metodologia V4 Company completa. 4 Pilares V4 (Trafego, Engajamento,
+  Conversao, Retencao), 8 Travas de Receita, framework STEP, ciclos de 90 dias,
+  TOC aplicada a receita. Produtos Destrava Receita: DR-X (45d, R$20-40k),
+  DR-O (12m, R$50k/ano), DR-T (12m, R$150k/ano), DR-E (12m, R$350k/ano).
+  Do diagnostico (Logica) ao crescimento orquestrado (Fabio), cada agente
+  opera com frameworks validados. Cobre diagnostico de travas, construcao de
+  ofertas DR, qualificacao SPICED, funis, trafego, retencao e arquitetura
+  de time de receita.
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: fdr
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - growth
+  - receita
+  - v4-company
+  - toc
+  - travas
+  - destrava-receita
+  - funil
+  - trafego
+  - retencao
+  - ltv
+  - spiced
+  - ciclo-90-dias
+  - step-framework
+  - roi
+  - revenue-ops
+
+components:
+  agents:
+    # Mandatario
+    - fabrica-de-receita-master.md
+    # Camada 1 — Diagnostico e Estrategia
+    - diagnosticador.md
+    - especialista-spiced.md
+    - estrategista-receita.md
+    - growth-planner.md
+    # Camada 2 — Aquisicao (Travas T2-T5)
+    - fabricante-aquisicao.md
+    - traffic-hunter.md
+    - conversion-optimizer.md
+    - ai-marketing-engineer.md
+    - content-engine.md
+    # Camada 3 — Comercial (Travas T6-T7)
+    - maquina-comercial.md
+    - destrava-receita-consultant.md
+    - growth-strategist.md
+    # Camada 4 — Retencao e LTV (Trava T8)
+    - guardiao-retencao.md
+    - retention-architect.md
+    # Camada 5 — Operacoes e Dados
+    - roi-analyst.md
+    - revenue-team-architect.md
+    - revenue-ops-analyst.md
+    - data-intelligence-analyst.md
+    # Orquestrador
+    - orchestrator.md
+
+  tasks:
+    - diagnostico-travas.md
+    - growth-audit.md
+    - ciclo-90-dias.md
+    - construir-oferta-dr.md
+    - qualificar-spiced.md
+    - montar-funil.md
+    - plano-trafego.md
+    - estrategia-retencao.md
+    - roi-analysis.md
+    - montar-time-receita.md
+
+  workflows:
+    - wf-diagnostico-pipeline.yaml
+    - wf-destrava-receita.yaml
+    - wf-growth-sprint.yaml
+
+  checklists:
+    - diagnostico-trava-checklist.md
+    - oferta-dr-checklist.md
+    - funil-conversao-checklist.md
+    - ciclo-90-dias-checklist.md
+    - roi-validacao-checklist.md
+
+  templates:
+    - proposta-dr-tmpl.md
+    - ciclo-90-dias-tmpl.md
+    - plano-trafego-tmpl.md
+    - diagnostico-receita-tmpl.md
+
+  data:
+    - travas-reference.yaml
+    - produtos-dr.yaml
+    - frameworks-v4.yaml
+
+config:
+  extends: extend
+
+dependencies:
+  node: []
+  python: []
+  squads:
+    - time-de-negocios  # Handoff para negociacao complexa
+
+philosophy:
+  core_mantra: "Destravar o gargalo certo no momento certo e a diferenca entre crescer 20% e 10x."
+  metodologia: "V4 Company — 4 Pilares, 8 Travas, ciclos de 90 dias, TOC aplicada a receita"
+  pilares_v4:
+    trafego: "Atrair o publico certo com custo otimizado (CAC, ROAS, CPL)"
+    engajamento: "Converter atencao em intencao — conteudo, comunidade, nurture"
+    conversao: "Transformar intencao em receita — funil, oferta, vendas"
+    retencao: "Maximizar LTV — CS, churn, expansao, referral"
+  oito_travas:
+    T1: "Cegueira — nao sabe o que medir (metricas, dashboards, atribuicao)"
+    T2: "Silencio — ninguem conhece a marca (brand, trafego frio, alcance)"
+    T3: "Frieza — trafego chega mas nao engaja (copy, hook, conteudo)"
+    T4: "Desconfianca — engaja mas nao compra (prova, autoridade, oferta)"
+    T5: "Abandono — inicia compra mas desiste (checkout, objecoes, urgencia)"
+    T6: "Incompetencia — vende mas nao fecha bem (script, time, processo)"
+    T7: "Complexidade — fecha mas demora demais (ciclo, burocracia, decisao)"
+    T8: "Evasao — compra mas nao fica (onboarding, CS, expansao, churn)"
+  produtos_dr:
+    dr_x: "Destrava Receita X — 45 dias, R$20-40k, diagnostico + plano + sprint inicial"
+    dr_o: "Destrava Receita O (Operacional) — 12 meses, R$50k/ano, acompanhamento mensal"
+    dr_t: "Destrava Receita T (Times) — 12 meses, R$150k/ano, treinamento + implantacao"
+    dr_e: "Destrava Receita E (Enterprise) — 12 meses, R$350k/ano, dedicacao exclusiva"
+  framework_step:
+    S: "Situacao — onde o cliente esta hoje"
+    T: "Trava — o que esta impedindo crescimento"
+    E: "Estrategia — o caminho para destravar"
+    P: "Plano — as acoes concretas (ciclo 90 dias)"
+  ciclo_90_dias:
+    mes_1: "Diagnostico profundo + quick wins (gerar credibilidade e caixa rapido)"
+    mes_2: "Implantacao das 3 alavancas prioritarias do ciclo"
+    mes_3: "Mensuracao, ajuste e planejamento do proximo ciclo"

@@ -18,7 +18,7 @@ True PTC (API-level) would yield ~37% but is not available in Claude Code CLI.
 ## Restriction (ADR-3)
 
 **ONLY native/CLI tools allowed inside this batch block.**
-MCP tools (EXA, Playwright, Apify, Context7, Nogic, Code-Graph) are EXCLUDED.
+MCP tools (EXA, Playwright, Context7, Nogic, Code-Graph) are EXCLUDED.
 
 Eligible tools: Bash, Read, Write, Edit, Grep, Glob (all `ptc_eligible: true` in tool-registry.yaml).
 

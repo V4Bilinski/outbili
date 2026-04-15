@@ -1,0 +1,187 @@
+name: banqueiros-de-dados
+version: 1.0.0
+description: |
+  Squad de Inteligencia de Infraestrutura, Seguranca de Dados & Database Engineering.
+  Especializado no ciclo completo de gestao de dados e infraestrutura cloud:
+  Design → Provisioning → Security → Optimization → Monitoring → Compliance → Disaster Recovery.
+
+  Organiza 38 capabilities (9 skills + 29 Supabase MCP tools) em 9 agentes especializados
+  com workflows operacionais, checklists de validacao e tasks executaveis.
+
+  Fontes de inteligencia:
+  - /senior-security: Threat Modeler, Security Auditor, Pentest Automator
+  - /senior-devops: Pipeline Generator, Terraform Scaffolder, Deployment Manager
+  - /senior-backend: API Scaffolder, Database Migration Tool, API Load Tester
+  - Supabase MCP: 29 tools (SQL, migrations, branches, edge functions, logs, types)
+
+  Missao: Garantir que toda infraestrutura, banco de dados e seguranca do Brabissimo
+  operem com excelencia, resiliencia e conformidade — do schema ao deploy.
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: banqueiros
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - database-engineering
+  - data-security
+  - cloud-infrastructure
+  - devops
+  - observability
+  - compliance
+  - disaster-recovery
+  - performance-optimization
+  - supabase
+  - terraform
+  - ci-cd
+  - rls
+  - encryption
+  - monitoring
+  - lgpd
+
+components:
+  agents:
+    # Tier 0 — Orquestracao Central
+    - fortress-master.md
+    # Tier 1 — Core Engineering
+    - db-architect.md
+    - security-sentinel.md
+    - cloud-infra-engineer.md
+    - devops-pipeline-master.md
+    # Tier 2 — Especialistas
+    - performance-tuner.md
+    - backup-recovery-specialist.md
+    - compliance-auditor.md
+    - observability-engineer.md
+
+  tasks:
+    # Database Engineering
+    - fortress-schema-audit.md
+    - fortress-migration-plan.md
+    - fortress-index-optimization.md
+    - fortress-rls-setup.md
+    - fortress-query-profiling.md
+    - fortress-type-generation.md
+    # Security & Compliance
+    - fortress-threat-model.md
+    - fortress-vulnerability-scan.md
+    - fortress-encryption-setup.md
+    - fortress-access-control-audit.md
+    - fortress-lgpd-audit.md
+    - fortress-data-classification.md
+    # DevOps & Infrastructure
+    - fortress-pipeline-setup.md
+    - fortress-deployment-strategy.md
+    - fortress-iac-review.md
+    - fortress-container-orchestration.md
+    # Cloud & Performance
+    - fortress-cost-optimization.md
+    - fortress-scaling-strategy.md
+    - fortress-disaster-recovery-plan.md
+    - fortress-performance-benchmark.md
+    # Observability
+    - fortress-monitoring-setup.md
+    - fortress-alerting-rules.md
+    - fortress-log-aggregation.md
+    - fortress-dashboard-creation.md
+    # Extended (outbili-only)
+    - fortress-backup-schedule.md
+    - fortress-connection-pool-tuning.md
+    - fortress-edge-function-audit.md
+    - fortress-restore-drill.md
+
+  workflows:
+    - database-lifecycle.md
+    - security-hardening-cycle.md
+    - infrastructure-provisioning.md
+    - incident-response.md
+    - compliance-audit-cycle.md
+    - performance-optimization-cycle.md
+
+  checklists:
+    - database-health-checklist.md
+    - security-posture-checklist.md
+    - infrastructure-readiness-checklist.md
+    - compliance-audit-checklist.md
+    - disaster-recovery-checklist.md
+
+  templates:
+    - schema-design-template.md
+    - migration-plan-template.md
+    - security-assessment-template.md
+    - incident-postmortem-template.md
+    - infrastructure-runbook-template.md
+
+  tools:
+    # Skills integradas
+    - senior-security        # Threat Modeler, Security Auditor, Pentest Automator
+    - senior-devops          # Pipeline Generator, Terraform Scaffolder, Deployment Manager
+    - senior-backend         # API Scaffolder, Database Migration Tool, API Load Tester
+    # MCP Supabase (29 tools)
+    - supabase               # execute_sql, apply_migration, list_tables, etc.
+
+  scripts: []
+
+  data:
+    - supabase-mcp-tools-map.md
+    - skills-capability-matrix.md
+    - database-best-practices-kb.md
+    - security-patterns-kb.md
+    - agent-tool-routing.md
+
+  skills:
+    - db-query-patterns.md
+    - rls-policy-patterns.md
+    - cicd-pipeline-patterns.md
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+philosophy:
+  core_mantra: "Dados seguros, infraestrutura resiliente, performance implacavel."
+  pilares_operacionais:
+    - name: Database Engineering
+      description: "Schema design, migrations, RLS, indexing, query optimization"
+      tools: "Database Migration Tool + Supabase MCP (execute_sql, apply_migration, list_tables)"
+    - name: Data Security
+      description: "Threat modeling, encryption, RLS policies, access control, pentest"
+      tools: "Threat Modeler + Security Auditor + Pentest Automator + Supabase (execute_sql para RLS)"
+    - name: Cloud Infrastructure
+      description: "IaC com Terraform, container orchestration, scaling, cost optimization"
+      tools: "Terraform Scaffolder + Deployment Manager + Supabase (create_project, branches)"
+    - name: DevOps Intelligence
+      description: "CI/CD pipelines, deployment strategies, release management"
+      tools: "Pipeline Generator + Deployment Manager + Supabase (deploy_edge_function)"
+    - name: Performance & Observability
+      description: "Query profiling, load testing, monitoring, alerting, dashboards"
+      tools: "API Load Tester + Supabase (get_logs, get_advisors, execute_sql EXPLAIN)"
+    - name: Compliance & Recovery
+      description: "LGPD, audit trails, backup, disaster recovery, data classification"
+      tools: "Security Auditor + Supabase (list_migrations, get_logs)"
+  organograma:
+    tier_0:
+      agent: fortress-master
+      role: "Orquestrador — routing inteligente, visao 360, escalation"
+    tier_1:
+      agents: [db-architect, security-sentinel, cloud-infra-engineer, devops-pipeline-master]
+      role: "Core Engineering — decisoes arquiteturais e execucao primaria"
+    tier_2:
+      agents: [performance-tuner, backup-recovery-specialist, compliance-auditor, observability-engineer]
+      role: "Especialistas — profundidade vertical em dominios criticos"
+  fluxo_operacional:
+    design: "db-architect → security-sentinel (RLS review) → fortress-master (approve)"
+    implement: "db-architect (DDL) → devops-pipeline-master (CI/CD) → cloud-infra-engineer (provision)"
+    secure: "security-sentinel (threat model) → compliance-auditor (LGPD) → fortress-master (certify)"
+    optimize: "performance-tuner (profile) → db-architect (refactor) → observability-engineer (monitor)"
+    recover: "backup-recovery-specialist (restore) → db-architect (validate) → observability-engineer (confirm)"

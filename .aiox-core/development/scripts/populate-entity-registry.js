@@ -43,9 +43,10 @@ const ADAPTABILITY_DEFAULTS = {
 
 const EXTERNAL_TOOLS = new Set([
   'coderabbit', 'git', 'github-cli', 'docker', 'supabase', 'browser',
-  'ffmpeg', 'n8n', 'context7', 'playwright', 'apify', 'clickup',
+  'ffmpeg', 'n8n', 'context7', 'playwright', 'clickup',
   'jira', 'slack', 'exa', 'eslint', 'jest', 'npm', 'node',
-  'docker-gateway', 'desktop-commander', 'railway'
+  'docker-gateway', 'desktop-commander', 'railway',
+  'cnpja', 'assertiva'
 ]);
 
 const DEPRECATED_PATTERNS = [/^old[-_]/, /^backup[-_]/, /deprecated/i, /^legacy[-_]/];

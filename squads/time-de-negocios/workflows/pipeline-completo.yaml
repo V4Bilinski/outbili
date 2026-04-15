@@ -1,0 +1,150 @@
+# Workflow: Pipeline completo de negociação
+# 7 fases sequenciais com gates de decisão entre cada fase
+
+workflow:
+  name: pipeline-completo
+  display_name: "Pipeline completo de negociação (7 fases)"
+  version: "1.0.0"
+  description: |
+    Workflow sequencial que percorre as 7 fases do pipeline de negociação.
+    Cada fase tem um gate de decisão que determina se avança, retorna ou aborta.
+    O mandatário (Rockefeller) supervisiona fases 1, 2 e 6.
+
+phases:
+  - id: diagnostico
+    name: "Fase 1: Diagnóstico do sistema"
+    task: diagnostico-cenario.md
+    agents: [goldratt, hormozi]
+    ceo_active: true
+    checklist: null
+    gate:
+      type: decision
+      options:
+        GO: "Gargalo identificado, equação de valor mapeada. Avançar para fase 2"
+        REDESIGN: "Cenário não favorável. Redesenhar abordagem e re-diagnosticar"
+        NO_GO: "Deal não vale a pena. Abortar"
+    next:
+      GO: oferta
+      REDESIGN: diagnostico
+      NO_GO: abort
+
+  - id: oferta
+    name: "Fase 2: Construção da oferta irrecusável"
+    task: construir-oferta.md
+    agents: [goldratt, hormozi, cialdini]
+    ceo_active: true
+    checklist: oferta-irrecusavel-checklist.md
+    gate:
+      type: checklist
+      threshold: 18
+      max: 22
+      options:
+        PRONTA: "Score >= 18. Avançar para fase 3"
+        REVISAR: "Score entre 14 e 17. Ajustar gaps e re-validar"
+        REDESENHAR: "Score < 14. Voltar ao diagnóstico"
+    next:
+      PRONTA: pre-mesa
+      REVISAR: oferta
+      REDESENHAR: diagnostico
+
+  - id: pre-mesa
+    name: "Fase 3: Montagem da mesa"
+    task: preparar-mesa.md
+    agents: [ury, cialdini]
+    ceo_active: false
+    checklist: pre-negociacao-checklist.md
+    gate:
+      type: checklist
+      threshold: 15
+      max: 20
+      options:
+        GO: "Score >= 15. Avançar para fase 4"
+        CAUTELA: "Score entre 10 e 14. Avançar com gaps identificados"
+        NO_GO: "Score < 10. Voltar para preparação"
+    next:
+      GO: funil
+      CAUTELA: funil
+      NO_GO: pre-mesa
+
+  - id: funil
+    name: "Fase 4: Condução ao vivo"
+    task: conduzir-conversa.md
+    agents: [voss, cialdini]
+    ceo_active: false
+    checklist: null
+    gate:
+      type: decision
+      options:
+        AVANCAR: "Rapport estabelecido, sinais de compra detectados. Ir para fase 5"
+        CONTINUAR: "Precisa mais conversas. Manter no funil"
+        ESCALAR: "Cenário de força detectado. Ir para fase 6 (com autorização)"
+        ABORTAR: "Prospect desqualificado. Encerrar"
+    next:
+      AVANCAR: fechamento
+      CONTINUAR: funil
+      ESCALAR: alta-pressao
+      ABORTAR: debrief
+
+  - id: fechamento
+    name: "Fase 5: Hora de fechar"
+    task: fechar-deal.md
+    agents: [voss, belfort, cialdini]
+    ceo_active: false
+    checklist: fechamento-checklist.md
+    gate:
+      type: decision
+      options:
+        FECHADO: "Deal fechado. Ir para debrief"
+        MAIS_UMA: "Precisa mais uma rodada. Manter"
+        ALTA_PRESSAO: "Necessário escalar. Ir para fase 6 (com autorização)"
+        PERDIDO: "Deal perdido. Ir para debrief"
+    next:
+      FECHADO: debrief
+      MAIS_UMA: fechamento
+      ALTA_PRESSAO: alta-pressao
+      PERDIDO: debrief
+
+  - id: alta-pressao
+    name: "Fase 6: Cenários de força"
+    task: alta-pressao.md
+    agents: [trump, cohen]
+    ceo_active: true
+    checklist: alta-pressao-gate-checklist.md
+    gate:
+      type: authorization
+      requires: rockefeller
+      checklist_threshold: "15/15 (todos obrigatórios)"
+      options:
+        AUTORIZADO: "Gate completo. Executar"
+        BLOQUEADO: "Gate incompleto. Retornar para fase 5"
+    next:
+      AUTORIZADO: debrief
+      BLOQUEADO: fechamento
+
+  - id: treino
+    name: "Fase 7: Formação do time"
+    task: treinar-time.md
+    agents: [belfort, cialdini, cohen]
+    ceo_active: false
+    checklist: null
+    trigger: "Independente do pipeline. Pode ser executado a qualquer momento."
+    note: "Fase autônoma, não depende de deal específico"
+
+  - id: debrief
+    name: "Debrief pós-negociação"
+    task: null
+    agents: [rockefeller]
+    checklist: debrief-checklist.md
+    template: debrief-tmpl.md
+    note: "Executado após qualquer resultado (ganho, perdido, abortado)"
+
+  - id: abort
+    name: "Deal abortado"
+    task: null
+    note: "Registrar motivo e seguir para debrief"
+    next: debrief
+
+settings:
+  max_loops_per_phase: 3
+  escalation_on_loop_limit: rockefeller
+  debrief_required: true

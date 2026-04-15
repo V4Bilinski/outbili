@@ -1,0 +1,158 @@
+---
+# Referência dos 4 Pilares V4 — Fábrica de Receita
+# Squad Growth V4 | Metodologia V4 Company
+# Versão: 1.0.0
+
+pilares:
+  - id: P1
+    nome: Trafego
+    descricao: >
+      Capacidade de atrair visitantes e leads qualificados para o negócio por
+      múltiplos canais. Abrange tráfego pago, orgânico, direto e referral.
+      O objetivo é construir um motor de aquisição previsível, escalável e
+      com CAC otimizado.
+    kpis:
+      - nome: "Sessões totais (mensal)"
+        formula: "Soma de todas as sessões no período"
+        meta_minima: "Crescimento >= 15% MoM"
+      - nome: "CAC (Custo de Aquisição de Cliente)"
+        formula: "Investimento total em aquisição / Novos clientes"
+        meta_minima: "CAC <= 25% do LTV"
+      - nome: "ROAS (Retorno sobre Gasto com Ads)"
+        formula: "Receita gerada por ads / Gasto com ads"
+        meta_minima: ">= 3x para canais principais"
+      - nome: "CPL (Custo por Lead)"
+        formula: "Investimento / Leads gerados"
+        meta_minima: "Benchmarked por segmento"
+      - nome: "Diversificacao de canais"
+        formula: "Numero de canais ativos com >= 10% do volume"
+        meta_minima: ">= 3 canais diversificados"
+    agentes:
+      - "@traffic-hunter"
+      - "@fabricante-aquisicao"
+      - "@ai-marketing-engineer"
+      - "@sales-outbound-executor"
+    ferramentas:
+      - Google Ads
+      - Meta Ads (Facebook/Instagram)
+      - TikTok Ads
+      - Google Search Console
+      - SEMrush
+      - Google Analytics 4 (GA4)
+      - LinkedIn Ads
+    travas_relacionadas:
+      - T2
+
+  - id: P2
+    nome: Engajamento
+    descricao: >
+      Capacidade de manter o interesse e a atenção do lead/cliente ao longo
+      da jornada. Abrange e-mail marketing, conteúdo, redes sociais, nutrição
+      automatizada e experiência do usuário. O objetivo é reduzir o tempo
+      do lead no funil e aumentar a intenção de compra.
+    kpis:
+      - nome: "Taxa de abertura de e-mail"
+        formula: "E-mails abertos / E-mails entregues"
+        meta_minima: ">= 25%"
+      - nome: "CTR (Click-Through Rate)"
+        formula: "Cliques / Impressoes"
+        meta_minima: ">= 2.5% (e-mail), >= 1% (ads)"
+      - nome: "Taxa de engajamento social"
+        formula: "(Likes + Comentarios + Shares + Saves) / Alcance"
+        meta_minima: ">= 3% (Instagram), >= 1% (LinkedIn)"
+      - nome: "Tempo médio no site"
+        formula: "Media de duração das sessões"
+        meta_minima: ">= 2 minutos"
+      - nome: "Scroll depth"
+        formula: "% da página que usuarios rolam em média"
+        meta_minima: ">= 50% nas páginas de conteúdo"
+    agentes:
+      - "@content-engine"
+      - "@campaign-optimizer"
+      - "@automation-engineer"
+      - "@ry-schwartz"
+    ferramentas:
+      - RD Station Marketing
+      - ActiveCampaign
+      - Hotjar
+      - Google Analytics 4 (GA4)
+      - Instagram / LinkedIn / TikTok (nativo)
+      - WhatsApp Business API
+    travas_relacionadas:
+      - T3
+
+  - id: P3
+    nome: Conversao
+    descricao: >
+      Capacidade de transformar leads engajados em clientes pagantes. Abrange
+      copy de vendas, CRO (Conversion Rate Optimization), processo comercial,
+      oferta e precificação. O objetivo é maximizar a taxa de conversão em
+      cada etapa do funil e o ticket médio.
+    kpis:
+      - nome: "Taxa de conversao funil completo"
+        formula: "Clientes / Leads gerados"
+        meta_minima: ">= 3% (B2C) ou >= 5% (B2B)"
+      - nome: "Taxa de conversao BoFu"
+        formula: "Clientes / Leads qualificados (SQL)"
+        meta_minima: ">= 10% (B2C) ou >= 20% (B2B)"
+      - nome: "Ticket médio"
+        formula: "Receita total / Número de clientes"
+        meta_minima: "Crescimento >= 10% em 90 dias"
+      - nome: "Ciclo de vendas"
+        formula: "Média de dias entre primeiro contato e fechamento"
+        meta_minima: "Redução >= 20% em 90 dias"
+      - nome: "Taxa de fechamento de propostas"
+        formula: "Propostas aceitas / Propostas enviadas"
+        meta_minima: ">= 30%"
+    agentes:
+      - "@maquina-comercial"
+      - "@conversion-optimizer"
+      - "@sales-deal-strategist"
+      - "@sales-pipeline-architect"
+    ferramentas:
+      - CRM (HubSpot / Pipedrive / RD Station CRM)
+      - Google Optimize / VWO (A/B testing)
+      - Hotjar (heatmaps, gravações)
+      - Google Analytics 4 (GA4)
+      - WhatsApp Business API
+    travas_relacionadas:
+      - T4
+      - T5
+      - T6
+
+  - id: P4
+    nome: Retencao
+    descricao: >
+      Capacidade de manter clientes ativos, reduzir churn, aumentar LTV e
+      gerar receita de expansão (upsell/cross-sell). Abrange Customer Success,
+      programas de fidelização, NPS e advocacy. O objetivo é maximizar o
+      retorno sobre o cliente já adquirido.
+    kpis:
+      - nome: "Churn rate mensal"
+        formula: "Clientes cancelados / Total de clientes ativos"
+        meta_minima: "<= 2% (SaaS) ou <= 8% (serviços)"
+      - nome: "LTV (Lifetime Value)"
+        formula: "Ticket médio × Frequência de compra × Duração do relacionamento"
+        meta_minima: "LTV/CAC >= 4x"
+      - nome: "NPS (Net Promoter Score)"
+        formula: "% Promotores - % Detratores"
+        meta_minima: ">= 50"
+      - nome: "Receita de expansão"
+        formula: "MRR de upsell + cross-sell / MRR total"
+        meta_minima: ">= 20% da receita total"
+      - nome: "Taxa de recompra"
+        formula: "Clientes que compraram 2+ vezes / Total de clientes"
+        meta_minima: ">= 30% (para produtos com recompra natural)"
+    agentes:
+      - "@guardiao-retencao"
+      - "@retention-architect"
+      - "@cs-retention-strategist"
+      - "@revenue-ops-analyst"
+    ferramentas:
+      - RD Station CRM / HubSpot
+      - ActiveCampaign (automação de retenção)
+      - NPS tools (Delighted, Typeform)
+      - Google Analytics 4 (GA4)
+      - WhatsApp Business API (CS proativo)
+    travas_relacionadas:
+      - T8

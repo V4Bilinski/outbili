@@ -18,7 +18,6 @@ Sistema de inteligência comercial e prospecção B2B com enriquecimento automá
 | Deploy | GitHub Pages (GitHub Actions) |
 | Enriquecimento Fase 1 | CNPJa API (dados cadastrais + sócios) |
 | Enriquecimento Fase 2 | Assertiva via Cloudflare Worker (WhatsApp + CPF decisor) |
-| Enriquecimento Fase 3 | Apify Actors (presença digital) |
 | Proxy CORS | Cloudflare Worker (`outbili.v4bilinski-ferramentas.workers.dev`) |
 | Automação WhatsApp | BilinskiZap API |
 
@@ -142,7 +141,7 @@ O código do Worker está em `workers/assertiva-proxy/index.js`.
 - Tracking: entrega, leitura, resposta
 
 ### Configurações
-- Botão "Testar" em cada conexão API (Airtable, BilinskiZap, Apify)
+- Botão "Testar" em cada conexão API (Airtable, BilinskiZap)
 - Detalhes expandíveis "Como resolver" para erros
 
 ---
@@ -167,7 +166,6 @@ Deploy automático via **GitHub Actions** para **GitHub Pages**.
 | `VITE_AIRTABLE_BASE_ID` | ID da base do Airtable |
 | `VITE_BILINSKIZAP_URL` | URL da API BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave da API BilinskiZap |
-| `VITE_APIFY_TOKEN` | Token do Apify para enriquecimento |
 | `VITE_N8N_WEBHOOK_URL` | URL do webhook n8n |
 | `VITE_CNPJA_API_KEY` | Chave da API CNPJa |
 | `VITE_ASSERTIVA_CLIENT_ID` | Client ID OAuth2 Assertiva |

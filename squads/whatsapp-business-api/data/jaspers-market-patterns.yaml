@@ -1,0 +1,513 @@
+# Jasper's Market — Official Meta Reference Patterns
+# Source: github.com/fbsamples/whatsapp-business-jaspers-market
+# Description: Official Meta sample app showcasing WhatsApp Business Platform best practices
+# Stack: Node.js + Express + facebook-nodejs-business-sdk v23.0 + Redis
+# Extracted: 2026-04-09
+
+metadata:
+  source: "github.com/fbsamples/whatsapp-business-jaspers-market"
+  author: "Meta (Official)"
+  sdk: "facebook-nodejs-business-sdk v23.0.1"
+  runtime: "Node.js + Express"
+  cache: "Redis"
+  license: "Apache 2.0"
+  purpose: "Showcase WhatsApp Business Platform key features for grocery commerce"
+
+# ═══════════════════════════════════════════════════════════════
+# 1. WEBHOOK ARCHITECTURE (app.js)
+# ═══════════════════════════════════════════════════════════════
+webhook_architecture:
+  description: "Meta's official webhook handling pattern"
+
+  verification:
+    method: GET
+    path: "/webhook"
+    pattern: |
+      1. Check hub.mode === "subscribe"
+      2. Check hub.verify_token matches stored token
+      3. Return 403 if mismatch
+      4. Return hub.challenge as plain text if valid
+    code_reference: "app.js:32-42"
+
+  signature_verification:
+    description: "HMAC SHA-256 verification on EVERY webhook request"
+    pattern: |
+      1. Extract x-hub-signature-256 header
+      2. Split on "=" to get hash portion
+      3. Compute HMAC SHA-256 of raw body using APP_SECRET
+      4. Compare computed hash with received hash
+      5. Throw error if mismatch
+    implementation: |
+      function verifyRequestSignature(req, res, buf) {
+        let signature = req.headers["x-hub-signature-256"];
+        let elements = signature.split("=");
+        let signatureHash = elements[1];
+        let expectedHash = crypto
+          .createHmac("sha256", config.appSecret)
+          .update(buf)
+          .digest("hex");
+        if (signatureHash != expectedHash) {
+          throw new Error("Couldn't validate the request signature.");
+        }
+      }
+    key_detail: "Uses body-parser json({ verify: verifyRequestSignature }) to intercept raw buffer"
+    code_reference: "app.js:90-106"
+
+  message_handler:
+    description: "Webhook POST handler pattern"
+    pattern: |
+      1. Check body.object === "whatsapp_business_account"
+      2. Iterate entry[] → changes[] → value
+      3. Extract metadata.phone_number_id (sender's phone number ID)
+      4. If value.statuses → handle status updates
+      5. If value.messages → handle incoming messages
+      6. Return 200 with "EVENT_RECEIVED"
+    key_detail: "Always returns 200 immediately — processing is synchronous in this demo, but should be async in production"
+    code_reference: "app.js:45-74"
+
+  separation_of_concerns:
+    - "app.js — Express server, webhook routing, signature verification"
+    - "services/conversation.js — Business logic, message routing"
+    - "services/message.js — Message parsing/normalization"
+    - "services/status.js — Status event parsing"
+    - "services/graph-api.js — Meta API calls"
+    - "services/redis.js — Cache for follow-up tracking"
+    - "services/config.js — Environment configuration"
+    - "services/constants.js — String constants"
+
+# ═══════════════════════════════════════════════════════════════
+# 2. TYPING INDICATOR + READ RECEIPT PATTERN (graph-api.js)
+# ═══════════════════════════════════════════════════════════════
+typing_indicator:
+  description: "Meta's official pattern: mark as read + send typing indicator BEFORE responding"
+  status: "NEW DISCOVERY — typing_indicator field not widely documented"
+
+  pattern: |
+    Before sending any response message, FIRST send:
+    1. Mark the received message as "read"
+    2. Include typing_indicator in the same call
+    3. Then send the actual response message
+
+  payload:
+    messaging_product: "whatsapp"
+    status: "read"
+    message_id: "{received_message_id}"
+    typing_indicator:
+      type: "text"
+
+  implementation: |
+    // Mark as read and send typing indicator
+    const typingBody = {
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId,
+      typing_indicator: { type: "text" }
+    };
+    await api.call('POST', [phoneNumberId, 'messages'], typingBody);
+    // Then send actual response...
+
+  key_insight: |
+    The typing_indicator.type field is set to "text" — this matches the upcoming
+    response type. This creates a natural "seen → typing..." → response UX flow
+    that mimics human conversation. Meta's sample app does this for EVERY response.
+
+  code_reference: "services/graph-api.js:19-32"
+  squad_impact: "HIGH — @integration-engineer should implement this pattern in all message senders"
+
+# ═══════════════════════════════════════════════════════════════
+# 3. INTERACTIVE REPLY BUTTONS PATTERN (graph-api.js)
+# ═══════════════════════════════════════════════════════════════
+interactive_buttons:
+  description: "Official pattern for interactive reply buttons"
+
+  payload:
+    messaging_product: "whatsapp"
+    to: "{recipient}"
+    type: "interactive"
+    interactive:
+      type: "button"
+      body:
+        text: "{message_text}"
+      action:
+        buttons:
+          - type: "reply"
+            reply:
+              id: "{unique_button_id}"
+              title: "{button_label_max_20ch}"
+
+  handling_incoming:
+    description: "When user taps a reply button"
+    raw_message_type: "interactive"
+    extract_button_id: "rawMessage.interactive.button_reply.id"
+    pattern: |
+      // In Message class:
+      if (type === 'interactive') {
+        this.type = rawMessage.interactive.button_reply.id;
+      }
+
+  use_case: |
+    Jasper's Market uses 3 buttons as a main menu:
+    1. "Shop online" (id: reply-interactive-with-media) → sends utility template
+    2. "Get recipe ideas" (id: reply-media-card-carousel) → sends carousel template
+    3. "Current promo" (id: reply-offer) → sends limited-time offer template
+
+  code_reference: "services/graph-api.js:50-73, services/message.js:10-23"
+
+# ═══════════════════════════════════════════════════════════════
+# 4. TEMPLATE PATTERNS (graph-api.js + template.sh)
+# ═══════════════════════════════════════════════════════════════
+template_patterns:
+  description: "Three official template patterns demonstrated"
+
+  utility_template_with_image_header:
+    template_name: "grocery_delivery_utility"
+    category: "marketing"
+    structure:
+      header: { format: "image", example: { header_handle: ["{upload_handle}"] } }
+      body: { text: "Free delivery for all online orders with Jasper's Market" }
+      footer: { text: "developers.facebook.com" }
+      buttons: [{ type: "url", text: "Get free delivery", url: "{link}" }]
+
+    send_payload:
+      messaging_product: "whatsapp"
+      recipient_type: "individual"
+      to: "{phone}"
+      type: "template"
+      template:
+        name: "grocery_delivery_utility"
+        language: { code: "en_US" }
+        components:
+          - type: "header"
+            parameters:
+              - type: "image"
+                image: { link: "{image_url}" }
+
+    code_reference: "services/graph-api.js:75-104"
+
+  media_card_carousel:
+    template_name: "recipe_media_carousel"
+    category: "marketing"
+    description: "Carousel template with 2+ cards, each with image header + body + URL button"
+
+    creation_structure:
+      body: { text: "Our in-house chefs have prepared some delicious and fresh summer recipes." }
+      carousel:
+        cards:
+          - header: { format: "image", example: { header_handle: ["{handle}"] } }
+            body: { text: "Simple and Healthy Sheet Pan Dinner to Feed the Whole Family" }
+            buttons: [{ type: "url", text: "Get this recipe", url: "{link}" }]
+          - header: { format: "image", example: { header_handle: ["{handle}"] } }
+            body: { text: "3 Plant-Powered Salad Bowls to Fuel Your Week" }
+            buttons: [{ type: "url", text: "Get this recipe", url: "{link}" }]
+
+    send_payload:
+      template:
+        name: "recipe_media_carousel"
+        language: { code: "en_US" }
+        components:
+          - type: "carousel"
+            cards:
+              - card_index: 0
+                components:
+                  - type: "header"
+                    parameters:
+                      - type: "image"
+                        image: { link: "{image_url}" }
+
+    key_insight: |
+      Carousel cards are indexed (card_index: 0, 1, ...).
+      Each card has independent header parameters.
+      The send payload only needs to populate dynamic components (like image links).
+
+    code_reference: "services/graph-api.js:164-201, template.sh:84-156"
+
+  limited_time_offer:
+    template_name: "strawberries_limited_offer"
+    category: "marketing"
+    description: "Template with countdown timer and copy-code coupon button"
+    status: "NEW PATTERN — limited_time_offer component type"
+
+    creation_structure:
+      header: { format: "image" }
+      limited_time_offer:
+        text: "Expiring offer!"
+        has_expiration: true
+      body: { text: "Fresh strawberries at Jasper's Market are now 20% off! Get them while they last" }
+      buttons:
+        - { type: "copy_code", example: "BERRIES20" }
+        - { type: "url", text: "Shop now", url: "{link}" }
+
+    send_payload:
+      template:
+        components:
+          - type: "header"
+            parameters:
+              - type: "image"
+                image: { link: "{image_url}" }
+          - type: "limited_time_offer"
+            parameters:
+              - type: "limited_time_offer"
+                limited_time_offer:
+                  expiration_time_ms: "{future_timestamp_ms}"
+          - type: "button"
+            sub_type: "copy_code"
+            index: 0
+            parameters:
+              - type: "coupon_code"
+                coupon_code: "{code}"
+
+    key_insights:
+      - "limited_time_offer is a COMPONENT TYPE (like header, body, buttons)"
+      - "expiration_time_ms is dynamic — calculated at send time (e.g., 48h from now)"
+      - "copy_code button uses coupon_code parameter type (not text)"
+      - "Parameter type is 'coupon_code', not 'text' — distinct from URL button params"
+
+    code_reference: "services/graph-api.js:106-162, template.sh:159-203"
+
+# ═══════════════════════════════════════════════════════════════
+# 5. MEDIA UPLOAD PATTERN (template.sh)
+# ═══════════════════════════════════════════════════════════════
+media_upload:
+  description: "Official 2-step resumable upload for template header images"
+
+  step_1_create_upload_session:
+    method: POST
+    endpoint: "/{APIVERSION}/{APP_ID}/uploads"
+    params:
+      file_name: "{image}.jpg"
+      file_length: "{bytes}"
+      file_type: "image/jpg"
+      access_token: "{token}"
+    response: { id: "{upload_session_id}" }
+
+  step_2_upload_binary:
+    method: POST
+    endpoint: "/{APIVERSION}/{upload_session_id}"
+    headers:
+      Authorization: "OAuth {token}"
+      file_offset: "0"
+    body: "binary file data"
+    response: { h: "{media_handle}" }
+
+  usage: |
+    The media handle (h) is used in template creation as header_handle.
+    This is different from the media ID used in /media endpoint.
+    upload_session_id → upload binary → get handle → use in template example.
+
+  key_insight: |
+    Template creation requires header_handle (from uploads API),
+    while message sending uses image.link or image.id (from media API).
+    These are TWO DIFFERENT upload mechanisms.
+
+  code_reference: "template.sh:21-41"
+
+# ═══════════════════════════════════════════════════════════════
+# 6. CONVERSATION STATE MACHINE (conversation.js)
+# ═══════════════════════════════════════════════════════════════
+conversation_state:
+  description: "Official conversation routing pattern using button IDs"
+
+  pattern: |
+    1. Any unknown message → send welcome menu with 3 reply buttons
+    2. User taps button → route to specific template response
+    3. After template sent → cache message ID in Redis for follow-up
+    4. On status "delivered" or "read" → if message ID in cache, send follow-up
+    5. Follow-up asks "Is there anything else we can help you with?" with same 3 buttons
+
+  routing_map:
+    "reply-interactive-with-media": "→ sendInteractiveMediaMessage (utility template)"
+    "reply-media-card-carousel": "→ sendMediaCarouselMessage (carousel template)"
+    "reply-offer": "→ sendLimitedTimeOfferMessage (limited-time offer template)"
+    default: "→ sendTryOutDemoMessage (welcome menu)"
+
+  follow_up_mechanism:
+    description: "Redis-based follow-up after message delivery"
+    pattern: |
+      1. After sending template, cache sent message ID in Redis with 15s TTL
+      2. When delivery/read status webhook arrives for that message ID:
+         a. Check if message ID exists in Redis cache
+         b. If yes: remove from cache + send follow-up message
+         c. If no: ignore (TTL expired or already handled)
+    ttl: "15 seconds — assumes delivery webhook arrives within this window"
+    key_insight: |
+      This creates an automatic "Is there anything else?" loop:
+      Send template → wait for delivery → send follow-up → user picks again
+      The 15s TTL prevents stale follow-ups if webhook is delayed.
+
+  code_reference: "services/conversation.js:89-152, services/redis.js:26-51"
+
+# ═══════════════════════════════════════════════════════════════
+# 7. SDK USAGE (graph-api.js)
+# ═══════════════════════════════════════════════════════════════
+sdk_usage:
+  description: "Official Meta SDK usage pattern"
+  sdk: "facebook-nodejs-business-sdk v23.0.1"
+
+  initialization:
+    code: |
+      const { FacebookAdsApi } = require('facebook-nodejs-business-sdk');
+      const api = new FacebookAdsApi(config.accessToken);
+
+  api_call_pattern:
+    method: "api.call(httpMethod, path, body)"
+    example: |
+      await api.call(
+        'POST',
+        [`${senderPhoneNumberId}`, 'messages'],
+        requestBody
+      );
+    note: |
+      Path is an array: [phoneNumberId, 'messages']
+      The SDK constructs the full URL: graph.facebook.com/{version}/{phoneNumberId}/messages
+
+  key_insight: |
+    Meta's official sample uses facebook-nodejs-business-sdk, NOT raw fetch/axios.
+    The SDK handles:
+    - URL construction with API versioning
+    - Authentication header injection
+    - Response parsing
+    Our bilinskizap/ uses raw fetch — both approaches are valid,
+    but SDK provides version management and type safety.
+
+  code_reference: "services/graph-api.js:10-13"
+
+# ═══════════════════════════════════════════════════════════════
+# 8. CONFIGURATION PATTERN (config.js)
+# ═══════════════════════════════════════════════════════════════
+configuration:
+  description: "Official environment variable pattern"
+
+  required_vars:
+    - ACCESS_TOKEN: "System user token for API calls"
+    - APP_SECRET: "For webhook signature verification"
+    - VERIFY_TOKEN: "Custom passphrase for webhook subscription handshake"
+    - REDIS_HOST: "Redis server host"
+    - REDIS_PORT: "Redis server port"
+
+  optional_vars:
+    - PORT: "Server port (default: 8080)"
+    - APP_ID: "Application ID (for uploads)"
+    - WABA_ID: "WhatsApp Business Account ID (for template creation)"
+
+  validation_pattern: |
+    checkEnvVariables loops through required vars and warns on missing.
+    Uses dotenv for local development, but credentials should NOT be in .env in production.
+    Note: Our squad rule says credentials in Supabase settings, not env vars.
+
+  squad_note: |
+    Jasper's Market uses env vars (acceptable for a demo).
+    Our production standard is Supabase settings table per whatsapp-credentials.ts.
+    The demo pattern is useful for local development and testing only.
+
+  code_reference: "services/config.js:14-40"
+
+# ═══════════════════════════════════════════════════════════════
+# 9. STATUS HANDLING (status.js + conversation.js)
+# ═══════════════════════════════════════════════════════════════
+status_handling:
+  description: "Official pattern for processing message delivery status"
+
+  status_object:
+    fields:
+      id: "The message ID this status refers to (wamid)"
+      status: "sent | delivered | read | failed"
+      recipient_id: "Recipient's phone number"
+
+  pattern: |
+    1. Parse rawStatus into Status object
+    2. Only process "delivered" and "read" statuses (ignore "sent")
+    3. Check cache for follow-up flag
+    4. If flagged: send follow-up message
+
+  key_insight: |
+    The demo ignores "sent" status — only acts on "delivered" and "read".
+    This is efficient: "sent" means Meta accepted it, but doesn't confirm
+    the user actually received it. "delivered" = reached device.
+    In production, track all statuses for analytics but only trigger
+    follow-ups on "delivered" or "read".
+
+  code_reference: "services/status.js:1-21, services/conversation.js:133-152"
+
+# ═══════════════════════════════════════════════════════════════
+# 10. TEMPLATE CREATION VIA API (template.sh)
+# ═══════════════════════════════════════════════════════════════
+template_creation_api:
+  description: "Complete template creation flow via shell script"
+
+  flow:
+    1: "Download image assets from Meta CDN"
+    2: "Create upload sessions for each image (POST /{APP_ID}/uploads)"
+    3: "Upload binary data to each session"
+    4: "Extract media handles from upload responses"
+    5: "Create templates with handles as header examples"
+
+  endpoint: "POST /{APIVERSION}/{WABA_ID}/message_templates"
+
+  templates_created:
+    grocery_delivery_utility:
+      category: "marketing"
+      components: ["header(image)", "body", "footer", "buttons(url)"]
+    recipe_media_carousel:
+      category: "marketing"
+      components: ["body", "carousel(2 cards with image+body+url button)"]
+    strawberries_limited_offer:
+      category: "marketing"
+      components: ["header(image)", "limited_time_offer", "body", "buttons(copy_code+url)"]
+
+  key_insights:
+    - "Template creation uses WABA_ID (not Phone-Number-ID)"
+    - "Image examples use header_handle from uploads API"
+    - "Carousel cards are defined inline in the carousel component"
+    - "limited_time_offer is a top-level component (not a button)"
+    - "copy_code button uses example field (not text)"
+
+  code_reference: "template.sh:43-203"
+
+# ═══════════════════════════════════════════════════════════════
+# SQUAD IMPACT SUMMARY
+# ═══════════════════════════════════════════════════════════════
+squad_impact:
+  high_priority:
+    - pattern: "typing_indicator"
+      description: "Mark as read + typing indicator before EVERY response"
+      affects: "@integration-engineer — must implement in all message senders"
+      discovery: "typing_indicator.type field not in standard docs"
+
+    - pattern: "limited_time_offer component"
+      description: "New template component type with countdown + coupon_code param"
+      affects: "@template-strategist — new template pattern to support"
+      discovery: "limited_time_offer as component type, coupon_code as param type"
+
+    - pattern: "carousel template send pattern"
+      description: "card_index indexing for dynamic carousel content"
+      affects: "@template-strategist — carousel send payload structure"
+      discovery: "Cards indexed from 0, each with independent header params"
+
+  medium_priority:
+    - pattern: "Redis follow-up mechanism"
+      description: "Cache sent message ID with TTL → follow-up on delivery webhook"
+      affects: "@campaign-optimizer — automated post-delivery engagement"
+      note: "15s TTL is aggressive — production may need 60-300s"
+
+    - pattern: "Status filtering"
+      description: "Only act on 'delivered' and 'read', ignore 'sent'"
+      affects: "@integration-engineer — status pipeline optimization"
+
+    - pattern: "SDK vs raw fetch"
+      description: "Meta uses facebook-nodejs-business-sdk for API calls"
+      affects: "@cloud-api-architect — SDK option for implementation"
+      note: "bilinskizap/ uses raw fetch — both valid, SDK adds version management"
+
+    - pattern: "Media upload 2-step flow"
+      description: "Upload session → binary upload → handle for template examples"
+      affects: "@cloud-api-architect — different from /media endpoint"
+      note: "header_handle (uploads API) vs media ID (media API) are different"
+
+  low_priority:
+    - pattern: "Interactive button routing"
+      description: "Button IDs as conversation state machine routing keys"
+      affects: "@flow-builder — simpler alternative to Flows for menu patterns"
+
+    - pattern: "Environment config validation"
+      description: "Startup check for required env vars"
+      affects: "@integration-engineer — validation pattern for setup"

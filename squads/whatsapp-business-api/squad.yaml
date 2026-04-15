@@ -1,0 +1,227 @@
+squad:
+  name: whatsapp-business-api
+  display_name: "WhatsApp Business API Squad"
+  description: "Complete intelligence system for WhatsApp Business Cloud API — integration, template management, campaign optimization, compliance, and Flows. Orchestrates 8 specialist agents through workflows with automatic quality gates."
+  icon: "📱"
+  domain: whatsapp_business
+  version: "2.4.0"
+  author: "Synkra AIOX"
+  license: MIT
+  slashPrefix: "whatsapp"
+  patternPrefix: "WA"
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tiers:
+  orchestrator: whatsapp-chief
+  tier_1: [cloud-api-architect, template-strategist, compliance-guardian]
+  tier_2: [campaign-optimizer, integration-engineer, flow-builder, utility-validator]
+
+agents:
+  - id: whatsapp-chief
+    name: "Zap"
+    file: agents/whatsapp-chief.md
+    tier: 0
+    role: orchestrator
+    description: "Director & Orchestrator — routes missions, selects specialists, enforces quality gates"
+
+  - id: cloud-api-architect
+    name: "Atlas"
+    file: agents/cloud-api-architect.md
+    tier: 1
+    role: api-architect
+    description: "Cloud API v24.0 — endpoints, schemas, error handling, rate limits, media"
+
+  - id: template-strategist
+    name: "Nova"
+    file: agents/template-strategist.md
+    tier: 1
+    role: template-specialist
+    description: "Template lifecycle — creation, optimization, categories, approval strategy"
+
+  - id: compliance-guardian
+    name: "Shield"
+    file: agents/compliance-guardian.md
+    tier: 1
+    role: compliance-specialist
+    description: "Compliance — LGPD, WhatsApp policies, opt-in/opt-out, prohibited content"
+
+  - id: campaign-optimizer
+    name: "Pulse"
+    file: agents/campaign-optimizer.md
+    tier: 2
+    role: campaign-specialist
+    description: "Campaigns — planning, segmentation, A/B testing, quality score maintenance"
+
+  - id: integration-engineer
+    name: "Link"
+    file: agents/integration-engineer.md
+    tier: 2
+    role: integration-specialist
+    description: "Integration — webhooks, deduplication, adaptive throttle, credentials, SDK"
+
+  - id: flow-builder
+    name: "Flux"
+    file: agents/flow-builder.md
+    tier: 2
+    role: flow-specialist
+    description: "WhatsApp Flows — JSON schema, endpoint crypto, handlers, patterns"
+
+  - id: utility-validator
+    name: "Forge"
+    file: agents/utility-validator.md
+    tier: 2
+    role: utility-specialist
+    description: "Utility templates — PACTO framework, variable camouflage, reclassification prevention"
+
+quality_standards:
+  delivery:
+    delivery_rate: ">= 95%"
+    read_rate: ">= 60%"
+    block_rate: "< 2%"
+    quality_score: "GREEN"
+  templates:
+    approval_rate: ">= 90%"
+    reclassification_rate: "< 5%"
+    pacto_score: ">= 70"
+  integration:
+    webhook_response_time: "< 200ms"
+    deduplication: "mandatory"
+    signature_verification: "mandatory"
+    api_version: "v24.0"
+  compliance:
+    opt_in: "mandatory"
+    opt_out_processing: "< 24h"
+    lgpd_basis: "mandatory"
+    privacy_policy: "mandatory"
+
+workflows:
+  - id: wf-template-lifecycle
+    file: workflows/template-lifecycle.yaml
+    description: "Template: category selection → content design → compliance → API submission → monitoring → deploy"
+
+  - id: wf-campaign-execution
+    file: workflows/campaign-execution.yaml
+    description: "Campaign: objective → segmentation → templates → compliance → scheduling → execution → analysis"
+
+  - id: wf-integration-setup
+    file: workflows/integration-setup.yaml
+    description: "Integration: account setup → credentials → webhooks → templates → test → compliance → go-live"
+
+tasks:
+  - cloud-api-reference.md
+  - diagnose-account.md
+  - create-template.md
+  - audit-template.md
+  - design-flow.md
+  - setup-webhook.md
+  - plan-campaign.md
+  - optimize-quality.md
+  - troubleshoot-error.md
+  - migrate-bsp.md
+  - compliance-check.md
+  - validate-utility.md
+
+templates:
+  - template-spec-tmpl.md
+  - campaign-plan-tmpl.md
+  - integration-audit-tmpl.md
+
+checklists:
+  - template-approval-checklist.md
+  - compliance-checklist.md
+  - go-live-checklist.md
+  - smoke-tests.md
+
+data:
+  - data/whatsapp-api-kb.md
+  - data/arsenal-reference.md
+  - data/utility-templates-kb.md
+  - data/meta-utility-portfolio.md
+  - data/veto-conditions.yaml
+  - data/error-decision-tree.yaml
+  - data/agent-routing-matrix.yaml
+  - data/quality-score-formulas.yaml
+  - data/template-category-decision.yaml
+  - data/tier-progression-rules.yaml
+  - data/whatsapp-compliance-kb.yaml
+  - data/openapi-endpoints-v23.yaml
+  - data/openapi-schemas-v23.yaml
+  - data/new-features-v23.yaml
+  - data/jaspers-market-patterns.yaml
+  - data/permissions-and-setup.yaml
+
+scripts:
+  - scripts/pre-send-validator.js
+
+config:
+  - config/quality-thresholds.yaml
+  - config/rate-limit-tiers.yaml
+  - config/pricing-reference.yaml
+  - config/coding-standards.md
+
+profiles:
+  full:
+    agents: [whatsapp-chief, cloud-api-architect, template-strategist, compliance-guardian, campaign-optimizer, integration-engineer, flow-builder, utility-validator]
+    description: "Full squad — all 8 specialists active"
+    detect_when: "fallback"
+  template-ops:
+    agents: [whatsapp-chief, template-strategist, compliance-guardian, utility-validator]
+    description: "Template operations — creation, validation, compliance, utility optimization"
+    detect_when: "user mentions template OR template in task name"
+  integration:
+    agents: [whatsapp-chief, cloud-api-architect, integration-engineer]
+    description: "Integration focus — API, webhooks, SDK, credentials"
+    detect_when: "user mentions webhook OR integration OR SDK"
+  campaign:
+    agents: [whatsapp-chief, campaign-optimizer, template-strategist, compliance-guardian]
+    description: "Campaign operations — planning, templates, compliance, execution"
+    detect_when: "user mentions campaign OR broadcast OR marketing"
+  compliance-only:
+    agents: [whatsapp-chief, compliance-guardian]
+    description: "Compliance audit — LGPD, policies, consent"
+    detect_when: "user mentions compliance OR LGPD OR audit"
+
+commands:
+  diagnostico:
+    - "*diagnose — Full account health diagnosis (quality, tier, errors, compliance)"
+    - "*troubleshoot — Diagnose error codes, delivery issues, webhook problems"
+  templates:
+    - "*create-template — Create WhatsApp template with compliance pre-check"
+    - "*audit-template — Audit existing templates (quality, compliance, performance)"
+    - "*validate-utility — Validate/convert template to utility using PACTO framework"
+  campanhas:
+    - "*plan-campaign — Plan WhatsApp campaign with segmentation and A/B testing"
+    - "*optimize-quality — Optimize quality score and tier progression"
+  integracao:
+    - "*setup-integration — Guide webhook, credential, SDK setup"
+    - "*migrate-bsp — Plan and execute BSP to direct API migration"
+  flows:
+    - "*design-flow — Design WhatsApp Flow (booking, qualification, survey, order)"
+  compliance:
+    - "*compliance-check — Full LGPD + WhatsApp policy compliance validation"
+  informacao:
+    - "*battlecard — Generate competitive battlecard (API Direta vs BSPs)"
+    - "*team — Show full specialist team"
+
+activation:
+  greetingEnabled: true
+  quickCommandsEnabled: true
+  autoActivation: true
+
+keywords:
+  - aiox
+  - squad
+  - whatsapp
+  - cloud-api
+  - meta
+  - business-messaging
+  - templates
+  - flows
+  - compliance
+  - lgpd
+  - campaigns
+  - utility
+  - pacto

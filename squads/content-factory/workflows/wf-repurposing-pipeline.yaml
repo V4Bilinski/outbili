@@ -1,0 +1,59 @@
+# Repurposing Pipeline — 1 Conteudo → 10+ Pecas
+# Pipeline de multiplicacao multi-plataforma
+
+name: repurposing-pipeline
+version: 1.0.0
+description: >
+  Pipeline completo de repurposing. Recebe 1 peca de conteudo e
+  multiplica em 10+ formatos para multiplas plataformas.
+
+trigger:
+  command: "*multiplicar {conteudo}"
+  example: "*multiplicar https://youtube.com/watch?v=xxx"
+
+phases:
+  - id: analise
+    name: "Analisar Conteudo Original"
+    agent: repurposing
+    description: "Identificar pontos-chave, quotes, insights do conteudo"
+    output: "analise_conteudo.md"
+
+  - id: mapeamento
+    name: "Mapear Formatos"
+    agent: repurposing
+    task: multiplicar-conteudo.md
+    description: "Definir quais formatos gerar e para quais plataformas"
+    output: "mapa_formatos.md"
+    formats:
+      video: "shorts, reels, clips"
+      visual: "carrosseis, infograficos"
+      texto: "threads, posts, captions"
+      longo: "newsletter, blog post, script audio"
+
+  - id: producao
+    name: "Produzir Pecas"
+    agent: repurposing
+    description: "Criar cada peca adaptada a plataforma"
+    output: "pecas/"
+    parallel: true
+
+  - id: revisao_hooks
+    name: "Revisar Hooks"
+    agent: scriptwriter
+    description: "Scriptwriter refina hooks e CTAs de cada peca"
+    output: "pecas_refinadas/"
+
+  - id: validacao
+    name: "Validar Qualidade"
+    agent: aiox-chief
+    quality_gate:
+      checklist: repurposing.md
+      min_score: "75%"
+    output: "pecas_validadas/"
+
+flow: |
+  analise → mapeamento → producao (parallel) → revisao_hooks → validacao
+
+expected_output:
+  min_pieces: 10
+  platforms: ["YouTube Shorts", "Instagram Reels", "TikTok", "LinkedIn", "Twitter/X", "Newsletter"]

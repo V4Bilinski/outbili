@@ -307,7 +307,7 @@ onClick={() => window.location.hash = '#/leads'}
 | Projeção de receita por lead | 3 cenários (agressivo/moderado/conservador) com timeline — único |
 | Vulnerabilidades de marketing | 8 cards de fraquezas com impacto financeiro — análise que CRMs não fazem |
 | Argumentos de venda contextualizados | Objeções previstas com contra-argumentos e ROI — CRMs não geram isso |
-| Enrichment automatico | CNPJa + Assertiva + Apify = dados cadastrais, telefones validados, social que CRMs manuais não tem |
+| Enrichment automatico | CNPJa + Assertiva = dados cadastrais, telefones validados que CRMs manuais não tem |
 
 ---
 

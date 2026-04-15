@@ -1,0 +1,75 @@
+# Workflow: Filtro Estrategico Naval
+# Pre-filtro de primeiro principio antes do pipeline completo
+
+workflow:
+  name: naval-strategic-filter
+  display_name: "Filtro Estrategico Naval — Vale Jogar Esse Jogo?"
+  version: "1.0.0"
+  description: |
+    Workflow de 5 passos que avalia qualquer deal, oportunidade ou decisao
+    estrategica pelos criterios de Naval Ravikant ANTES de entrar no pipeline
+    de negociacao. Combina deal-filter, leverage-audit, compounding-check e
+    principal-agent em uma sequencia integrada.
+
+    Use ANTES de qualquer diagnostico (Goldratt) ou construcao de oferta (Hormozi).
+    Se o deal nao passa pelo filtro Naval, nao vale otimizar como fecha-lo.
+
+steps:
+  - id: deal-filter
+    name: "Passo 1: Filtro de Primeiro Principio"
+    agent: naval
+    task: deal-filter-naval.md
+    elicit: true
+    description: "Avaliar 7 criterios: asymmetric upside, compounding, leverage, principal position, specific knowledge, long-term people, authenticity"
+    gate:
+      type: score
+      thresholds:
+        PLAY: ">= 7 — prosseguir"
+        NEGOTIATE: "5-6 — renegociar termos antes de prosseguir"
+        PASS: "3-4 — nao vale o tempo"
+        HARD_NO: "< 3 — saia imediatamente"
+
+  - id: leverage-check
+    name: "Passo 2: Auditoria de Leverage"
+    agent: naval
+    task: leverage-audit.md
+    condition: "deal-filter.gate IN [PLAY, NEGOTIATE]"
+    description: "Mapear os 4 tipos de leverage presentes no deal"
+
+  - id: compounding-check
+    name: "Passo 3: Compounding Check"
+    agent: naval
+    task: compounding-check.md
+    condition: "deal-filter.gate IN [PLAY, NEGOTIATE]"
+    description: "Avaliar se o deal compoe em 5 dimensoes ao longo do tempo"
+
+  - id: principal-check
+    name: "Passo 4: Posicao Principal vs Agent"
+    agent: naval
+    task: principal-agent-analysis.md
+    condition: "deal-filter.gate IN [PLAY, NEGOTIATE]"
+    description: "Verificar se o usuario esta na posicao de principal (dono) ou agente (prestador)"
+
+  - id: veredicto-final
+    name: "Passo 5: Veredicto Integrado"
+    agent: naval
+    elicit: false
+    description: |
+      Consolidar os 4 filtros em um veredicto unico:
+      - Deal Filter score (7 criterios)
+      - Leverage score (4 tipos)
+      - Compounding score (5 dimensoes)
+      - Principal/Agent classification
+    gate:
+      type: composite
+      rules:
+        - "Se TODOS os scores >= 7 → STRONG PLAY: entre com tudo"
+        - "Se deal-filter >= 7 mas leverage ou compounding < 5 → CONDITIONAL: renegociar termos de leverage"
+        - "Se principal-agent = AGENTE → RESTRUCTURE: nao entre como agente, redesenhe para principal"
+        - "Se 2+ scores < 5 → WALK AWAY: seu tempo vale mais em outro deal"
+
+output:
+  STRONG_PLAY: "Encaminhar para pipeline completo (*diagnosticar → *grand-slam-offer)"
+  CONDITIONAL: "Renegociar termos de leverage/equity antes de entrar no pipeline"
+  RESTRUCTURE: "Redesenhar posicao para principal, depois reavaliar"
+  WALK_AWAY: "Calcular *hourly-rate e redirecionar tempo para deals melhores"

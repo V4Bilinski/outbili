@@ -279,30 +279,6 @@ tools:
         - status
         - content
       max_tokens: 4000
-  apify:
-    tier: 3
-    layer: L4
-    defer: true
-    essential: false # Task-specific: web scraping, social media
-    tokenCost: 600
-    category: web-scraping
-    ptc_eligible: false  # ADR-3: MCP tools excluded from PTC/batch blocks
-    keywords:
-      - scraping
-      - social-media
-      - data-extraction
-      - actors
-    mcp_server: docker-gateway
-    input_examples: null
-    filter:
-      type: field
-      fields:
-        - username
-        - caption
-        - likes
-        - timestamp
-        - url
-      max_rows: 20
   nogic:
     tier: 3
     layer: L4

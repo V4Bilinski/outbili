@@ -1,0 +1,102 @@
+# Tier Progression Rules — WhatsApp Business API Squad
+# Used by @cloud-api-architect and @campaign-optimizer
+
+progression_path:
+  - from: unverified
+    to: tier_1
+    requirements:
+      - "Complete business verification in Meta Business Manager"
+      - "Submit required business documents"
+      - "Approval by Meta (typically 2-5 business days)"
+    blockers:
+      - "Missing business documents"
+      - "Business verification rejected"
+      - "Inconsistent business information"
+    strategy: "Submit all documents at once. Ensure business name matches legal registration."
+
+  - from: tier_1
+    to: tier_2
+    requirements:
+      - "Quality score: GREEN"
+      - "Send at least 2x current limit (2000 messages) in 7-day evaluation window"
+      - "Maintain GREEN quality throughout evaluation"
+    blockers:
+      - "Quality score YELLOW or RED"
+      - "Not enough message volume"
+      - "Recent quality drop"
+    strategy: |
+      1. Start with high-engagement segments (active contacts)
+      2. Use utility templates to build volume safely
+      3. Monitor quality daily during evaluation window
+      4. Avoid marketing templates if quality is borderline
+      5. Target: 300-400 messages/day consistently
+
+  - from: tier_2
+    to: tier_3
+    requirements:
+      - "Quality score: GREEN"
+      - "Send at least 2x current limit (20000 messages) in 7-day evaluation window"
+      - "Maintain GREEN quality throughout evaluation"
+    blockers:
+      - "Quality score YELLOW or RED"
+      - "Block rate > 2%"
+      - "Template approval issues"
+    strategy: |
+      1. Scale gradually — 20% weekly increase
+      2. Diversify templates to spread quality risk
+      3. A/B test before scaling any template
+      4. Monitor block rates per template
+      5. Use utility templates for bulk volume (cheaper + safer)
+      6. Target: 3000-4000 messages/day with monitoring
+
+  - from: tier_3
+    to: unlimited
+    requirements:
+      - "Quality score: GREEN sustained for 30+ days"
+      - "Direct request to Meta via support"
+      - "Business justification for unlimited volume"
+      - "Demonstrated responsible messaging history"
+    blockers:
+      - "Any quality issues in recent 30 days"
+      - "Template rejections or reclassifications"
+      - "Compliance violations on record"
+    strategy: |
+      1. Maintain GREEN quality for at least 60 days (double requirement)
+      2. Document message volume needs with business justification
+      3. Prepare messaging policy documentation
+      4. Contact Meta support or use Solution Provider
+      5. Expect 2-4 weeks for approval
+
+downgrade_rules:
+  - trigger: "Quality drops to RED"
+    action: "Immediate downgrade to previous tier"
+    recovery: "Must re-qualify from current tier after quality returns to GREEN"
+
+  - trigger: "Quality drops to YELLOW"
+    action: "Upgrade blocked. No immediate downgrade."
+    recovery: "Quality must return to GREEN before upgrade evaluation restarts"
+
+  - trigger: "Account flagged for spam (Error 131048)"
+    action: "All sending paused. Account under review."
+    recovery: "File appeal. Wait for Meta response. May take 7-14 days."
+
+  - trigger: "Temporarily blocked (Error 368)"
+    action: "24-hour sending block"
+    recovery: "Automatic after 24h if quality improves. File appeal if persistent."
+
+monitoring_checklist:
+  daily:
+    - "Check quality score in Business Manager"
+    - "Review block/report rates per template"
+    - "Monitor delivery rates"
+    - "Check for any paused templates"
+  weekly:
+    - "Evaluate tier progression readiness"
+    - "Review template performance analytics"
+    - "Analyze campaign ROI by category"
+    - "Check tier utilization (messages sent vs limit)"
+  monthly:
+    - "Full account health assessment"
+    - "Template portfolio audit"
+    - "Compliance review"
+    - "Quality trend analysis"

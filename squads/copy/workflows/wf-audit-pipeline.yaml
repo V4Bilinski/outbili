@@ -1,0 +1,383 @@
+id: wf-audit-pipeline
+name: Audit Pipeline — Auditoria de Copy Existente
+version: "1.0"
+description: >
+  Pipeline para auditar copy que ja existe. Avalia atraves de 5 lentes:
+  Hopkins Audit, Schwartz Awareness Check, Sugarman Triggers, Gap Analysis
+  e Recomendacoes priorizadas. Output e um relatorio acionavel com score
+  por dimensao e plano de melhoria.
+
+agents_required:
+  - "@claude-hopkins"   # Hopkins Audit principal
+  - "@eugene-schwartz"  # Awareness e sofisticacao
+  - "@copy-chief"       # Sugarman Triggers e orquestracao
+  - "@gary-bencivenga"  # Gap Analysis — bullets e proof
+  - "@gary-halbert"     # Gap Analysis — narrativa e flow
+
+inputs:
+  copy_to_audit:
+    type: string
+    required: true
+    description: "O texto completo da copy a ser auditada"
+  copy_format:
+    type: enum
+    values: [sales-page, email, vsl-script, ad-copy, landing-page, email-sequence]
+    required: true
+  product_info:
+    type: string
+    required: false
+    description: "Contexto sobre o produto/servico (ajuda na auditoria)"
+  target_audience:
+    type: string
+    required: false
+  audit_depth:
+    type: enum
+    values: [quick, standard, deep]
+    default: standard
+    description: "quick=30min, standard=2h, deep=4h+"
+
+outputs:
+  audit_report:
+    type: artifact
+    description: "Relatorio completo de auditoria com scores e recomendacoes"
+  priority_fixes:
+    type: list
+    description: "Top 5 melhorias de maior impacto priorizadas"
+  revised_copy:
+    type: artifact
+    required: false
+    description: "Copy revisada (apenas se audit_depth=deep)"
+
+phases:
+  - id: phase-1-hopkins-audit
+    name: "Fase 1 — Hopkins Audit"
+    agent: "@claude-hopkins"
+    description: >
+      Auditoria baseada nos principios de Scientific Advertising de Claude Hopkins.
+      Avalia 10 dimensoes com peso 10 cada. Score maximo: 100.
+    dimensions:
+      - id: specificity
+        name: "Especificidade"
+        weight: 10
+        criteria:
+          - "Claims com numeros especificos (ex: '73% dos usuarios' vs 'a maioria')"
+          - "Resultados mensuráveis prometidos"
+          - "Tempo especifico para resultados"
+          - "Comparacoes com referencias concretas"
+        scoring:
+          10: "Todos os claims importantes sao especificos com numeros/dados"
+          7-9: "Maioria dos claims especificos, alguns vagos"
+          4-6: "Mistura de especifico e vago"
+          1-3: "Predominantemente vago, poucos dados concretos"
+          0: "Sem nenhuma especificidade"
+
+      - id: proof
+        name: "Prova e Evidencias"
+        weight: 10
+        criteria:
+          - "Testimoniais com resultados especificos"
+          - "Cases de estudo detalhados"
+          - "Dados de pesquisa ou estudos citados"
+          - "Demonstracoes ou exemplos concretos"
+          - "Garantia que demonstra confianca no produto"
+        scoring:
+          10: "Multiplas formas de prova solida e verificavel"
+          7-9: "Boa prova em areas principais"
+          4-6: "Prova presente mas superficial"
+          1-3: "Prova minima ou genérica"
+          0: "Sem prova alguma"
+
+      - id: curiosity
+        name: "Curiosidade"
+        weight: 10
+        criteria:
+          - "Headline abre um loop mental"
+          - "Subheads mantem o interesse"
+          - "Revelacoes graduais (nao entregar tudo de uma vez)"
+          - "Promessas especificas que criam 'quero saber mais'"
+
+      - id: clarity
+        name: "Clareza"
+        weight: 10
+        criteria:
+          - "Linguagem simples (nivel de leitura do publico-alvo)"
+          - "Sem jargao tecnico desnecessario"
+          - "Uma ideia por paragrafo"
+          - "Paragrafos curtos (3-5 linhas max)"
+          - "Sem ambiguidade na oferta"
+
+      - id: offer
+        name: "Oferta"
+        weight: 10
+        criteria:
+          - "Oferta claramente definida"
+          - "Valor percebido > preco pedido"
+          - "Bonus que aumentam valor"
+          - "Garantia presente e clara"
+          - "Urgencia ou escassez (se houver)"
+
+      - id: headline-power
+        name: "Poder da Headline"
+        weight: 10
+        criteria:
+          - "Captura atencao imediata"
+          - "Promete beneficio especifico ou abre curiosidade"
+          - "Segmenta o publico correto"
+          - "Sem 'inteligente' demais (clareza > esperteza)"
+
+      - id: benefits-focus
+        name: "Beneficios vs Features"
+        weight: 10
+        criteria:
+          - "Cada feature traduzida em beneficio"
+          - "Linguagem do 'voce' (foco no leitor)"
+          - "Resultados de vida (emocional) vs resultados funcionais"
+          - "Ausencia de 'nos temos / nosso produto e'"
+
+      - id: reason-why
+        name: "Reason Why"
+        weight: 10
+        criteria:
+          - "Justificativa para cada claim importante"
+          - "Logica detras das promessas"
+          - "Explicacao do mecanismo de acao"
+          - "Por que o preco e o que e"
+
+      - id: call-to-action
+        name: "Call to Action"
+        weight: 10
+        criteria:
+          - "CTA unico e claro"
+          - "Verbo de acao especifico"
+          - "Beneficio reafirmado no CTA"
+          - "Remocao de fricao (o que acontece depois do clique)"
+          - "Urgencia no CTA (se aplicavel)"
+
+      - id: flow-readability
+        name: "Flow e Legibilidade"
+        weight: 10
+        criteria:
+          - "Paragrafos curtos e escaneáveis"
+          - "Transicoes naturais entre secoes"
+          - "Bullet points bem formatados"
+          - "Subheads que guiam a leitura"
+          - "Ritmo de leitura (variar tamanho de sentencas)"
+
+    tasks:
+      - id: score-each-dimension
+        name: "Pontuar cada dimensao"
+        output: hopkins_scores (object, 10 keys)
+      - id: total-score
+        name: "Calcular score total Hopkins"
+        output: hopkins_total (0-100)
+      - id: top-issues
+        name: "Listar top 5 problemas Hopkins"
+        output: hopkins_issues (list)
+    benchmark:
+      excellent: "90-100"
+      approved: "85-89"
+      needs_work: "70-84"
+      critical: "< 70"
+
+  - id: phase-2-schwartz-awareness
+    name: "Fase 2 — Schwartz Awareness Check"
+    agent: "@eugene-schwartz"
+    description: >
+      Verificar se a copy esta alinhada ao nivel de awareness do publico.
+      Uma copy direcionada ao nivel errado pode estar tecnicamente boa mas
+      emocionalmente desconectada do prospect real.
+    awareness_levels:
+      level_1:
+        name: "Unaware"
+        description: "Nao sabe que tem o problema"
+        copy_approach: "Comecar pela historia ou situacao de vida (nao pelo problema)"
+      level_2:
+        name: "Problem Aware"
+        description: "Sabe do problema, nao conhece solucoes"
+        copy_approach: "Comecar pelo problema e agitar antes de apresentar solucao"
+      level_3:
+        name: "Solution Aware"
+        description: "Conhece tipos de solucao mas nao o produto"
+        copy_approach: "Mostrar por que esta solucao especifica e superior"
+      level_4:
+        name: "Product Aware"
+        description: "Conhece o produto mas ainda nao comprou"
+        copy_approach: "Focar em objecoes, garantia e oferta irresistivel"
+      level_5:
+        name: "Most Aware"
+        description: "Ja comprou ou esta pronto para comprar"
+        copy_approach: "Ir direto ao ponto: preco, oferta, CTA"
+    tasks:
+      - id: detect-awareness-level
+        name: "Identificar nivel de awareness que a copy endereça"
+        output: copy_awareness_level (1-5)
+      - id: detect-ideal-level
+        name: "Determinar nivel ideal para o publico-alvo"
+        output: ideal_awareness_level (1-5)
+      - id: alignment-check
+        name: "Verificar alinhamento entre copy e nivel ideal"
+        output: awareness_aligned (boolean)
+      - id: misalignment-impact
+        name: "Estimar impacto do desalinhamento (se houver)"
+        output: misalignment_impact (low/medium/high)
+    quality_gate:
+      check: "awareness_aligned = true"
+      on_misalignment:
+        action: "Documentar gap e adicionar ao Gap Analysis"
+        severity: "high se diferenca >= 2 niveis"
+
+  - id: phase-3-sugarman-triggers
+    name: "Fase 3 — Sugarman Triggers Check"
+    agent: "@copy-chief"
+    description: >
+      Varredura dos 30 psychological triggers de Joe Sugarman.
+      Identificar quais estao presentes, quais estao ausentes mas seriam aplicaveis,
+      e quais nao se aplicam ao contexto.
+    trigger_categories:
+      emotional:
+        - "Feeling of involvement/ownership"
+        - "Greed"
+        - "Guilt"
+        - "Fear of loss"
+        - "Hope"
+        - "Desire to belong"
+        - "Desire to collect"
+        - "Emotion vs logic balance"
+      credibility:
+        - "Honesty"
+        - "Integrity"
+        - "Credibility"
+        - "Establish authority"
+        - "Specificity"
+        - "Ability to prove value"
+      engagement:
+        - "Curiosity"
+        - "Storytelling"
+        - "Mental engagement"
+        - "Familiarity"
+        - "Human relationships"
+        - "Current fads"
+      conversion:
+        - "Value and proof of value"
+        - "Justify the purchase"
+        - "Satisfaction conviction"
+        - "Instant gratification"
+        - "Exclusivity, rarity, uniqueness"
+        - "Sense of urgency"
+        - "Simplicity"
+        - "Objection resolution"
+      product:
+        - "Nature of product"
+        - "Timing"
+    tasks:
+      - id: scan-present
+        name: "Identificar triggers presentes"
+        output: triggers_present (list)
+      - id: scan-missing
+        name: "Identificar triggers ausentes mas aplicaveis"
+        output: triggers_missing_applicable (list)
+      - id: scan-na
+        name: "Identificar triggers nao aplicaveis ao contexto"
+        output: triggers_not_applicable (list)
+      - id: calculate-score
+        name: "Calcular score Sugarman"
+        formula: "triggers_present / (30 - triggers_not_applicable) * 100"
+        output: sugarman_score (0-100)
+    benchmark:
+      excellent: ">= 90%"
+      approved: "80-89%"
+      needs_work: "65-79%"
+      critical: "< 65%"
+
+  - id: phase-4-gap-analysis
+    name: "Fase 4 — Gap Analysis"
+    agents: ["@gary-bencivenga", "@gary-halbert"]
+    description: >
+      Consolidar todos os gaps identificados nas fases anteriores e
+      identificar oportunidades de melhoria alem das metricas formais.
+    gap_categories:
+      structural:
+        description: "Problemas de estrutura e sequencia"
+        examples: ["Lead muito longo", "Oferta mal posicionada", "CTA prematuro"]
+      emotional:
+        description: "Lacunas emocionais e de conexao"
+        examples: ["Sem historia", "Tone of voice errado", "Nao fala a dor real"]
+      logical:
+        description: "Lacunas logicas e de prova"
+        examples: ["Claims sem prova", "Objecoes nao respondidas", "Preco sem justificativa"]
+      competitive:
+        description: "Posicionamento vs concorrencia"
+        examples: ["Sem diferenciacao clara", "Mecanismo unico ausente", "Igual ao mercado"]
+      technical:
+        description: "Problemas tecnicos de copy"
+        examples: ["Bullets fracos", "PS ausente ou fraco", "Subheads genéricos"]
+    tasks:
+      - id: consolidate-gaps
+        name: "Consolidar gaps de todas as fases anteriores"
+        output: gaps_consolidated (list)
+      - id: score-gaps
+        name: "Pontuar impacto de cada gap (1-10)"
+        output: gaps_scored
+      - id: quick-wins
+        name: "Identificar quick wins (alto impacto, baixo esforco)"
+        output: quick_wins (list)
+      - id: strategic-changes
+        name: "Identificar mudancas estrategicas necessarias"
+        output: strategic_changes (list)
+
+  - id: phase-5-recomendacoes
+    name: "Fase 5 — Recomendacoes e Plano de Acao"
+    agent: "@copy-chief"
+    description: >
+      Sintetizar toda a auditoria em recomendacoes priorizadas por impacto.
+      Produzir relatorio final acionavel com plano de execucao claro.
+    output_structure:
+      executive_summary:
+        - "Score geral (media ponderada das 3 metricas)"
+        - "Top 3 pontos fortes"
+        - "Top 3 problemas criticos"
+        - "Estimativa de impacto de conversao se corrigido"
+      detailed_scores:
+        - "Hopkins Total: X/100"
+        - "Awareness Alignment: Alinhado/Desalinhado (nivel atual vs ideal)"
+        - "Sugarman Score: X%"
+        - "Score Geral: X/100"
+      priority_fixes:
+        description: "Top 5 acoes priorizadas por impacto/esforco"
+        format: "ID | Acao | Impacto (1-10) | Esforco (horas) | Responsavel"
+      section_by_section:
+        description: "Analise secao por secao da copy"
+        includes: ["Headline", "Lead", "Body", "Bullets", "Proof", "Offer", "CTA", "PS"]
+      revised_copy:
+        description: "Copy revisada com as principais melhorias aplicadas"
+        required_if: "audit_depth = deep"
+    tasks:
+      - id: build-report
+        name: "Montar relatorio completo"
+        output: audit_report
+      - id: extract-top5
+        name: "Extrair top 5 priorities"
+        output: priority_fixes
+      - id: revised-copy
+        name: "Escrever copy revisada (se deep audit)"
+        condition: "audit_depth == deep"
+        output: revised_copy
+
+scoring_formula:
+  description: "Score geral da auditoria"
+  formula: "(hopkins_total * 0.40) + (awareness_score * 0.20) + (sugarman_score * 0.40)"
+  weights:
+    hopkins: 40%
+    awareness: 20%
+    sugarman: 40%
+  benchmarks:
+    world_class: ">= 90"
+    strong: "80-89"
+    average: "70-79"
+    below_average: "60-69"
+    critical: "< 60"
+
+estimated_duration:
+  quick: "30-45 minutos"
+  standard: "2-3 horas"
+  deep: "4-8 horas (inclui copy revisada)"

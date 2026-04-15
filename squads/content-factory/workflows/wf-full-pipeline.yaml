@@ -1,0 +1,75 @@
+# Full Content Pipeline — URL/Video → Cortes + Repurposing
+# Workflow completo: analise → cortes → multiplicacao
+
+name: full-pipeline
+version: 1.0.0
+description: >
+  Pipeline completo de producao de conteudo. Recebe video/conteudo bruto,
+  analisa, corta, multiplica em 10+ formatos e valida qualidade.
+
+trigger:
+  command: "*full-pipeline {input}"
+  example: "*full-pipeline https://youtube.com/watch?v=xxx"
+
+phases:
+  - id: diagnostico
+    name: "Diagnostico"
+    agent: aiox-chief
+    task: diagnostico-conteudo.md
+    description: "Chief analisa contexto e define estrategia"
+    output: "diagnostico.md"
+    quality_gate:
+      checklist: null
+      criteria: "Plano de acao aprovado pelo usuario"
+
+  - id: espionagem
+    name: "Espionagem (opcional)"
+    agent: espiao
+    task: analisar-canal.md
+    description: "Analisar concorrentes se usuario quiser benchmark"
+    output: "analise_canal.md"
+    condition: "Se usuario quer referencia de concorrentes"
+    quality_gate:
+      checklist: analise-canal.md
+      min_score: "75%"
+
+  - id: roteiro
+    name: "Roteiro"
+    agent: scriptwriter
+    task: criar-roteiro.md
+    description: "Criar roteiro com hook, narrativa e CTA"
+    output: "roteiro.md"
+    quality_gate:
+      checklist: roteiro.md
+      min_score: "75%"
+
+  - id: cortes
+    name: "Cortes de Video"
+    agent: video-editor
+    task: cortar-video.md
+    description: "Identificar momentos e criar clips"
+    output: "cortes/"
+    quality_gate:
+      checklist: qualidade-corte.md
+      min_score: "6/8"
+
+  - id: repurposing
+    name: "Multiplicacao"
+    agent: repurposing
+    task: multiplicar-conteudo.md
+    description: "1 video → shorts + carrosseis + threads + posts"
+    output: "pecas/"
+    quality_gate:
+      checklist: repurposing.md
+      min_score: "75%"
+
+  - id: entrega
+    name: "Entrega"
+    agent: aiox-chief
+    description: "Chief consolida e entrega tudo validado"
+    output: "entrega_final/"
+    quality_gate:
+      criteria: "Todos os checklists passaram"
+
+flow: |
+  diagnostico → [espionagem?] → roteiro → cortes → repurposing → entrega

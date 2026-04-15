@@ -1,0 +1,131 @@
+# Veto Conditions — WhatsApp Business API Squad
+# Conditions that BLOCK operations regardless of agent or workflow stage
+
+veto_conditions:
+  # Compliance Vetos (enforced by @compliance-guardian)
+  - id: VETO-001
+    name: "No Opt-In"
+    description: "Contact has no verified opt-in for this message type"
+    severity: CRITICAL
+    blocks: [send_message, send_template, launch_campaign]
+    enforced_by: compliance-guardian
+    resolution: "Collect explicit opt-in before sending"
+
+  - id: VETO-002
+    name: "Opted Out"
+    description: "Contact has opted out within the last 6 months"
+    severity: CRITICAL
+    blocks: [send_message, send_template, launch_campaign]
+    enforced_by: compliance-guardian
+    resolution: "Remove from send list. Requires fresh opt-in to re-engage"
+
+  - id: VETO-003
+    name: "Prohibited Content"
+    description: "Template or message contains prohibited content categories"
+    severity: CRITICAL
+    blocks: [submit_template, send_message]
+    enforced_by: compliance-guardian
+    resolution: "Remove prohibited content entirely"
+
+  - id: VETO-004
+    name: "No LGPD Basis"
+    description: "No documented legal basis for data processing"
+    severity: CRITICAL
+    blocks: [launch_campaign, setup_integration]
+    enforced_by: compliance-guardian
+    resolution: "Document legal basis per LGPD Art. 7"
+
+  # Quality Vetos (enforced by @campaign-optimizer)
+  - id: VETO-005
+    name: "Quality RED"
+    description: "Account quality score is RED (Low)"
+    severity: CRITICAL
+    blocks: [send_marketing, launch_campaign, scale_sending]
+    allows: [send_utility, send_authentication, send_service]
+    enforced_by: campaign-optimizer
+    resolution: "Stop all marketing. Analyze block rates. File appeal if needed."
+
+  - id: VETO-006
+    name: "Quality YELLOW + Scale"
+    description: "Attempting to scale sending while quality is YELLOW"
+    severity: HIGH
+    blocks: [scale_sending, increase_volume]
+    allows: [send_marketing, send_utility]
+    enforced_by: campaign-optimizer
+    resolution: "Pause scaling. Optimize templates. Wait for GREEN recovery."
+
+  - id: VETO-007
+    name: "Tier Limit Exceeded"
+    description: "Attempting to send beyond current tier messaging limit"
+    severity: CRITICAL
+    blocks: [send_message, launch_campaign]
+    enforced_by: cloud-api-architect
+    resolution: "Wait for tier upgrade or reduce volume to current limit"
+
+  # Template Vetos (enforced by @template-strategist / @utility-validator)
+  - id: VETO-008
+    name: "No Compliance Review"
+    description: "Template not reviewed by @compliance-guardian before submission"
+    severity: HIGH
+    blocks: [submit_template]
+    enforced_by: template-strategist
+    resolution: "Route template to @compliance-guardian for review"
+
+  - id: VETO-009
+    name: "PACTO Score Below 50"
+    description: "Utility template PACTO score below 50 (marketing detected)"
+    severity: HIGH
+    blocks: [submit_as_utility]
+    allows: [submit_as_marketing]
+    enforced_by: utility-validator
+    resolution: "Rewrite using PACTO framework or submit as marketing"
+
+  - id: VETO-010
+    name: "Component Limit Exceeded"
+    description: "Template exceeds component limits (header 60ch, body 1024ch, footer 60ch)"
+    severity: CRITICAL
+    blocks: [submit_template]
+    enforced_by: template-strategist
+    resolution: "Trim content to respect component limits"
+
+  # Integration Vetos (enforced by @integration-engineer)
+  - id: VETO-011
+    name: "No Webhook Signature Verification"
+    description: "Webhook handler does not verify SHA-256 HMAC signature"
+    severity: CRITICAL
+    blocks: [deploy_webhook, go_live]
+    enforced_by: integration-engineer
+    resolution: "Implement signature verification using app secret"
+
+  - id: VETO-012
+    name: "Credentials in Env Vars"
+    description: "WhatsApp credentials stored in environment variables instead of Supabase"
+    severity: HIGH
+    blocks: [go_live]
+    enforced_by: integration-engineer
+    resolution: "Migrate credentials to Supabase settings table"
+
+  - id: VETO-013
+    name: "No Deduplication"
+    description: "Webhook handler has no message deduplication"
+    severity: HIGH
+    blocks: [go_live]
+    enforced_by: integration-engineer
+    resolution: "Implement Redis SET NX deduplication with 24h TTL"
+
+  - id: VETO-014
+    name: "Wrong API Version"
+    description: "Using API version other than v24.0"
+    severity: MEDIUM
+    blocks: []
+    warns: [all_operations]
+    enforced_by: cloud-api-architect
+    resolution: "Update to graph.facebook.com/v24.0"
+
+  - id: VETO-015
+    name: "Invalid Phone Format"
+    description: "Phone number not in E.164 format without + prefix"
+    severity: HIGH
+    blocks: [send_message]
+    enforced_by: cloud-api-architect
+    resolution: "Convert to E.164 format: 5511999998888 (no + prefix)"

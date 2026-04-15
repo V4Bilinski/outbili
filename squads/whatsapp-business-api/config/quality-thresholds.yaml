@@ -1,0 +1,73 @@
+# Quality Thresholds — WhatsApp Business API Squad
+# Used by agents to evaluate account health and template performance
+
+account_health:
+  quality_score:
+    green:
+      label: "High Quality"
+      action: "Safe to scale. Increase volume 20% weekly."
+      threshold: "No significant negative feedback"
+    yellow:
+      label: "Medium Quality"
+      action: "PAUSE scaling. Analyze block rates. Optimize templates."
+      threshold: "Increasing negative feedback trend"
+    red:
+      label: "Low Quality"
+      action: "STOP all marketing. Switch to utility only. File appeal."
+      threshold: "Significant negative feedback"
+
+  block_rate:
+    safe: "< 2%"
+    warning: "2% - 4%"
+    critical: "> 4%"
+    action_on_critical: "Pause all marketing templates immediately"
+
+  delivery_rate:
+    excellent: ">= 98%"
+    good: ">= 95%"
+    warning: "90% - 95%"
+    critical: "< 90%"
+
+template_performance:
+  approval:
+    target_rate: ">= 90%"
+    reclassification_max: "< 5%"
+  engagement:
+    read_rate_good: ">= 60%"
+    reply_rate_good: ">= 10%"
+    ctr_good: ">= 5%"
+  pacto_score:
+    safe: "90-100"
+    likely_pass: "70-89"
+    risk_zone: "50-69"
+    marketing_detected: "0-49"
+
+campaign_limits:
+  scaling:
+    initial_segment: "5-10% of total audience"
+    weekly_increase_max: "20%"
+    pause_on_quality: "yellow"
+    stop_on_quality: "red"
+  timing:
+    business_hours_start: "08:00"
+    business_hours_end: "21:00"
+    timezone: "America/Sao_Paulo"
+  ab_testing:
+    min_sample_per_variant: 1000
+    min_duration_hours: 24
+    confidence_level: "95%"
+
+webhook_performance:
+  response_time_target: "< 200ms"
+  response_time_critical: "> 5000ms"
+  dedup_ttl: "86400s"
+  retry_max: 5
+  retry_base_delay: "2s"
+  retry_strategy: "exponential_backoff"
+
+throttle_aimd:
+  additive_increase: "5%"
+  multiplicative_decrease: "40%"
+  floor: "10 msg/sec"
+  ceiling: "current tier limit"
+  recovery: "gradual (no immediate jump after decrease)"

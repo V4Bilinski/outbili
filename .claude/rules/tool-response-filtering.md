@@ -33,7 +33,7 @@ From an array of objects (tabular data), project ONLY the columns listed
 in `fields` and limit the result to `max_rows` rows. This is analogous to
 `SELECT field1, field2 FROM data LIMIT max_rows`.
 
-**Apply to:** Apify scraper results, database query results, CSV-like data.
+**Apply to:** Scraper results, database query results, CSV-like data.
 
 ## How to Apply
 

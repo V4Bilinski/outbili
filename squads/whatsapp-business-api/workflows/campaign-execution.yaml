@@ -1,0 +1,126 @@
+name: campaign-execution
+version: 2.0.0
+description: "Workflow completo de campanha WhatsApp: do planejamento estratégico à análise de resultados"
+
+steps:
+  - id: objective-definition
+    task: tasks/plan-campaign.md
+    tier: 1
+    agents: [campaign-optimizer]
+    required: true
+    description: "Definir objetivo, métricas de sucesso, budget e timeline da campanha"
+    outputs:
+      - campaign_objective
+      - success_metrics
+      - budget_estimate
+      - timeline
+
+  - id: audience-segmentation
+    task: tasks/plan-campaign.md
+    tier: 1
+    agents: [campaign-optimizer]
+    required: true
+    depends_on: [objective-definition]
+    description: "Segmentar audiência por recência, engajamento, lifecycle, valor e opt-in"
+    inputs:
+      - from: objective-definition.campaign_objective
+      - from: objective-definition.success_metrics
+    outputs:
+      - segments
+      - segment_sizes
+      - personalization_rules
+
+  - id: template-creation
+    task: workflows/template-lifecycle.yaml
+    tier: workflow
+    agents: auto-select-from-workflow
+    required: true
+    depends_on: [audience-segmentation]
+    description: "Criar templates via workflow template-lifecycle (nested workflow)"
+    inputs:
+      - from: audience-segmentation.segments
+      - from: objective-definition.campaign_objective
+    outputs:
+      - approved_templates
+      - template_ids
+
+  - id: compliance-validation
+    task: tasks/compliance-check.md
+    tier: 0
+    agents: [compliance-guardian]
+    required: true
+    depends_on: [template-creation, audience-segmentation]
+    description: "Validar compliance da campanha completa (templates + segmentos + consent)"
+    inputs:
+      - from: template-creation.approved_templates
+      - from: audience-segmentation.segments
+    quality_gate:
+      checklist: checklists/compliance-checklist.md
+      minimum_pass: 100
+      max_retries: 1
+
+  - id: scheduling
+    task: tasks/plan-campaign.md
+    tier: 1
+    agents: [campaign-optimizer]
+    required: true
+    depends_on: [compliance-validation]
+    description: "Agendar envio: timing por timezone, batches, config de throttle"
+    conditions:
+      - compliance-validation.result == "APPROVED"
+    inputs:
+      - from: audience-segmentation.segments
+      - from: template-creation.template_ids
+      - from: objective-definition.timeline
+    outputs:
+      - schedule
+      - batch_config
+      - throttle_config
+
+  - id: execution
+    task: tasks/setup-webhook.md
+    tier: 2
+    agents: [integration-engineer]
+    required: true
+    depends_on: [scheduling]
+    description: "Executar envio via API com throttle adaptativo e monitoramento"
+    inputs:
+      - from: scheduling.schedule
+      - from: scheduling.batch_config
+      - from: scheduling.throttle_config
+    outputs:
+      - execution_status
+      - messages_sent
+      - errors
+
+  - id: monitoring
+    task: tasks/optimize-quality.md
+    tier: 1
+    agents: [whatsapp-chief]
+    required: true
+    depends_on: [execution]
+    description: "Monitorar quality score, delivery rates, alertas em tempo real"
+    inputs:
+      - from: execution.execution_status
+      - from: execution.messages_sent
+    outputs:
+      - delivery_rates
+      - quality_score_impact
+      - alerts
+
+  - id: analysis
+    task: tasks/plan-campaign.md
+    tier: 1
+    agents: [campaign-optimizer]
+    required: true
+    depends_on: [monitoring]
+    description: "Analisar resultados, ROI, e gerar recomendações para próxima campanha"
+    inputs:
+      - from: monitoring.delivery_rates
+      - from: monitoring.quality_score_impact
+      - from: execution.messages_sent
+      - from: execution.errors
+    outputs:
+      - campaign_report
+      - recommendations
+      - roi_analysis

@@ -1,0 +1,105 @@
+name: content-factory
+version: 1.1.0
+description: |
+  Squad de producao de conteudo para criadores. 5 agentes especializados:
+  AIOX Chief (orquestrador), Video Editor (cortes), Espiao (analise de concorrentes),
+  Repurposing (multiplicar conteudo), Scriptwriter (roteiros).
+  Baseado no Desafio AIOX — Academia Lendaria.
+
+  Pipeline: Pedido → Chief (routing) → Agente (execucao) → Checklist (validacao) → Entrega.
+
+  Missao: Ajudar criadores a produzir mais conteudo de qualidade com menos esforco,
+  usando IA para cortar, analisar, multiplicar e roteirizar.
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: content-factory
+cloned_from: /Users/luizhenrique/squad-aiox
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - content-creation
+  - video-editing
+  - repurposing
+  - scriptwriting
+  - competitor-analysis
+  - shorts
+  - reels
+  - tiktok
+  - youtube
+  - social-media
+
+components:
+  agents:
+    # Orquestracao
+    - aiox-chief.md
+    # Especialistas
+    - video-editor.md
+    - espiao.md
+    - repurposing.md
+    - scriptwriter.md
+
+  tasks:
+    - cortar-video.md
+    - analisar-canal.md
+    - multiplicar-conteudo.md
+    - criar-roteiro.md
+    - diagnostico-conteudo.md
+
+  workflows:
+    - wf-full-pipeline.yaml
+    - wf-shorts-pipeline.yaml
+    - wf-repurposing-pipeline.yaml
+
+  checklists:
+    - qualidade-corte.md
+    - analise-canal.md
+    - repurposing.md
+    - roteiro.md
+    - setup-squad.md
+
+  templates:
+    - roteiro-tmpl.md
+    - analise-canal-tmpl.md
+    - repurposing-output-tmpl.md
+    - briefing-tmpl.md
+
+  scripts: []
+
+  data:
+    - hook-patterns.yaml
+    - platform-specs.yaml
+    - viral-triggers.yaml
+
+config:
+  extends: extend
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+philosophy:
+  core_mantra: "1 conteudo → 10+ pecas. Mais conteudo, menos esforco."
+  pilares:
+    - name: Cortes de Video
+      description: "Videos longos viram shorts, reels e clips impactantes"
+      agent: video-editor
+    - name: Espionagem de Concorrentes
+      description: "Analise de canais, hooks, thumbnails e padroes que funcionam"
+      agent: espiao
+    - name: Multiplicacao de Conteudo
+      description: "1 video vira carrosseis, threads, newsletters, posts"
+      agent: repurposing
+    - name: Roteiros
+      description: "Scripts com hook forte, narrativa e CTA que converte"
+      agent: scriptwriter
+  fluxo:
+    - "PEDIDO: Usuario faz pedido ao AIOX Chief"
+    - "ROUTING: Chief entende e roteia pro agente certo"
+    - "EXECUCAO: Agente executa task com workflow guiado"
+    - "VALIDACAO: Chief aplica checklist de qualidade"
+    - "ENTREGA: Output validado entregue ao usuario"

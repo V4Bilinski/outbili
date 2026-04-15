@@ -1,0 +1,181 @@
+# WhatsApp Compliance Knowledge Base — Structured Reference
+# Used by @compliance-guardian and @whatsapp-chief for compliance decisions
+
+lgpd:
+  description: "Lei Geral de Proteção de Dados (Brazil)"
+  effective_date: "2020-09-18"
+  enforcement_authority: "ANPD (Autoridade Nacional de Proteção de Dados)"
+
+  key_articles:
+    art_7:
+      title: "Legal Basis for Processing"
+      requirement: "Every data processing activity must have a documented legal basis"
+      applicable_bases:
+        - consent: "Free, informed, and unambiguous (most common for marketing)"
+        - legitimate_interest: "Business need that doesn't override data subject rights"
+        - contract: "Necessary for contract execution (e.g., order fulfillment)"
+        - legal_obligation: "Required by law or regulation"
+      whatsapp_impact: "Must document legal basis BEFORE collecting phone numbers or sending messages"
+
+    art_8:
+      title: "Consent Requirements"
+      requirements:
+        - "Must be free (no penalties for refusing)"
+        - "Must be informed (clear what data is collected and why)"
+        - "Must be unambiguous (explicit action, not silence)"
+        - "Must be specific (per purpose, not blanket)"
+        - "Can be revoked at any time"
+      whatsapp_impact: "Opt-in must specify: business name, message types, frequency"
+
+    art_9:
+      title: "Purpose Limitation"
+      requirement: "Data collected for one purpose cannot be used for another without new consent"
+      whatsapp_impact: "Opt-in for service messages does NOT cover marketing messages"
+
+    art_15_16:
+      title: "Data Deletion"
+      requirements:
+        - "Delete when purpose is fulfilled"
+        - "Delete upon data subject request"
+        - "Delete when consent is revoked"
+        - "Delete when legal basis no longer applies"
+      whatsapp_impact: "Must have automated deletion flows. Opt-out triggers data review."
+      timeframe: "Without legal maximum, but reasonable (30 days recommended)"
+
+    art_18:
+      title: "Data Subject Rights"
+      rights:
+        - "Access: know what data is stored"
+        - "Correction: fix inaccurate data"
+        - "Deletion: request data removal"
+        - "Portability: receive data in machine-readable format"
+        - "Revocation: withdraw consent at any time"
+        - "Opposition: object to processing"
+      whatsapp_impact: "Must provide accessible channel for exercising rights"
+
+    art_46:
+      title: "Security Measures"
+      requirement: "Implement technical and administrative measures to protect personal data"
+      whatsapp_impact: "Encrypt stored data, secure credential management, access controls"
+
+  penalties:
+    warning: "With deadline for corrective measures"
+    fine_per_violation: "Up to 2% of revenue, max R$ 50 million per violation"
+    daily_fine: "To compel compliance"
+    public_disclosure: "Publication of the violation"
+    data_blocking: "Suspension of data processing"
+
+whatsapp_business_policy:
+  description: "Meta's WhatsApp Business Platform Policy"
+  last_updated: "2025-01"
+
+  consent_rules:
+    opt_in:
+      required: true
+      must_specify:
+        - "Business name"
+        - "Types of messages to be received"
+        - "Expected frequency"
+      methods:
+        - "Web form with explicit checkbox (NOT pre-checked)"
+        - "SMS confirmation"
+        - "WhatsApp message with explicit agreement"
+        - "IVR (Interactive Voice Response)"
+        - "In-store/in-person with documented proof"
+      double_opt_in:
+        required: false
+        recommended: "For marketing messages"
+      storage:
+        required_fields:
+          - "timestamp"
+          - "source (web, sms, whatsapp, ivr, in-person)"
+          - "message types consented"
+          - "ip_address (if web)"
+        retention: "Must be auditable for duration of relationship"
+
+    opt_out:
+      processing_time: "24 hours maximum"
+      supported_keywords: ["SAIR", "STOP", "PARAR", "CANCELAR"]
+      granular: "Opt-out from marketing does NOT cancel service messages"
+      re_engagement: "Requires fresh opt-in after opt-out"
+      freshness_expiry: "6 months of inactivity"
+
+  prohibited_content:
+    absolute_block:
+      - category: "Illegal goods and services"
+        examples: ["drugs", "stolen goods", "counterfeit products"]
+      - category: "Weapons and ammunition"
+        examples: ["firearms", "explosives", "weapon accessories"]
+      - category: "Adult content"
+        examples: ["pornography", "escort services", "explicit material"]
+      - category: "Gambling and betting"
+        examples: ["casino", "sports betting", "lottery (non-government)"]
+      - category: "Tobacco and vaping"
+        examples: ["cigarettes", "e-cigarettes", "vaping products"]
+      - category: "Alcohol"
+        examples: ["spirits", "beer", "wine promotions"]
+      - category: "Political and electoral"
+        severity: "ABSOLUTE — no exceptions"
+        examples: ["campaign messages", "political advertising", "electoral content"]
+      - category: "Phishing and fraud"
+        examples: ["fake links", "impersonation", "scam schemes"]
+      - category: "Discriminatory content"
+        examples: ["racial", "gender", "religious", "sexual orientation"]
+      - category: "MLM schemes"
+        examples: ["pyramid schemes", "network marketing recruitment"]
+
+    restricted:
+      - category: "Government communications"
+        restriction: "Requires Solution Provider partnership"
+      - category: "Healthcare"
+        restriction: "No medical diagnoses or prescriptions via WhatsApp"
+      - category: "Financial services"
+        restriction: "Must comply with CVM/BACEN regulations"
+      - category: "Pharmaceuticals"
+        restriction: "No prescription drug promotion"
+
+  service_window:
+    duration: "24 hours from last user message"
+    within_window:
+      allowed: "Any message type (text, media, interactive, template)"
+      cost: "FREE (service category, 1000/month quota)"
+    outside_window:
+      allowed: "Template messages ONLY"
+      cost: "Charged per conversation category"
+    reset: "Every new user message resets the 24h window"
+
+  quality_enforcement:
+    quality_score:
+      green: "No restrictions"
+      yellow: "Upgrade blocked, scaling not recommended"
+      red: "Tier downgrade, marketing blocked"
+    template_pausing:
+      trigger: "High block/report rate on specific template"
+      action: "Template paused automatically by Meta"
+      recovery: "Appeal or create new template"
+    account_restriction:
+      trigger: "Sustained RED quality or spam reports"
+      action: "Account flagged, may be temporarily blocked (Error 368)"
+      recovery: "File appeal, wait 24h-14 days"
+
+privacy_policy:
+  requirements:
+    - "Must be publicly accessible (URL)"
+    - "Must be linked in WhatsApp business profile"
+    - "Must be written in Portuguese (for Brazil)"
+    - "Must cover data collected via WhatsApp specifically"
+    - "Must explain processing purposes"
+    - "Must detail retention periods"
+    - "Must list data subject rights (LGPD Art. 18)"
+    - "Must identify the DPO (Data Protection Officer)"
+    - "Must be updated when messaging purposes change"
+
+  minimum_sections:
+    - "Dados coletados via WhatsApp"
+    - "Finalidade do tratamento"
+    - "Base legal (LGPD Art. 7)"
+    - "Período de retenção"
+    - "Compartilhamento com terceiros"
+    - "Direitos do titular (LGPD Art. 18)"
+    - "Canal de contato do DPO"
+    - "Política de cookies (se via web)"

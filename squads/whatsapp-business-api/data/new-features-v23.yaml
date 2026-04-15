@@ -1,0 +1,405 @@
+# New Features — WhatsApp Business API v23.0 (OpenAPI Spec)
+# Source: github.com/facebook/openapi
+# Features NOT in standard documentation or our existing arsenal/
+# Extracted: 2026-04-09
+
+metadata:
+  source: "github.com/facebook/openapi"
+  spec_version: "v23.0"
+  discovery_date: "2026-04-09"
+  impact: "HIGH — multiple new API surfaces not in current squad knowledge"
+
+# ═══════════════════════════════════════════════════════════════
+# 1. VOICE CALLS API (Completely New)
+# ═══════════════════════════════════════════════════════════════
+calls_api:
+  status: "NEW — not in any existing arsenal/ or data/ files"
+  impact: "HIGH — enables voice calling via Cloud API"
+
+  overview: |
+    WhatsApp Cloud API now supports voice calling via WebRTC SDP.
+    Businesses can initiate, accept, reject, and terminate calls programmatically.
+    Requires explicit user permission and phone-level feature enablement.
+
+  prerequisites:
+    - "whatsapp_business_messaging permission"
+    - "Cloud API Calling explicitly enabled for the phone number"
+    - "User must grant call permission to the business"
+
+  permission_flow:
+    1: "Check permission: GET /{Phone-Number-ID}/call_permissions?user_wa_id={WA_ID}"
+    2: "Permission status: granted | pending | denied | expired"
+    3: "If denied/expired: send call_permission_request via interactive message"
+    4: "If granted: initiate call via POST /{Phone-Number-ID}/calls"
+
+  call_actions:
+    connect: "Initiate outbound call — requires SDP offer"
+    pre_accept: "Prepare to accept incoming call — no SDP needed"
+    accept: "Accept incoming call — requires SDP answer"
+    reject: "Reject incoming call — no SDP needed"
+    terminate: "End active call — requires call_id"
+
+  technical:
+    protocol: "WebRTC"
+    sdp_format: "RFC 8866"
+    audio_codecs: ["OPUS 48kHz", "G722", "PCMU", "PCMA"]
+    transport: "UDP/TLS/RTP/SAVPF"
+    callback_data_max: 512
+    error_code: "138006 — missing call permission"
+    rate_limit: "code 4, subcode 2390008"
+    daily_limit: "100 calls per 24h"
+
+  webhook_field: "calls"
+
+# ═══════════════════════════════════════════════════════════════
+# 2. GROUPS API (Business-Initiated Groups)
+# ═══════════════════════════════════════════════════════════════
+groups_api:
+  status: "NEW — not in existing arsenal/"
+  impact: "HIGH — businesses can create and manage WhatsApp groups"
+
+  capabilities:
+    - "Create groups with subject (128 chars) and description (2048 chars)"
+    - "Set join approval mode (approval_required or auto_approve)"
+    - "Manage invite links (create/revoke)"
+    - "Approve/reject join requests"
+    - "Add/remove participants (max 8 per call)"
+    - "Delete groups"
+
+  messaging:
+    - "Send messages to groups via recipient_type: 'group'"
+    - "Group ID as the 'to' field instead of phone number"
+
+  webhooks:
+    - "group_lifecycle_update — creation, deletion"
+    - "group_settings_update — subject, description changes"
+    - "group_participant_update — joins, leaves"
+
+  limits:
+    participants_per_call: 8
+    subject_max: 128
+    description_max: 2048
+
+# ═══════════════════════════════════════════════════════════════
+# 3. MULTI-PARTNER SOLUTIONS (MPS)
+# ═══════════════════════════════════════════════════════════════
+multi_partner_solutions:
+  status: "NEW — not in existing arsenal/"
+  impact: "MEDIUM — relevant for BSPs and agencies"
+
+  overview: |
+    Multi-Partner Solutions enable collaborative WhatsApp Business messaging
+    between a solution owner and partner applications. Exactly ONE side
+    (owner or partner) must hold the MESSAGING permission.
+
+  roles:
+    owner: "Creates solution, can hold MESSAGING permission"
+    partner: "Receives invitation, can hold MESSAGING permission"
+
+  lifecycle: "DRAFT → INITIATED → ACTIVE → DEACTIVATED"
+
+  key_operations:
+    - "Create solution with permission distribution"
+    - "Accept/reject partnership invitations"
+    - "Get solution-scoped access tokens"
+    - "Deactivate solutions with request/approval flow"
+
+  migration:
+    obo_mobility: "Transfer WABA between solution providers without losing history"
+    solution_migration: "Migrate WABA from one solution to another"
+    intents: ["INITIATE_TRANSFER", "CONFIRM_TRANSFER", "CANCEL_TRANSFER",
+              "REQUEST_HANDOVER", "APPROVE_HANDOVER", "REJECT_HANDOVER"]
+
+# ═══════════════════════════════════════════════════════════════
+# 4. CONVERSATIONAL AUTOMATION
+# ═══════════════════════════════════════════════════════════════
+conversational_automation:
+  status: "NEW — limited documentation in existing arsenal/"
+  impact: "MEDIUM — improves first-contact experience"
+
+  features:
+    welcome_message:
+      description: "Auto-send welcome message when user opens chat"
+      config: "enable_welcome_message: boolean"
+
+    ice_breakers:
+      description: "Conversation starter prompts shown in chat UI"
+      max_items: 3
+      max_chars_per_prompt: 80
+      example: ["How can I help?", "Track my order", "Schedule appointment"]
+
+    bot_commands:
+      description: "Slash-command suggestions in chat"
+      max_items: 30
+      name_max: 30
+      name_pattern: "[a-zA-Z0-9_]+"
+      description_max: 256
+      example:
+        - { command_name: "help", command_description: "Get help with your account" }
+        - { command_name: "status", command_description: "Check order status" }
+        - { command_name: "hours", command_description: "View business hours" }
+
+# ═══════════════════════════════════════════════════════════════
+# 5. PRE-VERIFIED PHONE NUMBERS
+# ═══════════════════════════════════════════════════════════════
+preverified_numbers:
+  status: "NEW — not in existing arsenal/"
+  impact: "MEDIUM — streamlines phone number onboarding"
+
+  overview: |
+    Pre-verify phone numbers before full WABA onboarding.
+    Numbers can be shared between businesses with granular permissions.
+
+  capabilities:
+    - "List pre-verified numbers for a business"
+    - "Share numbers with partner businesses (READ/USE permissions)"
+    - "Verify numbers with OTP flow"
+    - "Add pre-verified numbers directly to WABA"
+
+  status_values: ["PENDING", "ACTIVE", "EXPIRED", "REVOKED"]
+  availability: ["AVAILABLE", "IN_USE", "RESERVED"]
+
+# ═══════════════════════════════════════════════════════════════
+# 6. ENCRYPTED MESSAGING (MM Lite)
+# ═══════════════════════════════════════════════════════════════
+encrypted_messaging:
+  status: "NEW — not in existing arsenal/"
+  impact: "LOW-MEDIUM — specialized for MM Lite partners"
+
+  overview: |
+    Send pre-encrypted messages using JWE (JSON Web Encryption).
+    Separate endpoint from standard /messages. Requires RSA public key setup.
+
+  endpoint: "POST /{Phone-Number-ID}/messages_encrypted"
+  encryption:
+    format: "JWE"
+    key: "2048-bit RSA"
+    algorithms: ["A128GCM", "A256GCM", "A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512"]
+  note: "Only successful responses are encrypted; errors return plaintext"
+
+# ═══════════════════════════════════════════════════════════════
+# 7. MARKETING MESSAGES (Dedicated Endpoint)
+# ═══════════════════════════════════════════════════════════════
+marketing_messages:
+  status: "NEW — separate from standard /messages"
+  impact: "MEDIUM — product_policy and activity_sharing are new controls"
+
+  endpoint: "POST /{Phone-Number-ID}/marketing_messages"
+  new_fields:
+    product_policy:
+      values: ["CLOUD_API_FALLBACK", "STRICT"]
+      description: "Control product catalog behavior in marketing messages"
+    message_activity_sharing:
+      type: "boolean"
+      description: "Control whether message activity is shared with Meta for optimization"
+
+  response_status: ["accepted", "held_for_quality_assessment", "paused"]
+
+# ═══════════════════════════════════════════════════════════════
+# 8. TEMPLATE ENHANCEMENTS
+# ═══════════════════════════════════════════════════════════════
+template_enhancements:
+  status: "PARTIAL — some features not in existing data"
+
+  new_button_types:
+    flow_inline:
+      description: "Embed full Flow JSON directly in template (no separate flow creation)"
+      field: "flow_json"
+    flow_by_name:
+      description: "Reference flow by human-readable name"
+      field: "flow_name"
+    mpm:
+      description: "Multi-Product Message button — triggers product picker"
+      type: "MPM"
+    otp_one_tap:
+      description: "One-tap autofill for Android authentication"
+      fields: ["package_name", "signature_hash"]
+    location_header:
+      description: "Location as header format for templates"
+
+  new_fields:
+    previous_category: "Shows original category before reclassification"
+    template_status_disabled: "DISABLED status (in addition to APPROVED/PENDING/REJECTED)"
+
+# ═══════════════════════════════════════════════════════════════
+# 9. WEBHOOK ENHANCEMENTS
+# ═══════════════════════════════════════════════════════════════
+webhook_enhancements:
+  status: "NEW — per-WABA webhook override not documented"
+
+  per_waba_override:
+    description: "Different webhook URL per WABA via subscribed_apps POST"
+    fields:
+      override_callback_uri: "Custom webhook URL for this specific WABA"
+      verify_token: "Custom verify token for this WABA"
+
+  new_fields:
+    - "group_lifecycle_update"
+    - "group_settings_update"
+    - "group_participant_update"
+    - "calls"
+
+  pricing_model_field:
+    description: "Status webhook pricing.pricing_model"
+    values: ["CBP (Conversation-Based)", "PMP (Per-Message)"]
+
+# ═══════════════════════════════════════════════════════════════
+# 10. TIER SYSTEM UPDATE
+# ═══════════════════════════════════════════════════════════════
+tier_update:
+  status: "UPDATE — TIER_50 not in existing data"
+  new_tier:
+    TIER_50:
+      limit: 50
+      description: "Pre-launch/sandbox/restricted tier"
+      associated_with: "account_mode: SANDBOX"
+  note: "account_mode field (LIVE/SANDBOX) not previously tracked"
+
+# ═══════════════════════════════════════════════════════════════
+# 11. MESSAGE HISTORY API
+# ═══════════════════════════════════════════════════════════════
+message_history:
+  status: "NEW — per-message delivery tracking"
+  impact: "MEDIUM — enables detailed delivery forensics"
+
+  endpoint: "GET /{Phone-Number-ID}/message_history?message_id={wamid}"
+  tracks: ["delivery_status", "webhook_update_state", "webhook_uri", "error_description"]
+  delivery_status: ["SENT", "DELIVERED", "READ", "FAILED", "DELETED"]
+  webhook_state: ["PENDING", "DELIVERED", "FAILED", "RETRYING"]
+
+# ═══════════════════════════════════════════════════════════════
+# 12. WABA AUDIT TRAIL
+# ═══════════════════════════════════════════════════════════════
+waba_activities:
+  status: "NEW — comprehensive audit log"
+  impact: "MEDIUM — compliance and security tracking"
+
+  endpoint: "GET /{WABA-ID}/activities"
+  filter_by: ["activity_type", "since", "until"]
+  activity_types:
+    account: ["ACCOUNT_CREATED", "ACCOUNT_UPDATED", "ACCOUNT_DELETED"]
+    phone: ["PHONE_NUMBER_ADDED", "PHONE_NUMBER_REMOVED", "PHONE_NUMBER_VERIFIED"]
+    users: ["USER_ADDED", "USER_REMOVED", "USER_ROLE_CHANGED"]
+    permissions: ["PERMISSION_GRANTED", "PERMISSION_REVOKED"]
+    templates: ["TEMPLATE_CREATED", "TEMPLATE_UPDATED", "TEMPLATE_DELETED"]
+    infrastructure: ["WEBHOOK_CONFIGURED", "API_ACCESS_GRANTED", "API_ACCESS_REVOKED"]
+    compliance: ["BILLING_UPDATED", "COMPLIANCE_ACTION", "SECURITY_EVENT"]
+
+  record_fields: ["id", "activity_type", "timestamp", "actor_type", "actor_id",
+    "actor_name", "description", "details", "ip_address", "user_agent"]
+  actor_types: ["USER", "SYSTEM", "API", "ADMIN", "AUTOMATED_PROCESS"]
+
+# ═══════════════════════════════════════════════════════════════
+# 13. SCHEDULE MANAGEMENT
+# ═══════════════════════════════════════════════════════════════
+schedule_management:
+  status: "NEW — WABA-level scheduling"
+  impact: "MEDIUM — enables automated schedule management"
+
+  endpoints:
+    list: "GET /{WABA-ID}/schedules"
+    create: "POST /{WABA-ID}/schedules"
+
+  schedule_types: ["BUSINESS_HOURS", "AUTOMATED_RESPONSE", "MESSAGE_CAMPAIGN", "MAINTENANCE_WINDOW", "CUSTOM"]
+  status_values: ["ACTIVE", "INACTIVE", "PAUSED", "EXPIRED", "DRAFT"]
+  recurrence: ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]
+
+# ═══════════════════════════════════════════════════════════════
+# 14. BLOCK USERS API
+# ═══════════════════════════════════════════════════════════════
+block_users:
+  status: "NEW — programmatic user blocking"
+  impact: "MEDIUM — compliance and spam management"
+
+  operations:
+    list: "GET /{Phone-Number-ID}/block_users"
+    block: "POST /{Phone-Number-ID}/block_users"
+    unblock: "DELETE /{Phone-Number-ID}/block_users"
+
+# ═══════════════════════════════════════════════════════════════
+# 15. FLOW ENHANCEMENTS
+# ═══════════════════════════════════════════════════════════════
+flow_enhancements:
+  clone_flow:
+    description: "Clone existing flow with new name"
+    endpoint: "POST /{WABA-ID}/flows (multipart with clone_flow_id)"
+
+  migrate_flows:
+    description: "Migrate flows between WABAs by name or all"
+    endpoint: "POST /{dest-WABA-ID}/migrate_flows"
+    body: { source_waba_id: "string", source_flow_names: "array or omit for all" }
+
+  inline_flow_json:
+    description: "Embed flow JSON directly in template button (no separate flow creation)"
+    template_button_field: "flow_json"
+
+  categories: ["SIGN_UP", "SIGN_IN", "CONTACT_US", "OTHER"]
+
+# ═══════════════════════════════════════════════════════════════
+# 16. QR CODE MANAGEMENT
+# ═══════════════════════════════════════════════════════════════
+qr_codes:
+  status: "NEW — not in existing arsenal/"
+  impact: "LOW — click-to-chat via QR"
+
+  capabilities:
+    - "Create QR codes with prefilled message (max 140 chars)"
+    - "Generate as PNG or SVG image"
+    - "Each QR has a deep link URL"
+    - "List, update, delete QR codes"
+
+# ═══════════════════════════════════════════════════════════════
+# 17. OFFICIAL BUSINESS ACCOUNT (OBA)
+# ═══════════════════════════════════════════════════════════════
+official_business_account:
+  status: "NEW details"
+  impact: "LOW — green checkmark verification"
+
+  oba_status: ["PENDING", "APPROVED", "REJECTED"]
+  appeal_status: ["PENDING", "APPROVED", "REJECTED", "UNDER_REVIEW", "EXPIRED", "CANCELLED"]
+  required_fields: ["business_website_url", "primary_country_of_operation"]
+  optional_fields: ["primary_language", "parent_business_or_brand(255ch)", "supporting_links(5-10)", "additional_info(1000ch)"]
+
+# ═══════════════════════════════════════════════════════════════
+# 18. CLICK-TO-WHATSAPP AD ATTRIBUTION
+# ═══════════════════════════════════════════════════════════════
+ctwa_attribution:
+  status: "ENHANCED — ctwa_clid field for tracking"
+  impact: "MEDIUM — enables ad spend attribution"
+
+  referral_fields:
+    source_url: "Ad URL"
+    source_id: "Ad ID"
+    source_type: ["ad", "post"]
+    ctwa_clid: "Click ID for attribution tracking"
+    welcome_message: "Custom greeting from ad"
+    body: "Ad body text"
+    headline: "Ad headline"
+    media_type: ["image", "video"]
+
+# ═══════════════════════════════════════════════════════════════
+# SUMMARY: Impact on Squad
+# ═══════════════════════════════════════════════════════════════
+squad_impact:
+  high_priority:
+    - "Calls API — entirely new capability, needs agent coverage"
+    - "Groups API — new messaging paradigm (group vs individual)"
+    - "TIER_50 + account_mode — affects tier progression rules"
+
+  medium_priority:
+    - "Conversational Automation — ice breakers + bot commands"
+    - "Marketing Messages endpoint — product_policy + activity_sharing"
+    - "Template enhancements — inline flow_json, MPM button, one-tap OTP"
+    - "Per-WABA webhook override — different URLs per WABA"
+    - "Message History API — per-message delivery forensics"
+    - "WABA Activities — audit trail for compliance"
+    - "Schedule Management — WABA-level scheduling"
+    - "Block Users API — programmatic blocking"
+    - "CTWA Attribution — ad spend tracking"
+
+  low_priority:
+    - "Multi-Partner Solutions — BSP/agency specific"
+    - "MM Lite / Encrypted Messages — specialized use case"
+    - "Pre-Verified Numbers — onboarding optimization"
+    - "QR Codes — click-to-chat"
+    - "OBA verification — green checkmark"

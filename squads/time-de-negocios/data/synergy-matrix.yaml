@@ -1,0 +1,86 @@
+# Matriz de Sinergia — Time de Negócios
+# Quem trabalha com quem em cada fase do pipeline
+
+pipeline_phases:
+  - id: diagnostico
+    name: "Diagnóstico do sistema"
+    active_agents: [naval, goldratt, hormozi]
+    ceo_active: true
+    flow: "Naval filtra: 'Vale jogar?' → Rockefeller decide onde atacar → Goldratt identifica gargalo → Hormozi mapeia valor"
+
+  - id: oferta
+    name: "Construção da oferta irrecusável"
+    active_agents: [naval, goldratt, hormozi, cialdini]
+    ceo_active: true
+    flow: "Naval valida leverage e asymmetric upside → Goldratt define Mafia Offer → Hormozi empacota Grand Slam → Cialdini embute gatilhos"
+
+  - id: pre-mesa
+    name: "Montagem da mesa"
+    active_agents: [naval, ury, cialdini]
+    ceo_active: false
+    flow: "Naval valida posição principal/agent → Ury estrutura interesses/BATNA → Cialdini prepara Pre-Suasion"
+
+  - id: funil
+    name: "Condução ao vivo"
+    active_agents: [voss, cialdini]
+    ceo_active: false
+    flow: "Voss conduz com empatia tática → Cialdini opera entre reuniões"
+
+  - id: fechamento
+    name: "Hora de fechar"
+    active_agents: [voss, belfort, cialdini]
+    ceo_active: false
+    flow: "Voss fecha consultivos (Ackerman) → Belfort fecha transacionais (Straight Line) → Cialdini na proposta"
+
+  - id: alta-pressao
+    name: "Cenários de força"
+    active_agents: [trump, cohen]
+    ceo_active: true
+    flow: "Rockefeller autoriza → Trump ancora extremo → Cohen calibra excessos"
+
+  - id: treino
+    name: "Formação do time"
+    active_agents: [belfort, cialdini, cohen]
+    ceo_active: false
+    flow: "Belfort treina execução → Cialdini ensina ciência → Cohen ensina mentalidade"
+
+key_synergies:
+  - pair: [naval, goldratt]
+    description: "Filtro → Sistema. Naval decide se vale jogar, Goldratt diagnostica o gargalo."
+
+  - pair: [naval, hormozi]
+    description: "Leverage → Oferta. Naval valida se ha leverage real, Hormozi empacota."
+
+  - pair: [naval, cohen]
+    description: "Desapego calibrado. Ambos compartilham 'care, but not that much' como principio."
+
+  - pair: [goldratt, hormozi]
+    description: "Sistema → Oferta. Goldratt pensa, Hormozi empacota."
+
+  - pair: [ury, voss]
+    description: "Estrutura → Execução. Ury monta a mesa, Voss conduz a conversa."
+
+  - pair: [cialdini, all]
+    description: "Cialdini é o multiplicador — potencializa TODOS em TODOS os touchpoints."
+
+  - pair: [voss, belfort]
+    description: "Consultivo + Transacional. Voss fecha complexo, Belfort fecha rápido."
+
+  - pair: [trump, cohen]
+    description: "Força + Calibragem. Trump empurra, Cohen segura."
+
+  - pair: [belfort, cialdini]
+    description: "Scripts + Gatilhos = máquina de inside sales."
+
+agent_phase_matrix:
+  #               diag  oferta  pré  funil  fecha  press  treino
+  rockefeller:   [true,  true, false, false, false,  true,  false]
+  naval:         [true,  true,  true, false, false, false,  false]
+  goldratt:      [true,  true, false, false, false, false,  false]
+  hormozi:       [true,  true, false, false, false, false,  false]
+  ury:           [false, false, true, false, false, false,  false]
+  cialdini:      [false, true,  true, true,  true,  false,  true]
+  voss:          [false, false, false, true,  true,  false,  false]
+  belfort:       [false, false, false, false, true,  false,  true]
+  trump:         [false, false, false, false, false, true,   false]
+  cohen:         [false, false, false, false, false, true,   true]

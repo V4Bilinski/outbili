@@ -1,0 +1,128 @@
+# Quality Score Formulas — WhatsApp Business API Squad
+# Used by @campaign-optimizer and @whatsapp-chief for account health assessment
+
+account_health_score:
+  description: "Composite score (0-100) for overall account health"
+  formula: "weighted average of 5 dimensions"
+  dimensions:
+    - name: quality_score
+      weight: 30
+      scoring:
+        GREEN: 100
+        YELLOW: 50
+        RED: 0
+      source: "Meta Business Manager → Quality Rating"
+
+    - name: delivery_rate
+      weight: 25
+      scoring:
+        ">= 98%": 100
+        ">= 95%": 80
+        ">= 90%": 50
+        "< 90%": 20
+      formula: "delivered / sent * 100"
+
+    - name: block_rate
+      weight: 20
+      scoring:
+        "< 1%": 100
+        "1% - 2%": 80
+        "2% - 4%": 40
+        "> 4%": 0
+      formula: "blocks / delivered * 100"
+      note: "Block rate > 4% triggers VETO-005"
+
+    - name: template_approval_rate
+      weight: 15
+      scoring:
+        ">= 95%": 100
+        ">= 90%": 80
+        ">= 80%": 50
+        "< 80%": 20
+      formula: "approved_templates / submitted_templates * 100"
+
+    - name: tier_utilization
+      weight: 10
+      scoring:
+        "50% - 80%": 100
+        "30% - 50%": 80
+        "80% - 95%": 60
+        "> 95%": 30
+        "< 30%": 40
+      formula: "messages_sent_24h / tier_limit_24h * 100"
+      note: "Too high = risk of hitting limits. Too low = underutilization."
+
+  interpretation:
+    "90-100": "Excellent — safe to scale, all systems healthy"
+    "70-89": "Good — minor optimizations recommended"
+    "50-69": "Warning — review block rates and template quality"
+    "30-49": "Critical — immediate action needed on quality"
+    "0-29": "Emergency — pause all marketing, investigate root cause"
+
+template_quality_score:
+  description: "Per-template quality assessment (0-100)"
+  dimensions:
+    - name: read_rate
+      weight: 30
+      good: ">= 60%"
+      bad: "< 30%"
+
+    - name: reply_rate
+      weight: 25
+      good: ">= 10%"
+      bad: "< 2%"
+
+    - name: block_rate
+      weight: 25
+      good: "< 1%"
+      bad: "> 3%"
+
+    - name: ctr
+      weight: 20
+      good: ">= 5%"
+      bad: "< 1%"
+
+pacto_score:
+  description: "Utility template PACTO compliance score (0-100)"
+  dimensions:
+    - name: P_status_word
+      weight: 25
+      pass: "Starts with approved status word (Confirmada, Aprovada, etc.)"
+      fail: "No status word or uses prohibited word"
+
+    - name: A_presentation
+      weight: 15
+      pass: "Brief contextual intro with sender identification"
+      fail: "No context or missing sender"
+
+    - name: C_clarity
+      weight: 25
+      pass: "Neutral, informative tone. No superlatives."
+      fail: "Promotional language, urgency, or exaggeration detected"
+
+    - name: T_action
+      weight: 20
+      pass: "Service-oriented CTA (acompanhar, confirmar, receber)"
+      fail: "Sales CTA (comprar, garantir, adquirir)"
+
+    - name: O_omission
+      weight: 15
+      pass: "Zero promotional language detected"
+      fail: "Promotional words found (desconto, oferta, promoção, etc.)"
+
+  interpretation:
+    "90-100": "Safe utility — will pass approval"
+    "70-89": "Likely utility — minor adjustments recommended"
+    "50-69": "Risk zone — may be reclassified, needs rewrite"
+    "0-49": "Marketing detected — must convert or submit as marketing"
+
+campaign_roi:
+  description: "Campaign ROI calculation"
+  formula: "(revenue_attributed - total_cost) / total_cost * 100"
+  cost_components:
+    - conversations: "count * category_price"
+    - templates: "creation effort (hours * rate)"
+    - tooling: "platform fees"
+  revenue_attribution:
+    - direct: "Purchases with UTM from WhatsApp"
+    - assisted: "Interactions that led to conversion within 7 days"

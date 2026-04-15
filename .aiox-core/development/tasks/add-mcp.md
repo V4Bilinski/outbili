@@ -189,16 +189,6 @@ docker mcp server enable {mcp-name}
       value: 'tool1,tool2,tool3'
 ```
 
-**Example for Apify:**
-```yaml
-apify-mcp-server:
-  env:
-    - name: TOOLS
-      value: 'actors,docs,apify/rag-web-browser'
-    - name: APIFY_TOKEN
-      value: 'apify_api_xxxxxxxxxxxxx'
-```
-
 **Security Note:** This exposes credentials in a local file. Ensure:
 1. `~/.docker/mcp/catalogs/` is not committed to any repo
 2. File permissions restrict access to current user only
@@ -421,7 +411,6 @@ changelog:
     - Added: Step 3.1 documenting Docker MCP secrets/template bug
     - Added: Workaround using catalog file direct edit
     - Updated: Error handling for credentials issues
-    - Fixed: Apify MCP now working with 7 tools
     - Note: Bug affects all MCPs requiring authentication
   1.2.0:
     - Added: Steps 7-9 for AIOX documentation and session restart

@@ -1,0 +1,93 @@
+name: template-lifecycle
+version: 2.0.0
+description: "Ciclo completo de vida de template WhatsApp: da seleção de categoria ao deployment em produção"
+
+steps:
+  - id: category-selection
+    task: tasks/create-template.md
+    tier: 1
+    agents: [template-strategist]
+    required: true
+    description: "Selecionar categoria (marketing/utility/authentication), idioma, nome e caso de uso"
+    outputs:
+      - category
+      - language
+      - template_name
+      - use_case
+
+  - id: content-design
+    task: tasks/create-template.md
+    tier: 1
+    agents: [template-strategist]
+    required: true
+    depends_on: [category-selection]
+    description: "Projetar header, body, footer, buttons e variáveis do template"
+    inputs:
+      - from: category-selection.category
+      - from: category-selection.language
+      - from: category-selection.template_name
+      - from: category-selection.use_case
+    outputs:
+      - header_spec
+      - body_spec
+      - footer_spec
+      - button_specs
+      - variable_mapping
+      - example_values
+
+  - id: compliance-review
+    task: tasks/compliance-check.md
+    tier: 0
+    agents: [compliance-guardian]
+    required: true
+    depends_on: [content-design]
+    description: "Validar compliance LGPD, políticas WhatsApp, conteúdo proibido"
+    inputs:
+      - from: content-design.header_spec
+      - from: content-design.body_spec
+      - from: content-design.footer_spec
+      - from: content-design.button_specs
+      - from: category-selection.category
+    quality_gate:
+      checklist: checklists/template-approval-checklist.md
+      minimum_pass: 100
+      max_retries: 2
+
+  - id: api-submission
+    task: tasks/cloud-api-reference.md
+    tier: 2
+    agents: [cloud-api-architect]
+    required: true
+    depends_on: [compliance-review]
+    description: "Submeter template via Cloud API POST /{waba_id}/message_templates"
+    conditions:
+      - compliance-review.result == "APPROVED"
+    outputs:
+      - template_id
+      - submission_status
+
+  - id: approval-monitoring
+    task: tasks/audit-template.md
+    tier: 1
+    agents: [whatsapp-chief]
+    required: true
+    depends_on: [api-submission]
+    description: "Monitorar status de aprovação, tratar rejeição se necessário"
+    inputs:
+      - from: api-submission.template_id
+    outputs:
+      - approval_status
+      - rejection_reason
+
+  - id: deployment
+    task: tasks/setup-webhook.md
+    tier: 2
+    agents: [integration-engineer]
+    required: true
+    depends_on: [approval-monitoring]
+    description: "Deploy do template em produção: configurar envio, testar mensagem, ativar"
+    conditions:
+      - approval-monitoring.approval_status == "APPROVED"
+    outputs:
+      - deployment_status
+      - test_message_result

@@ -387,13 +387,6 @@ exa:
   apiKeys:
     EXA_API_KEY: your-actual-api-key
 
-# Example for Apify (requires catalog edit):
-apify-mcp-server:
-  env:
-    - name: TOOLS
-      value: 'actors,docs,apify/rag-web-browser'
-    - name: APIFY_TOKEN
-      value: 'your-actual-apify-token'
 ```
 
 **Security Note:** This exposes credentials in a local file. Ensure:
@@ -612,7 +605,6 @@ changelog:
     - Added: Step 4.1 documenting Docker MCP secrets bug
     - Added: Workaround using catalog file direct edit
     - Updated: Clarified which MCPs need catalog edit vs config.yaml
-    - Fixed: Apify and similar MCPs now configurable
   2.1.0:
     - Changed: DevOps Agent now exclusive responsible (Story 6.14)
     - Removed: Dev Agent from agents list

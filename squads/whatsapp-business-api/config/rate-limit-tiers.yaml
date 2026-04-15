@@ -1,0 +1,81 @@
+# Rate Limit Tiers — WhatsApp Cloud API
+# Source: arsenal/tecnologia/rate-limits-and-tiers.md
+
+tiers:
+  sandbox:
+    label: "Sandbox (TIER_50)"
+    messaging_limit_24h: 50
+    throughput_mps: 80
+    requirement: "Sandbox/restricted account (account_mode: SANDBOX)"
+    can_send_to: "Only pre-verified numbers"
+    note: "NEW in OpenAPI v23.0 — pre-launch/restricted tier"
+
+  unverified:
+    label: "Unverified (TIER_250)"
+    messaging_limit_24h: 250
+    throughput_mps: 80
+    requirement: "Basic account registration"
+    can_send_to: "Only pre-verified numbers"
+
+  tier_1:
+    label: "Tier 1"
+    messaging_limit_24h: 1000
+    throughput_mps: 80
+    requirement: "Business verification completed"
+    upgrade_to_tier_2:
+      condition: "Quality GREEN + send 2x current limit in 7 days"
+      quality_required: "GREEN"
+
+  tier_2:
+    label: "Tier 2"
+    messaging_limit_24h: 10000
+    throughput_mps: 80
+    requirement: "Quality GREEN + volume threshold"
+    upgrade_to_tier_3:
+      condition: "Quality GREEN + send 2x current limit in 7 days"
+      quality_required: "GREEN"
+
+  tier_3:
+    label: "Tier 3"
+    messaging_limit_24h: 100000
+    throughput_mps: 80
+    requirement: "Quality GREEN + volume threshold"
+    upgrade_to_unlimited:
+      condition: "Request to Meta + Quality GREEN"
+      quality_required: "GREEN"
+
+  unlimited:
+    label: "Unlimited"
+    messaging_limit_24h: null
+    throughput_mps: 1000
+    requirement: "Direct request to Meta"
+
+progression_rules:
+  - "Tier upgrades are automatic when conditions are met"
+  - "Quality must remain GREEN throughout the evaluation period"
+  - "Downgrade happens immediately when quality drops to RED"
+  - "After downgrade, must re-qualify from current tier"
+  - "Messaging limits are per phone number, NOT per WABA"
+
+quality_impact:
+  green_to_yellow: "No immediate downgrade, but upgrade blocked"
+  yellow_to_red: "Immediate downgrade to previous tier"
+  red_sustained: "Account may be flagged for review"
+  recovery: "Quality improves based on recent 7-day messaging quality"
+
+# ═══ NEW from OpenAPI v23.0 ═══
+
+phone_number_enums:
+  quality_rating: ["GREEN", "YELLOW", "RED", "NA", "UNKNOWN"]
+  messaging_limit_tier: ["TIER_50", "TIER_250", "TIER_1K", "TIER_10K", "TIER_100K", "TIER_UNLIMITED"]
+  status: ["PENDING", "LINKED", "UNLINKED", "DELETED", "MIGRATED", "BANNED", "RESTRICTED"]
+  code_verification: ["VERIFIED", "NOT_VERIFIED"]
+  name_status: ["APPROVED", "AVAILABLE_WITHOUT_REVIEW", "DECLINED", "EXPIRED", "PENDING_REVIEW", "NONE"]
+  unified_cert_status: ["APPROVED", "NAME_PENDING_REVIEW", "NAME_NOT_APPROVED", "ACCOUNT_REVIEW_NOT_STARTED", "LIMITED_ACCESS"]
+  host_platform: ["CLOUD_API", "ON_PREMISE", "NOT_APPLICABLE"]
+  account_mode: ["LIVE", "SANDBOX"]
+
+waba_enums:
+  account_review_status: ["APPROVED", "PENDING", "REJECTED", "RESTRICTED", "LIMIT_REACHED"]
+  ownership_type: ["SELF_OWNED", "CLIENT_OWNED", "AGENCY_OWNED"]
+  business_verification: ["VERIFIED", "UNVERIFIED", "PENDING", "REJECTED"]

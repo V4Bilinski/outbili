@@ -1,0 +1,53 @@
+# Shorts Pipeline — Video Longo → Shorts/Reels/TikTok
+# Pipeline focado em cortes curtos de alto impacto
+
+name: shorts-pipeline
+version: 1.0.0
+description: >
+  Pipeline otimizado para transformar video longo em shorts virais.
+  Video Editor identifica momentos, Scriptwriter refina hooks, Chief valida.
+
+trigger:
+  command: "*shorts {video} {plataforma}"
+  example: "*shorts https://youtube.com/watch?v=xxx tiktok"
+
+phases:
+  - id: coleta
+    name: "Coleta de Info"
+    agent: aiox-chief
+    description: "Coletar video, transcricao, quantidade e duracao desejada"
+    output: "briefing_shorts.md"
+
+  - id: identificacao
+    name: "Identificar Momentos"
+    agent: video-editor
+    task: cortar-video.md
+    description: "Encontrar melhores trechos do video"
+    output: "momentos_identificados.md"
+
+  - id: hooks
+    name: "Refinar Hooks"
+    agent: scriptwriter
+    description: "Criar hook forte para primeiros 3s de cada corte"
+    output: "hooks_refinados.md"
+
+  - id: formatacao
+    name: "Formatar por Plataforma"
+    agent: video-editor
+    description: "Ajustar duracao e formato por plataforma"
+    output: "cortes_formatados/"
+    platform_specs:
+      tiktok: "24-38s viral, 60-90s valor"
+      reels: "7-15s viral, 30-45s valor"
+      youtube_shorts: "50-58s ideal"
+
+  - id: validacao
+    name: "Validar Qualidade"
+    agent: aiox-chief
+    quality_gate:
+      checklist: qualidade-corte.md
+      min_score: "6/8"
+    output: "shorts_validados/"
+
+flow: |
+  coleta → identificacao → hooks → formatacao → validacao

@@ -1,0 +1,125 @@
+name: time-de-negocios
+version: 1.0.0
+description: |
+  Time de Negocios — Rockefeller Dream Team. 10 mentes, 1 mandatario, 4 camadas,
+  7 fases de pipeline. Negociacao, vendas complexas e persuasao estrategica.
+  De Rockefeller (dominio total) a Voss (empatia tatica), cada agente opera com
+  frameworks reais. Cobre diagnostico de gargalos, construcao de ofertas
+  irrecusaveis, preparacao de mesa, conducao ao vivo, fechamento, cenarios de
+  alta pressao e treinamento de equipe comercial.
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: negocios
+cloned_from: /Users/luizhenrique/luiz-henrique-creator/squads/time-de-negocios
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - negociacao
+  - vendas
+  - persuasao
+  - fechamento
+  - oferta
+  - BATNA
+  - empatia-tatica
+  - influence
+  - deal-strategy
+  - pipeline-comercial
+  - mafia-offer
+  - leverage
+
+components:
+  agents:
+    # Mandatario
+    - rockefeller.md
+    # Camada 1 — Sistema, Oferta e Alavancagem
+    - goldratt.md
+    - hormozi.md
+    - naval.md
+    # Camada 2 — Estrutura de Negociacao
+    - ury.md
+    - cialdini.md
+    # Camada 3 — Execucao Tatica
+    - voss.md
+    - belfort.md
+    # Camada 4 — Reservas (uso seletivo)
+    - trump.md
+    - cohen.md
+
+  tasks:
+    - diagnostico-cenario.md
+    - construir-oferta.md
+    - preparar-mesa.md
+    - conduzir-conversa.md
+    - fechar-deal.md
+    - alta-pressao.md
+    - treinar-time.md
+    - simular-cenario.md
+    - gerar-playbook.md
+    - leverage-audit.md
+    - deal-filter-naval.md
+    - compounding-check.md
+    - hourly-rate-calculator.md
+    - principal-agent-analysis.md
+    - specific-knowledge-discovery.md
+    - wealth-vs-money-diagnostic.md
+
+  workflows:
+    - pipeline-completo.yaml
+    - qualificacao-deal.yaml
+    - naval-strategic-filter.yaml
+
+  checklists:
+    - pre-negociacao-checklist.md
+    - oferta-irrecusavel-checklist.md
+    - fechamento-checklist.md
+    - alta-pressao-gate-checklist.md
+    - debrief-checklist.md
+    - naval-deal-filter-checklist.md
+    - qualidade-escrita-checklist.md
+
+  templates:
+    - prep-negociacao-tmpl.md
+    - oferta-grand-slam-tmpl.md
+    - playbook-tmpl.md
+    - programa-treino-tmpl.md
+    - debrief-tmpl.md
+    - leverage-map-tmpl.md
+    - naval-deal-scorecard-tmpl.md
+
+  scripts:
+    - scripts-abertura.md
+    - scripts-fechamento.md
+    - scripts-objecoes.md
+
+  data:
+    - frameworks-reference.yaml
+    - synergy-matrix.yaml
+
+config:
+  extends: extend
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+philosophy:
+  core_mantra: "Controle a cadeia inteira — quem depende de voce nao negocia, aceita."
+  camadas:
+    mandatario: "Rockefeller — visao de dominio total, decisao estrategica"
+    camada_1: "Goldratt (TOC) + Hormozi (Grand Slam Offer) + Naval (leverage)"
+    camada_2: "Ury (BATNA) + Cialdini (7 principios + Pre-Suasion)"
+    camada_3: "Voss (empatia tatica) + Belfort (Straight Line)"
+    camada_4: "Trump (ancoragem extrema) + Cohen (poder + tempo + info) — reservas"
+  pipeline_7_fases:
+    - "1. Diagnostico: Goldratt + Hormozi + Naval"
+    - "2. Oferta: Goldratt + Hormozi + Naval + Cialdini"
+    - "3. Pre-mesa: Naval + Ury + Cialdini"
+    - "4. Funil: Voss + Cialdini"
+    - "5. Fechamento: Voss + Belfort + Cialdini"
+    - "6. Alta pressao: Trump + Cohen (requer autorizacao Rockefeller)"
+    - "7. Treino: Belfort + Cialdini + Cohen"

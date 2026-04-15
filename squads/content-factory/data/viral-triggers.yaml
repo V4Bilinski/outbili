@@ -1,0 +1,85 @@
+# Viral Triggers — Gatilhos psicologicos que geram compartilhamento
+# Baseado em Jonah Berger (STEPPS) + Brendan Kane (Hook Point)
+# Usado por todos os agentes do squad
+
+stepps:
+  - id: social_currency
+    name: "Moeda Social"
+    description: "Pessoas compartilham o que faz elas parecerem inteligentes, bem-informadas ou exclusivas"
+    signals:
+      - "Informacao pouco conhecida"
+      - "Dado surpreendente"
+      - "Bastidores/exclusividade"
+      - "Ranking ou lista"
+    examples:
+      - "O segredo que ninguem te conta sobre..."
+      - "Dado que 99% das pessoas nao sabem"
+      - "Bastidores de como fiz R$X"
+
+  - id: triggers
+    name: "Gatilhos Ambientais"
+    description: "Associacoes que lembram do conteudo no dia a dia"
+    signals:
+      - "Conecta com rotina do publico"
+      - "Referencia algo cotidiano"
+      - "Momento do dia/semana"
+    examples:
+      - "Toda vez que voce abre o Instagram..."
+      - "Na proxima reuniao de segunda..."
+
+  - id: emotion
+    name: "Emocao"
+    description: "Conteudo que ativa emocoes de alta excitacao (raiva, surpresa, diversao, medo)"
+    signals:
+      - "Surpresa/choque"
+      - "Raiva/indignacao"
+      - "Inspiracao/awe"
+      - "Humor"
+      - "Medo de perder (FOMO)"
+    high_arousal: [surpresa, raiva, ansiedade, diversao, inspiracao]
+    low_arousal_avoid: [tristeza, contentamento]
+
+  - id: public
+    name: "Publico/Observavel"
+    description: "Se as pessoas veem outros fazendo, imitam"
+    signals:
+      - "Tendencia visivel"
+      - "Comportamento imitavel"
+      - "Desafio replicavel"
+    examples:
+      - "Desafio de 30 dias"
+      - "Template que todos estao usando"
+
+  - id: practical_value
+    name: "Valor Pratico"
+    description: "Conteudo util que resolve problema real"
+    signals:
+      - "Tutorial passo a passo"
+      - "Ferramenta/hack"
+      - "Economia de tempo/dinheiro"
+      - "Lista de recursos"
+    examples:
+      - "5 ferramentas gratuitas que..."
+      - "Como fazer X em 5 minutos"
+      - "Template pronto pra usar"
+
+  - id: stories
+    name: "Historias"
+    description: "Narrativas que carregam a mensagem de forma memoravel"
+    signals:
+      - "Jornada pessoal"
+      - "Antes vs depois"
+      - "Conflito e resolucao"
+      - "Vulnerabilidade"
+    examples:
+      - "Comecei com R$0 e..."
+      - "O dia que quase desisti"
+      - "De funcionario a dono"
+
+content_scoring:
+  viral_potential:
+    high: "3+ STEPPS triggers ativos"
+    medium: "2 STEPPS triggers"
+    low: "0-1 STEPPS trigger"
+  mandatory_for_shorts: [emotion, social_currency]
+  mandatory_for_longform: [stories, practical_value]

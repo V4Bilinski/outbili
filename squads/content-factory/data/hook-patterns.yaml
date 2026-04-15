@@ -1,0 +1,78 @@
+# Hook Patterns — Padroes de abertura que prendem atencao
+# Usado pelo Scriptwriter e Video Editor
+
+categories:
+  - id: pergunta
+    name: "Pergunta Provocadora"
+    retention: "alta"
+    best_for: [shorts, reels, tiktok]
+    examples:
+      - "Voce sabia que 90% dos criadores desistem em 3 meses?"
+      - "Ja se perguntou por que seus videos nao viralizam?"
+      - "Quanto voce acha que custa nao ter presenca online?"
+    structure: "Pergunta que gera curiosidade ou desconforto"
+
+  - id: afirmacao_chocante
+    name: "Afirmacao Chocante"
+    retention: "muito alta"
+    best_for: [shorts, tiktok, reels]
+    examples:
+      - "Isso mudou completamente meu negocio"
+      - "Eu perdi R$50 mil antes de aprender isso"
+      - "O que vou te mostrar agora vai mudar tudo"
+    structure: "Afirmacao forte que quebra expectativa"
+
+  - id: contra_intuitivo
+    name: "Contra-Intuitivo"
+    retention: "muito alta"
+    best_for: [youtube, linkedin, shorts]
+    examples:
+      - "Pare de postar todo dia — aqui esta o porque"
+      - "Consistencia esta matando seu canal"
+      - "O pior conselho de marketing que todo mundo segue"
+    structure: "Vai contra o senso comum do nicho"
+
+  - id: numero
+    name: "Numero Concreto"
+    retention: "alta"
+    best_for: [youtube, linkedin, shorts]
+    examples:
+      - "3 erros que me custaram 2 anos de crescimento"
+      - "De 0 a 100k seguidores em 6 meses — o que fiz"
+      - "5 ferramentas que uso todo dia"
+    structure: "Numero especifico que promete valor tangivel"
+
+  - id: desafio
+    name: "Desafio ao Espectador"
+    retention: "alta"
+    best_for: [tiktok, reels, shorts]
+    examples:
+      - "Aposto que voce nao sabe fazer isso"
+      - "Tenta assistir sem querer testar"
+      - "99% das pessoas erram isso"
+    structure: "Provoca o espectador a provar algo"
+
+  - id: historia
+    name: "Historia Pessoal"
+    retention: "muito alta"
+    best_for: [youtube, reels, linkedin]
+    examples:
+      - "Ha 2 anos eu estava completamente falido"
+      - "Quando recebi aquele email, tudo mudou"
+      - "Eu nunca contei isso publicamente antes"
+    structure: "Inicio de narrativa pessoal com tensao"
+
+  - id: instrucao_direta
+    name: "Instrucao Direta"
+    retention: "media"
+    best_for: [youtube, linkedin, shorts]
+    examples:
+      - "Salva esse video porque voce vai precisar"
+      - "Para tudo e presta atencao nisso"
+      - "Se voce e [publico], esse video e pra voce"
+    structure: "Comando direto que filtra publico"
+
+scoring:
+  high_retention: ["afirmacao_chocante", "contra_intuitivo", "historia"]
+  medium_retention: ["pergunta", "numero", "desafio"]
+  platform_dependent: ["instrucao_direta"]

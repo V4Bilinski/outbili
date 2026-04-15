@@ -22,7 +22,7 @@ ptc_eligible (MCP tools excluded per ADR-3). This template covers the
 ## Restriction (ADR-3)
 
 **ONLY native/CLI tools allowed inside this batch block.**
-MCP tools (EXA, Context7, Apify) are EXCLUDED from batch blocks.
+MCP tools (EXA, Context7) are EXCLUDED from batch blocks.
 WebSearch/WebFetch are native Tier 1 but operate as API calls — they can be
 included in batch if executed via shell scripting patterns.
 
@@ -90,5 +90,6 @@ echo -e "$OUTPUT"
 - Scans `docs/research/*/README.md` by default — adjust path as needed
 - Extracts title, findings count, and performance metrics per research doc
 - Only the aggregated summary enters context
-- For web research (EXA, WebSearch), run those as separate tool calls first,
-  then use this template to aggregate the saved results
+- For web research (EXA, WebSearch) or data enrichment (CNPJa, Assertiva),
+  run those as separate tool/API calls first, then use this template to
+  aggregate the saved results

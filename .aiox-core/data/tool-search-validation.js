@@ -18,7 +18,6 @@ const REGISTRY_PATH = path.resolve(__dirname, 'tool-registry.yaml');
 const TEST_QUERIES = [
   { query: 'search the web for information', expectedTool: 'exa', category: 'web-search' },
   { query: 'browser screenshot automation', expectedTool: 'playwright', category: 'browser-automation' },
-  { query: 'scrape social media data', expectedTool: 'apify', category: 'web-scraping' },
   { query: 'analyze code dependencies', expectedTool: 'code-graph', category: 'code-intelligence' },
   { query: 'code analysis intelligence', expectedTool: 'nogic', category: 'code-intelligence' },
   { query: 'look up library documentation', expectedTool: 'context7', category: 'documentation' },

@@ -1,0 +1,150 @@
+# Agent Routing Matrix — WhatsApp Business API Squad
+# Formal routing table used by @whatsapp-chief for mission assignment
+
+routing:
+  # Tier 0 — Orchestrator
+  whatsapp-chief:
+    id: whatsapp-chief
+    tier: 0
+    owns:
+      - squad_orchestration
+      - cross_agent_coordination
+      - quality_gate_enforcement
+      - bsp_migration_strategy
+      - account_diagnosis
+      - battlecard_generation
+    routes_to:
+      api_questions: cloud-api-architect
+      template_work: template-strategist
+      utility_validation: utility-validator
+      compliance_work: compliance-guardian
+      campaign_work: campaign-optimizer
+      integration_work: integration-engineer
+      flow_work: flow-builder
+
+  # Tier 1 — Core Specialists
+  cloud-api-architect:
+    id: cloud-api-architect
+    tier: 1
+    owns:
+      - api_endpoint_reference
+      - error_code_diagnosis
+      - rate_limit_management
+      - media_handling
+      - phone_registration
+      - schema_validation
+      - api_version_guidance
+    collaborates_with:
+      - integration-engineer: "API patterns for webhook/SDK implementation"
+      - template-strategist: "Template API submission schemas"
+    escalates_to: whatsapp-chief
+
+  template-strategist:
+    id: template-strategist
+    tier: 1
+    owns:
+      - template_creation
+      - copy_optimization
+      - approval_strategy
+      - category_selection
+      - variable_management
+      - multi_language
+      - performance_analysis
+    collaborates_with:
+      - compliance-guardian: "Pre-submission compliance review"
+      - utility-validator: "Utility template validation"
+      - campaign-optimizer: "Template selection for campaigns"
+    escalates_to: whatsapp-chief
+
+  compliance-guardian:
+    id: compliance-guardian
+    tier: 1
+    owns:
+      - lgpd_compliance
+      - whatsapp_policy_enforcement
+      - consent_management
+      - prohibited_content_detection
+      - privacy_assessment
+      - data_retention_audit
+    collaborates_with:
+      - template-strategist: "Template compliance review"
+      - campaign-optimizer: "Campaign compliance validation"
+      - integration-engineer: "Integration privacy review"
+    escalates_to: whatsapp-chief
+    veto_power: true
+    veto_scope: "Can BLOCK any operation on compliance grounds"
+
+  # Tier 2 — Extended Specialists
+  campaign-optimizer:
+    id: campaign-optimizer
+    tier: 2
+    owns:
+      - campaign_planning
+      - audience_segmentation
+      - timing_optimization
+      - ab_testing
+      - quality_monitoring
+      - funnel_design
+      - roi_analysis
+    collaborates_with:
+      - template-strategist: "Template creation for campaigns"
+      - compliance-guardian: "Campaign compliance validation"
+    escalates_to: whatsapp-chief
+
+  integration-engineer:
+    id: integration-engineer
+    tier: 2
+    owns:
+      - webhook_setup
+      - signature_verification
+      - deduplication
+      - adaptive_throttle
+      - credential_management
+      - sdk_patterns
+      - status_tracking
+      - retry_logic
+    collaborates_with:
+      - cloud-api-architect: "API reference for implementation"
+      - compliance-guardian: "Security review for integration"
+    escalates_to: whatsapp-chief
+
+  flow-builder:
+    id: flow-builder
+    tier: 2
+    owns:
+      - flow_json_design
+      - endpoint_cryptography
+      - flow_handler_generation
+      - flow_patterns
+      - flow_publishing
+    collaborates_with:
+      - cloud-api-architect: "Flows API endpoints"
+      - integration-engineer: "Endpoint deployment and security"
+    escalates_to: whatsapp-chief
+
+  utility-validator:
+    id: utility-validator
+    tier: 2
+    owns:
+      - utility_validation
+      - pacto_framework
+      - variable_camouflage
+      - prohibited_word_detection
+      - reclassification_prevention
+      - utility_copy_rewrite
+    collaborates_with:
+      - template-strategist: "Complex multi-category decisions"
+      - compliance-guardian: "LGPD concerns in utility templates"
+      - campaign-optimizer: "Utility openers for campaigns"
+    escalates_to: template-strategist
+
+# Handoff protocol between agents
+handoff:
+  format: "yaml"
+  max_size: 500_tokens
+  required_fields:
+    - story_context
+    - decisions_made
+    - files_referenced
+    - next_action
+  storage: ".aiox/handoffs/"

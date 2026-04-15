@@ -1,0 +1,300 @@
+id: wf-copy-pipeline
+name: Copy Pipeline — Do Brief ao Entregável
+version: "1.0"
+description: >
+  Pipeline completo de producao de copy. Parte do diagnostico de awareness/sofisticacao
+  (Tier 0), seleciona o copywriter mais adequado, executa, passa pelos quality gates
+  Hopkins Audit (85/100) e Sugarman Triggers (80%), e entrega o artefato final.
+
+agents_required:
+  - "@copy-chief"       # orquestrador, triage e routing
+  - "@eugene-schwartz"  # Tier 0 — awareness levels
+  - "@claude-hopkins"   # Tier 0 — scientific advertising audit
+  - "@gary-halbert"     # Tier 1 — storytelling, sales pages
+  - "@gary-bencivenga"  # Tier 1 — bullets, fascinations, proof
+  - "@david-ogilvy"     # Tier 1 — premium branding
+  - "@dan-kennedy"      # Tier 2 — urgency, scarcity
+  - "@todd-brown"       # Tier 2 — unique mechanism
+  - "@jeff-walker"      # Tier 2 — PLF
+  - "@jon-benson"       # Tier 3 — VSL
+  - "@ry-schwartz"      # Tier 3 — enrollment copy
+  - "@robert-collier"   # Tier 3 — mental conversation
+
+inputs:
+  brief:
+    type: string
+    required: true
+    description: "Brief completo do projeto de copy"
+  format:
+    type: enum
+    values: [sales-page, email-sequence, vsl, launch-sequence, ad-copy, email-solo]
+    required: true
+  product_category:
+    type: string
+    required: true
+  target_audience:
+    type: string
+    required: true
+  budget_level:
+    type: enum
+    values: [low, mid, high, premium]
+    default: mid
+
+outputs:
+  copy_final:
+    type: artifact
+    description: "Artefato de copy aprovado nos quality gates"
+  audit_report:
+    type: json
+    description: "Relatorio Hopkins + Sugarman com scores"
+  copywriter_selected:
+    type: string
+    description: "Agente que executou a copy"
+
+phases:
+  - id: phase-1-diagnostico
+    name: "Fase 1 — Diagnostico (Tier 0)"
+    agent: "@eugene-schwartz"
+    description: >
+      Diagnostica nivel de awareness do mercado e sofisticacao. Define a estrategia
+      de entrada (nivel 1 ao 5) e o mecanismo unico de copy.
+    tasks:
+      - id: awareness-mapping
+        name: "Mapear nivel de awareness"
+        description: >
+          Avaliar em qual dos 5 niveis o prospect se encontra:
+          1-Unaware, 2-Problem Aware, 3-Solution Aware, 4-Product Aware, 5-Most Aware
+        output: awareness_level (1-5)
+      - id: sophistication-check
+        name: "Checar sofisticacao do mercado"
+        description: >
+          Determinar geracao de claims (1a a 5a) e posicionar copy de forma
+          diferenciada para evitar saturacao de mensagem
+        output: sophistication_generation (1-5)
+      - id: entry-strategy
+        name: "Definir estrategia de entrada"
+        description: >
+          Com base em awareness + sofisticacao, definir o hook de entrada,
+          o mecanismo unico e o angulo principal da copy
+        output: entry_strategy (object)
+    quality_gate:
+      check: "awareness_level e sophistication_generation definidos"
+      on_fail: "Retornar ao brief para mais informacoes sobre mercado"
+
+  - id: phase-2-selecao
+    name: "Fase 2 — Selecao do Copywriter"
+    agent: "@copy-chief"
+    description: >
+      Com base no diagnostico Tier 0, formato solicitado e nivel de budget,
+      selecionar o copywriter (ou combinacao) mais adequado para execucao.
+    routing_matrix:
+      sales-page:
+        low: "@dan-kennedy"
+        mid: "@gary-halbert"
+        high: "@gary-bencivenga"
+        premium: "@david-ogilvy"
+      email-sequence:
+        low: "@dan-kennedy"
+        mid: "@robert-collier"
+        high: "@gary-halbert"
+        premium: "@gary-bencivenga"
+      vsl:
+        any: "@jon-benson"
+      launch-sequence:
+        any: "@jeff-walker"
+      ad-copy:
+        low: "@todd-brown"
+        mid: "@dan-kennedy"
+        high: "@gary-bencivenga"
+        premium: "@david-ogilvy"
+      email-solo:
+        any: "@gary-halbert"
+    tasks:
+      - id: select-writer
+        name: "Selecionar copywriter principal"
+        output: primary_copywriter
+      - id: select-support
+        name: "Selecionar suporte tecnico (opcional)"
+        description: "Para projetos premium, adicionar segundo copywriter para bullets/proof"
+        output: support_copywriter (nullable)
+    quality_gate:
+      check: "primary_copywriter definido e justificado"
+      on_fail: "Usar @gary-halbert como fallback universal"
+
+  - id: phase-3-execucao
+    name: "Fase 3 — Execucao"
+    agent: "{{primary_copywriter}}"
+    description: >
+      O copywriter selecionado executa a copy completa seguindo seu metodo
+      caracteristico. O @copy-chief monitora a execucao.
+    tasks:
+      - id: draft-v1
+        name: "Redigir rascunho V1"
+        description: "Copy completa conforme template do formato solicitado"
+        output: copy_draft_v1
+      - id: self-review
+        name: "Auto-revisao pelo copywriter"
+        description: "Copywriter revisa conforme seus proprios criterios de qualidade"
+        output: copy_draft_v2
+    quality_gate:
+      check: "copy_draft_v2 preenchido em todos os campos obrigatorios do template"
+      on_fail: "Retornar para completar secoes ausentes"
+
+  - id: phase-4-hopkins-audit
+    name: "Fase 4 — Hopkins Audit"
+    agent: "@claude-hopkins"
+    description: >
+      Auditoria Scientific Advertising completa. Score minimo: 85/100.
+      Hopkins avalia 10 dimensoes com peso igual (10 pontos cada).
+    audit_dimensions:
+      - dimension: "Specificity"
+        weight: 10
+        description: "Numeros, dados e claims especificos vs vagos"
+      - dimension: "Proof"
+        weight: 10
+        description: "Evidencias, testes, resultados comprovados"
+      - dimension: "Curiosity"
+        weight: 10
+        description: "Headlines e subheads que geram curiosidade genuina"
+      - dimension: "Clarity"
+        weight: 10
+        description: "Linguagem simples, sem jargao desnecessario"
+      - dimension: "Offer"
+        weight: 10
+        description: "Oferta clara, irresistivel e bem posicionada"
+      - dimension: "Headline Power"
+        weight: 10
+        description: "Headline principal captura atencao imediata"
+      - dimension: "Benefits vs Features"
+        weight: 10
+        description: "Foco em beneficios (o que o leitor ganha)"
+      - dimension: "Reason Why"
+        weight: 10
+        description: "Justificativa logica para cada claim importante"
+      - dimension: "Call to Action"
+        weight: 10
+        description: "CTA claro, direto e motivador"
+      - dimension: "Flow & Readability"
+        weight: 10
+        description: "Leitura fluida, paragrafos curtos, transicoes naturais"
+    tasks:
+      - id: run-audit
+        name: "Executar auditoria Hopkins"
+        output: hopkins_scores (object with 10 dimensions)
+      - id: calculate-score
+        name: "Calcular score total"
+        output: hopkins_total (0-100)
+      - id: generate-feedback
+        name: "Gerar feedback detalhado"
+        output: hopkins_feedback (list of improvements)
+    quality_gate:
+      threshold: 85
+      check: "hopkins_total >= 85"
+      on_fail:
+        action: "Retornar para Fase 3 com feedback especifico"
+        max_iterations: 3
+        escalation: "Se apos 3 iteracoes score < 85, escalar para @copy-chief"
+
+  - id: phase-5-sugarman-check
+    name: "Fase 5 — Sugarman Triggers Check"
+    agent: "@copy-chief"
+    description: >
+      Verificacao dos 30 psychological triggers de Joe Sugarman.
+      Score minimo: 80% (24/30 triggers presentes ou aplicaveis).
+    triggers_list:
+      - "Feeling of involvement/ownership"
+      - "Honesty"
+      - "Integrity"
+      - "Credibility"
+      - "Value and proof of value"
+      - "Justify the purchase"
+      - "Greed"
+      - "Establish authority"
+      - "Satisfaction conviction"
+      - "Nature of product"
+      - "Current fads"
+      - "Timing"
+      - "Desire to belong"
+      - "Desire to collect"
+      - "Curiosity"
+      - "Fear of loss"
+      - "Instant gratification"
+      - "Exclusivity, rarity, uniqueness"
+      - "Simplicity"
+      - "Human relationships"
+      - "Storytelling"
+      - "Mental engagement"
+      - "Guilt"
+      - "Specificity"
+      - "Familiarity"
+      - "Hope"
+      - "Ability to prove value"
+      - "Objection resolution"
+      - "Emotion vs logic balance"
+      - "Sense of urgency"
+    tasks:
+      - id: scan-triggers
+        name: "Escanear triggers presentes na copy"
+        output: triggers_found (list)
+      - id: identify-gaps
+        name: "Identificar triggers ausentes e aplicaveis"
+        output: triggers_missing (list)
+      - id: calculate-score
+        name: "Calcular score Sugarman"
+        formula: "(triggers_found / applicable_triggers) * 100"
+        output: sugarman_score (0-100)
+    quality_gate:
+      threshold: 80
+      check: "sugarman_score >= 80"
+      on_fail:
+        action: "Injetar triggers ausentes prioritarios e re-avaliar"
+        max_iterations: 2
+        escalation: "Se score < 80 apos 2 iteracoes, entregar com nota de ressalvas"
+
+  - id: phase-6-entrega
+    name: "Fase 6 — Entrega"
+    agent: "@copy-chief"
+    description: >
+      Consolidar artefato final com copy aprovada, relatorio de auditoria
+      e recomendacoes de implementacao.
+    tasks:
+      - id: consolidate
+        name: "Consolidar copy final"
+        output: copy_final
+      - id: build-report
+        name: "Montar relatorio de auditoria"
+        output: audit_report
+        fields:
+          - copywriter_used
+          - awareness_level
+          - sophistication_generation
+          - entry_strategy
+          - hopkins_total
+          - hopkins_scores
+          - sugarman_score
+          - triggers_found
+          - triggers_missing
+          - iterations_needed
+      - id: implementation-notes
+        name: "Adicionar notas de implementacao"
+        output: implementation_notes
+        includes:
+          - "Formato recomendado de entrega (PDF, Google Doc, etc)"
+          - "Variacoes sugeridas para split test"
+          - "Headlines alternativas (3-5)"
+          - "Proximos passos (ex: criar sequencia de email, ads, etc)"
+
+quality_gates_summary:
+  gate_1_hopkins:
+    agent: "@claude-hopkins"
+    threshold: 85
+    max_iterations: 3
+  gate_2_sugarman:
+    agent: "@copy-chief"
+    threshold: "80% (24/30 triggers)"
+    max_iterations: 2
+
+estimated_duration:
+  simple: "2-4 horas"
+  standard: "4-8 horas"
+  complex: "1-2 dias"

@@ -1,0 +1,102 @@
+name: copy
+version: 1.0.0
+description: |
+  Squad especialista em copywriting de resposta direta. 12 agents baseados em
+  copywriters lendarios reais, organizados em 4 tiers.
+  Tier 0 (Diagnostico): Eugene Schwartz + Claude Hopkins
+  Tier 1 (Masters): Gary Halbert + Gary Bencivenga + David Ogilvy
+  Tier 2 (Specialists): Dan Kennedy + Todd Brown + Jeff Walker
+  Tier 3 (Format): Jon Benson + Ry Schwartz + Robert Collier
+  Orquestrado pelo Copy Chief com dupla auditoria (Hopkins 85/100 + Sugarman 30 triggers).
+
+author: Luiz Henrique
+license: MIT
+slashPrefix: copy
+cloned_from: aiox-core/squads/copy
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+tags:
+  - copywriting
+  - direct-response
+  - sales-page
+  - email-sequence
+  - vsl
+  - headlines
+  - ads
+  - launch
+  - plf
+  - persuasion
+  - conversion
+
+components:
+  agents:
+    # Tier 0 — Diagnostico & Auditoria
+    - copy-chief.md
+    - eugene-schwartz.md
+    - claude-hopkins.md
+    # Tier 1 — Master Copywriters
+    - gary-halbert.md
+    - gary-bencivenga.md
+    - david-ogilvy.md
+    # Tier 2 — Specialists
+    - dan-kennedy.md
+    - todd-brown.md
+    - jeff-walker.md
+    # Tier 3 — Format Specialists
+    - jon-benson.md
+    - ry-schwartz.md
+    - robert-collier.md
+
+  tasks:
+    - diagnostico-copy.md
+    - escrever-sales-page.md
+    - escrever-email-sequence.md
+    - escrever-vsl.md
+    - gerar-headlines.md
+    - planejar-lancamento.md
+
+  workflows:
+    - wf-copy-pipeline.yaml
+    - wf-launch-pipeline.yaml
+    - wf-audit-pipeline.yaml
+
+  checklists:
+    - copy-quality-checklist.md
+    - hopkins-audit-checklist.md
+
+  templates:
+    - sales-page-tmpl.md
+    - email-sequence-tmpl.md
+    - vsl-script-tmpl.md
+    - headlines-tmpl.md
+
+  scripts: []
+
+  data:
+    - copywriting-kb.md
+    - sugarman-30-triggers.md
+
+config:
+  extends: default
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+philosophy:
+  core_mantra: "Copy is the salesman in print."
+  quality_gates:
+    - "NUNCA pular Tier 0 — diagnostico obrigatorio"
+    - "Hopkins Audit: minimo 85/100"
+    - "Sugarman Triggers: minimo 80% coverage (24/30)"
+  tier_system:
+    tier_0: "Diagnostico: awareness level + market sophistication + audit"
+    tier_1: "Masters: high-stakes copy (Halbert, Bencivenga, Ogilvy)"
+    tier_2: "Specialists: urgency, mechanism, launches (Kennedy, Brown, Walker)"
+    tier_3: "Format: VSL, enrollment, mental conversation (Benson, Schwartz, Collier)"

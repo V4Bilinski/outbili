@@ -1,0 +1,198 @@
+# Workflow: Pipeline de Diagnostico de Travas
+# 4 fases: Cegueira (T1) → Identificar trava → Recomendar acao
+
+workflow:
+  name: wf-diagnostico-pipeline
+  display_name: "Pipeline de Diagnostico de Travas (4 fases)"
+  version: "1.0.0"
+  description: |
+    Workflow de diagnostico que parte da Trava T1 (Cegueira — nao sabe o que medir)
+    e percorre um pipeline estruturado para identificar o gargalo principal da empresa,
+    quantificar o impacto e recomendar a acao (produto DR + ciclo 90 dias).
+    Cada fase tem um gate de decisao que determina o avanco, retorno ou necessidade
+    de informacoes adicionais antes de prosseguir.
+
+phases:
+  - id: triagem-inicial
+    name: "Fase 1: Triagem Inicial e Contexto"
+    task: null
+    agents: [diagnosticador]
+    description: |
+      Coletar informacoes basicas da empresa para determinar o ponto de partida
+      do diagnostico. Verificar se existe T1 (Cegueira) — se o cliente nao tem
+      dados confiaveis, o diagnostico precisa ser estimado antes de prosseguir.
+    inputs:
+      - Descricao da empresa (segmento, modelo, ticket, time)
+      - Metricas disponiveis (mesmo estimadas)
+      - Principal queixa do prospect
+    outputs:
+      - Ficha inicial do prospect
+      - Nivel de maturidade de dados (tem dados / estimado / sem dados)
+    gate:
+      type: decision
+      label: "Nivel de dados disponiveis"
+      options:
+        TEM_DADOS: "Cliente tem metricas confiaveis. Prosseguir para Fase 2"
+        DADOS_ESTIMADOS: "Metricas sao estimativas. Prosseguir com ressalva"
+        SEM_DADOS: "Cliente nao tem dados — T1 confirmada. Ir para protocolo T1"
+    next:
+      TEM_DADOS: mapeamento-fluxo
+      DADOS_ESTIMADOS: mapeamento-fluxo
+      SEM_DADOS: protocolo-t1
+
+  - id: protocolo-t1
+    name: "Fase 1b: Protocolo T1 — Trava Cegueira"
+    task: null
+    agents: [diagnosticador, data-intelligence-analyst]
+    description: |
+      Quando o cliente nao tem dados, construir baseline estimado e recomendar
+      implantacao de dashboard como primeiro ciclo 90 dias (sem dados, sem diagnostico
+      confiavel, sem estrategia eficaz).
+    outputs:
+      - Relatorio de gap de dados
+      - Recomendacao: implantar metricas como prioridade 0
+      - Estimativa de baseline baseada em benchmarks do segmento
+    gate:
+      type: decision
+      options:
+        BASELINE_CONSTRUIDO: "Baseline estimado suficiente para prosseguir"
+        PRECISA_COLETA: "Cliente precisa implantar dados antes do diagnostico completo"
+    next:
+      BASELINE_CONSTRUIDO: mapeamento-fluxo
+      PRECISA_COLETA: output-t1-only
+
+  - id: mapeamento-fluxo
+    name: "Fase 2: Mapeamento do Fluxo de Receita"
+    task: diagnostico-travas.md
+    agents: [diagnosticador]
+    description: |
+      Construir o mapa completo do fluxo de receita com numeros em cada etapa.
+      Identificar onde esta o maior vazamento (queda percentual entre etapas).
+      Aplicar os 5 Focusing Steps para confirmar qual trava e o gargalo principal.
+    inputs:
+      - Metricas do funil (mesmo estimadas)
+      - Principal queixa do prospect
+    outputs:
+      - Mapa do fluxo de receita com vazamentos
+      - Trava principal identificada
+      - Score de travas (T1-T8 com pontuacao)
+    gate:
+      type: decision
+      label: "Trava principal confirmada?"
+      options:
+        CONFIRMADA: "Trava identificada com clareza. Avancar para Fase 3"
+        MULTIPLAS: "Duas ou mais travas empatadas. Rodar priorizacao"
+        INCONCLUSIVO: "Informacoes insuficientes. Coletar mais dados"
+    next:
+      CONFIRMADA: quantificacao-impacto
+      MULTIPLAS: priorizacao-travas
+      INCONCLUSIVO: triagem-inicial
+
+  - id: priorizacao-travas
+    name: "Fase 2b: Priorizacao de Travas (empate)"
+    task: null
+    agents: [diagnosticador, estrategista-receita]
+    description: |
+      Quando duas ou mais travas estao empatadas, aplicar matriz de priorizacao
+      considerando: (1) impacto financeiro, (2) facilidade de execucao, (3) velocidade
+      de resultado, (4) risco se nao resolver.
+    outputs:
+      - Ranking final de travas com justificativa
+      - Trava principal eleita
+    gate:
+      type: decision
+      options:
+        PRIORIDADE_DEFINIDA: "Trava principal escolhida. Ir para Fase 3"
+    next:
+      PRIORIDADE_DEFINIDA: quantificacao-impacto
+
+  - id: quantificacao-impacto
+    name: "Fase 3: Quantificacao do Impacto"
+    task: roi-analysis.md
+    agents: [diagnosticador, roi-analyst]
+    description: |
+      Quantificar o impacto financeiro da trava principal. Calcular o custo da
+      inacao (receita perdida por mes), o potencial de upside ao resolver e o ROI
+      esperado do produto DR recomendado.
+    inputs:
+      - Trava principal identificada
+      - Metricas do funil
+      - Ticket medio e LTV estimado
+    outputs:
+      - Custo da inacao (R$/mes e R$/ano)
+      - Upside esperado ao resolver (R$/mes)
+      - ROI estimado do produto DR
+    gate:
+      type: decision
+      label: "Impacto justifica engajamento DR?"
+      options:
+        JUSTIFICADO: "Impacto > 5x o investimento DR. Prosseguir para Fase 4"
+        LIMIAR: "Impacto 2-5x. Prosseguir com cautela — qualificar budget"
+        BAIXO: "Impacto < 2x. Prospect fora do perfil DR ideal"
+    next:
+      JUSTIFICADO: recomendacao-final
+      LIMIAR: recomendacao-final
+      BAIXO: output-desqualificado
+
+  - id: recomendacao-final
+    name: "Fase 4: Recomendacao e Proximo Passo"
+    task: construir-oferta-dr.md
+    agents: [diagnosticador, destrava-receita-consultant]
+    description: |
+      Consolidar o diagnostico completo e recomendar o produto DR mais adequado
+      (DR-X, DR-O, DR-T ou DR-E) com justificativa baseada no contexto. Definir
+      o proximo passo claro (proposta formal, kick-off, reuniao de apresentacao).
+    inputs:
+      - Diagnostico completo (trava, impacto, contexto)
+      - Score SPICED (se ja realizado)
+    outputs:
+      - Relatorio de diagnostico completo (formato STEP)
+      - Recomendacao DR com justificativa
+      - Proposta inicial ou proximo passo
+    gate:
+      type: decision
+      options:
+        PROPOSTA_ENVIADA: "Proposta enviada. Aguardar resposta"
+        REUNIAO_AGENDADA: "Apresentacao agendada. Preparar pitch"
+        NURTURE: "Prospect morno. Adicionar em nurture com data de follow-up"
+    next:
+      PROPOSTA_ENVIADA: end
+      REUNIAO_AGENDADA: end
+      NURTURE: end
+
+  - id: output-t1-only
+    name: "Output: T1 — Implantar Dados Primeiro"
+    task: null
+    agents: [diagnosticador]
+    description: |
+      Output especial para clientes que precisam implantar metricas antes do
+      diagnostico completo. Entregar mini-plano de 30 dias para resolver T1.
+    outputs:
+      - Mini-plano T1 (dashboard, KPIs, ferramentas)
+      - Proposta DR-X para implantar metricas (se aplicavel)
+    next: end
+
+  - id: output-desqualificado
+    name: "Output: Prospect Desqualificado"
+    task: null
+    agents: [especialista-spiced]
+    description: |
+      Registrar motivo de desqualificacao e adicionar em nurture de longo prazo.
+      Prospect pode se qualificar em 3-6 meses com crescimento.
+    outputs:
+      - Motivo de desqualificacao registrado no CRM
+      - Conteudo de nurture recomendado
+      - Data de re-qualificacao sugerida
+    next: end
+
+  - id: end
+    name: "Fim do Diagnostico"
+    task: null
+    note: "Diagnostico concluido. Resultado registrado no CRM."
+
+settings:
+  max_loops_per_phase: 2
+  default_agent: diagnosticador
+  crm_required: true
+  output_format: "relatorio-diagnostico-step"
+  sla_diagnostico: "48h (da primeira conversa ao relatorio)"

@@ -1,0 +1,120 @@
+# Template Category Decision Tree — WhatsApp Business API Squad
+# Used by @template-strategist and @utility-validator
+
+decision_tree:
+  - step: 1
+    question: "Is this message a one-time password, verification code, or 2FA?"
+    yes:
+      category: AUTHENTICATION
+      price_brl: 0.12
+      notes: "Use one_time_password button type. Minimal copy."
+    no: "Go to step 2"
+
+  - step: 2
+    question: "Is this a response to a user-initiated conversation within 24 hours?"
+    yes:
+      category: SERVICE
+      price_brl: 0.00
+      notes: "Free (1000/month). No template needed. Any message type allowed."
+    no: "Go to step 3"
+
+  - step: 3
+    question: "Does the message contain ANY of these: discount, offer, promotion, product launch, re-engagement, CTA to purchase?"
+    yes:
+      category: MARKETING
+      price_brl: 0.47
+      notes: "Must include opt-out mechanism. Directly affects quality score."
+    no: "Go to step 4"
+
+  - step: 4
+    question: "Is this a transactional notification? (order update, shipping, appointment, payment, delivery)"
+    yes:
+      category: UTILITY
+      price_brl: 0.15
+      notes: "Apply PACTO framework. Start with status word. Free within 24h service window."
+    no: "Go to step 5"
+
+  - step: 5
+    question: "Is this informational but not transactional? (welcome, onboarding, tips, educational)"
+    yes:
+      sub_decision:
+        - question: "Does it contain ANY persuasive element or CTA beyond 'learn more'?"
+          yes:
+            category: MARKETING
+            notes: "Informational with persuasion = marketing"
+          no:
+            category: UTILITY
+            notes: "Pure informational may qualify as utility. Apply PACTO to be safe."
+    no: "Go to step 6"
+
+  - step: 6
+    question: "Is this a reminder about an existing commitment? (appointment, payment due, renewal)"
+    yes:
+      category: UTILITY
+      notes: "Reminders for existing commitments are utility. Use status words."
+    no:
+      category: MARKETING
+      notes: "When in doubt, classify as MARKETING. Safer and avoids reclassification."
+
+category_characteristics:
+  MARKETING:
+    purpose: "Promotions, announcements, re-engagement, product launches"
+    tone: "Persuasive, engaging, call-to-action focused"
+    required: "Opt-in for marketing + opt-out mechanism in template"
+    quality_impact: "HIGH — directly affects quality score"
+    examples:
+      - "New collection launched — 20% off this week"
+      - "We miss you! Come back and get a special offer"
+      - "Flash sale: 50% off for the next 24 hours"
+
+  UTILITY:
+    purpose: "Confirmations, updates, reminders, status notifications"
+    tone: "Neutral, informative, service-oriented"
+    required: "Opt-in + PACTO compliance + status word"
+    quality_impact: "LOW — minimal quality score impact"
+    examples:
+      - "Confirmada: sua consulta com Dr. Silva em 15/03 às 14h"
+      - "Atualizada: sua entrega está a caminho. Previsão: amanhã"
+      - "Processado: pagamento de R$ 150,00 recebido com sucesso"
+
+  AUTHENTICATION:
+    purpose: "OTP, verification codes, 2FA, account confirmation"
+    tone: "Minimal, direct, security-focused"
+    required: "one_time_password button type"
+    quality_impact: "NONE"
+    examples:
+      - "Seu código de verificação é {{1}}. Válido por 10 minutos."
+
+  SERVICE:
+    purpose: "Responses within 24h user-initiated window"
+    tone: "Conversational, helpful, support-focused"
+    required: "Must be within 24h of last user message"
+    quality_impact: "NONE"
+    examples:
+      - "Olá! Como posso ajudar você hoje?"
+      - "Seu ticket #12345 foi resolvido. Algo mais?"
+
+boundary_cases:
+  - case: "Order confirmation with upsell"
+    verdict: MARKETING
+    reason: "Mixed content (transactional + promotional) = always marketing"
+
+  - case: "Appointment reminder with new service mention"
+    verdict: MARKETING
+    reason: "Mention of new service = promotional element"
+
+  - case: "Shipping update with discount code for next purchase"
+    verdict: MARKETING
+    reason: "Discount code = promotional"
+
+  - case: "Payment confirmation with product recommendation"
+    verdict: MARKETING
+    reason: "Product recommendation = promotional"
+
+  - case: "Welcome message with onboarding steps only"
+    verdict: UTILITY
+    reason: "Pure onboarding without sales = utility"
+
+  - case: "Abandoned cart reminder"
+    verdict: MARKETING
+    reason: "Intent is to drive purchase = marketing"

@@ -50,3 +50,9 @@ Thumbs.db
 .claude/settings.local.json
 .aiox/install-log.txt
 .vercel
+
+# Temporary screenshots & tool caches
+*.png
+.playwright-mcp/
+.firecrawl/
+dashboard-snapshot.md

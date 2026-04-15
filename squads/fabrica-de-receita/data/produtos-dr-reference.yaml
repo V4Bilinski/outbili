@@ -1,0 +1,155 @@
+---
+# Referência dos Produtos Destrava Receita — Fábrica de Receita
+# Squad Growth V4 | Linha de Produtos DR
+# Versão: 1.0.0
+
+produtos:
+  - id: DR-X
+    nome: "Destrava Receita Xpress"
+    subtitulo: "Diagnóstico + Quick Wins em 30 dias"
+    descricao: >
+      Produto de entrada e diagnóstico rápido. Ideal para empresas que nunca
+      passaram por um diagnóstico estruturado de growth ou que precisam de
+      clareza rápida sobre onde está o gargalo principal. Entrega um roadmap
+      de prioridades com as travas identificadas e as primeiras alavancas de
+      crescimento para implementação imediata.
+    duracao:
+      valor: 30
+      unidade: dias
+    faixa_preco:
+      minimo: 3500
+      maximo: 8000
+      moeda: BRL
+      modelo: "Pagamento único"
+    foco:
+      pilar_primario: "Diagnóstico transversal (todos os 4 pilares)"
+      trava_primaria: "Identificação das travas T1–T8"
+      objetivo: "Clareza e priorização de onde atacar"
+    entregaveis:
+      - "Diagnóstico completo das 8 travas (documento + apresentação)"
+      - "Ranking de travas por impacto financeiro"
+      - "Quick wins: 3–5 ações de resultado imediato"
+      - "Roadmap de 90 dias priorizado"
+      - "Sessão de alinhamento final com stakeholders"
+    perfil_ideal:
+      - "Empresas em early stage (R$ 30K–R$ 150K/mês)"
+      - "Negócios sem diagnóstico formal de growth"
+      - "Founders que querem clareza antes de contratar time"
+      - "Negócios com crescimento estagnado há mais de 3 meses"
+    nao_indicado_para:
+      - "Empresas sem dados mínimos (< 3 meses de operação)"
+      - "Quem já tem diagnóstico recente e quer só execução"
+
+  - id: DR-O
+    nome: "Destrava Receita Operacional"
+    subtitulo: "Implementação focada em 1 trava por 60 dias"
+    descricao: >
+      Produto de implementação focada em uma única trava crítica. Ideal para
+      empresas que já têm diagnóstico ou clareza do gargalo e precisam de
+      execução especializada por um período determinado. O squad assume
+      a trava identificada e entrega a resolução com métricas comprovadas.
+    duracao:
+      valor: 60
+      unidade: dias
+    faixa_preco:
+      minimo: 8000
+      maximo: 18000
+      moeda: BRL
+      modelo: "Mensal (2 meses) ou pagamento único"
+    foco:
+      pilar_primario: "Pilar correspondente à trava atacada"
+      trava_primaria: "1 trava específica (T1–T8, conforme diagnóstico)"
+      objetivo: "Resolução comprovada de 1 gargalo crítico"
+    entregaveis:
+      - "Plano de ataque detalhado da trava selecionada"
+      - "Implementação semanal com relatório de progresso"
+      - "Dashboard de métricas configurado e monitorado"
+      - "Playbook de manutenção (para o time do cliente)"
+      - "Relatório final com resultados comprovados vs. baseline"
+      - "Sessão de handoff e capacitação do time"
+    perfil_ideal:
+      - "Empresas com R$ 80K–R$ 400K/mês"
+      - "Negócios com diagnóstico claro mas sem capacidade de execução"
+      - "Times sem especialista na área da trava identificada"
+    nao_indicado_para:
+      - "Empresas sem clareza do gargalo (indicar DR-X antes)"
+      - "Negócios que precisam de mais de 1 trava atacada simultaneamente"
+
+  - id: DR-T
+    nome: "Destrava Receita Total"
+    subtitulo: "Ciclo completo de 90 dias nos 4 pilares"
+    descricao: >
+      Produto flagship da Fábrica de Receita. Ciclo completo de 90 dias
+      com atuação nos 4 pilares V4 e resolução das principais travas
+      identificadas. O squad atua como uma extensão do time do cliente,
+      com reuniões semanais, execução de experimentos e entrega de resultados
+      mensuráveis ao final do ciclo.
+    duracao:
+      valor: 90
+      unidade: dias
+    faixa_preco:
+      minimo: 18000
+      maximo: 45000
+      moeda: BRL
+      modelo: "Mensal (3 meses) ou com entrada + 2 parcelas"
+    foco:
+      pilar_primario: "Todos os 4 pilares (foco na trava principal)"
+      trava_primaria: "Até 3 travas simultâneas (sequenciadas por TOC)"
+      objetivo: "Crescimento sistêmico e sustentável em 90 dias"
+    entregaveis:
+      - "Diagnóstico completo inicial (semana 1)"
+      - "OKRs e roadmap de 90 dias acordados"
+      - "Execução semanal com sprint reports"
+      - "Reports quinzenais de progresso (OKRs + 4 pilares)"
+      - "Dashboard de growth configurado e entregue"
+      - "Playbooks de cada pilar documentados"
+      - "Relatório final do ciclo com ROI comprovado"
+      - "Sessão de planejamento do próximo ciclo"
+    perfil_ideal:
+      - "Empresas com R$ 150K–R$ 2M/mês"
+      - "Negócios com ambição de crescer 30%+ em 90 dias"
+      - "Times que querem aprender growth enquanto executam"
+      - "Empresas com múltiplas travas ativas"
+    nao_indicado_para:
+      - "Negócios sem capacidade de cofinanciar experimentos (verba de mídia)"
+      - "Empresas sem decisor disponível para check-ins semanais"
+
+  - id: DR-E
+    nome: "Destrava Receita Enterprise"
+    subtitulo: "Parceria estratégica de 6 meses"
+    descricao: >
+      Produto para empresas de médio-grande porte que precisam de uma
+      parceria estratégica de longo prazo. Combina diagnóstico, implementação,
+      formação de time e estruturação de uma máquina de crescimento interna.
+      Inclui atuação do @fabrica-de-receita-master com acesso direto ao C-Level.
+    duracao:
+      valor: 6
+      unidade: meses
+    faixa_preco:
+      minimo: 45000
+      maximo: 150000
+      moeda: BRL
+      modelo: "Mensal (6 meses) com negociação de revenue share opcional"
+    foco:
+      pilar_primario: "Todos os 4 pilares com visão sistêmica"
+      trava_primaria: "Todas as travas identificadas + prevenção de novas"
+      objetivo: "Estruturar uma máquina de crescimento previsível e escalável"
+    entregaveis:
+      - "Diagnóstico profundo inicial (2 semanas)"
+      - "Estratégia de growth para 6 meses (GTM completo)"
+      - "2 ciclos de 90 dias com execução plena"
+      - "Formação e capacitação do time interno"
+      - "Estrutura de OKRs e rituais de acompanhamento"
+      - "Stack de ferramentas de growth implementada"
+      - "Playbook de crescimento proprietário do cliente"
+      - "Dashboard executivo com KPIs estratégicos"
+      - "QBRs mensais com C-Level"
+      - "Relatório de legado com documentação completa"
+    perfil_ideal:
+      - "Empresas com faturamento >= R$ 1M/mês"
+      - "Negócios em fase de escala agressiva"
+      - "Empresas com times internos que precisam de metodologia"
+      - "Negócios com investidores ou em preparação para captação"
+    nao_indicado_para:
+      - "Startups em pre-revenue ou early stage"
+      - "Empresas sem comprometimento do C-Level com o processo"

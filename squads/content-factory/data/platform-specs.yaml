@@ -1,0 +1,109 @@
+# Platform Specs — Especificacoes por plataforma
+# Usado por Video Editor, Repurposing e Scriptwriter
+
+platforms:
+  youtube_shorts:
+    name: "YouTube Shorts"
+    max_duration: 60
+    optimal_duration: "50-58s"
+    aspect_ratio: "9:16"
+    resolution: "1080x1920"
+    algorithm_priority: "watch time"
+    hook_window: "3s"
+    features:
+      - legendas automaticas
+      - musica da biblioteca
+      - remix
+    best_practices:
+      - "Ocupar 50-58s para maximizar watch time"
+      - "Hook nos primeiros 2s (scroll-stopper)"
+      - "Texto grande e legivel (mobile-first)"
+      - "CTA no final: inscrever, comentar"
+
+  instagram_reels:
+    name: "Instagram Reels"
+    max_duration: 90
+    optimal_duration:
+      viral: "7-15s"
+      value: "30-45s"
+    aspect_ratio: "9:16"
+    resolution: "1080x1920"
+    algorithm_priority: "saves + loop count"
+    hook_window: "2s"
+    features:
+      - musica trending
+      - stickers interativos
+      - collab
+      - remix
+    best_practices:
+      - "7-15s para viral (loopavel)"
+      - "30-45s para valor/educacional"
+      - "Musica trending aumenta alcance"
+      - "Usar texto na tela (muita gente assiste mudo)"
+      - "CTA: salvar, compartilhar"
+
+  tiktok:
+    name: "TikTok"
+    max_duration: "10min"
+    optimal_duration:
+      viral: "24-38s"
+      value: "60-90s"
+    aspect_ratio: "9:16"
+    resolution: "1080x1920"
+    algorithm_priority: "completion rate"
+    hook_window: "1-2s"
+    features:
+      - duet
+      - stitch
+      - musica trending
+      - efeitos
+    best_practices:
+      - "Completion rate e a metrica #1"
+      - "24-38s para maximo viral"
+      - "Hook em 1s (mais rapido que outras plataformas)"
+      - "Formato nativo > repost de outras redes"
+      - "Texto na tela obrigatorio"
+
+  linkedin:
+    name: "LinkedIn"
+    max_duration: "10min"
+    optimal_duration: "60-90s"
+    aspect_ratio: "9:16 ou 1:1"
+    resolution: "1080x1920 ou 1080x1080"
+    algorithm_priority: "engagement rate (comments > likes)"
+    hook_window: "3-5s"
+    features:
+      - legendas nativas
+      - carrosseis (PDF)
+    best_practices:
+      - "Tom profissional mas acessivel"
+      - "60-90s ideal para video"
+      - "Carrosseis performam muito bem"
+      - "CTA: comentar opiniao, compartilhar"
+      - "Postar em horario comercial (8-10h, 12h, 17-18h)"
+
+  twitter_x:
+    name: "Twitter/X"
+    max_duration: "140s"
+    optimal_duration: "20-45s"
+    aspect_ratio: "16:9 ou 1:1"
+    resolution: "1280x720 ou 1080x1080"
+    algorithm_priority: "completion + shares"
+    hook_window: "2s"
+    best_practices:
+      - "20-45s para video"
+      - "Threads para conteudo longo (5-15 tweets)"
+      - "Quote tweets geram alcance"
+      - "Horarios: 8h, 12h, 18h"
+
+repurposing_matrix:
+  video_longo:
+    shorts: "5-10 cortes de 30-60s"
+    reels: "3-5 cortes de 15-45s"
+    tiktok: "5-10 cortes de 24-60s"
+    carrossel_ig: "3-5 carrosseis de 5-10 slides"
+    carrossel_linkedin: "2-3 carrosseis de 8-12 slides"
+    thread_x: "2-3 threads de 5-15 tweets"
+    post_linkedin: "3-5 posts longos"
+    newsletter: "1 edicao"
+    blog_post: "1-2 artigos"

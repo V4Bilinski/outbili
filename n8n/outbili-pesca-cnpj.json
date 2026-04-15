@@ -36,10 +36,10 @@
     },
     {
       "parameters": {
-        "jsCode": "// Buscar CNPJs via Apify Web Scraper (contorna Cloudflare da Casa dos Dados)\nconst data = $input.first().json;\nconst payload = data.requestPayload;\nconst APIFY_TOKEN = 'apify_api_IcL12FYoB2JQf0NdZ89DrAUvoUQVSA2xh8sf';\n\ntry {\n  // Iniciar Apify actor que faz POST via browser headless\n  const startRes = await fetch(\n    'https://api.apify.com/v2/acts/apify~web-scraper/runs?token=' + APIFY_TOKEN,\n    {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        startUrls: [{ url: 'https://casadosdados.com.br/solucao/cnpj' }],\n        pageFunction: `async function pageFunction(context) {\n          const payload = ${JSON.stringify(payload)};\n          const res = await fetch('https://api.casadosdados.com.br/v2/public/cnpj/search', {\n            method: 'POST',\n            headers: { 'Content-Type': 'application/json' },\n            body: JSON.stringify(payload)\n          });\n          if (!res.ok) return { error: res.status, data: { cnpj: [] } };\n          return await res.json();\n        }`,\n        proxyConfiguration: { useApifyProxy: true },\n        maxRequestsPerCrawl: 1\n      })\n    }\n  );\n  const run = await startRes.json();\n  const runId = run.data.id;\n\n  // Poll ate completar\n  let status = 'RUNNING';\n  let datasetId = '';\n  for (let i = 0; i < 30; i++) {\n    await new Promise(r => setTimeout(r, 3000));\n    const pollRes = await fetch('https://api.apify.com/v2/acts/apify~web-scraper/runs/' + runId + '?token=' + APIFY_TOKEN);\n    const pollData = await pollRes.json();\n    status = pollData.data.status;\n    datasetId = pollData.data.defaultDatasetId;\n    if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'ABORTED') break;\n  }\n\n  if (status !== 'SUCCEEDED') return [{ json: { data: { cnpj: [] } } }];\n\n  // Pegar resultado\n  const itemsRes = await fetch('https://api.apify.com/v2/datasets/' + datasetId + '/items?token=' + APIFY_TOKEN);\n  const items = await itemsRes.json();\n  return [{ json: items[0] || { data: { cnpj: [] } } }];\n} catch (err) {\n  return [{ json: { data: { cnpj: [] } } }];\n}"
+        "jsCode": "// Buscar CNPJs via Casa dos Dados API direta\nconst data = $input.first().json;\nconst payload = data.requestPayload;\n\ntry {\n  const res = await fetch('https://api.casadosdados.com.br/v2/public/cnpj/search', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'\n    },\n    body: JSON.stringify(payload)\n  });\n\n  if (!res.ok) {\n    // Fallback: tentar BrasilAPI por CNAE\n    const cnae = data.currentCnae;\n    const state = (data.states && data.states[0]) || '';\n    const brasilRes = await fetch(\n      'https://brasilapi.com.br/api/cnpj/v1/search?cnae=' + cnae + (state ? '&uf=' + state : '') + '&page=' + data.currentPage,\n      { headers: { 'User-Agent': 'Mozilla/5.0' } }\n    );\n    if (brasilRes.ok) {\n      const brasilData = await brasilRes.json();\n      return [{ json: { data: { cnpj: brasilData || [] } } }];\n    }\n    return [{ json: { data: { cnpj: [] } } }];\n  }\n\n  const result = await res.json();\n  return [{ json: result }];\n} catch (err) {\n  return [{ json: { data: { cnpj: [] } } }];\n}"
       },
       "id": "http-casa-dos-dados",
-      "name": "4. Buscar via Apify (Casa dos Dados)",
+      "name": "4. Buscar Casa dos Dados",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [780, 300]
@@ -69,7 +69,7 @@
       "position": [1300, 300]
     },
     {
-      "parameters": { "amount": 0.5 },
+      "parameters": { "amount": 1 },
       "id": "wait-rate",
       "name": "7. Rate Limit",
       "type": "n8n-nodes-base.wait",
@@ -78,78 +78,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Enriquecer cada CNPJ com OpenCNPJ para socios e telefones\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\n\nfor (let i = 0; i < companies.length; i++) {\n  const c = companies[i];\n  try {\n    const res = await fetch('https://api.opencnpj.org/' + c.cnpj);\n    if (res.ok) {\n      const d = await res.json();\n      const socios = (d.qsa || []).map(s => ({ nome_socio: s.nome_socio || s.nome || '', qualificacao_socio: s.qualificacao_socio || s.qual || '' }));\n      const phones = [d.telefone1, d.telefone2, d.ddd_telefone_1, d.ddd_telefone_2, d.telefone].filter(Boolean).flatMap(p => p.split(/[\\/;,]/)).map(p => p.trim().replace(/\\D/g, '')).filter(p => p.length >= 10);\n      if (socios.length > 0) c.qsa = socios;\n      if (phones[0]) c.telefone1 = phones[0];\n      if (phones[1]) c.telefone2 = phones[1];\n      c.email = d.email || d.correio_eletronico || c.email;\n      c.capital_social = d.capital_social || c.capital_social;\n      c.nome_fantasia = d.nome_fantasia || c.nome_fantasia;\n    }\n  } catch {}\n  if (i < companies.length - 1) await new Promise(r => setTimeout(r, 200));\n}\n\nreturn [{ json: { ...data, allCompanies: companies } }];"
-      },
-      "id": "enrich-opencnpj",
-      "name": "8. Enriquecer OpenCNPJ",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1560, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Classificar telefones, extrair decisor, preparar itens individuais para Airtable\nconst data = $input.first().json;\nconst companies = data.allCompanies || [];\n\nfunction classifyPhone(phone) {\n  const d = phone.replace(/\\D/g, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 11 && w[2] === '9') return 'mobile';\n  if (w.length === 10 && w[2] === '9') return 'mobile';\n  return 'landline';\n}\n\nfunction formatPhone(phone) {\n  let d = phone.replace(/\\D/g, '').replace(/^0+/, '');\n  const w = d.startsWith('55') ? d.slice(2) : d;\n  if (w.length === 10 && w[2] === '9') {\n    d = w.slice(0, 2) + '9' + w.slice(2);\n    return '55' + d;\n  }\n  return d.length >= 10 ? (d.startsWith('55') ? d : '55' + d) : d;\n}\n\n// Mapear cada empresa como item individual para o SplitInBatches\nconst items = companies.map(c => {\n  const socios = c.qsa || [];\n  const decisor = socios.find(s => (s.qualificacao_socio||'').toLowerCase().includes('administrador') || (s.qualificacao_socio||'').toLowerCase().includes('diretor') || (s.qualificacao_socio||'').toLowerCase().includes('presidente')) || socios[0];\n\n  const phones = [c.telefone1, c.telefone2].filter(Boolean).flatMap(p => p.split(/[\\/;,]/)).map(p => p.trim().replace(/\\D/g, '')).filter(p => p.length >= 10);\n  const mobile = phones.find(p => classifyPhone(p) === 'mobile');\n  const whatsapp = mobile ? formatPhone(mobile) : '';\n  const mainPhone = phones[0] ? formatPhone(phones[0]) : '';\n\n  const capital = c.capital_social || 0;\n  const tier = capital >= 830000 ? 'Medium=' : capital >= 200000 ? 'Medium-' : capital >= 100000 ? 'Small' : 'Micro+';\n\n  return {\n    json: {\n      companyName: c.razao_social,\n      tradeName: c.nome_fantasia,\n      cnpj: c.cnpj,\n      segment: c.cnae_fiscal_descricao,\n      tier: tier,\n      status: 'Novo',\n      score: 0,\n      temperatura: 'Frio',\n      address: [c.logradouro, c.numero, c.bairro].filter(Boolean).join(', '),\n      city: c.municipio,\n      state: c.uf,\n      capitalSocial: capital,\n      rfPhone: mainPhone,\n      rfEmail: c.email,\n      cnaePrimary: c.cnae_fiscal,\n      foundingDate: c.data_inicio_atividade,\n      enrichmentStatus: 'basic',\n      partners: JSON.stringify(c.qsa || []),\n      // Campos para Contact\n      _decisorName: decisor?.nome_socio || '',\n      _decisorRole: decisor?.qualificacao_socio || '',\n      _whatsapp: whatsapp,\n      _hasWhatsapp: !!whatsapp,\n      _hasDecisor: !!(decisor?.nome_socio)\n    }\n  };\n});\n\nreturn items;"
-      },
-      "id": "extract-decisor",
-      "name": "9. Extrair Decisor + WhatsApp",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1820, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.airtable.com/v0/appKh4qQ5JN94dQHv/Leads",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "airtableTokenApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{ $env.AIRTABLE_PAT }}" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"companyName\": \"{{ $json.companyName }}\",\n      \"tradeName\": \"{{ $json.tradeName }}\",\n      \"cnpj\": \"{{ $json.cnpj }}\",\n      \"segment\": \"{{ $json.segment }}\",\n      \"tier\": \"{{ $json.tier }}\",\n      \"status\": \"Novo\",\n      \"score\": {{ $json.score }},\n      \"temperatura\": \"{{ $json.temperatura }}\",\n      \"address\": \"{{ $json.address }}\",\n      \"city\": \"{{ $json.city }}\",\n      \"state\": \"{{ $json.state }}\",\n      \"capitalSocial\": {{ $json.capitalSocial || 0 }},\n      \"rfPhone\": \"{{ $json.rfPhone }}\",\n      \"rfEmail\": \"{{ $json.rfEmail }}\",\n      \"cnaePrimary\": \"{{ $json.cnaePrimary }}\",\n      \"foundingDate\": \"{{ $json.foundingDate }}\",\n      \"enrichmentStatus\": \"basic\",\n      \"partners\": \"{{ $json.partners }}\"\n    }\n  }]\n}",
-        "options": {}
-      },
-      "id": "save-lead",
-      "name": "10. Salvar Lead Airtable",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2080, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.airtable.com/v0/appKh4qQ5JN94dQHv/Contacts",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{ $env.AIRTABLE_PAT }}" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"records\": [{\n    \"fields\": {\n      \"name\": \"{{ $json._decisorName }}\",\n      \"role\": \"{{ $json._decisorRole }}\",\n      \"contactType\": \"decisor\",\n      \"whatsapp\": \"{{ $json._whatsapp }}\",\n      \"leadId\": \"{{ $('10. Salvar Lead Airtable').first().json.records[0].id }}\"\n    }\n  }]\n}",
-        "options": {}
-      },
-      "id": "save-contact",
-      "name": "11. Salvar Contact Airtable",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2340, 300]
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"leadsCreated\": {{ $('9. Extrair Decisor + WhatsApp').all().length }},\n  \"companies\": {{ JSON.stringify($('9. Extrair Decisor + WhatsApp').all().map(i => i.json)) }}\n}"
+        "responseBody": "={{ JSON.stringify({ success: true, companies: $json.allCompanies || [], totalFound: ($json.allCompanies || []).length }) }}"
       },
       "id": "respond-webhook",
-      "name": "12. Responder ao Sistema",
+      "name": "8. Responder ao Sistema",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2600, 300]
+      "position": [1560, 300]
     }
   ],
   "connections": {
@@ -160,9 +96,9 @@
       "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
     },
     "3. Montar Query CNAE": {
-      "main": [[{ "node": "4. Buscar via Apify (Casa dos Dados)", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "4. Buscar Casa dos Dados", "type": "main", "index": 0 }]]
     },
-    "4. Buscar via Apify (Casa dos Dados)": {
+    "4. Buscar Casa dos Dados": {
       "main": [[{ "node": "5. Processar Resultados", "type": "main", "index": 0 }]]
     },
     "5. Processar Resultados": {
@@ -171,30 +107,18 @@
     "6. Mais Resultados?": {
       "main": [
         [{ "node": "7. Rate Limit", "type": "main", "index": 0 }],
-        [{ "node": "8. Enriquecer OpenCNPJ", "type": "main", "index": 0 }]
+        [{ "node": "8. Responder ao Sistema", "type": "main", "index": 0 }]
       ]
     },
     "7. Rate Limit": {
       "main": [[{ "node": "3. Montar Query CNAE", "type": "main", "index": 0 }]]
-    },
-    "8. Enriquecer OpenCNPJ": {
-      "main": [[{ "node": "9. Extrair Decisor + WhatsApp", "type": "main", "index": 0 }]]
-    },
-    "9. Extrair Decisor + WhatsApp": {
-      "main": [[{ "node": "10. Salvar Lead Airtable", "type": "main", "index": 0 }]]
-    },
-    "10. Salvar Lead Airtable": {
-      "main": [[{ "node": "11. Salvar Contact Airtable", "type": "main", "index": 0 }]]
-    },
-    "11. Salvar Contact Airtable": {
-      "main": [[{ "node": "12. Responder ao Sistema", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "saveManualExecutions": true,
     "callerPolicy": "workflowsFromSameOwner",
-    "executionTimeout": 600
+    "executionTimeout": 300
   },
   "tags": [{ "name": "OUTBILI" }, { "name": "PESCA" }]
 }

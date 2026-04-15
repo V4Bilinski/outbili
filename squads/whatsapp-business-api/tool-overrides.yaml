@@ -1,0 +1,177 @@
+# Tool Overrides — WhatsApp Business API Squad
+# Extends base tool registry with squad-specific profiles and bindings
+
+extends: tool-registry
+
+overrides:
+  profiles:
+    whatsapp-chief:
+      always_loaded:
+        - Read
+        - Write
+        - Edit
+        - Bash
+        - Grep
+        - Glob
+      frequently_used:
+        - WebSearch
+        - WebFetch
+      deferred: []
+
+    cloud-api-architect:
+      always_loaded:
+        - Read
+        - Grep
+        - Glob
+      frequently_used:
+        - WebFetch
+      deferred: []
+
+    template-strategist:
+      always_loaded:
+        - Read
+        - Grep
+        - Glob
+        - Write
+      frequently_used: []
+      deferred: []
+
+    compliance-guardian:
+      always_loaded:
+        - Read
+        - Grep
+        - Glob
+      frequently_used:
+        - WebSearch
+      deferred: []
+
+    campaign-optimizer:
+      always_loaded:
+        - Read
+        - Write
+        - Grep
+        - Glob
+      frequently_used:
+        - WebSearch
+      deferred: []
+
+    integration-engineer:
+      always_loaded:
+        - Read
+        - Write
+        - Edit
+        - Bash
+        - Grep
+        - Glob
+      frequently_used: []
+      deferred: []
+
+    flow-builder:
+      always_loaded:
+        - Read
+        - Write
+        - Edit
+        - Bash
+        - Grep
+        - Glob
+      frequently_used: []
+      deferred: []
+
+    utility-validator:
+      always_loaded:
+        - Read
+        - Grep
+        - Glob
+      frequently_used: []
+      deferred: []
+
+  task_bindings:
+    diagnose-account:
+      required:
+        - Read
+        - Grep
+      optional:
+        - WebFetch
+      execution_mode: direct
+
+    create-template:
+      required:
+        - Read
+        - Write
+        - Grep
+      optional: []
+      execution_mode: interactive
+
+    audit-template:
+      required:
+        - Read
+        - Grep
+      optional: []
+      execution_mode: direct
+
+    compliance-check:
+      required:
+        - Read
+        - Grep
+      optional:
+        - WebSearch
+      execution_mode: direct
+
+    setup-webhook:
+      required:
+        - Read
+        - Write
+        - Edit
+        - Bash
+      optional: []
+      execution_mode: interactive
+
+    design-flow:
+      required:
+        - Read
+        - Write
+        - Edit
+      optional:
+        - Bash
+      execution_mode: interactive
+
+    validate-utility:
+      required:
+        - Read
+        - Grep
+      optional: []
+      execution_mode: interactive
+
+    plan-campaign:
+      required:
+        - Read
+        - Write
+        - Grep
+      optional:
+        - WebSearch
+      execution_mode: interactive
+
+    troubleshoot-error:
+      required:
+        - Read
+        - Grep
+      optional:
+        - WebFetch
+      execution_mode: direct
+
+    migrate-bsp:
+      required:
+        - Read
+        - Write
+        - Grep
+      optional:
+        - WebSearch
+        - WebFetch
+      execution_mode: interactive
+
+    optimize-quality:
+      required:
+        - Read
+        - Grep
+      optional: []
+      execution_mode: direct

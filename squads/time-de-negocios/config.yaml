@@ -1,0 +1,296 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Squad: Time de Negócios — Rockefeller Dream Team
+# Domínio: Negociação, Vendas Complexas & Persuasão Estratégica
+# Criado: 2026-03-28
+# Versão: 1.0.0
+# ═══════════════════════════════════════════════════════════════════════════════
+
+squad:
+  name: time-de-negocios
+  display_name: "Time de Negócios — Rockefeller Dream Team"
+  version: "1.0.0"
+  domain: "Negociação, Vendas & Persuasão Estratégica"
+  description: |
+    10 mentes. 1 mandatário. 4 camadas. 7 fases de pipeline.
+    Squad de negociação baseado nos maiores estrategistas de negócios,
+    vendas e persuasão da história. De Rockefeller (domínio total) a
+    Voss (empatia tática), cada agente opera com frameworks reais e
+    documentados. O sistema cobre desde diagnóstico de gargalos até
+    fechamento de alta pressão e treinamento de equipe.
+
+  philosophy: |
+    "Controle a cadeia inteira — quem depende de você não negocia, aceita."
+    — John D. Rockefeller
+
+    Cada negociação segue um pipeline de 7 fases. Cada fase ativa os
+    agentes certos no momento certo. O mandatário (Rockefeller) governa
+    a filosofia; as 4 camadas executam. Ninguém opera sozinho — a
+    sinergia entre as mentes é o diferencial.
+
+  keywords:
+    - negociação
+    - vendas
+    - persuasão
+    - fechamento
+    - oferta
+    - BATNA
+    - empatia-tática
+    - influence
+    - closing
+    - deal-strategy
+    - pipeline-comercial
+    - mafia-offer
+
+  entry_agent: rockefeller
+  created_by: "squad-creator"
+  created_at: "2026-03-28"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ARQUITETURA DE CAMADAS (4 Camadas)
+# ─────────────────────────────────────────────────────────────────────────────
+
+tiers:
+  mandatario:
+    name: "Mandatário — Orquestrador"
+    agents:
+      - rockefeller
+    purpose: "Visão de domínio total, decisão estratégica, routing para camadas"
+
+  tier_1:
+    name: "Camada 1 — Sistema, Oferta e Alavancagem"
+    agents:
+      - goldratt
+      - hormozi
+      - naval
+    purpose: "Diagnóstico de gargalos + engenharia de ofertas irrecusáveis + arquitetura de leverage e riqueza"
+
+  tier_2:
+    name: "Camada 2 — Estrutura da Negociação"
+    agents:
+      - ury
+      - cialdini
+    purpose: "Arquitetura da mesa + engenharia de persuasão em touchpoints"
+
+  tier_3:
+    name: "Camada 3 — Execução"
+    agents:
+      - voss
+      - belfort
+    purpose: "Condução ao vivo de conversas + fechamento rápido"
+
+  tier_4:
+    name: "Camada 4 — Reservas Estratégicas"
+    agents:
+      - trump
+      - cohen
+    purpose: "Alavancagem máxima + calibragem emocional (uso seletivo)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REGISTRO DE AGENTES
+# ─────────────────────────────────────────────────────────────────────────────
+
+agents:
+  rockefeller:
+    file: agents/rockefeller.md
+    tier: mandatario
+    based_on: "John D. Rockefeller — Titan (Ron Chernow)"
+    icon: "👑"
+    focus: "Orquestração total, diagnóstico de mercado, decisão estratégica"
+
+  goldratt:
+    file: agents/goldratt.md
+    tier: 1
+    based_on: "Eliyahu Goldratt — The Goal + It's Not Luck"
+    icon: "⚙️"
+    focus: "TOC, 5 Focusing Steps, Mafia Offer, Thinking Processes"
+
+  hormozi:
+    file: agents/hormozi.md
+    tier: 1
+    based_on: "Alex Hormozi — $100M Offers"
+    icon: "💰"
+    focus: "Grand Slam Offer, Value Equation, stacking de bônus, garantias"
+
+  ury:
+    file: agents/ury.md
+    tier: 2
+    based_on: "William Ury — Getting to Yes"
+    icon: "🤝"
+    focus: "Principled Negotiation, BATNA, interesses vs posições"
+
+  cialdini:
+    file: agents/cialdini.md
+    tier: 2
+    based_on: "Robert Cialdini — Influence + Pre-Suasion"
+    icon: "🧲"
+    focus: "7 Princípios de Influência, Pre-Suasion, gatilhos em touchpoints"
+
+  voss:
+    file: agents/voss.md
+    tier: 3
+    based_on: "Chris Voss — Never Split the Difference"
+    icon: "🎯"
+    focus: "Black Swan Method, empatia tática, Ackerman Bargaining"
+
+  belfort:
+    file: agents/belfort.md
+    tier: 3
+    based_on: "Jordan Belfort — Way of the Wolf"
+    icon: "⚡"
+    focus: "Straight Line Selling, Three Tens, tonalidade, scripts"
+
+  trump:
+    file: agents/trump.md
+    tier: 4
+    based_on: "Donald Trump — The Art of the Deal"
+    icon: "🔥"
+    focus: "DITF, ancoragem extrema, structured choice, alavancagem"
+
+  cohen:
+    file: agents/cohen.md
+    tier: 4
+    based_on: "Herb Cohen — You Can Negotiate Anything"
+    icon: "🧘"
+    focus: "Poder + Tempo + Informação, desapego calibrado, anti-desespero"
+
+  naval:
+    file: agents/naval.md
+    tier: 1
+    based_on: "Naval Ravikant — The Almanack of Naval Ravikant + How to Get Rich"
+    icon: "🧭"
+    focus: "Specific knowledge, leverage (code/media/capital), compounding, judgment, asymmetric upside"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PIPELINE DE 7 FASES
+# ─────────────────────────────────────────────────────────────────────────────
+
+pipeline:
+  phases:
+    - id: diagnostico
+      name: "Diagnóstico do sistema"
+      agents: [goldratt, hormozi, naval]
+      ceo_active: true
+      description: |
+        Rockefeller decide onde atacar. Naval filtra primeiro: "Esse jogo
+        tem compounding e leverage real?" Goldratt identifica o gargalo com
+        5 Focusing Steps. Hormozi mapeia a Equação de Valor do cliente.
+        O mandatário decide se o jogo vale a pena.
+
+    - id: oferta
+      name: "Construção da oferta irrecusável"
+      agents: [goldratt, hormozi, naval, cialdini]
+      ceo_active: true
+      description: |
+        Naval avalia leverage e asymmetric upside da oferta.
+        Goldratt define Mafia Offer baseada em vantagem operacional.
+        Hormozi empacota com stacking, garantias e naming.
+        Cialdini embute gatilhos em cada touchpoint.
+
+    - id: pre-mesa
+      name: "Montagem da mesa"
+      agents: [naval, ury, cialdini]
+      ceo_active: false
+      description: |
+        Naval valida: "Estamos na posição de principal ou agente nesse deal?"
+        Ury estrutura: interesses reais, BATNA, critérios objetivos.
+        Cialdini prepara Pre-Suasion — autoridade, reciprocidade, prova social.
+        O prospect chega predisposto a fechar.
+
+    - id: funil
+      name: "Condução ao vivo"
+      agents: [voss, cialdini]
+      ceo_active: false
+      description: |
+        Voss assume com empatia tática: espelhamento, labeling, perguntas
+        calibradas. Cialdini opera nos bastidores entre reuniões.
+
+    - id: fechamento
+      name: "Hora de fechar"
+      agents: [voss, belfort, cialdini]
+      ceo_active: false
+      description: |
+        Voss fecha deals consultivos com Ackerman Bargaining.
+        Belfort fecha transacionais com Straight Line.
+        Cialdini opera na proposta final.
+
+    - id: alta-pressao
+      name: "Cenários de força"
+      agents: [trump, cohen]
+      ceo_active: true
+      description: |
+        Só Rockefeller autoriza o uso de Trump. Ancoragem extrema,
+        structured choice, Door in the Face. Cohen calibra com
+        "care, but not that much."
+
+    - id: treino
+      name: "Formação do time"
+      agents: [belfort, cialdini, cohen]
+      ceo_active: false
+      description: |
+        Belfort treina scripts e tonalidade. Cialdini ensina gatilhos.
+        Cohen ensina calibragem emocional. Qualquer SDR opera no
+        mínimo viável em dias.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MATRIZ DE HANDOFF
+# ─────────────────────────────────────────────────────────────────────────────
+
+handoffs:
+  rockefeller:
+    routes_to: [goldratt, hormozi, naval, ury, cialdini, voss, belfort, trump, cohen]
+
+  goldratt:
+    collaborates_with: [hormozi, ury]
+    escalates_to: [rockefeller]
+
+  hormozi:
+    collaborates_with: [goldratt, cialdini, voss]
+    escalates_to: [rockefeller]
+
+  ury:
+    collaborates_with: [cialdini, voss]
+    escalates_to: [rockefeller]
+
+  cialdini:
+    collaborates_with: [ury, voss, belfort, hormozi]
+    escalates_to: [rockefeller]
+
+  voss:
+    collaborates_with: [cialdini, belfort, ury]
+    escalates_to: [rockefeller]
+
+  belfort:
+    collaborates_with: [voss, cialdini, cohen]
+    escalates_to: [rockefeller]
+
+  trump:
+    collaborates_with: [cohen]
+    escalates_to: [rockefeller]
+    activation_requires: "rockefeller_authorization"
+
+  cohen:
+    collaborates_with: [trump, voss, belfort, naval]
+    escalates_to: [rockefeller]
+
+  naval:
+    collaborates_with: [goldratt, hormozi, ury, cohen]
+    escalates_to: [rockefeller]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURAÇÕES
+# ─────────────────────────────────────────────────────────────────────────────
+
+settings:
+  greeting:
+    level: archetypal
+    show_project_status: true
+    show_pipeline: true
+
+  activation:
+    prefix: "time-de-negocios"
+    example: "@time-de-negocios:voss"
+
+  quality_standards:
+    voice_dna_required: true
+    thinking_dna_required: true
+    framework_fidelity: "high"

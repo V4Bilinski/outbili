@@ -1,0 +1,153 @@
+# Referência de Frameworks — Time de Negócios
+# Cartão de referência rápida para todos os frameworks do squad
+
+frameworks:
+  goldratt:
+    name: "TOC + Mafia Offer"
+    source: "The Goal + It's Not Luck"
+    core: "O gargalo define tudo"
+    tools:
+      five_focusing_steps:
+        - "1. IDENTIFY — encontrar o gargalo"
+        - "2. EXPLOIT — extrair máximo sem investir"
+        - "3. SUBORDINATE — alinhar tudo ao gargalo"
+        - "4. ELEVATE — investir para quebrar o gargalo"
+        - "5. REPEAT — não deixar inércia virar o novo gargalo"
+      mafia_offer: "Oferta baseada em vantagem operacional que o cliente não pode recusar E a concorrência não pode copiar"
+      evaporating_cloud: "Resolver conflitos mapeando pressupostos de cada lado e invalidando o pressuposto falso"
+      throughput_accounting: "T = Throughput, I = Investment, OE = Operating Expense. Foco em T, não em redução de OE"
+
+  hormozi:
+    name: "Grand Slam Offer + Value Equation"
+    source: "$100M Offers"
+    core: "Se precisa de closer, a oferta é fraca"
+    tools:
+      value_equation: "V = (Dream Outcome x Perceived Likelihood) / (Time Delay x Effort & Sacrifice)"
+      grand_slam_components:
+        - "Oferta principal — o que recebe"
+        - "Bônus stack — cada bônus mata uma objeção"
+        - "Garantia reversa — risco é do vendedor"
+        - "Naming MAGIC — Make A Grand Inspiring Claim"
+        - "Pricing por valor — nunca por custo"
+      scarcity_rules: "Escassez REAL: vagas, capacidade, prazo. NUNCA fabricada."
+
+  ury:
+    name: "Principled Negotiation + BATNA"
+    source: "Getting to Yes"
+    core: "Interesses, não posições"
+    tools:
+      four_principles:
+        - "1. Separe pessoa do problema"
+        - "2. Foque em interesses, não posições"
+        - "3. Crie opções de ganho mútuo"
+        - "4. Insista em critérios objetivos"
+      batna: "Best Alternative To Negotiated Agreement — sua fonte de poder real"
+      zopa: "Zone Of Possible Agreement — onde os ranges se sobrepõem"
+      go_to_balcony: "Quando emoção sobe, pause. Vá para a varanda mental."
+
+  cialdini:
+    name: "7 Princípios de Influência + Pre-Suasion"
+    source: "Influence + Pre-Suasion"
+    core: "Persuasão acontece ANTES da mensagem"
+    tools:
+      seven_principles:
+        - "1. Reciprocidade — dê primeiro, receba depois"
+        - "2. Consistência — micro-yeses levam ao macro-yes"
+        - "3. Prova Social — outros como você já fizeram"
+        - "4. Autoridade — credenciais e expertise"
+        - "5. Afinidade — semelhança gera confiança"
+        - "6. Escassez — limitado é valioso"
+        - "7. Unidade — nós somos do mesmo tipo"
+      pre_suasion: "Controlar atenção e frame ANTES da mensagem principal"
+
+  voss:
+    name: "Black Swan Method"
+    source: "Never Split the Difference"
+    core: "Empatia tática, não simpatia"
+    tools:
+      tactical_empathy:
+        - "Espelhamento — repetir últimas 1-3 palavras"
+        - "Labeling — 'Parece que...' + silêncio"
+        - "Perguntas calibradas — 'Como?' e 'O quê?'"
+        - "That's right — o som da vitória"
+        - "No-oriented — 'Seria ridículo se...?'"
+      ackerman_bargaining:
+        - "1ª oferta: 65% do target"
+        - "2ª oferta: 85%"
+        - "3ª oferta: 95%"
+        - "Final: 100% com número não-redondo"
+      black_swans: "3 informações desconhecidas que mudam tudo"
+      dj_voice: "Late-night FM DJ voice — calma, grave, não ameaçadora"
+
+  belfort:
+    name: "Straight Line Selling"
+    source: "Way of the Wolf"
+    core: "Os primeiros 4 segundos definem tudo"
+    tools:
+      three_tens: "Certeza em: Produto (1-10), Vendedor (1-10), Empresa (1-10)"
+      straight_line: "Toda conversa move em direção ao fechamento — sem desvios"
+      tonality_patterns:
+        - "Certeza absoluta"
+        - "Curiosidade sincera"
+        - "Empatia declarativa"
+        - "Mistério/sussurro"
+        - "Tom de fato consumado"
+      looping: "Cada objeção é um pedido por mais certeza — loop e aumente"
+      state_management: "Ancoragem de estados positivos antes de cada call"
+
+  trump:
+    name: "DITF + Structured Choice"
+    source: "The Art of the Deal"
+    core: "Alavancagem é tudo"
+    tools:
+      ditf: "Door in the Face — peça o impossível, depois ofereça o desejado"
+      structured_choice: "Sempre ofereça 2 opções — ambas favoráveis a você"
+      extreme_anchor: "Comece tão alto que qualquer recuo pareça generoso"
+      unpredictability: "Nunca seja previsível — mude o ritmo inesperadamente"
+      walk_away: "Esteja disposto a sair (ou projete que está)"
+    warning: "RESERVA ESTRATÉGICA — só com alavancagem real"
+
+  cohen:
+    name: "Poder + Tempo + Informação"
+    source: "You Can Negotiate Anything"
+    core: "Quem precisa menos, negocia melhor"
+    tools:
+      three_variables:
+        - "Poder — quem tem mais opções?"
+        - "Tempo — quem tem mais urgência?"
+        - "Informação — quem sabe mais?"
+      calibrated_detachment: "'Care, but not that much' — interesse sem desespero"
+      manipulation_detector: "Reconhecer quando o outro lado está usando táticas"
+      five_year_test: "'Daqui a 5 anos, isso vai importar?' — reduz pressão"
+
+  naval:
+    name: "Specific Knowledge + Leverage + Judgment"
+    source: "The Almanack of Naval Ravikant + How to Get Rich (tweetstorm)"
+    core: "Seek wealth, not money or status"
+    tools:
+      leverage_hierarchy:
+        - "1. Labor — linear, precisa contratar (menor leverage)"
+        - "2. Capital — alto potencial, precisa levantar (permissioned)"
+        - "3. Code — escala infinita, custo marginal zero (permissionless)"
+        - "4. Media — escala infinita, custo marginal zero (permissionless)"
+      wealth_formula: "RIQUEZA = Specific Knowledge x Accountability x Leverage x Tempo"
+      deal_filter_criteria:
+        - "Asymmetric upside — downside 1x, upside 10-1000x"
+        - "Compounding — o deal cresce sozinho com o tempo?"
+        - "Principal position — equity e decisão, não fee fixo"
+        - "Specific knowledge — usa seu moat incopiável?"
+        - "Long-term people — jogam jogos de longo prazo?"
+        - "Authenticity — alinhado com quem você realmente é?"
+      decision_rules:
+        - "If you can't decide, the answer is no"
+        - "Play long-term games with long-term people"
+        - "Escape competition through authenticity"
+        - "Set aspirational hourly rate and enforce it"
+        - "Win-win or no deal — jogos repetidos punem extrativismo"
+      principal_vs_agent: "Principal = equity + decisão + upside ilimitado. Agent = fee + execução + upside limitado. Sempre tente ser o principal."
+      compounding_dimensions:
+        - "Capital — retorno reinveste e cresce?"
+        - "Relações — duram e abrem portas?"
+        - "Reputação — fortalece autoridade?"
+        - "Conhecimento — compõe com o que já sabe?"
+        - "Rede — conecta com long-term players?"

@@ -1,0 +1,60 @@
+# Workflow: Qualificação rápida de deal
+# Mini-workflow para decidir se o deal vale a pena antes de investir tempo
+
+workflow:
+  name: qualificacao-deal
+  display_name: "Qualificação rápida de deal"
+  version: "1.0.0"
+  description: |
+    Workflow de 3 passos para qualificar um deal rapidamente.
+    Decide: GO (entrar no pipeline), NO-GO (descartar), ou INVESTIGAR (precisa mais info).
+    Executado por Rockefeller com apoio de Goldratt e Cohen.
+
+steps:
+  - id: coleta
+    name: "Passo 1: Coletar informações básicas"
+    agent: rockefeller
+    elicit: true
+    questions:
+      - "Quem é o prospect? (empresa, segmento, tamanho)"
+      - "Qual o problema que querem resolver?"
+      - "Qual o valor estimado do deal?"
+      - "Quem é o decisor?"
+      - "Qual a timeline do prospect?"
+      - "Como chegaram até nós? (inbound, outbound, indicação)"
+
+  - id: avaliacao
+    name: "Passo 2: Avaliar viabilidade"
+    agents: [goldratt, cohen]
+    criteria:
+      gargalo:
+        question: "Conseguimos resolver o gargalo real do prospect?"
+        score_range: [1, 10]
+      alavancagem:
+        question: "Temos alavancagem nesse deal? (poder, tempo, informação)"
+        score_range: [1, 10]
+      fit:
+        question: "O prospect encaixa no perfil ideal? (segmento, tamanho, dor)"
+        score_range: [1, 10]
+      capacidade:
+        question: "Temos capacidade de entregar com qualidade?"
+        score_range: [1, 10]
+      margem:
+        question: "A margem justifica o esforço?"
+        score_range: [1, 10]
+
+  - id: decisao
+    name: "Passo 3: Decisão"
+    agent: rockefeller
+    gate:
+      type: score
+      calculation: "média dos 5 critérios"
+      thresholds:
+        GO: ">= 7: Entrar no pipeline (fase 1, diagnóstico)"
+        INVESTIGAR: "Entre 5 e 6: Precisa mais informação antes de decidir"
+        NO_GO: "< 5: Não vale o investimento de tempo"
+
+output:
+  GO: "Encaminhar para *diagnosticar (fase 1 do pipeline)"
+  INVESTIGAR: "Agendar call de discovery para coletar mais dados"
+  NO_GO: "Registrar motivo e descartar (não desperdiçar recursos)"

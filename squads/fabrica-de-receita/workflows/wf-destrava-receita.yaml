@@ -1,0 +1,289 @@
+# Workflow: Pipeline Destrava Receita Completo
+# 5 fases: Diagnostico → Ciclo 90d → Execucao → Medicao → Renovacao
+
+workflow:
+  name: wf-destrava-receita
+  display_name: "Pipeline DR Completo (5 fases)"
+  version: "1.0.0"
+  description: |
+    Workflow completo de um engajamento Destrava Receita, do diagnostico inicial
+    ate a medicao de resultados e decisao de renovacao. Cobre todas as 5 fases:
+    (1) Diagnostico e Qualificacao, (2) Planejamento do Ciclo 90 dias,
+    (3) Execucao das Alavancas, (4) Medicao de Resultados, (5) Renovacao e Proximo Ciclo.
+    Aplica a metodologia V4 Company com framework STEP e TOC em toda a jornada.
+
+phases:
+  - id: diagnostico-qualificacao
+    name: "Fase 1: Diagnostico e Qualificacao"
+    task: diagnostico-travas.md
+    agents: [diagnosticador, especialista-spiced]
+    description: |
+      Fase de entrada: qualificar o prospect com SPICED e diagnosticar qual das
+      8 travas e o gargalo principal usando TOC (5 Focusing Steps). Definir o
+      produto DR recomendado e a meta do primeiro ciclo de 90 dias.
+    sub_tasks:
+      - qualificar-spiced.md
+      - diagnostico-travas.md
+    inputs:
+      - Informacoes do prospect (empresa, mercado, faturamento, time)
+      - Principal dor reportada
+    outputs:
+      - Ficha SPICED completa (score 0-25)
+      - Mapa de travas com gargalo principal
+      - Produto DR recomendado
+      - Meta do ciclo 1 (meta SMART)
+    gate:
+      type: decision
+      label: "Prospect qualificado para DR?"
+      options:
+        QUENTE: "SPICED >= 20. Proposta DR imediata"
+        MORNO: "SPICED 14-19. Apresentar proposta com follow-up"
+        FRIO: "SPICED 8-13. Nurture — proximo contato em 14 dias"
+        DESQUALIFICADO: "SPICED < 8. Registrar e arquivar"
+    next:
+      QUENTE: planejamento-ciclo
+      MORNO: construcao-proposta
+      FRIO: nurture
+      DESQUALIFICADO: end-desqualificado
+
+  - id: construcao-proposta
+    name: "Fase 1b: Construcao da Proposta DR"
+    task: construir-oferta-dr.md
+    agents: [destrava-receita-consultant]
+    description: |
+      Montar a proposta DR personalizada conectando a trava diagnosticada com
+      o produto DR recomendado. Calcular ROI esperado com dados reais do cliente.
+      Preparar para apresentacao ao decision maker.
+    outputs:
+      - Proposta DR completa (STEP format)
+      - Slide deck de apresentacao (5-7 slides)
+      - One-pager para decision maker
+    gate:
+      type: decision
+      options:
+        PROPOSTA_ACEITA: "Cliente assinou. Ir para Fase 2"
+        PROPOSTA_EM_NEGOCIACAO: "Negociando termos. Handoff para Time de Negocios"
+        PROPOSTA_REJEITADA: "Nao fechou. Registrar objecoes e mover para nurture"
+    next:
+      PROPOSTA_ACEITA: planejamento-ciclo
+      PROPOSTA_EM_NEGOCIACAO: handoff-negocios
+      PROPOSTA_REJEITADA: nurture
+
+  - id: planejamento-ciclo
+    name: "Fase 2: Planejamento do Ciclo 90 Dias"
+    task: ciclo-90-dias.md
+    agents: [fabrica-de-receita-master, growth-planner]
+    description: |
+      Montar o plano detalhado do primeiro ciclo de 90 dias. Selecionar as 3 alavancas
+      prioritarias, definir meta SMART, estabelecer KPIs de acompanhamento e
+      cronograma semana a semana. Alinhar com o time do cliente antes do kick-off.
+    inputs:
+      - Trava principal diagnosticada
+      - Meta de receita do ciclo
+      - Time disponivel do cliente
+      - Budget disponivel
+    outputs:
+      - Plano ciclo 90 dias (semana a semana)
+      - 3 alavancas selecionadas com responsaveis
+      - KPIs e metas mensais
+      - Deck de kick-off
+    gate:
+      type: checklist
+      label: "Plano aprovado para execucao?"
+      threshold: 8
+      max: 10
+      checks:
+        - Meta SMART definida e validada com cliente
+        - 3 alavancas selecionadas (nao mais que 3)
+        - Responsaveis definidos para cada alavanca
+        - KPIs de acompanhamento configurados
+        - Cronograma semana a semana aprovado
+        - Budget do ciclo confirmado
+        - Kick-off agendado
+        - Time do cliente disponivel confirmado
+        - Ferramentas necessarias mapeadas
+        - Contrato assinado
+      options:
+        APROVADO: "Score >= 8. Partir para execucao"
+        AJUSTAR: "Score 6-7. Ajustar gaps antes do kick-off"
+        REVISAR: "Score < 6. Voltar para diagnostico e replanejamento"
+    next:
+      APROVADO: execucao-ciclo
+      AJUSTAR: planejamento-ciclo
+      REVISAR: diagnostico-qualificacao
+
+  - id: execucao-ciclo
+    name: "Fase 3: Execucao do Ciclo (90 dias)"
+    task: null
+    agents: [fabrica-de-receita-master, orchestrator]
+    description: |
+      Execucao das 3 alavancas ao longo dos 90 dias com acompanhamento semanal
+      de KPIs. O Fabio orquestra o squad (Hunter, Zara, Fluxo, Dara, etc.)
+      conforme as alavancas do ciclo. Reviews mensais com o cliente para ajuste
+      de rota.
+    sub_workflows:
+      - wf-growth-sprint.yaml  # Para alavancas de crescimento
+    schedule:
+      week_1_2: "Diagnostico profundo + quick wins"
+      week_3_4: "Lancamento Alavanca 1 + review mes 1"
+      week_5_6: "Alavanca 1 em velocidade + lancamento Alavanca 2"
+      week_7_8: "Lancamento Alavanca 3 + review mes 2"
+      week_9_10: "Otimizacao das 3 alavancas"
+      week_11_12: "Medicao de resultados + planejamento ciclo 2"
+    gate:
+      type: decision
+      label: "Ciclo executado — avaliar resultado"
+      options:
+        META_ATINGIDA: "Meta do ciclo atingida. Ir para Fase 4"
+        META_PARCIAL: "50-99% da meta. Ir para Fase 4 com contexto"
+        META_NAO_ATINGIDA: "< 50% da meta. Revisao de causa raiz obrigatoria"
+        BLOQUEIO_CRITICO: "Bloqueio que impede execucao. Escalada imediata"
+    next:
+      META_ATINGIDA: medicao-resultados
+      META_PARCIAL: medicao-resultados
+      META_NAO_ATINGIDA: revisao-causa-raiz
+      BLOQUEIO_CRITICO: escalada
+
+  - id: revisao-causa-raiz
+    name: "Fase 3b: Revisao de Causa Raiz"
+    task: diagnostico-travas.md
+    agents: [fabrica-de-receita-master, diagnosticador]
+    description: |
+      Quando a meta nao foi atingida, realizar uma revisao profunda para entender
+      o que impediu a execucao. Pode ser: trava mal diagnosticada, alavanca errada,
+      falta de execucao do time, bloqueio externo.
+    outputs:
+      - Analise de causa raiz documentada
+      - Plano de correcao para o proximo ciclo
+    gate:
+      type: decision
+      options:
+        TRAVA_ERRADA: "O gargalo real e diferente do diagnosticado. Re-diagnosticar"
+        EXECUCAO_FALHOU: "Trava certa mas execucao foi falha. Ajustar para ciclo 2"
+        BLOQUEIO_EXTERNO: "Fator externo (mercado, produto, time cliente) impediu"
+    next:
+      TRAVA_ERRADA: diagnostico-qualificacao
+      EXECUCAO_FALHOU: medicao-resultados
+      BLOQUEIO_EXTERNO: medicao-resultados
+
+  - id: medicao-resultados
+    name: "Fase 4: Medicao de Resultados"
+    task: roi-analysis.md
+    agents: [roi-analyst, fabrica-de-receita-master]
+    description: |
+      Medir os resultados do ciclo de 90 dias vs metas estabelecidas. Calcular ROI
+      real do engajamento DR. Documentar aprendizados e preparar o report executivo
+      para apresentar ao cliente.
+    inputs:
+      - KPIs do inicio do ciclo (baseline)
+      - KPIs ao final do ciclo (resultados)
+      - Investimento total no ciclo
+    outputs:
+      - Scorecard de resultados (baseline vs resultado)
+      - ROI calculado do ciclo
+      - Top 3 aprendizados
+      - Report executivo para C-level do cliente
+    gate:
+      type: decision
+      label: "Decisao de renovacao"
+      options:
+        RENOVAR_MESMO: "Cliente quer continuar no mesmo produto DR"
+        RENOVAR_UPGRADE: "Resultados bons. Cliente quer subir de produto"
+        RENOVAR_DOWNGRADE: "Resultados abaixo. Cliente quer produto menor"
+        NAO_RENOVAR: "Cliente nao quer renovar"
+    next:
+      RENOVAR_MESMO: proximo-ciclo
+      RENOVAR_UPGRADE: upsell-dr
+      RENOVAR_DOWNGRADE: proximo-ciclo
+      NAO_RENOVAR: offboarding
+
+  - id: proximo-ciclo
+    name: "Fase 5: Planejamento do Proximo Ciclo"
+    task: ciclo-90-dias.md
+    agents: [fabrica-de-receita-master, growth-planner, diagnosticador]
+    description: |
+      Planejar o Ciclo 2 (e subsequentes). Agora com mais dados reais, o diagnostico
+      e mais preciso. A proxima trava a atacar ja foi mapeada no ciclo anterior.
+      Atualizar o contrato se necessario.
+    outputs:
+      - Plano ciclo N+1 (90 dias)
+      - Nova trava alvo (pode ser a mesma aprofundada ou a proxima)
+      - Metas atualizadas com base no historico
+    next: execucao-ciclo
+
+  - id: upsell-dr
+    name: "Fase 5b: Upsell — Upgrade de Produto DR"
+    task: construir-oferta-dr.md
+    agents: [destrava-receita-consultant, fabrica-de-receita-master]
+    description: |
+      Cliente demonstrou resultado e quer mais. Construir proposta de upgrade
+      (ex: DR-X → DR-O, DR-O → DR-T, DR-T → DR-E).
+    outputs:
+      - Proposta de upgrade DR
+      - Justificativa baseada em resultados do ciclo anterior
+    next: proximo-ciclo
+
+  - id: handoff-negocios
+    name: "Handoff para Time de Negocios"
+    task: null
+    agents: [fabrica-de-receita-master]
+    description: |
+      Para propostas > R$100k ou com negociacao complexa, fazer handoff estruturado
+      para o squad time-de-negocios (Rockefeller, Voss, Hormozi).
+    squad_handoff: time-de-negocios
+    next: end-handoff
+
+  - id: escalada
+    name: "Escalada — Bloqueio Critico"
+    task: null
+    agents: [fabrica-de-receita-master]
+    description: |
+      Para bloqueios que impedem a execucao, escalar imediatamente para Fabio
+      (master) e agendar reuniao urgente com C-level do cliente.
+    sla: "24h para resolucao ou plano de contingencia"
+    next: execucao-ciclo
+
+  - id: nurture
+    name: "Nurture — Prospect Morno ou Frio"
+    task: null
+    agents: [content-engine]
+    description: |
+      Adicionar prospect em sequencia de nurture adequada ao seu score SPICED.
+      Definir data de re-qualificacao e conteudo especifico para a trava identificada.
+    next: end
+
+  - id: offboarding
+    name: "Offboarding — Cliente nao Renova"
+    task: null
+    agents: [guardiao-retencao, fabrica-de-receita-master]
+    description: |
+      Conduzir offboarding respeitoso. Entender motivo real da nao-renovacao.
+      Registrar aprendizados. Manter relacionamento para futura reentrada.
+    outputs:
+      - Pesquisa de saida preenchida
+      - Motivo registrado no CRM
+      - Plano de reentrada (se aplicavel)
+    next: end
+
+  - id: end-desqualificado
+    name: "Fim — Desqualificado"
+    task: null
+    note: "Prospect fora do perfil. Registrar e monitorar para re-qualificacao futura."
+
+  - id: end-handoff
+    name: "Fim — Handoff realizado"
+    task: null
+    note: "Negociacao transferida para Time de Negocios. Acompanhar resultado."
+
+  - id: end
+    name: "Fim do Pipeline DR"
+    task: null
+    note: "Ciclo encerrado. Resultado registrado no CRM."
+
+settings:
+  max_loops_per_phase: 3
+  escalation_on_loop_limit: fabrica-de-receita-master
+  crm_required: true
+  sla_resposta_cliente: "48h"
+  sla_entrega_diagnostico: "5 dias uteis"
+  squad_handoff: time-de-negocios

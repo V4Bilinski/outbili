@@ -1,0 +1,643 @@
+# OpenAPI Endpoints — WhatsApp Business Messaging API v23.0
+# Source: github.com/facebook/openapi — business-messaging-api_v23.0.yaml
+# Total: 71 paths, ~115 operations
+# Base URL: https://graph.facebook.com/{version}
+
+metadata:
+  source: "github.com/facebook/openapi"
+  spec_version: "v23.0"
+  openapi_version: "3.1.0"
+  extracted: "2026-04-09"
+  total_paths: 71
+  total_operations: 115
+  auth: "Bearer {access_token}"
+  permission: "whatsapp_business_messaging"
+
+# ═══════════════════════════════════════════════════════════════
+# MESSAGING (Core)
+# ═══════════════════════════════════════════════════════════════
+messaging:
+  send_message:
+    method: POST
+    path: "/{Phone-Number-ID}/messages"
+    description: "Send any WhatsApp message (text, template, media, interactive, location, contacts, reaction, sticker)"
+    recipient_type: ["individual", "group"]
+    body_required: ["messaging_product", "to", "type"]
+
+  send_marketing_message:
+    method: POST
+    path: "/{Phone-Number-ID}/marketing_messages"
+    description: "Send marketing template with product policy controls"
+    new_fields:
+      product_policy: ["CLOUD_API_FALLBACK", "STRICT"]
+      message_activity_sharing: "boolean — control activity sharing with Meta"
+    response_status: ["accepted", "held_for_quality_assessment", "paused"]
+
+  send_encrypted_message:
+    method: POST
+    path: "/{Phone-Number-ID}/messages_encrypted"
+    description: "Send end-to-end encrypted message (JWE format, MM Lite path)"
+    encryption: "JWE — A128GCM, A256GCM, A128CBC-HS256, A192CBC-HS384, A256CBC-HS512"
+    requires: "2048-bit RSA public key configured via settings"
+
+  mark_read:
+    method: POST
+    path: "/{Phone-Number-ID}/messages"
+    description: "Mark message as read"
+    body: { status: "read", message_id: "{wamid}" }
+
+# ═══════════════════════════════════════════════════════════════
+# CALLS (NEW in v23.0)
+# ═══════════════════════════════════════════════════════════════
+calls:
+  check_permission:
+    method: GET
+    path: "/{Phone-Number-ID}/call_permissions"
+    description: "Check if business has permission to call a WhatsApp user"
+    params: { user_wa_id: "required — target user WhatsApp ID" }
+    response:
+      permission_status: ["granted", "pending", "denied", "expired"]
+      expiration_time: "unix timestamp"
+      actions: ["start_call", "send_call_permission_request"]
+    rate_limit_error: "code 4, subcode 2390008"
+
+  manage_call:
+    method: POST
+    path: "/{Phone-Number-ID}/calls"
+    description: "Initiate, accept, reject, or terminate a voice call via WebRTC SDP"
+    actions:
+      connect: "Initiate outbound call (requires SDP offer)"
+      pre_accept: "Prepare to accept incoming call"
+      accept: "Accept incoming call (requires SDP answer)"
+      reject: "Reject incoming call"
+      terminate: "End active call (requires call_id)"
+    sdp: "RFC 8866 compliant — OPUS 48kHz, G722, PCMU, PCMA, UDP/TLS/RTP/SAVPF"
+    callback: "biz_opaque_callback_data (max 512 chars)"
+    prerequisite: "Cloud API Calling must be enabled for the phone number"
+    error_code: "138006 — missing call permission from user"
+
+# ═══════════════════════════════════════════════════════════════
+# GROUPS (NEW — Business-Initiated Groups)
+# ═══════════════════════════════════════════════════════════════
+groups:
+  create_group:
+    method: POST
+    path: "/{Phone-Number-ID}/groups"
+    description: "Create a new WhatsApp group"
+    params:
+      subject: "max 128 chars"
+      description: "max 2048 chars"
+      join_approval_mode: ["approval_required", "auto_approve"]
+
+  list_groups:
+    method: GET
+    path: "/{Phone-Number-ID}/groups"
+    description: "List active groups for a business phone number"
+
+  get_group:
+    method: GET
+    path: "/{group_id}"
+    description: "Get group metadata (subject, description, participants, join_approval_mode)"
+
+  update_group:
+    method: POST
+    path: "/{group_id}"
+    description: "Update group settings (subject, description, photo)"
+
+  delete_group:
+    method: DELETE
+    path: "/{group_id}"
+    description: "Delete group and remove all participants"
+
+  create_invite_link:
+    method: POST
+    path: "/{group_id}/invite_link"
+    description: "Create group invite link (chat.whatsapp.com/LINK_ID)"
+
+  delete_invite_link:
+    method: DELETE
+    path: "/{group_id}/invite_link"
+    description: "Revoke group invite link"
+
+  list_join_requests:
+    method: GET
+    path: "/{group_id}/join_requests"
+    description: "List pending join requests"
+
+  approve_join_requests:
+    method: POST
+    path: "/{group_id}/join_requests"
+    description: "Approve one or more join requests"
+
+  reject_join_requests:
+    method: DELETE
+    path: "/{group_id}/join_requests"
+    description: "Reject one or more join requests"
+
+  add_participants:
+    method: POST
+    path: "/{group_id}/participants"
+    description: "Add up to 8 participants per call"
+
+  remove_participants:
+    method: DELETE
+    path: "/{group_id}/participants"
+    description: "Remove up to 8 participants per call"
+
+# ═══════════════════════════════════════════════════════════════
+# TEMPLATES
+# ═══════════════════════════════════════════════════════════════
+templates:
+  list_templates:
+    method: GET
+    path: "/{WABA-ID}/message_templates"
+    description: "Get templates by name"
+
+  create_template:
+    method: POST
+    path: "/{WABA-ID}/message_templates"
+    description: "Create template (including OTP with copy-code, flow buttons)"
+
+  delete_template:
+    method: DELETE
+    path: "/{WABA-ID}/message_templates"
+    description: "Delete template by name"
+
+  get_template:
+    method: GET
+    path: "/{TEMPLATE_ID}"
+    description: "Get template by ID (includes previous_category field)"
+
+  edit_template:
+    method: POST
+    path: "/{TEMPLATE_ID}"
+    description: "Edit an existing template"
+
+  new_button_types:
+    - type: "FLOW"
+      references: ["flow_id", "flow_name", "flow_json (inline — NEW)"]
+    - type: "MPM"
+      description: "Multi-Product Message button — triggers product picker"
+    - type: "OTP/COPY_CODE"
+      description: "Authentication with copy-code button"
+    - type: "OTP/ONE_TAP"
+      description: "Authentication with one-tap autofill"
+      android_fields: ["package_name", "signature_hash"]
+    - type: "LOCATION"
+      description: "Location header format"
+
+  template_status_values: ["APPROVED", "PENDING", "REJECTED", "DISABLED"]
+
+# ═══════════════════════════════════════════════════════════════
+# MEDIA
+# ═══════════════════════════════════════════════════════════════
+media:
+  upload:
+    method: POST
+    path: "/{Phone-Number-ID}/media"
+    description: "Upload media (image, video, audio, document)"
+    rate_limit: "100 requests/hour"
+
+  get_url:
+    method: GET
+    path: "/{Media-ID}"
+    description: "Retrieve download URL for uploaded media"
+
+  download:
+    method: GET
+    path: "/{Media-URL}"
+    description: "Download media binary"
+
+  delete:
+    method: DELETE
+    path: "/{Media-ID}"
+    description: "Delete uploaded media"
+
+# ═══════════════════════════════════════════════════════════════
+# FLOWS
+# ═══════════════════════════════════════════════════════════════
+flows:
+  list_flows:
+    method: GET
+    path: "/{WABA-ID}/flows"
+    description: "List all Flows (includes validation_errors)"
+
+  create_flow:
+    method: POST
+    path: "/{WABA-ID}/flows"
+    description: "Create Flow (supports clone_flow_id for cloning)"
+    categories: ["SIGN_UP", "SIGN_IN", "CONTACT_US", "OTHER"]
+
+  migrate_flows:
+    method: POST
+    path: "/{WABA-ID}/migrate_flows"
+    description: "Migrate Flows between WABAs (by name list or all)"
+    body: { source_waba_id: "string", source_flow_names: ["array or omit for all"] }
+
+  get_flow:
+    method: GET
+    path: "/{Flow-ID}"
+    description: "Get Flow details and endpoint metrics"
+
+  update_flow:
+    method: POST
+    path: "/{Flow-ID}"
+    description: "Update Flow metadata"
+
+  delete_flow:
+    method: DELETE
+    path: "/{Flow-ID}"
+
+  manage_assets:
+    method: [GET, POST]
+    path: "/{Flow-ID}/assets"
+    description: "List or upload/update Flow JSON"
+
+  publish_flow:
+    method: POST
+    path: "/{Flow-ID}/publish"
+
+  deprecate_flow:
+    method: POST
+    path: "/{Flow-ID}/deprecate"
+
+# ═══════════════════════════════════════════════════════════════
+# PHONE NUMBER MANAGEMENT
+# ═══════════════════════════════════════════════════════════════
+phone_numbers:
+  get_info:
+    method: GET
+    path: "/{Phone-Number-ID}"
+    description: "Get phone number info (quality, tier, status, host_platform, username)"
+
+  update:
+    method: POST
+    path: "/{Phone-Number-ID}"
+    description: "Update phone number status and configuration"
+
+  list_in_waba:
+    method: GET
+    path: "/{WABA-ID}/phone_numbers"
+    description: "List phone numbers under a WABA"
+
+  add_to_waba:
+    method: POST
+    path: "/{WABA-ID}/phone_numbers"
+    description: "Add new phone number to WABA"
+
+  register:
+    method: POST
+    path: "/{Phone-Number-ID}/register"
+    description: "Register phone number"
+    body: { messaging_product: "whatsapp", pin: "6-digit" }
+
+  deregister:
+    method: POST
+    path: "/{Phone-Number-ID}/deregister"
+
+  request_code:
+    method: POST
+    path: "/{Phone-Number-ID}/request_code"
+    body: { code_method: ["SMS", "VOICE"], language: "e.g. en_US" }
+
+  verify_code:
+    method: POST
+    path: "/{Phone-Number-ID}/verify_code"
+    body: { code: "6-digit OTP" }
+
+  get_settings:
+    method: GET
+    path: "/{Phone-Number-ID}/settings"
+
+  update_settings:
+    method: POST
+    path: "/{Phone-Number-ID}/settings"
+    description: "Update calling, encryption, storage settings"
+
+# ═══════════════════════════════════════════════════════════════
+# CONVERSATIONAL AUTOMATION (NEW)
+# ═══════════════════════════════════════════════════════════════
+conversational_automation:
+  configure:
+    method: POST
+    path: "/{Phone-Number-ID}/conversational_automation"
+    description: "Configure welcome messages, ice breakers, and bot commands"
+    body:
+      enable_welcome_message: "boolean (default false)"
+      prompts: "array of strings (max 3, each max 80 chars)"
+      commands: "array of BotCommand (max 30)"
+    bot_command:
+      command_name: "max 30 chars, [a-zA-Z0-9_]+"
+      command_description: "max 256 chars"
+
+# ═══════════════════════════════════════════════════════════════
+# BLOCK USERS
+# ═══════════════════════════════════════════════════════════════
+block_users:
+  list:
+    method: GET
+    path: "/{Phone-Number-ID}/block_users"
+  block:
+    method: POST
+    path: "/{Phone-Number-ID}/block_users"
+  unblock:
+    method: DELETE
+    path: "/{Phone-Number-ID}/block_users"
+
+# ═══════════════════════════════════════════════════════════════
+# QR CODES
+# ═══════════════════════════════════════════════════════════════
+qr_codes:
+  list:
+    method: GET
+    path: "/{Phone-Number-ID}/message_qrdls"
+  create_or_update:
+    method: POST
+    path: "/{Phone-Number-ID}/message_qrdls"
+    body: { prefilled_message: "max 140 chars", generate_qr_image: ["PNG", "SVG"] }
+  get:
+    method: GET
+    path: "/{Phone-Number-ID}/message_qrdls/{QR-Code-ID}"
+  delete:
+    method: DELETE
+    path: "/{Phone-Number-ID}/message_qrdls/{QR-Code-ID}"
+
+# ═══════════════════════════════════════════════════════════════
+# BUSINESS PROFILE
+# ═══════════════════════════════════════════════════════════════
+business_profile:
+  get:
+    method: GET
+    path: "/{Phone-Number-ID}/whatsapp_business_profile"
+    fields: ["about(139ch)", "address(256ch)", "description(256ch)", "email(128ch)", "profile_picture_url", "websites(max 2)", "vertical"]
+  update:
+    method: POST
+    path: "/{Phone-Number-ID}/whatsapp_business_profile"
+
+  verticals: ["UNDEFINED", "OTHER", "AUTO", "BEAUTY", "APPAREL", "EDU", "ENTERTAIN",
+    "EVENT_PLAN", "FINANCE", "GROCERY", "GOVT", "HOTEL", "HEALTH", "NONPROFIT",
+    "PROF_SERVICES", "RETAIL", "TRAVEL", "RESTAURANT", "ALCOHOL",
+    "ONLINE_GAMBLING", "PHYSICAL_GAMBLING", "OTC_DRUGS", "NOT_A_BIZ"]
+
+# ═══════════════════════════════════════════════════════════════
+# ENCRYPTION / SECURITY
+# ═══════════════════════════════════════════════════════════════
+encryption:
+  get_public_key:
+    method: GET
+    path: "/{Phone-Number-ID}/whatsapp_business_encryption"
+    description: "Get business public encryption key (for Flows endpoint)"
+
+  set_public_key:
+    method: POST
+    path: "/{Phone-Number-ID}/whatsapp_business_encryption"
+    description: "Set/update business RSA public encryption key"
+
+# ═══════════════════════════════════════════════════════════════
+# COMMERCE / CATALOG
+# ═══════════════════════════════════════════════════════════════
+commerce:
+  get_settings:
+    method: GET
+    path: "/{Phone-Number-ID}/whatsapp_commerce_settings"
+  update_settings:
+    method: POST
+    path: "/{Phone-Number-ID}/whatsapp_commerce_settings"
+
+# ═══════════════════════════════════════════════════════════════
+# WEBHOOKS
+# ═══════════════════════════════════════════════════════════════
+webhooks:
+  list_subscriptions:
+    method: GET
+    path: "/{WABA-ID}/subscribed_apps"
+
+  subscribe:
+    method: POST
+    path: "/{WABA-ID}/subscribed_apps"
+    description: "Subscribe app — supports per-WABA webhook URL override"
+    body:
+      override_callback_uri: "optional — different webhook URL per WABA"
+      verify_token: "optional — per-WABA verify token"
+
+  unsubscribe:
+    method: DELETE
+    path: "/{WABA-ID}/subscribed_apps"
+
+  webhook_fields: ["messages", "group_lifecycle_update", "group_settings_update", "group_participant_update", "calls"]
+
+  receive:
+    method: POST
+    path: "/whatsapp/webhooks"
+    description: "Receive incoming messages and status updates"
+
+# ═══════════════════════════════════════════════════════════════
+# WABA MANAGEMENT
+# ═══════════════════════════════════════════════════════════════
+waba:
+  get:
+    method: GET
+    path: "/{WABA-ID}"
+  update:
+    method: POST
+    path: "/{WABA-ID}"
+
+  assigned_users:
+    list: { method: GET, path: "/{WABA-ID}/assigned_users" }
+    assign: { method: POST, path: "/{WABA-ID}/assigned_users" }
+    remove: { method: DELETE, path: "/{WABA-ID}/assigned_users" }
+
+  activities:
+    method: GET
+    path: "/{WABA-ID}/activities"
+    description: "WABA audit trail — filter by activity_type, since, until"
+    activity_types: ["ACCOUNT_CREATED", "ACCOUNT_UPDATED", "ACCOUNT_DELETED",
+      "PHONE_NUMBER_ADDED", "PHONE_NUMBER_REMOVED", "PHONE_NUMBER_VERIFIED",
+      "USER_ADDED", "USER_REMOVED", "USER_ROLE_CHANGED",
+      "PERMISSION_GRANTED", "PERMISSION_REVOKED",
+      "TEMPLATE_CREATED", "TEMPLATE_UPDATED", "TEMPLATE_DELETED",
+      "WEBHOOK_CONFIGURED", "API_ACCESS_GRANTED", "API_ACCESS_REVOKED",
+      "BILLING_UPDATED", "COMPLIANCE_ACTION", "SECURITY_EVENT"]
+
+  schedules:
+    list: { method: GET, path: "/{WABA-ID}/schedules" }
+    create: { method: POST, path: "/{WABA-ID}/schedules" }
+    types: ["BUSINESS_HOURS", "AUTOMATED_RESPONSE", "MESSAGE_CAMPAIGN", "MAINTENANCE_WINDOW", "CUSTOM"]
+
+  solutions:
+    method: GET
+    path: "/{WABA-ID}/solutions"
+    description: "List Multi-Partner Solutions for a WABA"
+
+  permissions: ["MANAGE", "DEVELOP", "MANAGE_TEMPLATES", "MANAGE_PHONE", "VIEW_COST",
+    "MANAGE_EXTENSIONS", "VIEW_PHONE_ASSETS", "MANAGE_PHONE_ASSETS", "VIEW_TEMPLATES",
+    "VIEW_INSIGHTS", "RECEIVE_INCOMING_MESSAGES", "MANAGE_BILLING", "MANAGE_USERS",
+    "MESSAGING", "FULL_CONTROL"]
+
+# ═══════════════════════════════════════════════════════════════
+# MULTI-PARTNER SOLUTIONS (NEW)
+# ═══════════════════════════════════════════════════════════════
+multi_partner:
+  create_solution:
+    method: POST
+    path: "/{Application-ID}/whatsapp_business_solution"
+    description: "Create Multi-Partner Solution"
+    body: { owner_permissions: ["MESSAGING"], partner_app_id: "string", partner_permissions: [], solution_name: "string" }
+    rule: "Exactly ONE side must have MESSAGING permission"
+
+  list_solutions:
+    method: GET
+    path: "/{Application-ID}/whatsapp_business_solutions"
+    filter: { role: ["OWNER", "PARTNER"] }
+
+  get_solution:
+    method: GET
+    path: "/{Solution-ID}"
+    status_values: ["DRAFT", "INITIATED", "ACTIVE", "REJECTED", "DEACTIVATED"]
+
+  get_access_token:
+    method: GET
+    path: "/{Solution-ID}/access_token"
+    description: "Get solution-scoped access token"
+
+  accept: { method: POST, path: "/{Solution-ID}/accept" }
+  reject: { method: POST, path: "/{Solution-ID}/reject" }
+  send_deactivation: { method: POST, path: "/{Solution-ID}/send_deactivation_request" }
+  accept_deactivation: { method: POST, path: "/{Solution-ID}/accept_deactivation_request" }
+  reject_deactivation: { method: POST, path: "/{Solution-ID}/reject_deactivation_request" }
+
+# ═══════════════════════════════════════════════════════════════
+# PRE-VERIFIED PHONE NUMBERS (NEW)
+# ═══════════════════════════════════════════════════════════════
+preverified_numbers:
+  list:
+    method: GET
+    path: "/{Business-ID}/preverified_numbers"
+  get:
+    method: GET
+    path: "/{Pre-Verified-Phone-Number-ID}"
+  delete:
+    method: DELETE
+    path: "/{Pre-Verified-Phone-Number-ID}"
+  list_partners:
+    method: GET
+    path: "/{Pre-Verified-Phone-Number-ID}/partners"
+  request_code:
+    method: POST
+    path: "/{Pre-Verified-Phone-Number-ID}/request_code"
+  verify_code:
+    method: POST
+    path: "/{Pre-Verified-Phone-Number-ID}/verify_code"
+  share:
+    method: POST
+    path: "/{Business-ID}/share_preverified_numbers"
+    body: { preverified_id: "string", partner_business_id: "string", permissions: ["READ", "USE"] }
+  add_to_waba:
+    method: POST
+    path: "/{Business-ID}/add_phone_numbers"
+
+# ═══════════════════════════════════════════════════════════════
+# MM LITE ONBOARDING (NEW)
+# ═══════════════════════════════════════════════════════════════
+mm_lite:
+  onboard_partners:
+    method: POST
+    path: "/{Business-ID}/onboard_partners_to_mm_lite"
+    description: "Onboard partners to MM Lite program"
+    params: { solution_id: "optional" }
+    roles: { BSP: "Full OBO WABA + mobility", TP: "Onboarding requests only" }
+
+# ═══════════════════════════════════════════════════════════════
+# OBO MOBILITY (Account Migration)
+# ═══════════════════════════════════════════════════════════════
+obo_mobility:
+  create_intent:
+    method: POST
+    path: "/{WABA-ID}/obo_mobility_intent"
+    intent_types: ["INITIATE_TRANSFER", "CONFIRM_TRANSFER", "CANCEL_TRANSFER", "REQUEST_HANDOVER", "APPROVE_HANDOVER", "REJECT_HANDOVER"]
+
+  set_intent:
+    method: POST
+    path: "/{WABA-ID}/set_obo_mobility_intent"
+
+  get_intent:
+    method: GET
+    path: "/{OBO-Mobility-Intent-ID}"
+
+  in_progress:
+    method: GET
+    path: "/{WABA-ID}/in_progress_onbehalf_request"
+
+  solution_migration:
+    method: POST
+    path: "/{WABA-ID}/set_solution_migration_intent"
+    intents: ["INITIATE_MIGRATION", "CANCEL_MIGRATION", "CONFIRM_MIGRATION", "SCHEDULE_MIGRATION"]
+
+  get_migration:
+    method: GET
+    path: "/{Migration-Intent-ID}"
+
+# ═══════════════════════════════════════════════════════════════
+# COMPLIANCE & OFFICIAL ACCOUNT
+# ═══════════════════════════════════════════════════════════════
+compliance:
+  get_info:
+    method: GET
+    path: "/{Phone-Number-ID}/business_compliance_info"
+  update_info:
+    method: POST
+    path: "/{Phone-Number-ID}/business_compliance_info"
+    body: { entity_name: "string", entity_type: "string", grievance_officer_details: {}, customer_care_details: {} }
+    entity_types: ["LIMITED_LIABILITY_PARTNERSHIP", "SOLE_PROPRIETORSHIP", "PARTNERSHIP", "PUBLIC_COMPANY", "PRIVATE_COMPANY", "OTHER"]
+
+  official_business_account:
+    get: { method: GET, path: "/{Phone-Number-ID}/official_business_account" }
+    update: { method: POST, path: "/{Phone-Number-ID}/official_business_account" }
+    oba_status: ["PENDING", "APPROVED", "REJECTED"]
+
+# ═══════════════════════════════════════════════════════════════
+# MESSAGE HISTORY & BILLING
+# ═══════════════════════════════════════════════════════════════
+message_history:
+  get:
+    method: GET
+    path: "/{Phone-Number-ID}/message_history"
+    description: "Track delivery events per message by WAMID"
+    delivery_status: ["SENT", "DELIVERED", "READ", "FAILED", "DELETED"]
+
+  get_events:
+    method: GET
+    path: "/{Message-History-ID}/events"
+
+billing:
+  extended_credits:
+    method: GET
+    path: "/{Business-ID}/extendedcredits"
+
+# ═══════════════════════════════════════════════════════════════
+# BUSINESS-LEVEL
+# ═══════════════════════════════════════════════════════════════
+business:
+  get_portfolio:
+    method: GET
+    path: "/{Business-ID}"
+
+  owned_wabas:
+    method: GET
+    path: "/{Business-ID}/owned_whatsapp_business_accounts"
+
+  client_wabas:
+    method: GET
+    path: "/{Business-ID}/client_whatsapp_business_accounts"
+
+  connected_clients:
+    method: GET
+    path: "/{Application-ID}/connected_client_businesses"
+
+# ═══════════════════════════════════════════════════════════════
+# USER-LEVEL
+# ═══════════════════════════════════════════════════════════════
+users:
+  assigned_wabas:
+    method: GET
+    path: "/{User-ID}/assigned_whatsapp_business_accounts"

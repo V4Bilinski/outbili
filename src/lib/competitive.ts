@@ -29,7 +29,7 @@ const DIMENSION_ALIAS_MAP: Record<string, string> = (() => {
   map['redes sociais'] = 'Inovação'
   map['reputacao online'] = 'Qualidade percebida'
   map['diversificacao'] = 'Variedade de produtos'
-  // Legacy Apify search dimension aliases
+  // Legacy dimension aliases
   map['avaliacao google'] = 'Qualidade percebida'
   map['volume de avaliacoes'] = 'Força da marca'
   // Short-form aliases from legacy data (e.g. "Variedade", "Preço", "Marca")

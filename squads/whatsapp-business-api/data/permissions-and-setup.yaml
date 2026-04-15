@@ -1,0 +1,418 @@
+# Permissions, Access Tokens & Setup — WhatsApp Business API
+# Sources: developers.facebook.com/docs/permissions, /whatsapp/get-started, /access-tokens
+# Cross-referenced: wuseller.com, anjoktechnologies.in, chatarchitect.com, business.whatsapp.com
+# Extracted: 2026-04-09
+
+metadata:
+  sources:
+    - "https://developers.facebook.com/docs/permissions"
+    - "https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started"
+    - "https://developers.facebook.com/documentation/business-messaging/whatsapp/access-tokens/"
+    - "https://developers.facebook.com/documentation/business-messaging/whatsapp/permissions"
+    - "https://www.wuseller.com/whatsapp-business-knowledge-hub/master-whatsapp-business-api-permissions-fix-scope-errors-fast/"
+    - "https://anjoktechnologies.in/blog/-whatsapp-business-api-permissions-explained-avoid-app-rejection-2026-"
+  extracted: "2026-04-09"
+
+# ═══════════════════════════════════════════════════════════════
+# 1. PERMISSIONS
+# ═══════════════════════════════════════════════════════════════
+permissions:
+  required:
+    whatsapp_business_messaging:
+      description: "Core messaging permission — enables sending and receiving messages via Cloud API"
+      controls:
+        - "Send all message types (text, template, media, interactive, location, contacts, reaction)"
+        - "Receive incoming messages via webhooks"
+        - "Mark messages as read"
+        - "Send typing indicators"
+        - "Upload and send media"
+        - "Send template messages (marketing, utility, authentication)"
+        - "Group messaging (recipient_type: group)"
+        - "Voice calls (if calling enabled)"
+      api: "Cloud API (graph.facebook.com/{version}/{Phone-Number-ID}/messages)"
+      app_review: "Required for production (Solution Providers need Advanced Access)"
+      access_level:
+        standard: "Available for direct developers with basic setup"
+        advanced: "Required for Solution Providers serving multiple clients"
+
+    whatsapp_business_management:
+      description: "Account and template management permission"
+      controls:
+        - "Manage message templates (create, edit, delete, list)"
+        - "Manage phone numbers (register, deregister, list)"
+        - "Access WABA metadata and configuration"
+        - "Configure webhooks (subscribe, unsubscribe)"
+        - "View analytics and insights"
+        - "Manage business profile"
+        - "Configure conversational automation (ice breakers, commands)"
+        - "Manage WhatsApp Flows (create, publish, deprecate)"
+        - "Template status change notifications"
+        - "Account change alerts"
+      api: "Business Management API (graph.facebook.com/{version}/{WABA-ID}/...)"
+      app_review: "Required for production"
+      access_level:
+        standard: "Available for direct developers"
+        advanced: "Required for Solution Providers"
+
+  optional:
+    business_management:
+      description: "Broader business portfolio management"
+      controls:
+        - "Access endpoints targeting business portfolio"
+        - "Manage business assets (ad accounts, pages, etc.)"
+        - "Claim and manage business accounts"
+      warning: |
+        DO NOT request unless absolutely necessary.
+        Meta will ask: "Why does a WhatsApp app need this?"
+        If you can't clearly justify → App will be REJECTED.
+      when_needed:
+        - "Your app manages multiple business portfolios"
+        - "You need to create/manage WABAs programmatically"
+        - "You're building embedded signup flows"
+      dependencies: ["pages_read_engagement", "pages_show_list"]
+
+    whatsapp_business_manage_events:
+      description: "Event management for Conversions API integration"
+      controls:
+        - "Conversions API event tracking"
+        - "Marketing Message Lite API"
+      when_needed: "Only if using Conversions API with WhatsApp"
+      rarely_required: true
+
+    ads_read:
+      description: "Ad insights access"
+      controls:
+        - "Read ad performance data related to WhatsApp campaigns"
+      when_needed: "Only for Click-to-WhatsApp ad attribution"
+      rarely_required: true
+
+  recommendation: |
+    For MOST implementations, you only need TWO permissions:
+    1. whatsapp_business_messaging — for sending/receiving messages
+    2. whatsapp_business_management — for templates, webhooks, phone numbers
+
+    DO NOT add business_management, pages_*, ads_*, or marketing_* unless
+    you have a specific, documented use case. Over-requesting = rejection.
+
+# ═══════════════════════════════════════════════════════════════
+# 2. ACCESS TOKENS
+# ═══════════════════════════════════════════════════════════════
+access_tokens:
+  types:
+    temporary:
+      description: "Quick-start token generated in App Dashboard"
+      generation: "App Dashboard → WhatsApp → API Setup → Generate access token"
+      lifetime: "24 hours (short-lived)"
+      use_case: "Initial testing and quickstart only"
+      warning: "NEVER use in production — expires quickly"
+
+    system_user:
+      description: "Long-lived token for automated services"
+      generation:
+        steps:
+          1: "Go to Meta Business Suite → Business Settings"
+          2: "Click System Users in sidebar"
+          3: "Create System User (Admin or Employee role)"
+          4: "Assign assets: Add your App + WABA to the system user"
+          5: "Generate token with permissions: whatsapp_business_messaging + whatsapp_business_management"
+          6: "Copy token immediately (cannot be retrieved later)"
+        important:
+          - "Select BOTH whatsapp_business_messaging AND whatsapp_business_management"
+          - "Assign the App as an asset to the system user"
+          - "Assign the WABA as an asset to the system user"
+          - "Copy and store the token securely — it's shown only once"
+      lifetime: "Long-lived (does not expire unless revoked)"
+      use_case: "Production — recommended for all automated services"
+      best_practice: "Store in Supabase settings table, NEVER in code or env vars"
+      role_types:
+        admin: "Full access to all WABA operations"
+        employee: "Limited access based on assigned permissions"
+
+    user_access:
+      description: "Token tied to a specific user account"
+      generation: "Facebook Login for Business flow"
+      lifetime: "Short-lived (60 days with refresh)"
+      use_case: "Solution Providers who need client authorization"
+      note: "Requires user interaction — not suitable for automated services"
+
+  debugging:
+    endpoint: "GET /debug_token?input_token={token}&access_token={app_token}"
+    tool: "Access Token Debugger (developers.facebook.com/tools/debug/accesstoken)"
+    checks:
+      - "Verify token is valid and not expired"
+      - "Confirm whatsapp_business_messaging scope is present"
+      - "Confirm whatsapp_business_management scope is present"
+      - "Check token type (System User vs User)"
+      - "Verify business/app assignment"
+    when_to_debug: "ALWAYS verify token scopes before deployment"
+
+  security:
+    - "NEVER expose tokens in client-side code or browser requests"
+    - "NEVER commit tokens to version control"
+    - "Store tokens in a secrets manager (Supabase settings, AWS Secrets, etc.)"
+    - "Rotate tokens periodically"
+    - "Use minimum required permissions per token"
+    - "Monitor token usage for anomalies"
+
+# ═══════════════════════════════════════════════════════════════
+# 3. SETUP FLOW (Getting Started)
+# ═══════════════════════════════════════════════════════════════
+setup_flow:
+  prerequisites:
+    - name: "Meta Developer Account"
+      url: "https://developers.facebook.com/"
+      action: "Register at Meta Developers and click 'Get Started'"
+
+    - name: "Meta App"
+      url: "https://developers.facebook.com/apps"
+      action: "Create app with type 'Business' and use case 'WhatsApp'"
+      important: "Select ONLY WhatsApp product — do NOT add Facebook Login, Pages, or Marketing API"
+
+    - name: "Meta Business Account"
+      url: "https://business.facebook.com/latest"
+      action: "Create or link existing business"
+
+    - name: "WhatsApp Business Account (WABA)"
+      action: "Created automatically when adding WhatsApp product to app, or link existing"
+
+  steps:
+    1_create_app:
+      description: "Create Meta App with WhatsApp"
+      actions:
+        - "Go to developers.facebook.com/apps → Create App"
+        - "Select app type: Business"
+        - "Add product: WhatsApp"
+        - "Select API type: Cloud API"
+        - "Save App ID and App Secret from Basic Settings"
+
+    2_get_credentials:
+      description: "Obtain required credentials"
+      identifiers:
+        app_id: "From App → Settings → Basic"
+        app_secret: "From App → Settings → Basic"
+        waba_id: "From Meta Business Suite → WhatsApp tab"
+        phone_number_id: "From App Dashboard → WhatsApp → API Setup"
+      token:
+        quick_start: "Generate temporary token in API Setup"
+        production: "Create System User token (see access_tokens.types.system_user)"
+
+    3_send_test_message:
+      description: "Send first message via quickstart"
+      template: "hello_world"
+      method: "POST /{phone_number_id}/messages"
+      body:
+        messaging_product: "whatsapp"
+        to: "{test_phone_number}"
+        type: "template"
+        template:
+          name: "hello_world"
+          language:
+            code: "en_US"
+      note: "Test number must be added in API Setup → To field"
+
+    4_setup_webhooks:
+      description: "Configure webhooks for incoming messages"
+      actions:
+        - "Create webhook endpoint (must respond 200 within 30 seconds)"
+        - "Implement verification: echo hub.challenge when hub.verify_token matches"
+        - "Implement signature verification: HMAC SHA-256 of body with App Secret"
+        - "Subscribe to events: messages, message_status"
+      verification:
+        method: GET
+        params:
+          hub.mode: "subscribe"
+          hub.verify_token: "{your_verify_token}"
+          hub.challenge: "{challenge_string}"
+        response: "Return hub.challenge as plain text with 200 status"
+      security:
+        header: "x-hub-signature-256"
+        algorithm: "HMAC SHA-256"
+        key: "App Secret"
+        requirement: "Validate on EVERY webhook request"
+      response_rule: "Respond HTTP 200 within 30 seconds, process asynchronously"
+      subscribed_fields: ["messages", "message_status", "template_status"]
+      per_waba_override: "You can set different webhook URLs per WABA via subscribed_apps POST"
+
+    5_create_system_user:
+      description: "Create permanent access token for production"
+      actions:
+        - "Meta Business Suite → Business Settings → System Users"
+        - "Create System User (Admin role recommended)"
+        - "Assign assets: Your App + Your WABA"
+        - "Generate token with: whatsapp_business_messaging + whatsapp_business_management"
+        - "Copy and store token in Supabase settings (shown only once)"
+
+    6_register_phone_number:
+      description: "Register production phone number"
+      actions:
+        - "Request verification code: POST /{phone_number_id}/request_code"
+        - "Verify code: POST /{phone_number_id}/verify_code"
+        - "Set business profile: POST /{phone_number_id}/whatsapp_business_profile"
+        - "Configure 2-step verification PIN"
+      format: "E.164 without + prefix (e.g., 5511999998888)"
+
+    7_go_live:
+      description: "Production readiness checklist"
+      checklist:
+        - "[ ] System User token generated and stored securely"
+        - "[ ] Webhook endpoint deployed and verified"
+        - "[ ] Signature verification implemented (HMAC SHA-256)"
+        - "[ ] Message deduplication implemented (Redis SET NX)"
+        - "[ ] Production phone number registered and verified"
+        - "[ ] Business profile configured (name, description, photo)"
+        - "[ ] At least one template approved"
+        - "[ ] Opt-in mechanism in place for contacts"
+        - "[ ] Opt-out handling implemented (SAIR/STOP)"
+        - "[ ] Privacy policy published and accessible"
+        - "[ ] Error handling for all known error codes"
+        - "[ ] Adaptive throttle implemented (AIMD)"
+        - "[ ] Business verification completed (for Tier 1+)"
+        - "[ ] Payment method active on Meta account"
+        - "[ ] App Review submitted (Solution Providers)"
+
+# ═══════════════════════════════════════════════════════════════
+# 4. APP REVIEW
+# ═══════════════════════════════════════════════════════════════
+app_review:
+  when_required:
+    - "Solution Providers serving multiple clients"
+    - "Apps requesting Advanced Access"
+    - "Going from development to live mode"
+
+  not_required_for:
+    - "Direct developers (your own business data only)"
+    - "Standard Access with own WABA"
+    - "Testing with test phone numbers"
+
+  developer_types:
+    direct_developer:
+      description: "Only you or your business will access your own data"
+      app_review: "Not required"
+      access_level: "Standard Access"
+      token_type: "System User"
+      grant_flow: "Admin assigns directly in Business Settings"
+
+    solution_provider:
+      description: "SaaS/multi-client apps serving other businesses"
+      app_review: "Mandatory"
+      access_level: "Advanced Access required"
+      token_type: "System User or User Access (via Facebook Login for Business)"
+      grant_flow: "Client grants via UI (Embedded Signup or permission dialog)"
+
+  submission_requirements:
+    - "Clear business language explaining message flow and use case"
+    - "Real-world screenshots (not mock data)"
+    - "Completed business verification"
+    - "Active payment method on Meta account"
+    - "Functional webhook URL (must be live and responding)"
+    - "Do NOT use test phone numbers in submission screenshots"
+
+  common_rejection_reasons:
+    - "Requesting unnecessary permissions (business_management, pages_*, ads_*)"
+    - "Vague or missing use-case explanations"
+    - "Unverified business account"
+    - "Missing application screenshots"
+    - "Non-functional webhook endpoint"
+    - "Inadequate app setup (missing WhatsApp product)"
+    - "Including Facebook Login/Pages/Marketing API when only WhatsApp is needed"
+
+  best_practices:
+    - "Request ONLY whatsapp_business_messaging + whatsapp_business_management"
+    - "Provide specific, detailed use case descriptions"
+    - "Include screenshots of actual message flows"
+    - "Ensure webhook is deployed and responding before submission"
+    - "Complete business verification before requesting App Review"
+    - "Keep the app focused — WhatsApp product only"
+
+# ═══════════════════════════════════════════════════════════════
+# 5. WEBHOOK EVENTS
+# ═══════════════════════════════════════════════════════════════
+webhook_events:
+  inbound_notifications:
+    description: "Received messages from users"
+    trigger: "User sends message to your business number"
+    payload_path: "entry[].changes[].value.messages[]"
+    message_types:
+      - text
+      - image
+      - video
+      - audio
+      - document
+      - sticker
+      - location
+      - contacts
+      - reaction
+      - interactive (button_reply, list_reply)
+      - order
+      - system (user_changed_number)
+      - unsupported
+
+  outbound_notifications:
+    description: "Message status and pricing updates"
+    trigger: "Status change for sent messages"
+    payload_path: "entry[].changes[].value.statuses[]"
+    status_values:
+      sent: "Message accepted by Meta servers"
+      delivered: "Message reached user's device"
+      read: "User opened/read the message"
+      failed: "Message failed to deliver (check errors[])"
+    pricing_fields:
+      billable: "boolean"
+      pricing_model: "CBP (Conversation-Based) or PMP (Per-Message)"
+      category: "marketing | utility | authentication | service"
+    conversation:
+      id: "Conversation ID"
+      origin_type: "Which party opened the conversation"
+      expiration_timestamp: "When conversation window closes"
+
+  template_status:
+    description: "Template approval status changes"
+    events: ["APPROVED", "REJECTED", "PENDING", "DISABLED", "PAUSED"]
+
+  group_events:
+    - "group_lifecycle_update (create, delete)"
+    - "group_settings_update (subject, description)"
+    - "group_participant_update (join, leave)"
+
+  call_events:
+    - "calls (incoming call, call ended, permission changes)"
+
+  response_rules:
+    - "Return HTTP 200 within 30 seconds"
+    - "Process payload asynchronously (queue-based)"
+    - "Validate x-hub-signature-256 on EVERY request"
+    - "Implement idempotency (deduplicate by message_id)"
+    - "Subscribe only to events you need"
+
+# ═══════════════════════════════════════════════════════════════
+# 6. COMMON ERRORS & FIXES
+# ═══════════════════════════════════════════════════════════════
+common_errors:
+  permission_errors:
+    403_forbidden:
+      cause: "Token missing required permission scope"
+      fix: "Debug token with /debug_token endpoint, verify scopes, regenerate if needed"
+      prevention: "Always select both whatsapp_business_messaging + whatsapp_business_management"
+
+    190_invalid_token:
+      cause: "Token expired, revoked, or malformed"
+      fix: "Generate new System User token in Business Settings"
+      subcode_463: "Token expired — needs refresh"
+
+    200_permission_denied:
+      cause: "Insufficient permissions for this operation"
+      fix: "Check token has correct permissions and assets assigned"
+      subcode_1349174: "Permission denied for specific phone number resource"
+
+  setup_errors:
+    webhook_verification_failed:
+      cause: "verify_token mismatch or endpoint not responding"
+      fix: "Ensure verify_token matches in both Meta Dashboard and your code"
+
+    token_not_working:
+      cause: "System User not assigned to App or WABA"
+      fix: "Assign both App and WABA as assets to the System User"
+
+    messages_not_sending:
+      cause: "Missing messaging_product field or wrong phone format"
+      fix: "Always include messaging_product: 'whatsapp' and use E.164 without +"
