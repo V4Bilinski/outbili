@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
 import { useAuth } from '../lib/auth-context'
@@ -7,203 +7,14 @@ import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Columns3, Plus, CheckCircle, AlertCircle, ArrowRight, X, Trophy, Filter } from 'lucide-react'
+import { Columns3, Plus, Filter } from 'lucide-react'
 import { TEMPERATURES, SEGMENTS } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
 import { cn } from '../lib/cn'
 import { toast } from 'sonner'
 import type { Lead } from '../types'
-
-// --- Pipeline columns (all statuses from prospect to close) ---
-const PIPELINE_COLUMNS = [
-  { value: 'Novo', label: 'Prospecção', color: 'var(--color-stage-prospect)', accent: 'border-l-stage-prospect' },
-  { value: 'Contactado', label: 'Contactado', color: 'var(--color-stage-contacted)', accent: 'border-l-stage-contacted' },
-  { value: 'Respondeu', label: 'Respondeu', color: 'var(--color-stage-replied)', accent: 'border-l-stage-replied' },
-  { value: 'Reunião', label: 'Reunião', color: 'var(--color-stage-meeting)', accent: 'border-l-stage-meeting' },
-  { value: 'Proposta', label: 'Proposta', color: 'var(--color-stage-proposal)', accent: 'border-l-stage-proposal' },
-  { value: 'Fechado', label: 'Fechado', color: 'var(--color-stage-closed)', accent: 'border-l-stage-closed' },
-]
-
-// --- Stage gate checklists (required: true = obrigatório, false = opcional) ---
-interface GateCheck { text: string; required: boolean }
-const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
-  Contactado: {
-    emoji: '📞',
-    title: 'Registrar primeiro contato',
-    checks: [
-      { text: 'Primeiro contato realizado via WhatsApp, email ou LinkedIn', required: true },
-      { text: 'Mensagem personalizada enviada', required: true },
-      { text: 'Canal de contato registrado no lead', required: false },
-    ],
-  },
-  Respondeu: {
-    emoji: '💬',
-    title: 'Lead respondeu',
-    checks: [
-      { text: 'Resposta recebida do decisor', required: true },
-      { text: 'Interesse confirmado ou objeção mapeada', required: true },
-      { text: 'Próximo passo definido (reunião, proposta, follow-up)', required: false },
-    ],
-  },
-  'Reunião': {
-    emoji: '🤝',
-    title: 'Reunião agendada',
-    checks: [
-      { text: 'Data e horário da reunião confirmados', required: true },
-      { text: 'Pauta/diagnóstico preparado', required: true },
-      { text: 'Participantes definidos (quem do lado do cliente)', required: false },
-    ],
-  },
-  Proposta: {
-    emoji: '📋',
-    title: 'Proposta enviada',
-    checks: [
-      { text: 'Proposta comercial elaborada e enviada', required: true },
-      { text: 'Valor e escopo alinhados com o decisor', required: true },
-      { text: 'Prazo de resposta combinado', required: false },
-    ],
-  },
-  Fechado: {
-    emoji: '🏆',
-    title: 'Negócio fechado!',
-    checks: [
-      { text: 'Contrato assinado ou aceite formal', required: true },
-      { text: 'Pagamento confirmado ou faturado', required: true },
-      { text: 'Onboarding iniciado', required: false },
-    ],
-  },
-}
-
-// --- Stage gate popup (card centralizado para validar movimentação) ---
-function StageGatePopup({ lead, fromStatus, toStatus, onConfirm, onCancel }: {
-  lead: Lead; fromStatus: string; toStatus: string; onConfirm: (notes: string) => void; onCancel: () => void
-}) {
-  const { user } = useAuth()
-  const gate = STAGE_GATES[toStatus]
-  const [checked, setChecked] = useState<Set<number>>(new Set())
-  const [notes, setNotes] = useState('')
-  const requiredCount = gate?.checks.filter(c => c.required).length || 0
-  const requiredChecked = gate?.checks.filter((c, i) => c.required && checked.has(i)).length || 0
-  const allRequiredDone = requiredChecked >= requiredCount
-  const fromLabel = PIPELINE_COLUMNS.find((s) => s.value === fromStatus)?.label || fromStatus
-  const toLabel = PIPELINE_COLUMNS.find((s) => s.value === toStatus)?.label || toStatus
-  const toColor = PIPELINE_COLUMNS.find((s) => s.value === toStatus)?.color || '#FF6B1A'
-  const isCelebration = toStatus === 'Fechado'
-
-  const now = new Date()
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} às ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-
-  const toggle = (idx: number) => {
-    setChecked((prev) => { const next = new Set(prev); next.has(idx) ? next.delete(idx) : next.add(idx); return next })
-  }
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center animate-[fade-in_0.15s_ease-out]">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      {/* Popup card centralizado */}
-      <div className={cn(
-        'relative w-full max-w-md mx-4 rounded-2xl border shadow-2xl shadow-black/50 overflow-y-auto max-h-[90vh] animate-[scale-in_0.2s_ease-out]',
-        isCelebration
-          ? 'bg-gradient-to-b from-amber-900/95 to-surface border-amber-400/20'
-          : 'bg-surface border-border',
-      )}>
-        <div className="p-6 space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">{gate?.emoji || '📋'}</span>
-              <div>
-                <p className="text-sm font-bold text-text-primary">{gate?.title || `Mover para ${toLabel}`}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-label text-text-muted">{fromLabel}</span>
-                  <ArrowRight className="h-3 w-3 text-text-muted" />
-                  <span className="text-label font-semibold" style={{ color: toColor }}>{toLabel}</span>
-                </div>
-              </div>
-            </div>
-            <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-white/[0.05] text-text-muted hover:text-text-primary cursor-pointer transition-colors">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Lead info */}
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-border">
-            <p className="text-xs font-semibold text-text-primary">{lead.companyName}</p>
-            <p className="text-caption text-text-muted">{lead.segment} · {lead.tier} · Score {lead.score || '—'}</p>
-          </div>
-
-          {/* Checklist com prioridade visual */}
-          {gate && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-semibold">
-                  {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
-                </p>
-                <span className="text-caption text-text-muted">
-                  {requiredChecked}/{requiredCount} obrigatórios
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {gate.checks.map((check, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => toggle(idx)}
-                    className={cn(
-                      'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all duration-200',
-                      checked.has(idx)
-                        ? 'bg-success/10 border-success/30'
-                        : check.required
-                          ? 'bg-white/[0.02] border-border hover:border-red/30'
-                          : 'bg-white/[0.01] border-border/50 hover:border-border opacity-70',
-                    )}
-                  >
-                    <div className={cn(
-                      'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
-                      checked.has(idx) ? 'bg-success border-success' : check.required ? 'border-red/40' : 'border-border',
-                    )}>
-                      {checked.has(idx) && <CheckCircle className="h-2.5 w-2.5 text-white" />}
-                    </div>
-                    <span className={cn('text-label flex-1 transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
-                      {check.text}
-                    </span>
-                    {check.required ? (
-                      <span className="text-micro text-red/60 font-bold shrink-0">*</span>
-                    ) : (
-                      <span className="text-micro text-text-muted/50 shrink-0">opcional</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="h-1 w-full rounded-full bg-white/[0.05] overflow-hidden mt-2">
-                <div className="h-full bg-gradient-to-r from-red to-success rounded-full transition-all duration-500" style={{ width: `${(checked.size / gate.checks.length) * 100}%` }} />
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
-            className="w-full rounded-xl bg-white/[0.03] border border-border text-label text-text-primary placeholder:text-text-muted p-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button variant="ghost" onClick={onCancel} className="flex-1">Cancelar</Button>
-            <Button onClick={() => onConfirm(notes)} disabled={!allRequiredDone} className="flex-1"
-              icon={isCelebration ? <Trophy className="h-4 w-4" /> : allRequiredDone ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}>
-              {isCelebration ? 'Fechar negócio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatório${requiredCount - requiredChecked > 1 ? 's' : ''}`}
-            </Button>
-          </div>
-
-          {/* Registro de autor e data */}
-          <div className="pt-3 border-t border-border/50">
-            <p className="text-caption text-text-muted">Criado em: {dateStr}</p>
-            <p className="text-caption text-text-muted">Criado por: {user?.fullName || user?.email || 'Usuário'}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { StageGatePopup } from '../components/pipeline/StageGate'
+import { PIPELINE_COLUMNS, buildStageChangeDescription } from '../components/pipeline/stageConfig'
 
 // --- Trap badge helpers ---
 function getTrapAbbrev(trap?: string): string | null {
@@ -289,14 +100,13 @@ export function PipelinePage() {
     return true
   })
 
-  const handleConfirmMove = useCallback((notes: string) => {
+  const handleConfirmMove = (notes: string) => {
     if (!pendingMove) return
     const { lead, from, to } = pendingMove
     updateLead.mutate({ id: lead.id, data: { status: to } })
 
-    const fromLabel = PIPELINE_COLUMNS.find((s) => s.value === from)?.label || from
     const toLabel = PIPELINE_COLUMNS.find((s) => s.value === to)?.label || to
-    const desc = notes.trim() ? `Movido de ${fromLabel} para ${toLabel}\n\n${notes.trim()}` : `Movido de ${fromLabel} para ${toLabel}`
+    const desc = buildStageChangeDescription(from, to, notes, 'pipeline-kanban')
     createActivity({ leadId: lead.id, type: 'status_change', description: desc, createdBy: user?.fullName || user?.email || 'Sistema' }).catch(() => {})
 
     if (to === 'Fechado') {
@@ -306,7 +116,7 @@ export function PipelinePage() {
       toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })
     }
     setPendingMove(null)
-  }, [pendingMove, updateLead])
+  }
 
   const closedCount = allLeads.filter((l) => l.status === 'Fechado').length
 
@@ -442,6 +252,7 @@ export function PipelinePage() {
           lead={pendingMove.lead}
           fromStatus={pendingMove.from}
           toStatus={pendingMove.to}
+          source="pipeline-kanban"
           onConfirm={handleConfirmMove}
           onCancel={() => setPendingMove(null)}
         />

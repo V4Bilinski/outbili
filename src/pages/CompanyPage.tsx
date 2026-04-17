@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useLead, useDeleteLead, useUpdateLead } from '../hooks/useLeads'
+import { useLead, useDeleteLead } from '../hooks/useLeads'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
@@ -14,8 +14,7 @@ import { getEnrichmentLog } from '../services/enrichmentLogService'
 import { useQuery } from '@tanstack/react-query'
 import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
 import { generateSpicedDescriptions } from '../services/enrichmentService'
-import { LEAD_STATUSES } from '../lib/constants'
-import { createActivity, getActivities } from '../services/activityService'
+import { getActivities } from '../services/activityService'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -23,6 +22,8 @@ import { TabReuniao } from '../components/company/TabReuniao'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
+import { PipelineJourneyStepper } from '../components/pipeline/PipelineJourneyStepper'
+import { parseStageChangeSource } from '../components/pipeline/stageConfig'
 
 const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
@@ -47,6 +48,7 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
     createdBy?: string
     createdAt?: string
     notes?: string
+    source?: string | null
   }> = []
 
   // Fase 0: Cadastro inicial
@@ -62,19 +64,23 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
   // Fases de movimentação do pipeline (status_change activities)
   const statusChanges = activities.filter((a) => a.type === 'status_change')
   for (const activity of statusChanges) {
-    const match = activity.description?.match(/Movido de (.+) para (.+?)(\n|$)/)
-    const toStage = match ? match[2].trim() : activity.description || 'Movimentação'
-    const notesMatch = activity.description?.split('\n\n')
-    const notes = notesMatch && notesMatch.length > 1 ? notesMatch.slice(1).join('\n') : undefined
+    // Remove sufixo [via: ...] antes de parsear o "para X"
+    const descWithoutSource = activity.description?.replace(/\s*\[via:[^\]]+\]/, '') || ''
+    const match = descWithoutSource.match(/Movido de (.+) para (.+?)(\n|$)/)
+    const toStage = match ? match[2].trim() : descWithoutSource.split('\n')[0] || 'Movimentação'
+    const notesMatch = descWithoutSource.split('\n\n')
+    const notes = notesMatch.length > 1 ? notesMatch.slice(1).join('\n') : undefined
+    const source = parseStageChangeSource(activity.description)
 
     phases.push({
       id: activity.id,
       label: toStage,
       status: 'completed',
-      description: activity.description?.split('\n')[0] || '',
+      description: descWithoutSource.split('\n')[0] || '',
       createdBy: activity.createdBy || 'Usuário',
       createdAt: activity.createdAt,
       notes,
+      source,
     })
   }
 
@@ -132,7 +138,7 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
 }
 
 function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
-  phase: { id: string; label: string; status: string; description?: string; createdBy?: string; createdAt?: string; notes?: string }
+  phase: { id: string; label: string; status: string; description?: string; createdBy?: string; createdAt?: string; notes?: string; source?: string | null }
   lead: Lead
   mainContact?: Contact
   isFirst: boolean
@@ -146,19 +152,24 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
         onClick={() => setExpanded(!expanded)}
         className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <span className={cn(
-            'text-micro font-bold px-2 py-0.5 rounded',
+            'text-micro font-bold px-2 py-0.5 rounded shrink-0',
             phase.status === 'current' ? 'bg-red/10 text-red' : 'bg-success/10 text-success',
           )}>
             {isFirst ? 'Lead' : 'Pipeline'}
           </span>
-          <span className="text-sm font-medium text-text-primary">{phase.label}</span>
+          <span className="text-sm font-medium text-text-primary truncate">{phase.label}</span>
           {phase.status === 'completed' && (
-            <CheckCircle className="h-3.5 w-3.5 text-success" />
+            <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+          )}
+          {phase.source && (
+            <span className="text-micro text-text-muted bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">
+              via {phase.source}
+            </span>
           )}
         </div>
-        <ChevronRight className={cn('h-3.5 w-3.5 text-text-muted transition-transform duration-200', expanded && 'rotate-90')} />
+        <ChevronRight className={cn('h-3.5 w-3.5 text-text-muted transition-transform duration-200 shrink-0', expanded && 'rotate-90')} />
       </button>
 
       {expanded && (
@@ -203,6 +214,9 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
             </div>
           )}
           <div className="mt-2 pt-2 border-t border-border/30">
+            {phase.source && (
+              <p className="text-caption text-text-muted">Origem: {phase.source}</p>
+            )}
             <p className="text-caption text-text-muted">Criado em: {formatDate(phase.createdAt)}</p>
             <p className="text-caption text-text-muted">Criado por: {phase.createdBy || '—'}</p>
           </div>
@@ -225,10 +239,8 @@ export function CompanyPage() {
   const [showActionMenu, setShowActionMenu] = useState(false)
   const [showAddContact, setShowAddContact] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [showStatusMenu, setShowStatusMenu] = useState(false)
   const createContact = useCreateContact()
   const deleteLead = useDeleteLead()
-  const updateLead = useUpdateLead()
 
   if (isLoading) {
     return (
@@ -368,47 +380,6 @@ export function CompanyPage() {
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </span>
-              {/* Status editável */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowStatusMenu(!showStatusMenu)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-tight font-medium cursor-pointer transition-all',
-                    lead.status === 'Fechado' ? 'bg-success/15 text-success' :
-                    lead.status === 'Perdido' ? 'bg-error/15 text-error' :
-                    'bg-white/5 text-text-secondary hover:bg-white/8',
-                  )}
-                >
-                  {LEAD_STATUSES.find(s => s.value === lead.status)?.label || lead.status || 'Novo'}
-                  <ChevronRight className={cn('h-2 w-2 transition-transform', showStatusMenu && 'rotate-90')} />
-                </button>
-                {showStatusMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowStatusMenu(false)} />
-                    <div className="absolute left-0 top-full mt-1 w-44 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
-                      {LEAD_STATUSES.map(s => (
-                        <button
-                          key={s.value}
-                          onClick={() => {
-                            if (s.value === lead.status) { setShowStatusMenu(false); return }
-                            updateLead.mutate({ id: lead.id, data: { status: s.value } })
-                            createActivity({ leadId: lead.id, type: 'status_change', description: `Status: ${lead.status || 'Novo'} → ${s.label}` }).catch(() => {})
-                            toast.success(`Status alterado para ${s.label}`)
-                            setShowStatusMenu(false)
-                          }}
-                          className={cn(
-                            'w-full flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer transition-colors',
-                            s.value === lead.status ? 'text-red bg-red/5 font-semibold' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary',
-                          )}
-                        >
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
               <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
               <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
             </div>
@@ -442,43 +413,57 @@ export function CompanyPage() {
           ))}
         </div>
 
-        {/* Quick action: Decisor — WhatsApp ou telefone fixo */}
+        {/* Quick action: Decisor + WhatsApp (compacto) — sem vínculo com o stepper */}
         {mainContact && (
-          <div className={`flex items-center gap-3 p-3 rounded-xl ${hasWhatsapp ? 'bg-whatsapp/6 border border-whatsapp/15' : 'bg-white/[0.03] border border-border'}`}>
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${hasWhatsapp ? 'bg-whatsapp/15' : 'bg-white/[0.06]'}`}>
-                {hasWhatsapp ? <WhatsAppIcon className="text-lg text-whatsapp" /> : <Phone className="h-4 w-4 text-text-muted" />}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <div className={cn(
+              'flex items-center gap-2.5 p-2.5 rounded-xl flex-1 min-w-0',
+              hasWhatsapp ? 'bg-whatsapp/6 border border-whatsapp/15' : 'bg-white/[0.03] border border-border',
+            )}>
+              <div className={cn(
+                'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                hasWhatsapp ? 'bg-whatsapp/15' : 'bg-white/[0.06]',
+              )}>
+                {hasWhatsapp ? <WhatsAppIcon className="text-base text-whatsapp" /> : <Phone className="h-4 w-4 text-text-muted" />}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-text-primary truncate">{mainContact.name}</p>
-                <p className="text-label text-text-muted truncate">
-                  {mainContact.role || (mainContact.contactType === 'decisor' ? 'Decisor' : 'Stakeholder')}
-                  {contactPhone && (
-                    <span className={`font-mono ml-1.5 ${hasWhatsapp ? 'text-whatsapp' : 'text-text-secondary'}`}>
-                      · {contactPhone}
-                      {!hasWhatsapp && contactPhone && <span className="text-micro text-text-muted ml-1">(fixo — sem WhatsApp)</span>}
-                    </span>
-                  )}
-                </p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-text-primary truncate leading-tight">{mainContact.name}</p>
+                {contactPhone && (
+                  <p className={cn(
+                    'text-label font-mono truncate leading-tight mt-0.5',
+                    hasWhatsapp ? 'text-whatsapp' : 'text-text-secondary',
+                  )}>
+                    {contactPhone}
+                    {!hasWhatsapp && <span className="text-micro text-text-muted ml-1">(fixo)</span>}
+                  </p>
+                )}
               </div>
+              {whatsappLink ? (
+                <a href={whatsappLink} target="_blank" rel="noopener" className="shrink-0">
+                  <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="text-sm" />}>
+                    WhatsApp
+                  </Button>
+                </a>
+              ) : contactPhone ? (
+                <a href={`tel:+${contactPhone.replace(/\D/g, '')}`} className="shrink-0">
+                  <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />}>
+                    Ligar
+                  </Button>
+                </a>
+              ) : (
+                <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setShowAddContact(true)}>
+                  Add
+                </Button>
+              )}
             </div>
-            {whatsappLink ? (
-              <a href={whatsappLink} target="_blank" rel="noopener" className="shrink-0">
-                <Button variant="whatsapp" size="sm" icon={<WhatsAppIcon className="text-sm" />}>
-                  WhatsApp
-                </Button>
-              </a>
-            ) : contactPhone ? (
-              <a href={`tel:+${contactPhone.replace(/\D/g, '')}`} className="shrink-0">
-                <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />}>
-                  Ligar
-                </Button>
-              </a>
-            ) : (
-              <Button variant="secondary" size="sm" icon={<Phone className="h-4 w-4" />} onClick={() => setShowAddContact(true)}>
-                Add telefone
-              </Button>
-            )}
+
+            {/* Fase atual do pipeline — componente independente, fora do card do WhatsApp */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-caption uppercase tracking-wider text-text-muted font-semibold hidden sm:inline">
+                Fase
+              </span>
+              <PipelineJourneyStepper lead={lead} source="company-page" />
+            </div>
           </div>
         )}
         {!mainContact && (

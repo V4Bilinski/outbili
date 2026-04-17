@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { MobileHeader } from './MobileHeader'
-import { ScrollProgress } from '../ui/ScrollProgress'
 import { Toaster } from 'sonner'
 import { SidebarProvider, useSidebar } from '../../lib/sidebar-context'
 import { cn } from '../../lib/cn'
@@ -12,7 +11,6 @@ function LayoutInner() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <ScrollProgress />
       <Sidebar />
       <BottomNav />
       <MobileHeader />

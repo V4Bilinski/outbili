@@ -1,0 +1,105 @@
+// Configuração compartilhada das fases do pipeline.
+// Mantido em arquivo próprio (sem JSX) para satisfazer react-refresh/only-export-components.
+
+export type StageChangeSource = 'pipeline-kanban' | 'company-page' | 'leads-page'
+
+export const STAGE_SOURCE_LABEL: Record<StageChangeSource, string> = {
+  'pipeline-kanban': 'Pipeline',
+  'company-page': 'Ficha do lead',
+  'leads-page': 'Lista de leads',
+}
+
+export const PIPELINE_COLUMNS = [
+  { value: 'Novo', label: 'Prospecção', color: 'var(--color-stage-prospect)' },
+  { value: 'Contactado', label: 'Contactado', color: 'var(--color-stage-contacted)' },
+  { value: 'Respondeu', label: 'Respondeu', color: 'var(--color-stage-replied)' },
+  { value: 'Reunião', label: 'Reunião', color: 'var(--color-stage-meeting)' },
+  { value: 'Proposta', label: 'Proposta', color: 'var(--color-stage-proposal)' },
+  { value: 'Fechado', label: 'Fechado', color: 'var(--color-stage-closed)' },
+] as const
+
+export type PipelineStageValue = (typeof PIPELINE_COLUMNS)[number]['value']
+
+export function getStageIndex(status?: string): number {
+  const idx = PIPELINE_COLUMNS.findIndex((s) => s.value === (status || 'Novo'))
+  return idx === -1 ? 0 : idx
+}
+
+export function getStageLabel(status?: string): string {
+  return PIPELINE_COLUMNS.find((s) => s.value === status)?.label || status || 'Novo'
+}
+
+export function getStageColor(status?: string): string {
+  return PIPELINE_COLUMNS.find((s) => s.value === status)?.color || 'var(--color-stage-prospect)'
+}
+
+export interface GateCheck { text: string; required: boolean }
+
+export const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
+  Contactado: {
+    emoji: '📞',
+    title: 'Registrar primeiro contato',
+    checks: [
+      { text: 'Primeiro contato realizado via WhatsApp, email ou LinkedIn', required: true },
+      { text: 'Mensagem personalizada enviada', required: true },
+      { text: 'Canal de contato registrado no lead', required: false },
+    ],
+  },
+  Respondeu: {
+    emoji: '💬',
+    title: 'Lead respondeu',
+    checks: [
+      { text: 'Resposta recebida do decisor', required: true },
+      { text: 'Interesse confirmado ou objeção mapeada', required: true },
+      { text: 'Próximo passo definido (reunião, proposta, follow-up)', required: false },
+    ],
+  },
+  'Reunião': {
+    emoji: '🤝',
+    title: 'Reunião agendada',
+    checks: [
+      { text: 'Data e horário da reunião confirmados', required: true },
+      { text: 'Pauta/diagnóstico preparado', required: true },
+      { text: 'Participantes definidos (quem do lado do cliente)', required: false },
+    ],
+  },
+  Proposta: {
+    emoji: '📋',
+    title: 'Proposta enviada',
+    checks: [
+      { text: 'Proposta comercial elaborada e enviada', required: true },
+      { text: 'Valor e escopo alinhados com o decisor', required: true },
+      { text: 'Prazo de resposta combinado', required: false },
+    ],
+  },
+  Fechado: {
+    emoji: '🏆',
+    title: 'Negócio fechado!',
+    checks: [
+      { text: 'Contrato assinado ou aceite formal', required: true },
+      { text: 'Pagamento confirmado ou faturado', required: true },
+      { text: 'Onboarding iniciado', required: false },
+    ],
+  },
+}
+
+// Monta description da Activity com origem embutida (para parse no histórico)
+export function buildStageChangeDescription(
+  fromStatus: string,
+  toStatus: string,
+  notes: string,
+  source: StageChangeSource,
+): string {
+  const fromLabel = getStageLabel(fromStatus)
+  const toLabel = getStageLabel(toStatus)
+  const sourceLabel = STAGE_SOURCE_LABEL[source]
+  const base = `Movido de ${fromLabel} para ${toLabel} [via: ${sourceLabel}]`
+  return notes.trim() ? `${base}\n\n${notes.trim()}` : base
+}
+
+// Parse de origem a partir da description da Activity (retorna null se ausente)
+export function parseStageChangeSource(description?: string): string | null {
+  if (!description) return null
+  const match = description.match(/\[via:\s*([^\]]+)\]/)
+  return match ? match[1].trim() : null
+}
