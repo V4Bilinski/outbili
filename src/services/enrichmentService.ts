@@ -5,6 +5,8 @@ import { searchOffice, mapCnpjaToLead, extractPartners } from './cnpjaService'
 import { lookupCnpj as assertivaLookupCnpj, lookupCpf as assertivaLookupCpf, getDecisionMakers, extractBestPhone } from './assertivaService'
 import { createPartners } from './partnerService'
 import { logEnrichmentStep } from './enrichmentLogService'
+import { scrapeSocialLinksFromWebsite, isFirecrawlAvailable } from './firecrawlService'
+import { classifySocialUrl, normalizeSocialUrl } from './socialMediaExtractor'
 import type { Lead } from '../types'
 
 async function enrichByCnpj(cnpj: string): Promise<Partial<Lead> & { _partners?: any[]; _cnpjaOffice?: any } | null> {
@@ -273,6 +275,7 @@ export async function enrichLead(
   const steps: EnrichmentStep[] = [
     { source: 'cnpj', status: !leadData.cnpj ? 'skipped' : (leadData.enrichmentStatus !== 'none' && leadData.tradeName && leadData.employees && leadData.foundingDate) ? 'skipped' : 'pending', label: 'CNPJá (dados cadastrais)', estimatedMs: 3000 },
     { source: 'assertiva', status: !leadData.cnpj ? 'skipped' : 'pending', label: 'Assertiva (telefones + redes + renda + decisores)', estimatedMs: 8000 },
+    { source: 'firecrawl', status: isFirecrawlAvailable() ? 'pending' : 'skipped', label: 'Firecrawl (redes sociais fallback)', estimatedMs: 10000 },
     { source: 'strategic', status: 'pending', label: 'SPICED + Análise Estratégica', estimatedMs: 500 },
   ]
 
@@ -292,15 +295,12 @@ export async function enrichLead(
   // Helper to find step by source name (avoids hardcoded indices)
   const step = (source: string) => steps.find(s => s.source === source)!
 
-  // Classify a URL to the correct field (website vs instagram vs linkedin vs facebook)
+  // Classify a URL to the correct field usando o helper centralizado
+  // Mantém assinatura local para backwards-compat com mergeField abaixo.
   const classifyUrl = (url: string): { field: keyof Lead; value: string } | null => {
-    if (!url) return null
-    const lower = url.toLowerCase()
-    if (lower.includes('instagram.com') || lower.includes('instagr.am')) return { field: 'instagram', value: url }
-    if (lower.includes('linkedin.com')) return { field: 'linkedin', value: url }
-    if (lower.includes('facebook.com') || lower.includes('fb.com')) return { field: 'facebook', value: url }
-    if (lower.includes('linktr.ee') || lower.includes('linklist.bio') || lower.includes('links.') || lower.includes('bio/')) return { field: 'website', value: url }
-    return { field: 'website', value: url }
+    const classified = classifySocialUrl(url)
+    if (!classified) return null
+    return { field: classified.platform as keyof Lead, value: classified.url }
   }
 
   // Helper to merge without overwriting existing user data
@@ -436,16 +436,19 @@ export async function enrichLead(
         }
       }
 
-      // Redes sociais da Assertiva (Instagram, Facebook, LinkedIn)
+      // Redes sociais da Assertiva (Instagram, Facebook, LinkedIn, TikTok)
       if (assertivaData?._redesSociais) {
         if (assertivaData._redesSociais.instagram && !merged.instagram) {
-          merged.instagram = assertivaData._redesSociais.instagram
+          merged.instagram = normalizeSocialUrl(assertivaData._redesSociais.instagram, 'instagram')
         }
         if (assertivaData._redesSociais.facebook && !merged.facebook) {
-          merged.facebook = assertivaData._redesSociais.facebook
+          merged.facebook = normalizeSocialUrl(assertivaData._redesSociais.facebook, 'facebook')
         }
         if (assertivaData._redesSociais.linkedin && !merged.linkedin) {
-          merged.linkedin = assertivaData._redesSociais.linkedin
+          merged.linkedin = normalizeSocialUrl(assertivaData._redesSociais.linkedin, 'linkedin')
+        }
+        if (assertivaData._redesSociais.tiktok && !merged.tiktok) {
+          merged.tiktok = normalizeSocialUrl(assertivaData._redesSociais.tiktok, 'tiktok')
         }
         merged.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
       }
@@ -499,13 +502,16 @@ export async function enrichLead(
           // Redes sociais pessoais do decisor (fallback se empresa não tem)
           if (cpfData.redesSociais) {
             if (cpfData.redesSociais.instagram && !merged.instagram) {
-              merged.instagram = cpfData.redesSociais.instagram
+              merged.instagram = normalizeSocialUrl(cpfData.redesSociais.instagram, 'instagram')
             }
             if (cpfData.redesSociais.facebook && !merged.facebook) {
-              merged.facebook = cpfData.redesSociais.facebook
+              merged.facebook = normalizeSocialUrl(cpfData.redesSociais.facebook, 'facebook')
             }
             if (cpfData.redesSociais.linkedin && !merged.linkedin) {
-              merged.linkedin = cpfData.redesSociais.linkedin
+              merged.linkedin = normalizeSocialUrl(cpfData.redesSociais.linkedin, 'linkedin')
+            }
+            if (cpfData.redesSociais.tiktok && !merged.tiktok) {
+              merged.tiktok = normalizeSocialUrl(cpfData.redesSociais.tiktok, 'tiktok')
             }
           }
           // Telefone pessoal do decisor como fallback
@@ -567,6 +573,67 @@ export async function enrichLead(
       await logEnrichmentStep(leadId, 'assertiva', 'error', 'Falha ou endpoint indisponivel').catch(() => {})
     }
     notify()
+  }
+
+  // ========== FASE 2.5: Firecrawl fallback (redes sociais) ==========
+  // Condição: Assertiva não retornou Instagram NEM LinkedIn (prioridades) E lead tem website
+  // Firecrawl raspa o website e extrai <a href> → classifica em IG/LI/TT/FB
+  const assertivaPreencheuPrioridade =
+    (!!merged.instagram || !!leadData.instagram) &&
+    (!!merged.linkedin || !!leadData.linkedin)
+  const websiteDisponivel = merged.website || leadData.website
+
+  if (!assertivaPreencheuPrioridade && websiteDisponivel && isFirecrawlAvailable()) {
+    step('firecrawl').status = 'running'
+    notify()
+    try {
+      const firecrawlResult = await scrapeSocialLinksFromWebsite(websiteDisponivel)
+      if (firecrawlResult) {
+        let countFound = 0
+        if (firecrawlResult.instagram && !merged.instagram && !leadData.instagram) {
+          merged.instagram = firecrawlResult.instagram
+          countFound++
+        }
+        if (firecrawlResult.linkedin && !merged.linkedin && !leadData.linkedin) {
+          merged.linkedin = firecrawlResult.linkedin
+          countFound++
+        }
+        if (firecrawlResult.tiktok && !merged.tiktok && !leadData.tiktok) {
+          merged.tiktok = firecrawlResult.tiktok
+          countFound++
+        }
+        if (firecrawlResult.facebook && !merged.facebook && !leadData.facebook) {
+          merged.facebook = firecrawlResult.facebook
+          countFound++
+        }
+        step('firecrawl').detail = countFound > 0 ? `${countFound} rede${countFound > 1 ? 's' : ''} encontrada${countFound > 1 ? 's' : ''}` : 'nenhuma rede nova'
+        step('firecrawl').status = 'done'
+        // Se Assertiva trouxe algo E Firecrawl trouxe algo → mixed; senão firecrawl puro
+        const assertivaBrought = !!(merged.assertivaSocialMedia)
+        merged.socialMediaSource = assertivaBrought ? 'mixed' : 'firecrawl'
+        await logEnrichmentStep(leadId, 'firecrawl', 'done', step('firecrawl').detail || 'OK').catch(() => {})
+      } else {
+        step('firecrawl').status = 'skipped'
+        step('firecrawl').detail = 'sem links sociais no site'
+      }
+    } catch {
+      step('firecrawl').status = 'error'
+      await logEnrichmentStep(leadId, 'firecrawl', 'error', 'Falha ao raspar website').catch(() => {})
+    }
+    notify()
+  } else if (step('firecrawl').status === 'pending') {
+    step('firecrawl').status = 'skipped'
+    step('firecrawl').detail = assertivaPreencheuPrioridade ? 'Assertiva preencheu' : 'sem website'
+  }
+
+  // Auditoria: registrar quando e de onde vieram as redes sociais
+  const hasAnySocial = !!(merged.instagram || merged.linkedin || merged.tiktok || merged.facebook)
+  if (hasAnySocial) {
+    merged.socialMediaExtractedAt = new Date().toISOString()
+    if (!merged.socialMediaSource) {
+      // Default: assertiva (pois Firecrawl já setou explicitamente)
+      merged.socialMediaSource = 'assertiva'
+    }
   }
 
   // --- Auto-score SPICED ---
@@ -809,11 +876,12 @@ export async function reEnrichLead(
         }
       }
     }
-    // Redes sociais da Assertiva
+    // Redes sociais da Assertiva (inclui TikTok)
     if (assertivaData?._redesSociais) {
-      if (assertivaData._redesSociais.instagram && !lead.instagram) merged.instagram = assertivaData._redesSociais.instagram
-      if (assertivaData._redesSociais.facebook && !lead.facebook) merged.facebook = assertivaData._redesSociais.facebook
-      if (assertivaData._redesSociais.linkedin && !lead.linkedin) merged.linkedin = assertivaData._redesSociais.linkedin
+      if (assertivaData._redesSociais.instagram && !lead.instagram) merged.instagram = normalizeSocialUrl(assertivaData._redesSociais.instagram, 'instagram')
+      if (assertivaData._redesSociais.facebook && !lead.facebook) merged.facebook = normalizeSocialUrl(assertivaData._redesSociais.facebook, 'facebook')
+      if (assertivaData._redesSociais.linkedin && !lead.linkedin) merged.linkedin = normalizeSocialUrl(assertivaData._redesSociais.linkedin, 'linkedin')
+      if (assertivaData._redesSociais.tiktok && !lead.tiktok) merged.tiktok = normalizeSocialUrl(assertivaData._redesSociais.tiktok, 'tiktok')
       merged.assertivaSocialMedia = JSON.stringify(assertivaData._redesSociais)
     }
     // Faturamento presumido
@@ -886,6 +954,27 @@ export async function reEnrichLead(
     if (source !== 'both') source = 'assertiva'
   } catch (err) {
     console.warn(`reEnrichLead Assertiva falhou para ${lead.cnpj}:`, err)
+  }
+
+  // FASE 2.5 (re-enrich): Firecrawl fallback para redes sociais
+  // Se Assertiva não retornou IG nem LI E lead tem website → raspa o site
+  const rePrioridadeOK = !!(merged.instagram || lead.instagram) && !!(merged.linkedin || lead.linkedin)
+  const reWebsite = merged.website || lead.website
+  if (!rePrioridadeOK && reWebsite && isFirecrawlAvailable()) {
+    try {
+      const firecrawlResult = await scrapeSocialLinksFromWebsite(reWebsite)
+      if (firecrawlResult) {
+        if (firecrawlResult.instagram && !merged.instagram && !lead.instagram) merged.instagram = firecrawlResult.instagram
+        if (firecrawlResult.linkedin && !merged.linkedin && !lead.linkedin) merged.linkedin = firecrawlResult.linkedin
+        if (firecrawlResult.tiktok && !merged.tiktok && !lead.tiktok) merged.tiktok = firecrawlResult.tiktok
+        if (firecrawlResult.facebook && !merged.facebook && !lead.facebook) merged.facebook = firecrawlResult.facebook
+        merged.socialMediaSource = merged.assertivaSocialMedia ? 'mixed' : 'firecrawl'
+      }
+    } catch { /* graceful */ }
+  }
+  if (merged.instagram || merged.linkedin || merged.tiktok || merged.facebook) {
+    merged.socialMediaExtractedAt = new Date().toISOString()
+    if (!merged.socialMediaSource) merged.socialMediaSource = 'assertiva'
   }
 
   // Validacao final

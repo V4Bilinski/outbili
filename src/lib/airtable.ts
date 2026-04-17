@@ -193,6 +193,7 @@ const SINGLE_SELECT_VALUES: Record<string, Record<string, string>> = {
   registrationStatus: { Ativa: 'Ativa', Baixada: 'Baixada', Suspensa: 'Suspensa', Inapta: 'Inapta', Nula: 'Nula' },
   taxRegime: { simples: 'simples', mei: 'mei', lucro_presumido: 'lucro_presumido', lucro_real: 'lucro_real', nao_optante: 'nao_optante' },
   phoneType: { MOBILE: 'MOBILE', LANDLINE: 'LANDLINE' },
+  socialMediaSource: { assertiva: 'assertiva', firecrawl: 'firecrawl', mixed: 'mixed', manual: 'manual' },
 }
 
 // Fields that do NOT exist in the Leads table — strip before sending to avoid 422

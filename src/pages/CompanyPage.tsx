@@ -11,7 +11,9 @@ import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
 import { getPartners } from '../services/partnerService'
 import { getEnrichmentLog } from '../services/enrichmentLogService'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { reEnrichLead } from '../services/enrichmentService'
+import { DigitalPresencePanel } from '../components/ui/DigitalPresencePanel'
 import { generateDiscoveryQuestions, generateEligibilityChecklist, detectTravas } from '../services/strategicAnalysisService'
 import { generateSpicedDescriptions } from '../services/enrichmentService'
 import { getActivities } from '../services/activityService'
@@ -241,6 +243,35 @@ export function CompanyPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const createContact = useCreateContact()
   const deleteLead = useDeleteLead()
+  const queryClient = useQueryClient()
+  const [isReExtractingSocial, setIsReExtractingSocial] = useState(false)
+
+  const handleReExtractSocial = async () => {
+    if (!lead || isReExtractingSocial) return
+    setIsReExtractingSocial(true)
+    const toastId = toast.loading('Re-extraindo redes sociais…')
+    try {
+      const result = await reEnrichLead(lead.id, lead, { forceAll: true })
+      await queryClient.invalidateQueries({ queryKey: ['lead', lead.id] })
+      await queryClient.invalidateQueries({ queryKey: ['leads'] })
+      if (result.skipped) {
+        toast.info('Nenhuma rede social nova encontrada', { id: toastId })
+      } else {
+        const found = [
+          result.updated.instagram && 'Instagram',
+          result.updated.linkedin && 'LinkedIn',
+          result.updated.tiktok && 'TikTok',
+          result.updated.facebook && 'Facebook',
+        ].filter(Boolean)
+        toast.success(found.length ? `Redes atualizadas: ${found.join(', ')}` : 'Redes sociais atualizadas', { id: toastId })
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao re-extrair'
+      toast.error(`Falha: ${msg}`, { id: toastId })
+    } finally {
+      setIsReExtractingSocial(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -481,29 +512,12 @@ export function CompanyPage() {
           </button>
         )}
 
-        {/* Links — formato pills clicáveis com destaque */}
-        <div className="flex gap-2 flex-wrap">
-          {lead.website && !lead.website.includes('instagram.com') && (
-            <a href={lead.website} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
-              Website
-            </a>
-          )}
-          {lead.instagram && (
-            <a href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram}`} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
-              @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?#].*/,'')}
-            </a>
-          )}
-          {lead.linkedin && (
-            <a href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/in/${lead.linkedin}`} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
-              LinkedIn
-            </a>
-          )}
-          {lead.facebook && (
-            <a href={lead.facebook} target="_blank" rel="noopener" className="text-label text-red-vivid px-2.5 py-1 border border-red/30 rounded-md transition-all hover:bg-red hover:text-white hover:border-red font-medium">
-              Facebook
-            </a>
-          )}
-        </div>
+        {/* Presença Digital — pills com ícones, re-extração e auditoria */}
+        <DigitalPresencePanel
+          lead={lead}
+          onReExtract={handleReExtractSocial}
+          isReExtracting={isReExtractingSocial}
+        />
       </Card>
 
       {/* Inline add contact form */}
@@ -750,29 +764,9 @@ export function CompanyPage() {
               </div>
             )}
 
-            {/* Social links (red bordered pills) */}
-            <div className="flex flex-wrap gap-2">
-              {lead.website && !lead.website.includes('instagram.com') && (
-                <a href={lead.website} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
-                  Website
-                </a>
-              )}
-              {lead.instagram && (
-                <a href={lead.instagram} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
-                  @{lead.instagram.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?].*/,'')}
-                </a>
-              )}
-              {lead.linkedin && (
-                <a href={lead.linkedin} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
-                  LinkedIn
-                </a>
-              )}
-              {lead.facebook && (
-                <a href={lead.facebook} target="_blank" rel="noopener" className="text-label text-red-vivid px-2 py-0.5 border border-red/30 rounded transition-all hover:bg-red hover:text-white hover:border-red">
-                  Facebook
-                </a>
-              )}
-            </div>
+            {/* Presença Digital — versão compacta sem meta */}
+            <DigitalPresencePanel lead={lead} compact />
+
 
             {/* Market context */}
             {lead.marketContext && (

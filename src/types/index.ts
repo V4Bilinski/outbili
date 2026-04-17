@@ -20,6 +20,10 @@ export interface Lead {
   instagram?: string
   linkedin?: string
   facebook?: string
+  tiktok?: string
+  // Auditoria de enriquecimento social
+  socialMediaExtractedAt?: string       // ISO datetime
+  socialMediaSource?: 'assertiva' | 'firecrawl' | 'mixed' | 'manual'
   address?: string
   city?: string
   state?: string
@@ -434,6 +438,7 @@ export interface AssertivaSocialLinks {
   linkedin?: string
   twitter?: string
   youtube?: string
+  tiktok?: string
 }
 
 export interface AssertivaCompanyResult {

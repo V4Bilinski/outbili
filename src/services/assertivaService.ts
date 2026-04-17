@@ -127,6 +127,7 @@ export async function lookupCnpj(cnpj: string): Promise<AssertivaCompanyResult> 
     if (tipo.includes('instagram')) redesSociais.instagram = url
     else if (tipo.includes('facebook')) redesSociais.facebook = url
     else if (tipo.includes('linkedin')) redesSociais.linkedin = url
+    else if (tipo.includes('tiktok') || tipo.includes('tik_tok') || tipo.includes('tik-tok')) redesSociais.tiktok = url
     else if (tipo.includes('twitter') || tipo.includes('x.com')) redesSociais.twitter = url
     else if (tipo.includes('youtube')) redesSociais.youtube = url
   }
@@ -265,6 +266,7 @@ export async function lookupCpf(cpf: string): Promise<AssertivaCpfResult> {
     if (tipo.includes('instagram')) redesSociais.instagram = url
     else if (tipo.includes('facebook')) redesSociais.facebook = url
     else if (tipo.includes('linkedin')) redesSociais.linkedin = url
+    else if (tipo.includes('tiktok') || tipo.includes('tik_tok') || tipo.includes('tik-tok')) redesSociais.tiktok = url
     else if (tipo.includes('twitter') || tipo.includes('x.com')) redesSociais.twitter = url
   }
 
