@@ -1,7 +1,7 @@
 import { Card, CardTitle } from '../components/ui/Card'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, Globe, Phone, Mail, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
 import { PescaPanel } from '../components/search/PescaPanel'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -311,14 +311,7 @@ export function SearchPage() {
       .replace(/(\d{4})(\d)/, '$1-$2')
   }
 
-  const formatPhone = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 11)
-    if (digits.length <= 2) return digits.length ? `(${digits}` : ''
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-  }
-
-  // --- Collapsible sections ---
+  // --- Collapsible sections (PESCA mode only) ---
   const toggleSection = useCallback((section: string) => {
     setExpandedSections(prev => {
       const next = new Set(prev)
@@ -327,13 +320,6 @@ export function SearchPage() {
       return next
     })
   }, [])
-
-  const sectionFilledCounts: Record<string, number> = {
-    location: [specificCity, specificState, specificAddress].filter(Boolean).length,
-    digital: [specificWebsite, specificInstagram, specificLinkedin, specificFacebook].filter(Boolean).length,
-    metrics: [specificRevenue].filter(Boolean).length,
-    contact: [specificContact, specificContactRole, specificPhone, specificEmail].filter(Boolean).length,
-  }
 
   // --- File upload handlers ---
   const handleFileUpload = useCallback(async (file: File) => {
