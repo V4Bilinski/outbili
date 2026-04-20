@@ -478,8 +478,10 @@ export function SearchPage() {
         const spiced = calculateSpicedDimensions(spicedInput)
         const spicedScore = calculateSpicedScore(spiced.spicedS, spiced.spicedP, spiced.spicedI, spiced.spicedC, spiced.spicedD)
 
-        // Status: Contactado quando pre-enriquecimento foi bem-sucedido; Novo caso contrário
-        const initialStatus = (cnpjaData || assertivaData) ? 'Contactado' : 'Novo'
+        // P2 — Status alinhado com handleSpecificSearch:
+        // tem CNPJ valido = cadastro assistido = Contactado
+        // sem CNPJ = lead parcial = Novo
+        const initialStatus = hasCnpj ? 'Contactado' : 'Novo'
 
         const leadData: Record<string, any> = {
           companyName: realCompanyName,
@@ -537,9 +539,13 @@ export function SearchPage() {
         }
         createdLeads.push({ id: lead.id, data: leadData })
 
-        // P1 — Activity inicial (alinhado com handleSpecificSearch)
+        // P1+P2 — Activity inicial (criada sempre que CNPJ foi tentado; marca enrichment status)
         if (lead.id && initialStatus === 'Contactado') {
-          const enrichmentTag = assertivaData ? 'CNPJá + Assertiva' : cnpjaData ? 'CNPJá' : 'parcial'
+          const enrichmentTag = assertivaData
+            ? 'CNPJá + Assertiva'
+            : cnpjaData
+              ? 'CNPJá'
+              : 'enrichment pendente'
           const notes = `Upload de lista com enriquecimento automático (${enrichmentTag}). Lead criado diretamente na fase Contactado.`
           const description = buildStageChangeDescription('Novo', 'Contactado', notes, 'upload-manual')
           createActivity({
@@ -823,6 +829,7 @@ export function SearchPage() {
       }
 
       // 3. Criar Contact vinculado OBRIGATORIAMENTE (decisor + telefone)
+      // P2 — source preciso conforme origem do decisor (simetria com upload-manual)
       if (lead.id && decisorName) {
         createContact({
           name: decisorName,
@@ -832,7 +839,11 @@ export function SearchPage() {
           phone: bestPhone || '',
           email: specificEmail || cnpjaData?.rfEmail || '',
           leadId: lead.id,
-          ...(assertivaData ? { source: 'assertiva', whatsappConfirmed: !!bestWhatsapp } : { source: 'cnpja' }),
+          ...(assertivaData
+            ? { source: 'assertiva', whatsappConfirmed: !!bestWhatsapp }
+            : cnpjaData
+              ? { source: 'cnpja' }
+              : { source: 'cadastro_manual' }),
         } as any).catch(() => {})
       }
 
