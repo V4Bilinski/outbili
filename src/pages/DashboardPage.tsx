@@ -342,17 +342,18 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
 }
 
 function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipelineLTP> }) {
-  const stationDefs: Array<{ name: string; icon: typeof Search; key: StationKey }> = [
-    { name: 'Pesquisa', icon: Search, key: 'pesquisa' },
-    { name: 'Enriquecimento', icon: Database, key: 'enriquecimento' },
-    { name: 'Qualificação', icon: Filter, key: 'qualificacao' },
-    { name: 'Inteligência', icon: Brain, key: 'inteligencia' },
-    { name: 'Prospecção', icon: Send, key: 'prospeccao' },
+  const stationDefs: Array<{ name: string; icon: typeof Search; key: StationKey; hint: string }> = [
+    { name: 'Pesquisa', icon: Search, key: 'pesquisa', hint: 'Leads novos descobertos, ainda sem enriquecimento.' },
+    { name: 'Enriquecimento', icon: Database, key: 'enriquecimento', hint: 'Leads em coleta de dados (CNPJá, Assertiva, Firecrawl).' },
+    { name: 'Qualificação', icon: Filter, key: 'qualificacao', hint: 'Leads enriquecidos com SPICED calculado — prontos para abordagem.' },
+    { name: 'Inteligência', icon: Brain, key: 'inteligencia', hint: 'Leads em contato ativo (mensagem enviada, respondeu ou reunião marcada).' },
+    { name: 'Prospecção', icon: Send, key: 'prospeccao', hint: 'Leads com proposta entregue, próximos do fechamento.' },
   ]
 
   const stations = stationDefs.map((def) => ({
     name: def.name,
     icon: def.icon,
+    hint: def.hint,
     count: pipeline.stations[def.key].count,
     ltp: pipeline.stations[def.key].ltp,
   }))
@@ -367,7 +368,9 @@ function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipel
           <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">LINHA DE MONTAGEM</span>
         </div>
         <CardTitle>Linha de Montagem</CardTitle>
-        <p className="text-xs text-text-muted mt-1">Fluxo das 5 estações</p>
+        <p className="text-xs text-text-muted mt-1 max-w-2xl">
+          Leads avançam estação por estação. Onde houver gargalo, está sua ação prioritária do dia.
+        </p>
       </div>
       <div className="flex items-stretch gap-0 overflow-x-auto">
         {stations.map((station, i) => {
@@ -375,7 +378,8 @@ function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipel
           return (
             <div key={station.name} className="flex items-center min-w-0 flex-1">
               <div
-                className={`relative overflow-hidden flex flex-col items-center justify-center rounded-xl border flex-1 transition-all duration-200 ${
+                title={station.hint}
+                className={`relative overflow-hidden flex flex-col items-center justify-center rounded-xl border flex-1 cursor-help transition-all duration-200 ${
                   isBottleneck
                     ? 'border-red/40 bg-red/[0.07] shadow-[0_0_16px_rgba(204,0,0,0.25)] hover:shadow-[0_0_20px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
                     : station.count > 0
@@ -429,17 +433,20 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
       label: 'LTP Total Pipeline',
       value: formatCurrency(total),
       sub: totalSub,
+      hint: 'Teto de receita se todos os leads fecharem em 12 meses.',
     },
     {
       label: 'LTP Leads Quentes',
       value: formatCurrency(hot),
       sub: hotLeads > 0 ? `${hotLeads} lead${hotLeads > 1 ? 's' : ''} prioridade` : 'Nenhum lead quente',
       highlight: true,
+      hint: 'Grupo prioritário pronto para fechar. Comece seu dia por aqui.',
     },
     {
       label: 'LTP Médio por Lead',
       value: formatCurrency(avgPerLead),
       sub: totalLeads > 0 ? `Base: ${totalLeads} leads ativos` : 'Sem leads ativos',
+      hint: 'Valor projetado por oportunidade — use para priorizar onde investir tempo.',
     },
   ]
 
@@ -453,10 +460,12 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
           </div>
           <CardTitle>LTP do Pipeline</CardTitle>
           <div className="flex items-center gap-1 mt-1">
-            <p className="text-xs text-text-muted">Lifetime Throughput do Projeto</p>
+            <p className="text-xs text-text-muted max-w-2xl">
+              Receita projetada do pipeline. Priorize os Quentes — são os leads prontos para fechar.
+            </p>
             <div className="border-l-4 border-red/60 pl-2 ml-1">
               <span
-                title="Receita projetada ao longo dos contratos, calculada com base no faturamento mensal e percentual de captura por tier"
+                title="LTP = Lifetime Throughput: faturamento mensal × percentual de captura por tier × 12 meses."
                 className="flex items-center cursor-help"
               >
                 <Info className="h-3 w-3 text-text-muted/60" />
@@ -469,7 +478,8 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
         {stats.map((s) => (
           <div
             key={s.label}
-            className={`relative overflow-hidden p-4 rounded-xl border transition-all duration-200 ${
+            title={s.hint}
+            className={`relative overflow-hidden p-4 rounded-xl border cursor-help transition-all duration-200 ${
               s.highlight
                 ? 'border-red/40 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.2)] hover:shadow-[0_0_28px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
                 : 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
@@ -483,6 +493,9 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
               {s.value}
             </p>
             <p className="text-label text-text-muted mt-1">{s.sub}</p>
+            <p className={`text-[11px] leading-snug mt-2 pt-2 border-t ${s.highlight ? 'border-red/20 text-text-muted' : 'border-border/40 text-text-muted'}`}>
+              {s.hint}
+            </p>
           </div>
         ))}
       </div>
