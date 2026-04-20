@@ -363,30 +363,135 @@ export function SearchPage() {
     setFileImporting(true)
     setFileImportProgress(0)
     const companies = fileParseResult.companies.filter((_, i) => fileSelected.has(i))
-    let done = 0
+
+    // Lazy-load enrichment services (alinhado com handleSpecificSearch)
+    const { searchOffice, mapCnpjaToLead, extractPartners } = await import('../services/cnpjaService')
+    const { lookupCnpj } = await import('../services/assertivaService')
+
     const createdLeads: Array<{ id: string; data: Record<string, any> }> = []
+    let done = 0
+    let duplicates = 0
+    let errors = 0
 
     for (const company of companies) {
       try {
-        // Calcular SPICED automaticamente com dados disponiveis do arquivo
-        const partialForSpiced: Record<string, any> = {
-          cnpj: company.cnpj?.replace(/\D/g, '') || '',
-          city: company.city,
-          state: company.state,
-          website: company.website,
+        const cnpjClean = company.cnpj?.replace(/\D/g, '') || ''
+        const hasCnpj = cnpjClean.length === 14
+
+        // P0 — Dedupe por CNPJ antes de criar (alinhado com handleSpecificSearch)
+        if (hasCnpj) {
+          try {
+            const existing = await getLeads(`{cnpj} = "${cnpjClean}"`)
+            if (existing.length > 0) {
+              duplicates++
+              done++
+              setFileImportProgress(Math.round((done / companies.length) * 100))
+              continue
+            }
+          } catch { /* se a query falhar, segue com tentativa de criar */ }
+        }
+
+        // P0 — Enriquecer CNPJá + Assertiva ANTES de gravar (alinhado com handleSpecificSearch)
+        let cnpjaData: any = null
+        let assertivaData: any = null
+        let decisorName = company.contactName || ''
+        let decisorRole = company.contactRole || ''
+        let bestWhatsapp = ''
+        let bestPhone = ''
+
+        if (hasCnpj) {
+          try {
+            const office = await searchOffice(cnpjClean)
+            cnpjaData = mapCnpjaToLead(office)
+
+            if (!decisorName) {
+              const partners = extractPartners(office)
+              const decisor = partners.find(p =>
+                p.qualification.toLowerCase().includes('administrador') ||
+                p.qualification.toLowerCase().includes('diretor') ||
+                p.qualification.toLowerCase().includes('presidente')
+              ) || partners[0]
+              if (decisor) { decisorName = decisor.name; decisorRole = decisor.qualification }
+            }
+
+            const mobile = office.phones?.find((p: any) => p.type === 'MOBILE')
+            const anyPhone = office.phones?.[0]
+            if (mobile) bestWhatsapp = `55${mobile.area}${mobile.number}`
+            if (anyPhone) bestPhone = `55${anyPhone.area}${anyPhone.number}`
+          } catch { /* CNPJá opcional — enrichment pós-gravação cobre */ }
+
+          try {
+            assertivaData = await lookupCnpj(cnpjClean)
+            const moveis = assertivaData?.telefones?.filter((t: any) => t.tipo === 'celular') || []
+            for (const t of moveis) {
+              if (t.whatsapp && t.numero) { bestWhatsapp = t.numero.startsWith('55') ? t.numero : `55${t.numero}`; break }
+            }
+            if (!bestWhatsapp) {
+              for (const t of moveis) {
+                if (t.numero) { bestWhatsapp = t.numero.startsWith('55') ? t.numero : `55${t.numero}`; break }
+              }
+            }
+            if (!decisorName && assertivaData?.socios?.length) {
+              const s = assertivaData.socios.find((s: any) =>
+                (s.qualificacao || '').toLowerCase().includes('administrador') ||
+                (s.qualificacao || '').toLowerCase().includes('diretor')
+              ) || assertivaData.socios[0]
+              if (s?.nome) { decisorName = s.nome; decisorRole = s.qualificacao || 'Sócio' }
+            }
+          } catch { /* Assertiva opcional */ }
+        }
+
+        // WhatsApp fallback: telefone do arquivo
+        if (!bestWhatsapp && company.phone) {
+          const digits = company.phone.replace(/\D/g, '').replace(/^0+/, '')
+          bestWhatsapp = digits.length >= 10 ? (digits.startsWith('55') ? digits : '55' + digits) : ''
+        }
+
+        // P1 — Tier dinâmico (alinhado com handleSpecificSearch)
+        const tier = cnpjaData?.tier || 'Small'
+
+        // Nome real do CNPJá tem PRIORIDADE sobre nome do arquivo
+        const realCompanyName = cnpjaData?.companyName || company.companyName
+        const tradeName = cnpjaData?.tradeName || ''
+
+        // SPICED com TODOS os dados (arquivo + CNPJá + Assertiva)
+        const spicedInput: Record<string, any> = {
+          cnpj: cnpjClean,
+          capitalSocial: cnpjaData?.capitalSocial,
+          foundingDate: cnpjaData?.foundingDate,
+          city: company.city || cnpjaData?.city,
+          state: company.state || cnpjaData?.state,
+          rfEmail: cnpjaData?.rfEmail || company.email,
+          rfPhone: cnpjaData?.rfPhone,
+          website: company.website || cnpjaData?.website,
           instagram: company.instagram,
           linkedin: company.linkedin,
-          rfEmail: company.email,
+          employees: cnpjaData?.employees,
+          partners: decisorName ? JSON.stringify([{ nome_socio: decisorName }]) : undefined,
+          assertivaWhatsappFlag: assertivaData?.assertivaWhatsappFlag,
+          assertivaIncomeEstimate: assertivaData?.assertivaIncomeEstimate,
+          registrationStatus: cnpjaData?.registrationStatus,
+          isHeadquarters: cnpjaData?.isHeadquarters,
+          simplesOptant: cnpjaData?.simplesOptant,
+          taxRegime: cnpjaData?.taxRegime,
         }
-        const spiced = calculateSpicedDimensions(partialForSpiced)
+        const spiced = calculateSpicedDimensions(spicedInput)
         const spicedScore = calculateSpicedScore(spiced.spicedS, spiced.spicedP, spiced.spicedI, spiced.spicedC, spiced.spicedD)
 
+        // Status: Contactado quando pre-enriquecimento foi bem-sucedido; Novo caso contrário
+        const initialStatus = (cnpjaData || assertivaData) ? 'Contactado' : 'Novo'
+
         const leadData: Record<string, any> = {
-          companyName: company.companyName,
-          cnpj: company.cnpj?.replace(/\D/g, '') || '',
-          segment: company.segment || specificSegment || '',
-          tier: 'Small',
-          status: 'Novo',
+          companyName: realCompanyName,
+          ...(tradeName && { tradeName }),
+          cnpj: cnpjClean,
+          segment: company.segment || cnpjaData?.segment || specificSegment || '',
+          tier,
+          ...(cnpjaData?.capitalSocial && { capitalSocial: cnpjaData.capitalSocial }),
+          ...(cnpjaData?.employees && { employees: cnpjaData.employees }),
+          ...(cnpjaData?.yearsInMarket && { yearsInMarket: cnpjaData.yearsInMarket }),
+          status: initialStatus,
+          sourceHtmlReport: 'upload_manual',
           score: spicedScore,
           temperature: getTemperatureFromScore(spicedScore),
           spicedS: spiced.spicedS,
@@ -394,42 +499,92 @@ export function SearchPage() {
           spicedI: spiced.spicedI,
           spicedC: spiced.spicedC,
           spicedD: spiced.spicedD,
-          ...(company.website && { website: company.website }),
+          ...(company.website || cnpjaData?.website ? { website: company.website || cnpjaData?.website } : {}),
           ...(company.instagram && { instagram: company.instagram }),
           ...(company.linkedin && { linkedin: company.linkedin }),
-          ...(company.address && { address: company.address }),
-          ...(company.city && { city: company.city }),
-          ...(company.state && { state: company.state }),
-          businessSummary: `${company.segment || 'Importado'} · Upload manual`,
-          enrichmentStatus: 'none',
-          sourceHtmlReport: 'upload_manual',
+          ...(company.address || cnpjaData?.address ? { address: company.address || cnpjaData?.address } : {}),
+          ...(company.city || cnpjaData?.city ? { city: company.city || cnpjaData?.city } : {}),
+          ...(company.state || cnpjaData?.state ? { state: company.state || cnpjaData?.state } : {}),
+          ...(cnpjaData?.zipCode && { zipCode: cnpjaData.zipCode }),
+          ...(cnpjaData?.district && { district: cnpjaData.district }),
+          ...(cnpjaData?.legalNature && { legalNature: cnpjaData.legalNature }),
+          ...(cnpjaData?.registrationStatus && { registrationStatus: cnpjaData.registrationStatus }),
+          ...(cnpjaData?.foundingDate && { foundingDate: cnpjaData.foundingDate }),
+          ...(cnpjaData?.cnaePrimary && { cnaePrimary: cnpjaData.cnaePrimary }),
+          ...(cnpjaData?.rfPhone && { rfPhone: cnpjaData.rfPhone }),
+          ...(cnpjaData?.rfEmail && { rfEmail: cnpjaData.rfEmail }),
+          ...(decisorName && { partners: JSON.stringify([{ nome_socio: decisorName, qualificacao_socio: decisorRole }]) }),
+          enrichmentStatus: assertivaData ? 'assertiva' : cnpjaData ? 'cnpja' : 'none',
         }
 
-        const lead = await createLead(leadData as any)
+        // P1 — Fallback minimalData (alinhado com handleSpecificSearch)
+        let lead: any
+        try {
+          lead = await createLead(leadData as any)
+        } catch {
+          const minimalData = {
+            companyName: realCompanyName,
+            cnpj: cnpjClean,
+            score: spicedScore,
+            temperature: getTemperatureFromScore(spicedScore),
+            spicedS: spiced.spicedS,
+            spicedP: spiced.spicedP,
+            spicedI: spiced.spicedI,
+            spicedC: spiced.spicedC,
+            spicedD: spiced.spicedD,
+          }
+          lead = await createLead(minimalData as any)
+        }
         createdLeads.push({ id: lead.id, data: leadData })
 
-        // Save contact if available
-        if (lead.id && company.contactName && (company.phone || company.email)) {
-          await createContact({
-            name: company.contactName,
-            role: company.contactRole || 'Contato',
-            contactType: 'decisor',
-            whatsapp: company.phone || '',
-            email: company.email || '',
+        // P1 — Activity inicial (alinhado com handleSpecificSearch)
+        if (lead.id && initialStatus === 'Contactado') {
+          const enrichmentTag = assertivaData ? 'CNPJá + Assertiva' : cnpjaData ? 'CNPJá' : 'parcial'
+          const notes = `Upload de lista com enriquecimento automático (${enrichmentTag}). Lead criado diretamente na fase Contactado.`
+          const description = buildStageChangeDescription('Novo', 'Contactado', notes, 'upload-manual')
+          createActivity({
             leadId: lead.id,
-          } as any)
+            type: 'status_change',
+            description,
+            createdBy: 'Upload de Lista',
+          }).catch(() => {})
         }
-      } catch { /* continue with next */ }
+
+        // P1 — Contact com source + whatsappConfirmed (alinhado com handleSpecificSearch)
+        if (lead.id && decisorName) {
+          createContact({
+            name: decisorName,
+            role: decisorRole || 'Decisor',
+            contactType: 'decisor',
+            whatsapp: bestWhatsapp || '',
+            phone: bestPhone || '',
+            email: company.email || cnpjaData?.rfEmail || '',
+            leadId: lead.id,
+            ...(assertivaData ? { source: 'assertiva', whatsappConfirmed: !!bestWhatsapp } : cnpjaData ? { source: 'cnpja' } : { source: 'upload_manual' }),
+          } as any).catch(() => {})
+        }
+      } catch {
+        errors++
+      }
       done++
       setFileImportProgress(Math.round((done / companies.length) * 100))
     }
 
-    toast.success(`${createdLeads.length} leads importados! Iniciando enriquecimento...`)
+    // Feedback consolidado: criados + duplicados pulados + erros
+    const summaryParts: string[] = []
+    if (createdLeads.length > 0) summaryParts.push(`${createdLeads.length} criado${createdLeads.length !== 1 ? 's' : ''}`)
+    if (duplicates > 0) summaryParts.push(`${duplicates} duplicado${duplicates !== 1 ? 's' : ''} ignorado${duplicates !== 1 ? 's' : ''}`)
+    if (errors > 0) summaryParts.push(`${errors} erro${errors !== 1 ? 's' : ''}`)
+    const summary = summaryParts.join(' · ') || 'Nenhum lead processado'
 
-    // Trigger mass enrichment for all created leads
     if (createdLeads.length > 0) {
+      toast.success(`${summary} — enriquecimento complementar em andamento`)
       massEnrichment.enrichAll(createdLeads.map(l => ({ id: l.id, companyName: (l.data as any).companyName } as any)))
       setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+    } else if (duplicates > 0) {
+      toast.info(summary)
+    } else {
+      toast.error(summary)
     }
 
     setFileImporting(false)
@@ -1678,26 +1833,26 @@ export function SearchPage() {
           onClick={() => setFileConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl bg-[#0e0e10] border border-border shadow-2xl overflow-hidden animate-[slide-up_0.22s_ease-out]"
+            className="w-full max-w-xl rounded-2xl bg-[#0e0e10] border border-border shadow-2xl overflow-hidden animate-[slide-up_0.22s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start gap-3 p-5 border-b border-border">
-              <div className="p-2 rounded-xl bg-red/10 shrink-0">
-                <ShieldCheck className="h-5 w-5 text-red" />
+            <div className="flex items-start gap-2.5 p-4 border-b border-border">
+              <div className="p-1.5 rounded-lg bg-red/10 shrink-0">
+                <ShieldCheck className="h-4 w-4 text-red" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-bold text-text-primary">Confirmar dados antes de enriquecer</h2>
-                <p className="text-label text-text-muted mt-0.5">
+                <h2 className="text-[13px] font-bold text-text-primary leading-tight">Confirmar dados antes de enriquecer</h2>
+                <p className="text-micro text-text-muted mt-1 leading-snug">
                   Revise CNPJ e nome de cada empresa. Ao confirmar, o enriquecimento será disparado em CNPJá + Assertiva.
                 </p>
               </div>
               <button
                 onClick={() => setFileConfirmOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/[0.04] text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                className="p-1 rounded-md hover:bg-white/[0.04] text-text-muted hover:text-text-primary transition-colors cursor-pointer"
                 title="Fechar"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -1708,31 +1863,31 @@ export function SearchPage() {
               const withoutCnpj = toConfirm.length - withCnpj
               return (
                 <>
-                  <div className="grid grid-cols-3 gap-3 p-5 border-b border-border">
-                    <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
-                      <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{toConfirm.length}</p>
-                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Para enriquecer</p>
+                  <div className="grid grid-cols-3 gap-2 p-4 border-b border-border">
+                    <div className="py-2 px-2.5 rounded-lg bg-white/[0.02] border border-border text-center">
+                      <p className="text-[15px] font-bold font-mono tabular-nums text-text-primary leading-none">{toConfirm.length}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-text-muted mt-1">Para enriquecer</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
-                      <p className="text-lg font-bold font-mono tabular-nums text-success">{withCnpj}</p>
-                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Com CNPJ válido</p>
+                    <div className="py-2 px-2.5 rounded-lg bg-success/5 border border-success/20 text-center">
+                      <p className="text-[15px] font-bold font-mono tabular-nums text-success leading-none">{withCnpj}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-text-muted mt-1">Com CNPJ válido</p>
                     </div>
                     <div className={cn(
-                      'p-3 rounded-xl border text-center',
+                      'py-2 px-2.5 rounded-lg border text-center',
                       withoutCnpj > 0 ? 'bg-amber-400/5 border-amber-400/20' : 'bg-white/[0.02] border-border',
                     )}>
-                      <p className={cn('text-lg font-bold font-mono tabular-nums', withoutCnpj > 0 ? 'text-amber-400' : 'text-text-muted')}>{withoutCnpj}</p>
-                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Sem CNPJ</p>
+                      <p className={cn('text-[15px] font-bold font-mono tabular-nums leading-none', withoutCnpj > 0 ? 'text-amber-400' : 'text-text-muted')}>{withoutCnpj}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-text-muted mt-1">Sem CNPJ</p>
                     </div>
                   </div>
 
                   {/* CNPJ + Name list */}
-                  <div className="p-5 border-b border-border">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FileSearch className="h-3.5 w-3.5 text-text-muted" />
-                      <span className="text-label uppercase tracking-wider text-text-muted font-medium">CNPJ e Nome da Empresa</span>
+                  <div className="px-4 pt-3 pb-4 border-b border-border">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <FileSearch className="h-3 w-3 text-text-muted" />
+                      <span className="text-[9px] uppercase tracking-wider text-text-muted font-medium">CNPJ e Nome da Empresa</span>
                     </div>
-                    <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-1">
+                    <div className="max-h-[280px] overflow-y-auto space-y-1 pr-1">
                       {toConfirm.map((c, idx) => {
                         const cnpjDigits = (c.cnpj || '').replace(/\D/g, '')
                         const cnpjValid = cnpjDigits.length === 14
@@ -1740,19 +1895,19 @@ export function SearchPage() {
                           ? cnpjDigits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
                           : c.cnpj || '—'
                         return (
-                          <div key={idx} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-border/60">
-                            <span className="text-caption font-mono tabular-nums text-text-muted w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                          <div key={idx} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-border/60">
+                            <span className="text-[10px] font-mono tabular-nums text-text-muted w-5 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-medium text-text-primary truncate">{c.companyName}</p>
+                              <p className="text-[12px] font-medium text-text-primary truncate leading-tight">{c.companyName}</p>
                               <p className={cn(
-                                'text-micro mt-0.5',
+                                'text-[10px] mt-0.5 leading-tight',
                                 cnpjValid ? 'text-text-muted font-mono tabular-nums truncate' : 'text-amber-400',
                               )}>
                                 {cnpjValid ? cnpjFmt : 'Sem CNPJ · busca por razão social'}
                               </p>
                             </div>
                             <span className={cn(
-                              'text-micro font-semibold px-1.5 py-1 rounded leading-none shrink-0',
+                              'text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none shrink-0',
                               cnpjValid ? 'bg-success/10 text-success' : 'bg-amber-400/10 text-amber-400',
                             )}>
                               {cnpjValid ? 'OK' : 'Sem CNPJ'}
@@ -1764,16 +1919,16 @@ export function SearchPage() {
                   </div>
 
                   {/* Footer actions */}
-                  <div className="flex items-center justify-between gap-3 p-5">
-                    <p className="text-label text-text-muted">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <p className="text-[10px] text-text-muted leading-snug flex-1 min-w-0">
                       {withoutCnpj > 0
                         ? `${withoutCnpj} lead${withoutCnpj !== 1 ? 's' : ''} sem CNPJ serão processados pela razão social.`
                         : `Todos os ${withCnpj} leads têm CNPJ válido.`}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="md" onClick={() => setFileConfirmOpen(false)}>Cancelar</Button>
-                      <Button size="md" icon={<Sparkles className="h-4 w-4" />} onClick={handleFileImportAndEnrich}>
-                        Confirmar e iniciar enriquecimento
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => setFileConfirmOpen(false)}>Cancelar</Button>
+                      <Button size="sm" icon={<Sparkles className="h-3.5 w-3.5" />} onClick={handleFileImportAndEnrich}>
+                        Confirmar e iniciar
                       </Button>
                     </div>
                   </div>
