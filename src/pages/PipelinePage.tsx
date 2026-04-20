@@ -51,13 +51,13 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       onClick={() => navigate(`/leads/${lead.id}`)}
       className="p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
     >
-      <div className="flex items-center justify-between mb-1.5">
-        <span className={`text-base font-bold font-mono px-2 py-0.5 rounded-md ${scoreColorClass}`}>{score.toFixed(1)}</span>
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <span className={`text-[11px] font-bold font-mono tabular-nums tracking-tight leading-none px-1.5 py-1 rounded ${scoreColorClass}`}>{score.toFixed(1)}</span>
         <div className="flex items-center gap-1.5">
           {trapAbbrev && (
-            <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
+            <span className={`text-[11px] font-bold tracking-tight leading-none px-1.5 py-1 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
           )}
-          <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+          <span className={`text-[11px] font-semibold tracking-tight leading-none px-1.5 py-1 rounded ${
             lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
           }`}>
             {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
