@@ -5,8 +5,8 @@ import { Skeleton } from '../components/ui/Skeleton'
 import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
-import { TIERS } from '../lib/constants'
-import { formatCurrency } from '../lib/utils'
+import { formatCurrency, formatCurrencyShort } from '../lib/utils'
+import { calculatePipelineLTP, type StationKey } from '../lib/ltpCalculator'
 import type { Lead } from '../types'
 import { ImportModal } from '../components/ImportModal'
 import { useState, useCallback } from 'react'
@@ -341,34 +341,21 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
   )
 }
 
-function AssemblyLine({ leads }: { leads: Lead[] }) {
-  const stations = [
-    {
-      name: 'Pesquisa',
-      icon: Search,
-      count: leads.filter((l) => l.status === 'Novo').length,
-    },
-    {
-      name: 'Enriquecimento',
-      icon: Database,
-      count: leads.filter((l) => l.enrichmentStatus !== 'complete' && l.status !== 'Novo').length,
-    },
-    {
-      name: 'Qualificação',
-      icon: Filter,
-      count: leads.filter((l) => l.status === 'Qualificado').length,
-    },
-    {
-      name: 'Inteligência',
-      icon: Brain,
-      count: leads.filter((l) => l.status === 'Contactado' || l.status === 'Respondeu' || l.status === 'Reunião').length,
-    },
-    {
-      name: 'Prospecção',
-      icon: Send,
-      count: leads.filter((l) => l.status === 'Proposta').length,
-    },
+function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipelineLTP> }) {
+  const stationDefs: Array<{ name: string; icon: typeof Search; key: StationKey }> = [
+    { name: 'Pesquisa', icon: Search, key: 'pesquisa' },
+    { name: 'Enriquecimento', icon: Database, key: 'enriquecimento' },
+    { name: 'Qualificação', icon: Filter, key: 'qualificacao' },
+    { name: 'Inteligência', icon: Brain, key: 'inteligencia' },
+    { name: 'Prospecção', icon: Send, key: 'prospeccao' },
   ]
+
+  const stations = stationDefs.map((def) => ({
+    name: def.name,
+    icon: def.icon,
+    count: pipeline.stations[def.key].count,
+    ltp: pipeline.stations[def.key].ltp,
+  }))
 
   const maxCount = Math.max(0, ...stations.map((s) => s.count))
 
@@ -409,6 +396,11 @@ function AssemblyLine({ leads }: { leads: Lead[] }) {
                   <span className={`text-caption text-center mt-1 leading-tight ${isBottleneck ? 'text-red/80' : 'text-text-muted'}`}>
                     {station.name}
                   </span>
+                  {station.ltp > 0 && (
+                    <span className={`text-[10px] font-mono mt-1 tracking-tight ${isBottleneck ? 'text-red/90' : 'text-text-muted'}`}>
+                      {formatCurrencyShort(station.ltp)}
+                    </span>
+                  )}
                   {isBottleneck && (
                     <span className="text-[8px] font-semibold text-red mt-1 uppercase tracking-wide">gargalo</span>
                   )}
@@ -425,43 +417,29 @@ function AssemblyLine({ leads }: { leads: Lead[] }) {
   )
 }
 
-function LTPPipeline({ leads }: { leads: Lead[] }) {
-  const activeLeads = leads.filter((l) => l.status !== 'Fechado' && l.status !== 'Perdido')
+function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipelineLTP> }) {
+  const { total, totalLeads, realRevenueCount, estimatedRevenueCount, hot, hotLeads, avgPerLead } = pipeline
 
-  let totalLTP = 0
-  let hotLTP = 0
-  let countWithRevenue = 0
-
-  for (const lead of activeLeads) {
-    if (!lead.monthlyRevenue) continue
-    const revenue = lead.monthlyRevenue
-    const tier = TIERS.find((t) => revenue >= t.min && revenue < t.max) || TIERS[TIERS.length - 1]
-    const [ltpMin, ltpMax] = tier.ltp.split('-').map((v) => parseFloat(v) / 100)
-    const ltpMid = (ltpMin + ltpMax) / 2
-    const ltp = revenue * ltpMid * 12
-    totalLTP += ltp
-    countWithRevenue++
-    if (lead.temperature === 'Quente') hotLTP += ltp
-  }
-
-  const avgLTP = countWithRevenue > 0 ? totalLTP / countWithRevenue : 0
+  const realLabel = realRevenueCount > 0 ? `${realRevenueCount} real` : null
+  const estLabel = estimatedRevenueCount > 0 ? `${estimatedRevenueCount} estimado` : null
+  const totalSub = [realLabel, estLabel].filter(Boolean).join(' · ') || `${totalLeads} leads no pipeline`
 
   const stats = [
     {
       label: 'LTP Total Pipeline',
-      value: formatCurrency(totalLTP),
-      sub: `${countWithRevenue} leads com faturamento`,
+      value: formatCurrency(total),
+      sub: totalSub,
     },
     {
       label: 'LTP Leads Quentes',
-      value: formatCurrency(hotLTP),
-      sub: 'Receita projetada prioridade',
+      value: formatCurrency(hot),
+      sub: hotLeads > 0 ? `${hotLeads} lead${hotLeads > 1 ? 's' : ''} prioridade` : 'Nenhum lead quente',
       highlight: true,
     },
     {
       label: 'LTP Médio por Lead',
-      value: formatCurrency(avgLTP),
-      sub: 'Valor médio de contrato projetado',
+      value: formatCurrency(avgPerLead),
+      sub: totalLeads > 0 ? `Base: ${totalLeads} leads ativos` : 'Sem leads ativos',
     },
   ]
 
@@ -540,6 +518,7 @@ export function DashboardPage() {
   }
 
   const allLeads = leads || []
+  const pipeline = calculatePipelineLTP(allLeads)
 
   if (allLeads.length === 0) {
     return (
@@ -689,11 +668,11 @@ export function DashboardPage() {
       </AnimateIn>
 
       <AnimateIn delay={150}>
-        <AssemblyLine leads={allLeads} />
+        <AssemblyLine pipeline={pipeline} />
       </AnimateIn>
 
       <AnimateIn delay={200}>
-        <LTPPipeline leads={allLeads} />
+        <LTPPipeline pipeline={pipeline} />
       </AnimateIn>
 
       <ImportModal open={showImport} onClose={() => setShowImport(false)} onEnrichRequest={handleEnrichRequest} />
