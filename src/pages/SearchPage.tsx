@@ -993,162 +993,6 @@ export function SearchPage() {
             )}
           </div>
 
-          {/* ===== COLLAPSIBLE SECTIONS ===== */}
-          <div className="space-y-3 mt-6">
-            {/* Section: Location */}
-            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
-              <button type="button" onClick={() => toggleSection('location')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
-                <MapPin className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Localização</p>
-                {sectionFilledCounts.location > 0 && (
-                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.location}</span>
-                )}
-                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('location') && 'rotate-180')} />
-              </button>
-              {!expandedSections.has('location') && (
-                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                  {sectionFilledCounts.location > 0
-                    ? [specificCity, specificState, specificAddress].filter(Boolean).join(' · ')
-                    : 'Opcional — a IA busca esses dados automaticamente'}
-                </p>
-              )}
-              <div className={cn('grid md:grid-cols-3 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('location') ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-                <div>
-                  <label htmlFor="specific-city" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cidade</label>
-                  <input id="specific-city" type="text" value={specificCity} onChange={(e) => setSpecificCity(e.target.value)} placeholder="Ex: São Paulo" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="specific-state" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Estado</label>
-                  <select id="specific-state" value={specificState} onChange={(e) => setSpecificState(e.target.value)} className={selectClass}>
-                    <option value="">Selecione</option>
-                    {ALL_STATES.map((s) => <option key={s.uf} value={s.uf}>{s.uf} - {s.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="specific-address" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Endereço</label>
-                  <input id="specific-address" type="text" value={specificAddress} onChange={(e) => setSpecificAddress(e.target.value)} placeholder="Ex: Av. Paulista, 1000" className={inputClass} />
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Digital Presence */}
-            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
-              <button type="button" onClick={() => toggleSection('digital')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
-                <Globe className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Presença digital</p>
-                {sectionFilledCounts.digital > 0 && (
-                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.digital}</span>
-                )}
-                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('digital') && 'rotate-180')} />
-              </button>
-              {!expandedSections.has('digital') && (
-                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                  {sectionFilledCounts.digital > 0
-                    ? [specificWebsite, specificInstagram, specificLinkedin, specificFacebook].filter(Boolean).join(' · ')
-                    : 'Opcional — a IA busca esses dados automaticamente'}
-                </p>
-              )}
-              <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('digital') ? 'max-h-[800px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="specific-website" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
-                      <Globe className="h-3 w-3" /> Website
-                    </label>
-                    <input id="specific-website" type="url" value={specificWebsite} onChange={(e) => setSpecificWebsite(e.target.value)} placeholder="https://empresa.com.br" className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="specific-instagram" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Instagram</label>
-                    <input id="specific-instagram" type="text" value={specificInstagram} onChange={(e) => setSpecificInstagram(e.target.value)} placeholder="@empresa" className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="specific-linkedin" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">LinkedIn</label>
-                    <input id="specific-linkedin" type="url" value={specificLinkedin} onChange={(e) => setSpecificLinkedin(e.target.value)} placeholder="https://linkedin.com/company/empresa" className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="specific-facebook" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Facebook</label>
-                    <input id="specific-facebook" type="url" value={specificFacebook} onChange={(e) => setSpecificFacebook(e.target.value)} placeholder="https://facebook.com/empresa" className={inputClass} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Business Metrics */}
-            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
-              <button type="button" onClick={() => toggleSection('metrics')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
-                <CircleDot className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Métricas do negócio</p>
-                {sectionFilledCounts.metrics > 0 && (
-                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.metrics}</span>
-                )}
-                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('metrics') && 'rotate-180')} />
-              </button>
-              {!expandedSections.has('metrics') && (
-                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                  {specificRevenue
-                    ? `R$ ${(parseInt(specificRevenue) / 1000).toFixed(0)}k/mes`
-                    : 'Opcional — a IA busca esses dados automaticamente'}
-                </p>
-              )}
-              <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('metrics') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-                <div>
-                  <label htmlFor="specific-revenue" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Faturamento mensal estimado</label>
-                  <select id="specific-revenue" value={specificRevenue} onChange={(e) => setSpecificRevenue(e.target.value)} className={selectClass}>
-                    <option value="">Não informado</option>
-                    <option value="50000">R$ 50k</option>
-                    <option value="70000">R$ 70k</option>
-                    <option value="100000">R$ 100k</option>
-                    <option value="200000">R$ 200k</option>
-                    <option value="500000">R$ 500k</option>
-                    <option value="830000">R$ 830k</option>
-                    <option value="1000000">R$ 1M</option>
-                    <option value="2000000">R$ 2M+</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Decision Maker Contact */}
-            <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
-              <button type="button" onClick={() => toggleSection('contact')} className="flex items-center gap-2 w-full p-4 cursor-pointer">
-                <Phone className="h-3.5 w-3.5 text-red" />
-                <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Contato do decisor</p>
-                {sectionFilledCounts.contact > 0 && (
-                  <span className="text-caption bg-red/10 text-red border border-red/20 rounded-full px-2 py-0.5 font-medium">{sectionFilledCounts.contact}</span>
-                )}
-                <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('contact') && 'rotate-180')} />
-              </button>
-              {!expandedSections.has('contact') && (
-                <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                  {sectionFilledCounts.contact > 0
-                    ? [specificContact, specificContactRole, specificPhone].filter(Boolean).join(' · ')
-                    : 'Opcional — a IA busca esses dados automaticamente'}
-                </p>
-              )}
-              <div className={cn('grid md:grid-cols-2 gap-4 px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('contact') ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
-                <div>
-                  <label htmlFor="specific-contact" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome do decisor</label>
-                  <input id="specific-contact" type="text" value={specificContact} onChange={(e) => setSpecificContact(e.target.value)} placeholder="Ex: Dr. Joao Silva" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="specific-contact-role" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
-                  <input id="specific-contact-role" type="text" value={specificContactRole} onChange={(e) => setSpecificContactRole(e.target.value)} placeholder="Ex: CEO, Proprietário, Sócio" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="specific-phone" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
-                    <Phone className="h-3 w-3" /> WhatsApp do decisor
-                  </label>
-                  <input id="specific-phone" type="tel" value={specificPhone} onChange={(e) => setSpecificPhone(formatPhone(e.target.value))} placeholder="(11) 99999-8888" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="specific-email" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
-                    <Mail className="h-3 w-3" /> E-mail
-                  </label>
-                  <input id="specific-email" type="email" value={specificEmail} onChange={(e) => setSpecificEmail(e.target.value)} placeholder="joao@empresa.com" className={inputClass} />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* ===== CTA SECTION ===== */}
           <div className="mt-6">
             {dupWarning && (
@@ -1161,7 +1005,7 @@ export function SearchPage() {
               </div>
             )}
             <div className="flex items-center gap-3">
-              <Button size="lg" icon={<Sparkles className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || (specificCnpj.length > 0 && specificCnpj.replace(/\D/g, '').length !== 14) || isCreatingSpecific || enrichment.isEnriching}>
+              <Button size="lg" icon={<Sparkles className="h-4 w-4" />} onClick={handleSpecificSearch} loading={isCreatingSpecific} disabled={!specificName || specificCnpj.replace(/\D/g, '').length !== 14 || isCreatingSpecific || enrichment.isEnriching}>
                 Salvar e enriquecer com IA
               </Button>
               {enrichment.isEnriching && <span className="text-label text-amber-400 animate-pulse">Enriquecendo...</span>}
@@ -1171,13 +1015,10 @@ export function SearchPage() {
               {specificCnpj && specificCnpj.replace(/\D/g, '').length < 14 && (
                 <p className="text-label text-text-muted">CNPJ incompleto ({specificCnpj.replace(/\D/g, '').length}/14 dígitos)</p>
               )}
-              {specificCnpj && specificCnpj.replace(/\D/g, '').length === 14 && (
+              {specificCnpj.replace(/\D/g, '').length === 14 && (
                 <p className="text-label text-success flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" /> CNPJ válido — pronto para pesquisa
+                  <CheckCircle className="h-3 w-3" /> CNPJ válido — pronto para enriquecer
                 </p>
-              )}
-              {!specificCnpj && specificName && (
-                <p className="text-label text-text-muted">Sem CNPJ — a IA busca os dados pelo nome da empresa</p>
               )}
             </div>
           </div>
