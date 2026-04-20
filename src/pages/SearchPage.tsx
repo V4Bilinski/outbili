@@ -1,7 +1,8 @@
 import { Card, CardTitle } from '../components/ui/Card'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
-import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Search, X, ChevronDown, CheckCircle, Loader2, AlertCircle, History, UserPlus, Sparkles, MapPin, Hash, CircleDot, Shield, ArrowRight, Upload, FileUp, Trash2, ShieldCheck, FileSearch } from 'lucide-react'
 import { PescaPanel } from '../components/search/PescaPanel'
 import { Button } from '../components/ui/Button'
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -265,8 +266,8 @@ export function SearchPage() {
   const [fileDragging, setFileDragging] = useState(false)
   const [fileImporting, setFileImporting] = useState(false)
   const [fileImportProgress, setFileImportProgress] = useState(0)
+  const [fileConfirmOpen, setFileConfirmOpen] = useState(false)
   const fileInputRef2 = useRef<HTMLInputElement>(null)
-  const MAX_FILE_LEADS = 15
 
   const enrichmentProgressRef = useRef<HTMLDivElement>(null)
 
@@ -331,10 +332,6 @@ export function SearchPage() {
         setFileReadingStep('idle')
         return
       }
-      if (result.companies.length > MAX_FILE_LEADS) {
-        result.companies = result.companies.slice(0, MAX_FILE_LEADS)
-        toast.info(`Limitado a ${MAX_FILE_LEADS} leads por vez. ${result.totalRows - MAX_FILE_LEADS} foram ignorados.`)
-      }
       setFileParseResult(result)
       setFileSelected(new Set(result.companies.map((_, i) => i)))
       setTimeout(() => setFileReadingStep('preview'), 1500)
@@ -357,10 +354,12 @@ export function SearchPage() {
     setFileReadingStep('idle')
     setFileImporting(false)
     setFileImportProgress(0)
+    setFileConfirmOpen(false)
   }
 
   const handleFileImportAndEnrich = async () => {
     if (!fileParseResult || fileSelected.size === 0) return
+    setFileConfirmOpen(false)
     setFileImporting(true)
     setFileImportProgress(0)
     const companies = fileParseResult.companies.filter((_, i) => fileSelected.has(i))
@@ -846,7 +845,7 @@ export function SearchPage() {
                   {fileDragging ? 'Solte o arquivo aqui' : 'Enviar documento'}
                 </p>
                 <p className="text-label text-text-muted mt-0.5">
-                  CSV, Excel, PDF, TXT, MD — até {MAX_FILE_LEADS} leads por vez
+                  CSV, Excel, Word, PDF, TXT, MD — sem limite de leads por envio
                 </p>
                 <input
                   ref={fileInputRef2}
@@ -968,10 +967,10 @@ export function SearchPage() {
                       size="lg"
                       className="w-full"
                       icon={<Sparkles className="h-4 w-4" />}
-                      onClick={handleFileImportAndEnrich}
+                      onClick={() => setFileConfirmOpen(true)}
                       disabled={fileSelected.size === 0}
                     >
-                      Salvar {fileSelected.size} lead{fileSelected.size !== 1 ? 's' : ''} e enriquecer com IA
+                      Revisar {fileSelected.size} lead{fileSelected.size !== 1 ? 's' : ''} e enriquecer com IA
                     </Button>
                   )}
                 </div>
@@ -1670,6 +1669,120 @@ export function SearchPage() {
           <p className="text-sm text-text-muted">Nenhum lead qualificado encontrado. Tente ajustar segmento, cidade ou faixa de faturamento.</p>
           <Button variant="ghost" onClick={() => { n8n.reset(); massEnrichment.reset() }} className="mt-4">Tentar novamente</Button>
         </Card>
+      )}
+
+      {/* ===== FILE IMPORT CONFIRMATION MODAL ===== */}
+      {fileConfirmOpen && fileParseResult && createPortal(
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fade-in_0.18s_ease-out]"
+          onClick={() => setFileConfirmOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-[#0e0e10] border border-border shadow-2xl overflow-hidden animate-[slide-up_0.22s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3 p-5 border-b border-border">
+              <div className="p-2 rounded-xl bg-red/10 shrink-0">
+                <ShieldCheck className="h-5 w-5 text-red" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-text-primary">Confirmar dados antes de enriquecer</h2>
+                <p className="text-label text-text-muted mt-0.5">
+                  Revise CNPJ e nome de cada empresa. Ao confirmar, o enriquecimento será disparado em CNPJá + Assertiva.
+                </p>
+              </div>
+              <button
+                onClick={() => setFileConfirmOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/[0.04] text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                title="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Stats */}
+            {(() => {
+              const toConfirm = fileParseResult.companies.filter((_, i) => fileSelected.has(i))
+              const withCnpj = toConfirm.filter(c => (c.cnpj || '').replace(/\D/g, '').length === 14).length
+              const withoutCnpj = toConfirm.length - withCnpj
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-3 p-5 border-b border-border">
+                    <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+                      <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{toConfirm.length}</p>
+                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Para enriquecer</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-success/5 border border-success/20 text-center">
+                      <p className="text-lg font-bold font-mono tabular-nums text-success">{withCnpj}</p>
+                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Com CNPJ válido</p>
+                    </div>
+                    <div className={cn(
+                      'p-3 rounded-xl border text-center',
+                      withoutCnpj > 0 ? 'bg-amber-400/5 border-amber-400/20' : 'bg-white/[0.02] border-border',
+                    )}>
+                      <p className={cn('text-lg font-bold font-mono tabular-nums', withoutCnpj > 0 ? 'text-amber-400' : 'text-text-muted')}>{withoutCnpj}</p>
+                      <p className="text-caption uppercase tracking-wider text-text-muted mt-0.5">Sem CNPJ</p>
+                    </div>
+                  </div>
+
+                  {/* CNPJ + Name list */}
+                  <div className="p-5 border-b border-border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileSearch className="h-3.5 w-3.5 text-text-muted" />
+                      <span className="text-label uppercase tracking-wider text-text-muted font-medium">CNPJ e Nome da Empresa</span>
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-1">
+                      {toConfirm.map((c, idx) => {
+                        const cnpjDigits = (c.cnpj || '').replace(/\D/g, '')
+                        const cnpjValid = cnpjDigits.length === 14
+                        const cnpjFmt = cnpjValid
+                          ? cnpjDigits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+                          : c.cnpj || '—'
+                        return (
+                          <div key={idx} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-border/60">
+                            <span className="text-caption font-mono tabular-nums text-text-muted w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-medium text-text-primary truncate">{c.companyName}</p>
+                              <p className={cn(
+                                'text-micro font-mono tabular-nums mt-0.5 truncate',
+                                cnpjValid ? 'text-text-muted' : 'text-amber-400',
+                              )}>
+                                {cnpjValid ? cnpjFmt : `CNPJ ausente — enriquecimento usará razão social apenas`}
+                              </p>
+                            </div>
+                            <span className={cn(
+                              'text-micro font-semibold px-1.5 py-1 rounded leading-none shrink-0',
+                              cnpjValid ? 'bg-success/10 text-success' : 'bg-amber-400/10 text-amber-400',
+                            )}>
+                              {cnpjValid ? 'OK' : 'Sem CNPJ'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Footer actions */}
+                  <div className="flex items-center justify-between gap-3 p-5">
+                    <p className="text-label text-text-muted">
+                      {withoutCnpj > 0
+                        ? `${withoutCnpj} lead${withoutCnpj !== 1 ? 's' : ''} sem CNPJ serão processados pela razão social.`
+                        : `Todos os ${withCnpj} leads têm CNPJ válido.`}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="md" onClick={() => setFileConfirmOpen(false)}>Cancelar</Button>
+                      <Button size="md" icon={<Sparkles className="h-4 w-4" />} onClick={handleFileImportAndEnrich}>
+                        Confirmar e iniciar enriquecimento
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
