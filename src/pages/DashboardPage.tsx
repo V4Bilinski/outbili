@@ -280,6 +280,7 @@ const TRAP_META: Record<string, { short: string }> = {
 }
 
 function TrapDiagnostic({ leads }: { leads: Lead[] }) {
+  const navigate = useNavigate()
   const counts: Record<string, number> = {}
   for (const lead of leads) {
     if (!lead.hypotheticalTrap) continue
@@ -299,7 +300,9 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
           <span className="text-label font-semibold tracking-[0.1em] uppercase text-red">DIAGNÓSTICO DE TRAVAS</span>
         </div>
         <CardTitle>Diagnóstico de Travas</CardTitle>
-        <p className="text-xs text-text-muted mt-1">Distribuição dos prospects por trava detectada</p>
+        <p className="text-xs text-text-muted mt-1 max-w-2xl">
+          Distribuição dos leads por trava principal. Clique em uma trava para ver os leads que precisam destravá-la.
+        </p>
       </div>
       <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
         {Array.from({ length: 8 }, (_, i) => {
@@ -307,22 +310,33 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
           const count = counts[key] || 0
           const isBottleneck = maxCount > 0 && count === maxCount
           const meta = TRAP_META[key]
+          const disabled = count === 0
           return (
-            <div
+            <button
               key={key}
-              className={`relative overflow-hidden flex flex-col items-center justify-center rounded-xl border transition-all duration-200 ${
-                isBottleneck
-                  ? 'border-red/60 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.3)] hover:shadow-[0_0_28px_rgba(204,0,0,0.4)] hover:-translate-y-0.5'
-                  : count > 0
-                  ? 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
-                  : 'border-border/40 bg-transparent opacity-40'
+              type="button"
+              disabled={disabled}
+              onClick={() => navigate(`/leads?trava=T${key}`)}
+              aria-label={disabled ? `T${key} ${meta?.short}: nenhum lead` : `Ver ${count} leads com trava T${key} ${meta?.short}`}
+              title={disabled ? `T${key} — ${meta?.short}: nenhum lead nessa trava.` : `Ver ${count} lead${count > 1 ? 's' : ''} com trava de ${meta?.short}.`}
+              className={`group relative overflow-hidden flex flex-col items-center justify-center rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red/60 ${
+                disabled
+                  ? 'border-border/40 bg-transparent opacity-40 cursor-not-allowed'
+                  : isBottleneck
+                  ? 'border-red/60 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.3)] cursor-pointer hover:shadow-[0_0_28px_rgba(204,0,0,0.4)] hover:-translate-y-0.5'
+                  : 'border-border bg-white/[0.02] cursor-pointer hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
               }`}
             >
               <div className={`w-full h-0.5 ${isBottleneck ? 'bg-red' : count > 0 ? 'bg-red/30' : 'bg-border/20'}`} />
-              <div className="flex flex-col items-center justify-center p-3">
-                <span className={`text-caption font-bold font-mono uppercase tracking-wider ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
-                  T{key}
-                </span>
+              <div className="flex flex-col items-center justify-center p-3 w-full">
+                <div className="flex items-center gap-1">
+                  <span className={`text-caption font-bold font-mono uppercase tracking-wider ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
+                    T{key}
+                  </span>
+                  {!disabled && (
+                    <ArrowUpRight className={`h-3 w-3 transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${isBottleneck ? 'text-red' : 'text-text-muted'}`} />
+                  )}
+                </div>
                 <span className={`text-2xl font-bold font-mono mt-1 ${isBottleneck ? 'text-red' : count > 0 ? 'text-text-primary' : 'text-text-muted/30'}`}>
                   {count}
                 </span>
@@ -333,7 +347,7 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
                   <span className="text-[8px] font-semibold text-red mt-1 uppercase tracking-wide">gargalo</span>
                 )}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>

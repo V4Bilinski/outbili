@@ -8,18 +8,32 @@ import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Users, Plus, Search, X, ChevronRight } from 'lucide-react'
-import { LEAD_STATUSES, TEMPERATURES, SEGMENTS } from '../lib/constants'
+import { LEAD_STATUSES, TEMPERATURES, SEGMENTS, TIERS } from '../lib/constants'
+
+const TRAP_OPTIONS = [
+  { value: 'T1', label: 'T1 — Aquisição' },
+  { value: 'T2', label: 'T2 — Conversão' },
+  { value: 'T3', label: 'T3 — Ticket Médio' },
+  { value: 'T4', label: 'T4 — Recorrência' },
+  { value: 'T5', label: 'T5 — Margem' },
+  { value: 'T6', label: 'T6 — Posicionamento' },
+  { value: 'T7', label: 'T7 — Escalabilidade' },
+  { value: 'T8', label: 'T8 — Dependência' },
+]
 import { formatCurrencyShort, calculateSpicedScore } from '../lib/utils'
 import type { Lead } from '../types'
 
 // --- Filters ---
 function LeadFilters({
   segment, setSegment, temperature, setTemperature, status, setStatus,
+  trava, setTrava, tier, setTier,
   searchQuery, setSearchQuery, hasActiveFilters, onClearFilters,
 }: {
   segment: string; setSegment: (v: string) => void
   temperature: string; setTemperature: (v: string) => void
   status: string; setStatus: (v: string) => void
+  trava: string; setTrava: (v: string) => void
+  tier: string; setTier: (v: string) => void
   searchQuery: string; setSearchQuery: (v: string) => void
   hasActiveFilters: boolean; onClearFilters: () => void
 }) {
@@ -59,6 +73,14 @@ function LeadFilters({
         <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
           <option value="">Status</option>
           {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+        <select value={trava} onChange={(e) => setTrava(e.target.value)} className={selectClass}>
+          <option value="">Trava</option>
+          {TRAP_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <select value={tier} onChange={(e) => setTier(e.target.value)} className={selectClass}>
+          <option value="">Tier</option>
+          {TIERS.map((t) => <option key={t.name} value={t.name}>{t.name} ({t.range})</option>)}
         </select>
         {hasActiveFilters && (
           <button
@@ -184,15 +206,21 @@ export function LeadsPage() {
   const [segment, setSegment] = useState('')
   const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
   const [status, setStatus] = useState('')
+  const [trava, setTrava] = useState(() => searchParams.get('trava') || '')
+  const [tier, setTier] = useState(() => searchParams.get('tier') || '')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const hasActiveFilters = !!segment || !!temperature || !!status || !!searchQuery
+  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!searchQuery
 
   const clearFilters = () => {
     setSegment('')
     setTemperature('')
     setStatus('')
-    if (searchParams.has('temperatura')) setSearchParams({}, { replace: true })
+    setTrava('')
+    setTier('')
+    if (searchParams.has('temperatura') || searchParams.has('trava') || searchParams.has('tier')) {
+      setSearchParams({}, { replace: true })
+    }
     setSearchQuery('')
   }
 
@@ -200,6 +228,11 @@ export function LeadsPage() {
     if (segment && l.segment !== segment) return false
     if (temperature && l.temperature !== temperature) return false
     if (status && l.status !== status) return false
+    if (trava) {
+      const abbrev = getTrapAbbrev(l.hypotheticalTrap)
+      if (abbrev !== trava) return false
+    }
+    if (tier && l.tier !== tier) return false
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       const matches = l.companyName?.toLowerCase().includes(q)
@@ -252,6 +285,8 @@ export function LeadsPage() {
           segment={segment} setSegment={setSegment}
           temperature={temperature} setTemperature={setTemperature}
           status={status} setStatus={setStatus}
+          trava={trava} setTrava={setTrava}
+          tier={tier} setTier={setTier}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
         />
