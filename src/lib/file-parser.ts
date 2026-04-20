@@ -164,6 +164,41 @@ function detectCity(text: string, state?: string): string | undefined {
   return undefined
 }
 
+// Strip common markdown/list noise and trailing location suffix.
+// Returns { name, city, state } so we can also recover location hints.
+function sanitizeCompanyLine(raw: string): { name: string; city?: string; state?: string } {
+  let s = raw.trim()
+  // Remove list/heading markers at start: "- ", "* ", "• ", "1. ", "1) ", "# ", "## "
+  s = s.replace(/^\s*(?:[-*•·]|#{1,6}|\d+[.)])\s+/, '')
+  // Remove bold/italic/code wrappers (markdown)
+  s = s.replace(/\*\*(.+?)\*\*/g, '$1')
+  s = s.replace(/__(.+?)__/g, '$1')
+  s = s.replace(/\*(.+?)\*/g, '$1')
+  s = s.replace(/_(.+?)_/g, '$1')
+  s = s.replace(/`(.+?)`/g, '$1')
+  // Remove trailing colon noise like "Empresa:" prefix already handled; clean leftover brackets
+  s = s.replace(/^\[(.+)\]$/, '$1')
+  s = s.trim()
+
+  // Detect "— Cidade, UF" / "- Cidade/UF" / "| Cidade - UF" suffix and split
+  let city: string | undefined
+  let state: string | undefined
+  const suffixMatch = s.match(/^(.+?)\s+[—–\-|•·]\s+([A-ZÀ-Ú][\wÀ-ú\s]+?)(?:\s*[,\-\/]\s*([A-Z]{2}))?\s*$/)
+  if (suffixMatch) {
+    const maybeName = suffixMatch[1].trim()
+    const maybeCity = suffixMatch[2].trim()
+    const maybeState = suffixMatch[3]
+    const looksLikeLocation = maybeState && BR_STATES.has(maybeState)
+    if (looksLikeLocation && maybeName.length >= 3) {
+      s = maybeName
+      city = maybeCity
+      state = maybeState
+    }
+  }
+
+  return { name: s, city, state }
+}
+
 function isLikelyCompanyName(text: string): boolean {
   if (text.length < 3 || text.length > 120) return false
   if (/^\d+$/.test(text)) return false
@@ -197,7 +232,7 @@ function analyzeUnstructuredText(text: string): ParsedCompany[] {
 
       // Check lines before CNPJ for company name
       for (let i = Math.max(0, cnpjLineIdx - searchRange); i < cnpjLineIdx; i++) {
-        const cleaned = lines[i].replace(/cnpj\s*:?\s*/i, '').trim()
+        const cleaned = sanitizeCompanyLine(lines[i].replace(/cnpj\s*:?\s*/i, '')).name
         if (isLikelyCompanyName(cleaned)) {
           companyName = cleaned
           break
@@ -216,7 +251,9 @@ function analyzeUnstructuredText(text: string): ParsedCompany[] {
       // Check lines after CNPJ
       if (!companyName) {
         for (let i = cnpjLineIdx + 1; i <= Math.min(lines.length - 1, cnpjLineIdx + searchRange); i++) {
-          const cleaned = lines[i].replace(/raz[aã]o\s*social\s*:?\s*/i, '').replace(/nome\s*fantasia\s*:?\s*/i, '').trim()
+          const cleaned = sanitizeCompanyLine(
+            lines[i].replace(/raz[aã]o\s*social\s*:?\s*/i, '').replace(/nome\s*fantasia\s*:?\s*/i, '')
+          ).name
           if (isLikelyCompanyName(cleaned)) {
             companyName = cleaned
             break
@@ -252,28 +289,32 @@ function analyzeUnstructuredText(text: string): ParsedCompany[] {
 
   // Strategy 2: If no CNPJs, look for company names as anchors
   if (companies.length === 0) {
-    const companyLines: Array<{ name: string; lineIdx: number }> = []
+    const companyLines: Array<{ name: string; lineIdx: number; cityHint?: string; stateHint?: string }> = []
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      // Skip very short lines, numbers-only, and common headers
-      if (line.length < 4) continue
-      if (/^(empresa|nome|cnpj|telefone|email|endereco|cidade|#|\d+\.|---)/i.test(line)) continue
+      const raw = lines[i]
+      // Skip very short lines and common label headers
+      if (raw.length < 4) continue
+      // Skip labeled field lines and dividers (but keep markdown bullets — they are valid company lines)
+      if (/^(empresa|nome|cnpj|telefone|email|endereco|cidade|---)\s*:?/i.test(raw)) continue
 
-      if (isLikelyCompanyName(line)) {
-        companyLines.push({ name: line, lineIdx: i })
+      const { name, city, state } = sanitizeCompanyLine(raw)
+      if (!name || name.length < 3) continue
+
+      if (isLikelyCompanyName(name)) {
+        companyLines.push({ name, lineIdx: i, cityHint: city, stateHint: state })
       }
     }
 
-    for (const { name, lineIdx } of companyLines) {
+    for (const { name, lineIdx, cityHint, stateHint } of companyLines) {
       const context = lines.slice(
         Math.max(0, lineIdx - 2),
         Math.min(lines.length, lineIdx + 5)
       ).join(' ')
 
       const contextPatterns = extractAllPatterns(context)
-      const state = detectState(context)
-      const city = detectCity(context, state)
+      const state = stateHint || detectState(context)
+      const city = cityHint || detectCity(context, state)
 
       companies.push({
         companyName: name,

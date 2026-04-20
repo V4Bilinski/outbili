@@ -1745,10 +1745,10 @@ export function SearchPage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-[13px] font-medium text-text-primary truncate">{c.companyName}</p>
                               <p className={cn(
-                                'text-micro font-mono tabular-nums mt-0.5 truncate',
-                                cnpjValid ? 'text-text-muted' : 'text-amber-400',
+                                'text-micro mt-0.5',
+                                cnpjValid ? 'text-text-muted font-mono tabular-nums truncate' : 'text-amber-400',
                               )}>
-                                {cnpjValid ? cnpjFmt : `CNPJ ausente — enriquecimento usará razão social apenas`}
+                                {cnpjValid ? cnpjFmt : 'Sem CNPJ · busca por razão social'}
                               </p>
                             </div>
                             <span className={cn(
