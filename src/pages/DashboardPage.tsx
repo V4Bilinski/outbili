@@ -422,6 +422,7 @@ function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipel
 }
 
 function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipelineLTP> }) {
+  const navigate = useNavigate()
   const { total, totalLeads, realRevenueCount, estimatedRevenueCount, hot, hotLeads, avgPerLead } = pipeline
 
   const realLabel = realRevenueCount > 0 ? `${realRevenueCount} real` : null
@@ -434,6 +435,8 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
       value: formatCurrency(total),
       sub: totalSub,
       hint: 'Teto de receita se todos os leads fecharem em 12 meses.',
+      href: '/leads',
+      ariaLabel: 'Ver todos os leads do pipeline',
     },
     {
       label: 'LTP Leads Quentes',
@@ -441,12 +444,16 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
       sub: hotLeads > 0 ? `${hotLeads} lead${hotLeads > 1 ? 's' : ''} prioridade` : 'Nenhum lead quente',
       highlight: true,
       hint: 'Grupo prioritário pronto para fechar. Comece seu dia por aqui.',
+      href: '/leads?temperatura=Quente',
+      ariaLabel: `Ver ${hotLeads} leads quentes`,
     },
     {
       label: 'LTP Médio por Lead',
       value: formatCurrency(avgPerLead),
       sub: totalLeads > 0 ? `Base: ${totalLeads} leads ativos` : 'Sem leads ativos',
       hint: 'Valor projetado por oportunidade — use para priorizar onde investir tempo.',
+      href: '/leads',
+      ariaLabel: 'Ver todos os leads ativos',
     },
   ]
 
@@ -476,10 +483,13 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((s) => (
-          <div
+          <button
             key={s.label}
+            type="button"
             title={s.hint}
-            className={`relative overflow-hidden p-4 rounded-xl border cursor-help transition-all duration-200 ${
+            aria-label={s.ariaLabel}
+            onClick={() => navigate(s.href)}
+            className={`group relative overflow-hidden p-4 rounded-xl border cursor-pointer text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red/60 ${
               s.highlight
                 ? 'border-red/40 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.2)] hover:shadow-[0_0_28px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
                 : 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
@@ -488,7 +498,10 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
             {s.highlight && (
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(204,0,0,0.12) 0%, transparent 70%)' }} />
             )}
-            <p className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-2">{s.label}</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium">{s.label}</p>
+              <ArrowUpRight className={`h-3.5 w-3.5 transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${s.highlight ? 'text-red' : 'text-text-muted'}`} />
+            </div>
             <p className={`text-2xl font-bold font-mono tracking-tight ${s.highlight ? 'text-red' : 'text-text-primary'}`}>
               {s.value}
             </p>
@@ -496,7 +509,7 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
             <p className={`text-[11px] leading-snug mt-2 pt-2 border-t ${s.highlight ? 'border-red/20 text-text-muted' : 'border-border/40 text-text-muted'}`}>
               {s.hint}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </Card>
