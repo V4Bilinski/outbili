@@ -1,12 +1,13 @@
 // Configuração compartilhada das fases do pipeline.
 // Mantido em arquivo próprio (sem JSX) para satisfazer react-refresh/only-export-components.
 
-export type StageChangeSource = 'pipeline-kanban' | 'company-page' | 'leads-page'
+export type StageChangeSource = 'pipeline-kanban' | 'company-page' | 'leads-page' | 'cadastro-manual'
 
 export const STAGE_SOURCE_LABEL: Record<StageChangeSource, string> = {
   'pipeline-kanban': 'Pipeline',
   'company-page': 'Ficha do lead',
   'leads-page': 'Lista de leads',
+  'cadastro-manual': 'Cadastro Manual',
 }
 
 export const PIPELINE_COLUMNS = [

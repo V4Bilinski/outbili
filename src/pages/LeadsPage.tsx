@@ -147,6 +147,14 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
+                    {lead.sourceHtmlReport === 'cadastro_manual' && (
+                      <span
+                        title="Cadastrado manualmente com enriquecimento automático (CNPJá + Assertiva)"
+                        className="text-micro font-bold uppercase tracking-wide bg-amber-400/10 border border-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded cursor-help"
+                      >
+                        Manual
+                      </span>
+                    )}
                     {lead.enrichmentStatus === 'complete' && <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
                     {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
                     {(() => {

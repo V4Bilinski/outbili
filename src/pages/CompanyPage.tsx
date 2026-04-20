@@ -54,12 +54,15 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
   }> = []
 
   // Fase 0: Cadastro inicial
+  const isManualEntry = lead.sourceHtmlReport === 'cadastro_manual'
   phases.push({
     id: 'cadastro',
     label: 'Cadastro Inicial',
     status: 'completed',
-    description: `Lead criado via ${lead.enrichmentStatus === 'complete' ? 'pesquisa em massa' : 'cadastro manual'}`,
-    createdBy: 'Sistema',
+    description: isManualEntry
+      ? 'Cadastro manual com enriquecimento automático (CNPJá + Assertiva). Lead criado direto em Contactado.'
+      : `Lead criado via ${lead.enrichmentStatus === 'complete' ? 'pesquisa em massa' : 'importação'}`,
+    createdBy: isManualEntry ? 'Cadastro Manual' : 'Sistema',
     createdAt: lead.createdAt,
   })
 
@@ -413,6 +416,14 @@ export function CompanyPage() {
               </span>
               <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
               <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
+              {lead.sourceHtmlReport === 'cadastro_manual' && (
+                <span
+                  title="Lead adicionado manualmente — enriquecimento automático via CNPJá + Assertiva executado na criação."
+                  className="inline-flex items-center gap-1 text-[10px] leading-tight font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-300 cursor-help"
+                >
+                  Manual
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
             {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}

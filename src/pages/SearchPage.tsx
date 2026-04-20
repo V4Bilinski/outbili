@@ -12,6 +12,8 @@ import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
 import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
 import { createContact } from '../services/contactService'
+import { createActivity } from '../services/activityService'
+import { buildStageChangeDescription } from '../components/pipeline/stageConfig'
 import { calculateSpicedDimensions } from '../services/enrichmentService'
 import { calculateSpicedScore, getTemperatureFromScore } from '../lib/utils'
 import { toast } from 'sonner'
@@ -473,10 +475,10 @@ export function SearchPage() {
 
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
-    if (specificCnpj && specificCnpj.replace(/\D/g, '').length !== 14) { toast.error('CNPJ incompleto — preencha todos os 14 dígitos ou deixe em branco'); return }
+    const cnpjClean = specificCnpj.replace(/\D/g, '')
+    if (cnpjClean.length !== 14) { toast.error('CNPJ obrigatório — preencha os 14 dígitos para ativar o enriquecimento CNPJá + Assertiva'); return }
     setIsCreatingSpecific(true)
     try {
-      const cnpjClean = specificCnpj.replace(/\D/g, '')
 
       // === FASE 1: Se tem CNPJ, enriquecer via CNPJa + Assertiva PRIMEIRO ===
       let cnpjaData: any = null
@@ -602,7 +604,8 @@ export function SearchPage() {
         ...(cnpjaData?.capitalSocial && { capitalSocial: cnpjaData.capitalSocial }),
         employees: cnpjaData?.employees || (revenue && revenue >= 120000 ? 8 : 5),
         yearsInMarket: cnpjaData?.yearsInMarket || (revenue && revenue >= 120000 ? 7 : 5),
-        status: 'Novo',
+        status: 'Contactado',
+        sourceHtmlReport: 'cadastro_manual',
         score: spicedScore,
         temperature: getTemperatureFromScore(spicedScore),
         spicedS: spiced.spicedS,
@@ -661,6 +664,23 @@ export function SearchPage() {
         toast.warning('Salvo com dados básicos — campos extras não suportados pelo Airtable')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
+
+      // 2.1. Registrar transição inicial no Histórico das Fases (Novo → Contactado)
+      if (lead.id) {
+        const enrichmentTag = assertivaData
+          ? 'CNPJá + Assertiva'
+          : cnpjaData
+            ? 'CNPJá'
+            : 'parcial'
+        const notes = `Cadastro manual com enriquecimento automático (${enrichmentTag}). Lead criado diretamente na fase Contactado.`
+        const description = buildStageChangeDescription('Novo', 'Contactado', notes, 'cadastro-manual')
+        createActivity({
+          leadId: lead.id,
+          type: 'status_change',
+          description,
+          createdBy: 'Cadastro Manual',
+        }).catch(() => {})
+      }
 
       // 3. Criar Contact vinculado OBRIGATORIAMENTE (decisor + telefone)
       if (lead.id && decisorName) {
@@ -752,7 +772,22 @@ export function SearchPage() {
             </div>
             <div>
               <CardTitle>Cadastrar lead</CardTitle>
-              <p className="text-xs text-text-muted mt-0.5">Preencha nome e CNPJ. O resto a IA busca em 10 fontes.</p>
+              <p className="text-xs text-text-muted mt-0.5">CNPJ e nome são obrigatórios. O enriquecimento CNPJá + Assertiva roda automaticamente.</p>
+            </div>
+          </div>
+
+          {/* Disclaimer explicativo — cadastro manual com enriquecimento automático */}
+          <div className="mt-4 p-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.04]">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 p-1.5 rounded-lg bg-amber-400/10 border border-amber-400/20">
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-amber-200 uppercase tracking-wide mb-1.5">Cadastro manual com enriquecimento completo</p>
+                <p className="text-[13px] leading-relaxed text-text-secondary">
+                  Ao cadastrar, o lead é <strong className="text-text-primary">enriquecido automaticamente via CNPJá + Assertiva</strong> (dados cadastrais, sócios, telefones, emails, redes sociais, SPICED). Em seguida, cai direto na fase <strong className="text-red">Contactado</strong> do pipeline, com a marcação <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-400/10 border border-amber-400/20 text-amber-200 text-[10px] uppercase font-semibold tracking-wide">Manual</span> na ficha para manter auditoria da origem.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -766,7 +801,8 @@ export function SearchPage() {
             {/* CNPJ field — optional when file is uploaded */}
             <div>
               <label htmlFor="specific-cnpj" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 flex items-center gap-1.5">
-                <Hash className="h-3 w-3" /> CNPJ {fileReadingStep !== 'preview' ? '*' : <span className="text-text-muted font-normal">(opcional com arquivo)</span>}
+                <Hash className="h-3 w-3" /> CNPJ *
+                <span className="ml-1 text-[10px] normal-case font-normal tracking-normal text-text-muted">(obrigatório para enriquecimento)</span>
               </label>
               <input id="specific-cnpj" type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base font-mono')} />
             </div>
