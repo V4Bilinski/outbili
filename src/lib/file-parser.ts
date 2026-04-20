@@ -295,11 +295,18 @@ function analyzeUnstructuredText(text: string): ParsedCompany[] {
       const raw = lines[i]
       // Skip very short lines and common label headers
       if (raw.length < 4) continue
+      // Skip markdown headings (# Title, ## Section) — they are structural, not companies
+      if (/^\s*#{1,6}\s/.test(raw)) continue
       // Skip labeled field lines and dividers (but keep markdown bullets — they are valid company lines)
       if (/^(empresa|nome|cnpj|telefone|email|endereco|cidade|---)\s*:?/i.test(raw)) continue
 
       const { name, city, state } = sanitizeCompanyLine(raw)
       if (!name || name.length < 3) continue
+
+      // Post-sanitize heuristic: reject generic section titles ("Lista de X", "Clientes", etc.)
+      // unless they carry a clear business indicator.
+      const isGenericTitle = /^(lista|clientes?|prospects?|leads?|empresas?|contatos?|fornecedores?)\b/i.test(name)
+      if (isGenericTitle) continue
 
       if (isLikelyCompanyName(name)) {
         companyLines.push({ name, lineIdx: i, cityHint: city, stateHint: state })
