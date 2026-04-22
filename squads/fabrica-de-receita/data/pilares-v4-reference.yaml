@@ -29,9 +29,9 @@ pilares:
         meta_minima: ">= 3 canais diversificados"
     agentes:
       - "@traffic-hunter"
-      - "@fabricante-aquisicao"
+      - "@orchestrator"
       - "@ai-marketing-engineer"
-      - "@sales-outbound-executor"
+      - "@content-engine"
     ferramentas:
       - Google Ads
       - Meta Ads (Facebook/Instagram)
@@ -144,10 +144,10 @@ pilares:
         formula: "Clientes que compraram 2+ vezes / Total de clientes"
         meta_minima: ">= 30% (para produtos com recompra natural)"
     agentes:
-      - "@guardiao-retencao"
-      - "@retention-architect"
-      - "@cs-retention-strategist"
-      - "@revenue-ops-analyst"
+      - "@retention-master"
+      - "@roi-analyst"
+      - "@revenue-team-architect"
+      - "@ai-marketing-engineer"
     ferramentas:
       - RD Station CRM / HubSpot
       - ActiveCampaign (automação de retenção)

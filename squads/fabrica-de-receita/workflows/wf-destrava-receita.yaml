@@ -2,15 +2,63 @@
 # 5 fases: Diagnostico → Ciclo 90d → Execucao → Medicao → Renovacao
 
 workflow:
+  id: wf-destrava-receita
   name: wf-destrava-receita
   display_name: "Pipeline DR Completo (5 fases)"
-  version: "1.0.0"
+  version: "2.0.0"
   description: |
     Workflow completo de um engajamento Destrava Receita, do diagnostico inicial
     ate a medicao de resultados e decisao de renovacao. Cobre todas as 5 fases:
     (1) Diagnostico e Qualificacao, (2) Planejamento do Ciclo 90 dias,
     (3) Execucao das Alavancas, (4) Medicao de Resultados, (5) Renovacao e Proximo Ciclo.
     Aplica a metodologia V4 Company com framework STEP e TOC em toda a jornada.
+    Fabio valida marcos criticos via quality_gate (task v4-integration).
+
+  quality_gate:
+    agent: fabrica-de-receita-master
+    task: v4-integration.md
+    pontos_de_validacao:
+      - apos proposta DR (Fase 1b)
+      - apos plano do ciclo 90d (Fase 2)
+      - apos cada review mensal (Fase 3)
+      - apos relatorio final de resultados (Fase 4)
+
+  sequence:
+    # Schema-compliant summary (detalhes completos em phases: abaixo)
+    - step: diagnostico-qualificacao
+      agent: diagnosticador
+      creates: ficha-spiced-mapa-travas.md
+      action: "qualificar SPICED + diagnosticar trava (TOC)"
+    - step: construcao-proposta
+      agent: dr-chief
+      creates: proposta-dr-completa.md
+      action: "executar task dr-pitch.md"
+    - step: gate-proposta
+      agent: fabrica-de-receita-master
+      validates: proposta-dr-completa.md
+      action: "v4-integration antes de enviar ao cliente"
+    - step: planejamento-ciclo
+      agent: growth-planner
+      creates: plano-ciclo-90-dias.md
+      action: "montar plano com 3 alavancas prioritarias"
+    - step: gate-plano
+      agent: fabrica-de-receita-master
+      validates: plano-ciclo-90-dias.md
+    - step: execucao-ciclo
+      agent: fabrica-de-receita-master
+      action: "orquestrar 12 semanas de execucao via wf-growth-sprint"
+    - step: medicao-resultados
+      agent: roi-analyst
+      creates: scorecard-ciclo.md
+      action: "medir baseline vs resultado + calcular ROI real"
+    - step: gate-final
+      agent: fabrica-de-receita-master
+      validates: scorecard-ciclo.md
+      action: "v4-integration antes de entregar report ao C-level"
+    - step: decisao-renovacao
+      agent: dr-chief
+      action: "handoff para proximo ciclo, upsell ou offboarding"
+    - workflow_end: ciclo-dr-encerrado
 
 phases:
   - id: diagnostico-qualificacao
@@ -48,8 +96,8 @@ phases:
 
   - id: construcao-proposta
     name: "Fase 1b: Construcao da Proposta DR"
-    task: construir-oferta-dr.md
-    agents: [destrava-receita-consultant]
+    task: dr-pitch.md
+    agents: [dr-chief]
     description: |
       Montar a proposta DR personalizada conectando a trava diagnosticada com
       o produto DR recomendado. Calcular ROI esperado com dados reais do cliente.
@@ -213,8 +261,8 @@ phases:
 
   - id: upsell-dr
     name: "Fase 5b: Upsell — Upgrade de Produto DR"
-    task: construir-oferta-dr.md
-    agents: [destrava-receita-consultant, fabrica-de-receita-master]
+    task: dr-pitch.md
+    agents: [dr-chief, fabrica-de-receita-master]
     description: |
       Cliente demonstrou resultado e quer mais. Construir proposta de upgrade
       (ex: DR-X → DR-O, DR-O → DR-T, DR-T → DR-E).
@@ -255,7 +303,7 @@ phases:
   - id: offboarding
     name: "Offboarding — Cliente nao Renova"
     task: null
-    agents: [guardiao-retencao, fabrica-de-receita-master]
+    agents: [retention-master, fabrica-de-receita-master]
     description: |
       Conduzir offboarding respeitoso. Entender motivo real da nao-renovacao.
       Registrar aprendizados. Manter relacionamento para futura reentrada.

@@ -3,7 +3,7 @@
 ---
 name: growth-audit
 description: Auditoria completa dos 4 pilares V4 (Trafego, Engajamento, Conversao, Retencao)
-agent: orchestrator + traffic-hunter + conversion-optimizer + retention-architect + roi-analyst
+agent: growth-strategist + orchestrator + traffic-hunter + conversion-optimizer + retention-master + roi-analyst
 ---
 
 ## Objetivo

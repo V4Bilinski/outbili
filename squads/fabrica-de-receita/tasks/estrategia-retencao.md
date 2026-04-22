@@ -3,7 +3,7 @@
 ---
 name: estrategia-retencao
 description: Estrategia anti-churn e maximizacao de LTV atacando Trava T8 (Evasao)
-agent: retention-architect + guardiao-retencao
+agent: retention-master
 ---
 
 ## Objetivo

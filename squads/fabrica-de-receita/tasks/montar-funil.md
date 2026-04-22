@@ -3,7 +3,7 @@
 ---
 name: montar-funil
 description: Design completo de funil de conversao atacando travas T2-T5 (aquisicao)
-agent: conversion-optimizer + fabricante-aquisicao
+agent: conversion-optimizer + orchestrator
 ---
 
 ## Objetivo

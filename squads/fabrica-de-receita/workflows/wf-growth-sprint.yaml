@@ -2,9 +2,10 @@
 # 5 fases: Audit → Priorizacao → Experimento → Medicao → Iterate
 
 workflow:
+  id: wf-growth-sprint
   name: wf-growth-sprint
   display_name: "Growth Sprint (5 fases, 4 semanas)"
-  version: "1.0.0"
+  version: "2.0.0"
   description: |
     Workflow de sprint de growth para executar ciclos rapidos de experimentos.
     Cada sprint dura 4 semanas e segue o metodo cientifico aplicado a growth:
@@ -13,6 +14,7 @@ workflow:
     abandonar o que nao funcionou, formular nova hipotese.
     Pode ser executado como sub-workflow dentro do wf-destrava-receita ou de forma
     independente para times que querem implantar cultura de growth.
+    Fabio valida hipotese antes da execucao e resultado antes de escalar.
 
   use_cases:
     - Sub-workflow de uma alavanca dentro do ciclo 90 dias
@@ -20,11 +22,58 @@ workflow:
     - Processo de CRO (Conversion Rate Optimization)
     - Validacao de hipotese antes de escalar investimento
 
+  quality_gate:
+    agent: fabrica-de-receita-master
+    task: v4-integration.md
+    pontos_de_validacao:
+      - hipotese priorizada antes de executar (Fase 2 → Fase 3)
+      - resultado medido antes de escalar (Fase 4 → Fase 5)
+
+  sequence:
+    # Schema-compliant summary (detalhes completos em phases: abaixo)
+    - step: growth-audit
+      agent: orchestrator
+      creates: scorecard-pilar-baseline.md
+      action: "auditoria rapida do pilar V4 alvo + baseline metricas"
+    - step: implantar-tracking
+      agent: ai-marketing-engineer
+      creates: dashboard-tracking-config.md
+      condition: "apenas se DADOS_INSUFICIENTES na auditoria"
+    - step: priorizacao-hipoteses
+      agent: conversion-optimizer
+      creates: hipotese-ice-ranqueada.md
+      action: "ICE scoring + selecionar 1 hipotese vencedora"
+    - step: gate-hipotese
+      agent: fabrica-de-receita-master
+      validates: hipotese-ice-ranqueada.md
+      action: "v4-integration antes de iniciar experimento"
+    - step: execucao-experimento
+      agent: conversion-optimizer
+      creates: experimento-em-execucao.md
+      action: "executar experimento por 7-14 dias com monitoring diario"
+    - step: medicao-resultados
+      agent: roi-analyst
+      creates: resultado-experimento-win-loss.md
+      action: "medir baseline vs pos-experimento + significancia estatistica"
+    - step: gate-resultado
+      agent: fabrica-de-receita-master
+      validates: resultado-experimento-win-loss.md
+      action: "v4-integration antes de escalar ou abandonar"
+    - step: iteracao-escalar
+      agent: traffic-hunter
+      action: "se WIN: escalar, documentar no playbook, formular proxima hipotese"
+      condition: "apenas se gate-resultado = WIN"
+    - step: iteracao-nova-hipotese
+      agent: conversion-optimizer
+      action: "se LOSS: documentar aprendizado, formular nova hipotese"
+      condition: "apenas se gate-resultado = LOSS/INCONCLUSIVO"
+    - workflow_end: sprint-encerrado
+
 phases:
   - id: growth-audit
     name: "Fase 1: Audit do Estado Atual (Semana 1)"
     task: growth-audit.md
-    agents: [orchestrator, traffic-hunter, conversion-optimizer, retention-architect, roi-analyst]
+    agents: [orchestrator, growth-strategist, traffic-hunter, conversion-optimizer, retention-master, roi-analyst]
     description: |
       Auditoria rapida do pilar V4 mais relevante para o sprint (nao precisa ser
       auditoria completa — focar no pilar que contem a alavanca do sprint).
@@ -134,7 +183,7 @@ phases:
         exemplos: ["Nova headline LP", "Novo CTA", "Nova proposta de valor", "Remover campo do form"]
         minimo: "7-14 dias (100+ visitantes por variante minimo)"
       retencao:
-        agents: [guardiao-retencao, retention-architect]
+        agents: [retention-master]
         exemplos: ["Novo onboarding", "Nova mensagem de health score", "Programa de expansao"]
         minimo: "30 dias (ciclo de comportamento do cliente)"
     monitoring:

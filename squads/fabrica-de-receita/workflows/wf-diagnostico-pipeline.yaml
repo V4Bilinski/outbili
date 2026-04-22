@@ -2,15 +2,54 @@
 # 4 fases: Cegueira (T1) → Identificar trava → Recomendar acao
 
 workflow:
+  id: wf-diagnostico-pipeline
   name: wf-diagnostico-pipeline
   display_name: "Pipeline de Diagnostico de Travas (4 fases)"
-  version: "1.0.0"
+  version: "2.0.0"
   description: |
-    Workflow de diagnostico que parte da Trava T1 (Cegueira — nao sabe o que medir)
-    e percorre um pipeline estruturado para identificar o gargalo principal da empresa,
-    quantificar o impacto e recomendar a acao (produto DR + ciclo 90 dias).
-    Cada fase tem um gate de decisao que determina o avanco, retorno ou necessidade
-    de informacoes adicionais antes de prosseguir.
+    Workflow de diagnostico que parte da Trava T1 (Cegueira — nao sabe quem e o
+    mercado-alvo) e percorre um pipeline estruturado para identificar o gargalo
+    principal da empresa, quantificar o impacto e recomendar a acao (produto DR +
+    ciclo 90 dias). Cada fase tem um gate de decisao que determina o avanco,
+    retorno ou necessidade de informacoes adicionais antes de prosseguir.
+    Saida final passa por Fabio (quality_gate V4) antes de entregar ao cliente.
+
+  quality_gate:
+    agent: fabrica-de-receita-master
+    task: v4-integration.md
+    criterios: [step, trava_evidencia, pilar, metrica, ciclo_90d]
+
+  sequence:
+    # Schema-compliant summary (detalhes completos em phases: abaixo)
+    - step: triagem-inicial
+      agent: orchestrator
+      creates: ficha-inicial-prospect.md
+      notes: "Coleta contexto e classifica nivel de dados"
+    - step: protocolo-t1
+      agent: diagnosticador
+      creates: baseline-estimado.md
+      condition: "apenas se SEM_DADOS na triagem"
+    - step: mapeamento-fluxo
+      agent: diagnosticador
+      creates: mapa-fluxo-receita.md
+      action: "aplicar 5 Focusing Steps (TOC) + ranking T1-T8"
+    - step: priorizacao-travas
+      agent: estrategista-receita
+      creates: ranking-travas-prioritario.md
+      condition: "apenas se multiplas travas empatadas"
+    - step: quantificacao-impacto
+      agent: roi-analyst
+      creates: impacto-financeiro-trava.md
+      action: "calcular custo inacao + upside + ROI DR"
+    - step: recomendacao-final
+      agent: dr-chief
+      creates: relatorio-diagnostico-step.md
+      action: "consolidar + recomendar produto DR"
+    - step: quality-gate-fabio
+      agent: fabrica-de-receita-master
+      validates: relatorio-diagnostico-step.md
+      action: "aplicar v4-integration task antes de entregar ao cliente"
+    - workflow_end: diagnostico-entregue
 
 phases:
   - id: triagem-inicial
@@ -43,7 +82,7 @@ phases:
   - id: protocolo-t1
     name: "Fase 1b: Protocolo T1 — Trava Cegueira"
     task: null
-    agents: [diagnosticador, data-intelligence-analyst]
+    agents: [diagnosticador, roi-analyst]
     description: |
       Quando o cliente nao tem dados, construir baseline estimado e recomendar
       implantacao de dashboard como primeiro ciclo 90 dias (sem dados, sem diagnostico
@@ -137,7 +176,7 @@ phases:
   - id: recomendacao-final
     name: "Fase 4: Recomendacao e Proximo Passo"
     task: construir-oferta-dr.md
-    agents: [diagnosticador, destrava-receita-consultant]
+    agents: [diagnosticador, dr-chief]
     description: |
       Consolidar o diagnostico completo e recomendar o produto DR mais adequado
       (DR-X, DR-O, DR-T ou DR-E) com justificativa baseada no contexto. Definir

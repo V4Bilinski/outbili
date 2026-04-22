@@ -3,7 +3,7 @@
 ---
 name: construir-oferta-dr
 description: Montar pitch e proposta Destrava Receita personalizada para o prospect
-agent: destrava-receita-consultant
+agent: dr-chief
 ---
 
 ## Objetivo

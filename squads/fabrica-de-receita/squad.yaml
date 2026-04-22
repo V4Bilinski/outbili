@@ -1,15 +1,11 @@
 name: fabrica-de-receita
-version: 1.0.0
+version: 2.0.0
 description: |
-  Fabrica de Receita — Squad de Growth, Performance e Revenue. 20 agentes,
-  metodologia V4 Company completa. 4 Pilares V4 (Trafego, Engajamento,
-  Conversao, Retencao), 8 Travas de Receita, framework STEP, ciclos de 90 dias,
-  TOC aplicada a receita. Produtos Destrava Receita: DR-X (45d, R$20-40k),
-  DR-O (12m, R$50k/ano), DR-T (12m, R$150k/ano), DR-E (12m, R$350k/ano).
-  Do diagnostico (Logica) ao crescimento orquestrado (Fabio), cada agente
-  opera com frameworks validados. Cobre diagnostico de travas, construcao de
-  ofertas DR, qualificacao SPICED, funis, trafego, retencao e arquitetura
-  de time de receita.
+  Squad V4 Company de Growth, Performance e Revenue. 4 Pilares, 8 Travas
+  oficiais (Cegueira/Exposicao/Atencao/Interesse/Qualificacao/Compromisso/
+  Decisao/Retencao), STEP, ciclos 90d, TOC. Produtos DR-X/O/T/E. Governanca:
+  documento-mae FABRICA-DE-RECEITA.md, binding agent-to-task obrigatorio,
+  Fabio como quality gate gerencial. Ver documento-mae para detalhes.
 
 author: Luiz Henrique
 license: MIT
@@ -37,34 +33,39 @@ tags:
   - revenue-ops
 
 components:
+  # IMPORTANTE: documento-mae FABRICA-DE-RECEITA.md e a referencia unica do squad.
+  # Qualquer alteracao nesta secao DEVE atualizar FABRICA-DE-RECEITA.md primeiro.
+  # v2.0.0 (Fase 2): reducao 20→16 agents concluida.
+  #   - Merge: Ancora + Atlas → retention-master.md
+  #   - Absorve: Fluxo → orchestrator.md (Nexus passa a ser triage + integrador aquisicao)
+  #   - Virou task: Dara → tasks/dr-pitch.md (owned por Apex)
+  #   - Virou task: Executor → tasks/dr-pop-create.md (owned por Apex)
   agents:
-    # Mandatario
-    - fabrica-de-receita-master.md
-    # Camada 1 — Diagnostico e Estrategia
-    - diagnosticador.md
-    - especialista-spiced.md
-    - estrategista-receita.md
-    - growth-planner.md
-    # Camada 2 — Aquisicao (Travas T2-T5)
-    - fabricante-aquisicao.md
-    - traffic-hunter.md
-    - conversion-optimizer.md
-    - ai-marketing-engineer.md
-    - content-engine.md
-    # Camada 3 — Comercial (Travas T6-T7)
-    - maquina-comercial.md
-    - destrava-receita-consultant.md
-    - growth-strategist.md
-    # Camada 4 — Retencao e LTV (Trava T8)
-    - guardiao-retencao.md
-    - retention-architect.md
-    # Camada 5 — Operacoes e Dados
-    - roi-analyst.md
-    - revenue-team-architect.md
-    - revenue-ops-analyst.md
-    - data-intelligence-analyst.md
-    # Orquestrador
-    - orchestrator.md
+    # ─── CAMADA 1 — STRATEGIC (3) ───────────────────────
+    - fabrica-de-receita-master.md      # Fabio — master V4 + quality gate
+    - growth-strategist.md              # Vitor — OKRs, GTM
+    - growth-planner.md                 # Gabi — ciclos 90d
+    # ─── CAMADA 2 — TRIAGE & DIAGNOSTICO (3) ────────────
+    - orchestrator.md                   # Nexus — triage + integrador aquisicao
+    - diagnosticador.md                 # Logica — TOC, CRT, 5FS
+    - especialista-spiced.md            # Diagnosta — SPICED
+    # ─── CAMADA 3 — ESTRATEGIA DE RECEITA (1) ───────────
+    - estrategista-receita.md           # Arquiteto — ICP, pricing, forecast
+    # ─── CAMADA 4 — EXECUCAO POR PILAR (6) ──────────────
+    # Aquisicao (Cegueira → Qualificacao)
+    - traffic-hunter.md                 # Hunter — paid + organic
+    - content-engine.md                 # Nova — content + nurture
+    - conversion-optimizer.md           # Zara — CRO + A/B
+    - ai-marketing-engineer.md          # Aria — MarTech + automacoes
+    # Comercial (Compromisso → Decisao)
+    - maquina-comercial.md              # Fechador — playbooks comerciais
+    # Retencao (Retencao)
+    - retention-master.md               # Atlas — health + LTV + churn + NPS (merge)
+    # ─── CAMADA 5 — SUPORTE TRANSVERSAL (2) ─────────────
+    - roi-analyst.md                    # Data — ROI, attribution, BI
+    - revenue-team-architect.md         # Rian — org design, RevOps
+    # ─── LINHA DE NEGOCIO DR (1) ────────────────────────
+    - dr-chief.md                       # Apex — DR-X/O/T/E + pitch + POPs
 
   tasks:
     - diagnostico-travas.md
@@ -77,6 +78,10 @@ components:
     - estrategia-retencao.md
     - roi-analysis.md
     - montar-time-receita.md
+    # v2.0.0 — novas tasks (absorcao de Dara e Executor + gate gerencial):
+    - dr-pitch.md                        # pitch + diagnostico express + proposta (ex-Dara)
+    - dr-pop-create.md                   # POPs + artefatos padronizados (ex-Executor)
+    - v4-integration.md                  # quality gate Fabio (G3 — valida 5 criterios V4)
 
   workflows:
     - wf-diagnostico-pipeline.yaml
@@ -84,17 +89,19 @@ components:
     - wf-growth-sprint.yaml
 
   checklists:
-    - diagnostico-trava-checklist.md
+    # v1.1.0: alinhados com arquivos reais em /checklists/
+    - diagnostico-checklist.md
     - oferta-dr-checklist.md
-    - funil-conversao-checklist.md
-    - ciclo-90-dias-checklist.md
-    - roi-validacao-checklist.md
+    - funil-checklist.md
+    - ciclo-90d-checklist.md
+    - growth-audit-checklist.md
 
   templates:
+    # v1.1.0: alinhados com arquivos reais em /templates/
     - proposta-dr-tmpl.md
-    - ciclo-90-dias-tmpl.md
-    - plano-trafego-tmpl.md
-    - diagnostico-receita-tmpl.md
+    - ciclo-90d-tmpl.md
+    - diagnostico-travas-tmpl.md
+    - growth-report-tmpl.md
 
   data:
     - travas-reference.yaml
@@ -113,20 +120,27 @@ dependencies:
 philosophy:
   core_mantra: "Destravar o gargalo certo no momento certo e a diferenca entre crescer 20% e 10x."
   metodologia: "V4 Company — 4 Pilares, 8 Travas, ciclos de 90 dias, TOC aplicada a receita"
+  documento_mae: "FABRICA-DE-RECEITA.md"
+  governanca:
+    principio_1: "Documento-mae (FABRICA-DE-RECEITA.md) e referencia unica — toda mudanca comeca la"
+    principio_2: "Todo agent vinculado a pelo menos uma task/workflow (sem orfaos)"
+    principio_3: "Fabio (fabrica-de-receita-master) e o quality gate gerencial em todos os workflows"
   pilares_v4:
-    trafego: "Atrair o publico certo com custo otimizado (CAC, ROAS, CPL)"
-    engajamento: "Converter atencao em intencao — conteudo, comunidade, nurture"
-    conversao: "Transformar intencao em receita — funil, oferta, vendas"
-    retencao: "Maximizar LTV — CS, churn, expansao, referral"
+    trafego: "Atrair o publico certo com custo otimizado (CAC, ROAS, CPL) — cobre T1-T2"
+    engajamento: "Converter atencao em intencao — conteudo, comunidade, nurture — cobre T3-T4-T5"
+    conversao: "Transformar intencao em receita — funil, oferta, vendas — cobre T6-T7"
+    retencao: "Maximizar LTV — CS, churn, expansao, referral — cobre T8"
   oito_travas:
-    T1: "Cegueira — nao sabe o que medir (metricas, dashboards, atribuicao)"
-    T2: "Silencio — ninguem conhece a marca (brand, trafego frio, alcance)"
-    T3: "Frieza — trafego chega mas nao engaja (copy, hook, conteudo)"
-    T4: "Desconfianca — engaja mas nao compra (prova, autoridade, oferta)"
-    T5: "Abandono — inicia compra mas desiste (checkout, objecoes, urgencia)"
-    T6: "Incompetencia — vende mas nao fecha bem (script, time, processo)"
-    T7: "Complexidade — fecha mas demora demais (ciclo, burocracia, decisao)"
-    T8: "Evasao — compra mas nao fica (onboarding, CS, expansao, churn)"
+    # Taxonomia oficial V4 Company (fonte: docs/produtos/destrava-receita)
+    # v1.1.0: corrigida taxonomia que divergia do doc oficial (v1.0 usava nomes nao-oficiais)
+    T1: "Cegueira — nao sabe quem e o mercado-alvo nem onde encontra-lo (ICP, target)"
+    T2: "Exposicao — mercado nao ve a solucao ou ve pouco (brand, alcance, presenca digital)"
+    T3: "Atencao — leads recebem tanto conteudo que nao focam (copy, hook, ruido)"
+    T4: "Interesse — leads nao veem valor unico ou sao indiferentes (diferenciacao, storytelling)"
+    T5: "Qualificacao — leads nao passam pelo funil de qualificacao (SPICED, SDR, filtro)"
+    T6: "Compromisso — prospect nao se posiciona como buyer na negociacao (demo, objecao)"
+    T7: "Decisao — buyer nao assina o contrato (closing, timeline, urgencia)"
+    T8: "Retencao — cliente cancela, nao expande, churn alto (CS, onboarding, expansao, LTV)"
   produtos_dr:
     dr_x: "Destrava Receita X — 45 dias, R$20-40k, diagnostico + plano + sprint inicial"
     dr_o: "Destrava Receita O (Operacional) — 12 meses, R$50k/ano, acompanhamento mensal"

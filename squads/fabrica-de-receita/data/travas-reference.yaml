@@ -41,7 +41,7 @@ travas:
       - Ausência de SEO ou presença orgânica
     agente_responsavel: "@traffic-hunter"
     agentes_suporte:
-      - "@fabricante-aquisicao"
+      - "@orchestrator"
       - "@conversion-optimizer"
       - "@ai-marketing-engineer"
     metricas_validacao:
@@ -64,9 +64,9 @@ travas:
       - Conteúdo genérico sem personalização por segmento
     agente_responsavel: "@content-engine"
     agentes_suporte:
-      - "@campaign-optimizer"
-      - "@automation-engineer"
-      - "@retention-architect"
+      - "@traffic-hunter"
+      - "@ai-marketing-engineer"
+      - "@retention-master"
     metricas_validacao:
       - "Taxa de abertura de e-mail >= 25%"
       - "CTR >= 2.5%"
@@ -177,11 +177,11 @@ travas:
       - Ausência de programa de upsell/cross-sell
       - NPS abaixo de 30
       - Clientes que somem sem feedback
-    agente_responsavel: "@guardiao-retencao"
+    agente_responsavel: "@retention-master"
     agentes_suporte:
-      - "@retention-architect"
-      - "@cs-retention-strategist"
-      - "@revenue-ops-analyst"
+      - "@roi-analyst"
+      - "@revenue-team-architect"
+      - "@ai-marketing-engineer"
     metricas_validacao:
       - "Churn mensal <= 2% (SaaS) ou <= 8% (serviços)"
       - "LTV/CAC ratio >= 4x"
