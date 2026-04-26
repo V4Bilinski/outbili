@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "project": "outbili",
-    "workspace": "/Users/luizhenrique/outbili",
+    "workspace": "/Users/luizhenrique/Enterprise/active/outbili",
     "agents": {
         "enabled": true,
         "directory": ".antigravity/agents",

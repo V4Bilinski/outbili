@@ -143,6 +143,7 @@ O AIOX carrega regras contextuais de `.claude/rules/` automaticamente. Regras co
 | `coderabbit-integration.md` | Automated code review integration rules |
 | `ids-principles.md` | Incremental Development System principles |
 | `mcp-usage.md` | MCP server usage rules and tool selection priority |
+| `playwright-artifacts.md` | Playwright screenshots MUST be saved to `playwright/{categoria}/` |
 | `story-lifecycle.md` | Story status transitions and quality gates |
 | `workflow-execution.md` | 4 primary workflows (SDC, QA Loop, Spec Pipeline, Brownfield) |
 

@@ -130,7 +130,7 @@ Cliente (entrega)
 
 ## 4 · Taxonomia Oficial das 8 Travas (V4 Company)
 
-> **Fonte:** `/Users/luizhenrique/v4_creator/docs/produtos/destrava-receita`
+> **Fonte:** `/Users/luizhenrique/Enterprise/workspaces/v4-creator/docs/produtos/destrava-receita`
 > **Correção aplicada:** v1.0.0 do squad usava nomes não-oficiais. v2.0.0 alinha ao doc original.
 
 | # | Trava | O que é | Pilar V4 | Framework |

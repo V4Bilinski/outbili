@@ -1,0 +1,1087 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "language": "pt_BR",
+    "footer_default": "V4 Bilinski&Co",
+    "tone": "direto-provocativo (estilo Dener Lippert)",
+    "waba_id": "1253502413584752",
+    "phone_number_id": "1073091055880047",
+    "total_templates": 50,
+    "pillars": {
+      "1_cold_opening": 10,
+      "2_followup_no_reply": 10,
+      "3_agenda_confirmacao": 10,
+      "4_trava_oferta": 10,
+      "5_reativacao_nutricao": 10
+    },
+    "named_variables_mapping": {
+      "decisor": "decisorName",
+      "empresa": "companyName",
+      "empresa_curta": "tradeName",
+      "segmento": "segment",
+      "cidade": "city",
+      "cargo": "contactRole",
+      "case_empresa": "custom",
+      "dado": "custom",
+      "dor": "custom",
+      "evento": "custom",
+      "indicador": "custom",
+      "horario1": "custom",
+      "horario2": "custom",
+      "horario3": "custom",
+      "link": "custom",
+      "material": "custom"
+    }
+  },
+  "templates": [
+    {
+      "name": "outbili_cold_curto",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato — quando o lead nao tem dados de dor/case mapeado",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, aqui é da V4 Bilinski&Co. Trabalhamos com a {{empresa}} no radar há um tempo. Faz sentido marcarmos 15 minutos pra conversar sobre crescimento de receita?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_pergunta",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com lead de segmento mapeado — provoca reflexao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, pergunta direta: a {{empresa}} está crescendo no ritmo que {{segmento}} permite hoje? \n\nSe a resposta é não, vale 15 minutos pra mostrar o que fizemos com empresas iguais à sua.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Tecnologia" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_caso_setor",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com case de empresa similar disponivel",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, recentemente destravamos a {{case_empresa}}, que opera em {{segmento}}. Resultado: pipeline 3x em 90 dias. \n\nFaz sentido te mostrar o playbook aplicado à {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Tecnologia" },
+              { "param_name": "case_empresa", "example": "BetaTech" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_dado_setor",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com dado/estatistica de mercado",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, dado que veio essa semana: {{dado}}. \n\nIsso muda a forma como a {{empresa}} deveria estar disputando {{segmento}}. Posso te mostrar o que estamos fazendo?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Tecnologia" },
+              { "param_name": "dado", "example": "63% das empresas de SaaS perderam ticket médio em 2026" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_dor_especifica",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com dor mapeada do lead (vulnerabilities)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, mapeei aqui um sinal forte na {{empresa}}: {{dor}}. \n\nDe 0 a 10, quanto isso está custando hoje pra você? Pergunto porque já resolvemos isso com outras empresas.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "dor", "example": "queda de 30% em conversão de site" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_oferta_diag",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com oferta de diagnostico gratuito",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, faço o seguinte: 30 minutos de diagnóstico gratuito da {{empresa}}, te entrego 3 travas que estão segurando receita e o que fazer com cada uma. \n\nSem proposta no final. Topas?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_ceo_direto",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com CEO/Founder",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, CEO pra CEO: receita não cresce sozinha. \n\nA V4 Bilinski&Co destravou +160 empresas no último ano. Vale 20 minutos pra discutir o caso da {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_diretor_comercial",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Primeiro contato com Diretor Comercial / VP Sales",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, time comercial só performa com pipeline saudável. \n\nA V4 Bilinski&Co constrói máquinas de aquisição que entregam volume previsível. Vale 15 minutos pra olhar a operação da {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_evento_recente",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Lead com noticia/evento recente (rodada, contratacao, lancamento)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, vi a notícia: {{evento}}. Parabéns. \n\nMomento como esse normalmente cria janela de aceleração. A V4 Bilinski&Co opera exatamente nessa janela. Quer trocar 15 minutos sobre como capturar?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "evento", "example": "rodada Series B de US$ 12M" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_cold_recomendacao",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 1,
+      "use_when": "Lead chegou via indicacao de cliente/parceiro",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, falei com {{indicador}} essa semana e seu nome veio à mesa. \n\nEle achou que faria sentido trocarmos uma ideia sobre crescimento da {{empresa}}. Posso te ligar 15 minutos?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "indicador", "example": "Pedro Silva" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d2_breve",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+2 sem resposta — lembrete leve",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, só pulando aqui pra reforçar. Sei que tá corrido. \n\nMe diz se faz sentido conversar essa semana ou prefere que eu volte mês que vem?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d4_caso_extra",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+4 sem resposta — adiciona case extra",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, mais um case que pode te interessar: {{case_empresa}} crescia 8% ao ano, virou 41% depois que aplicamos nosso método. \n\nFaz sentido pra {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "case_empresa", "example": "BetaTech" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d7_material",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+7 sem resposta — envia material de valor",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, separei isso aqui pra você ler quando der: {{material}}. \n\nÉ exatamente o que aplicamos com clientes do porte da {{empresa}}. Sem cobrança, fica de presente.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "material", "example": "Playbook de Aceleração de Receita 2026" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d10_pergunta",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+10 sem resposta — pergunta direta",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, prefiro perguntar direto: faz sentido marcarmos uma conversa sobre crescimento da {{empresa}} ou esse não é o momento? \n\nQualquer resposta me ajuda.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d14_alternativa",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+14 sem resposta — propoe alternativa de horario/canal",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, talvez o problema seja agenda. Posso te enviar um Loom de 5 minutos com o diagnóstico inicial da {{empresa}} pra você assistir quando puder. \n\nFaz mais sentido assim?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_d21_ultima",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+21 sem resposta — ultima tentativa antes de pausar",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, última tentativa pra não te encher o saco. \n\nSe faz sentido conversar nas próximas semanas, me responde só com SIM. Caso contrário, paro por aqui e te procuro daqui 6 meses.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_breakup",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "D+28 — encerramento de cadencia (breakup message)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, vou parar de incomodar por aqui. \n\nQuando fizer sentido voltar a falar sobre crescimento da {{empresa}}, é só responder essa mensagem. Sucesso até lá.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_lido_sem_resp",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "Lead leu mas nao respondeu — provoca diretamente",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, vi que abriu mas não respondeu. Sem julgamento. \n\nÉ falta de tempo, falta de interesse ou falta de clareza? Me diz qual dos três pra eu saber como te ajudar.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_audio_proposto",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "Follow-up generico propondo audio explicativo",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, posso te mandar um áudio de 90 segundos contando exatamente o que enxergamos na {{empresa}}? \n\nVocê escuta no carro, sem pressa. Topa?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_followup_video_proposto",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 2,
+      "use_when": "Follow-up generico propondo video Loom",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, gravei um Loom de 4 minutos com 3 oportunidades específicas que vi pra {{empresa}}. \n\nPosso te mandar o link aqui?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_propor_horarios",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Lead aceitou conversar — propor 3 horarios",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, perfeito. Tenho essas opções:\n\n1. {{horario1}}\n2. {{horario2}}\n3. {{horario3}}\n\nQual funciona melhor pra você?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "horario1", "example": "Quarta 14h" },
+              { "param_name": "horario2", "example": "Quinta 10h" },
+              { "param_name": "horario3", "example": "Sexta 16h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_confirmar_24h",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Confirmacao 24h antes da reuniao",
+      "components": [
+        {
+          "type": "HEADER", "format": "TEXT", "text": "Confirmação de reunião"
+        },
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, confirmando nossa conversa amanhã, {{horario1}}. \n\nVou enviar o link 1 hora antes. Confirma pra mim?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "horario1", "example": "quarta 14h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" },
+        {
+          "type": "BUTTONS",
+          "buttons": [
+            { "type": "QUICK_REPLY", "text": "Confirmar" },
+            { "type": "QUICK_REPLY", "text": "Remarcar" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "outbili_agenda_lembrete_1h",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Lembrete 1h antes da reuniao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, em 1 hora a gente conversa. \n\nLink: {{link}}\n\nQualquer coisa, me responde aqui.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "link", "example": "https://meet.google.com/abc-defg-hij" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_link_call",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Envio do link da reuniao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, link da nossa conversa: {{link}}\n\nAté daqui a pouco.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "link", "example": "https://meet.google.com/abc-defg-hij" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_remarcar",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Pedido de remarcacao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, sem problema em remarcar. Tenho essas opções:\n\n1. {{horario1}}\n2. {{horario2}}\n3. {{horario3}}\n\nQual encaixa melhor agora?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "horario1", "example": "Segunda 10h" },
+              { "param_name": "horario2", "example": "Terça 15h" },
+              { "param_name": "horario3", "example": "Quinta 9h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_confirmou_cancelamento",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Confirmacao de cancelamento",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, registrado o cancelamento. \n\nQuando quiser reabrir a conversa, é só me chamar aqui mesmo. Sucesso na semana.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_obrigado_pos_call",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Apos a reuniao — agradecimento + materializacao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, valeu pela conversa hoje. \n\nVou organizar o que combinamos e te mando até amanhã. Qualquer coisa que precisar antes, me chama aqui.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_proximo_passo",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Definicao do proximo passo",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, próximo passo: {{material}}. \n\nVamos manter o ritmo. Posso confirmar pra {{horario1}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "material", "example": "diagnóstico aprofundado de funil" },
+              { "param_name": "horario1", "example": "terça 14h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_no_show_recuperar",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Lead nao apareceu na reuniao",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, te esperei agora. Acontece. \n\nPosso reencaixar pra essa semana ainda? Tenho {{horario1}} ou {{horario2}}.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "horario1", "example": "quinta 14h" },
+              { "param_name": "horario2", "example": "sexta 10h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_agenda_resumo_acoes",
+      "category": "UTILITY",
+      "language": "pt_BR",
+      "pillar": 3,
+      "use_when": "Resumo + acoes acordadas pos-reuniao",
+      "components": [
+        {
+          "type": "HEADER", "format": "TEXT", "text": "Resumo da nossa conversa"
+        },
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, conforme combinado:\n\n→ Próximo passo: {{material}}\n→ Prazo: {{horario1}}\n\nFica registrado aqui. Qualquer dúvida, me chama.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "material", "example": "envio do diagnóstico" },
+              { "param_name": "horario1", "example": "sexta até 18h" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t1_caixa",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T1 (crise de caixa) detectada",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, sinal claro: a {{empresa}} está rodando com fluxo de caixa apertado. \n\nNa V4 Bilinski&Co a gente desbloqueia receita rápida sem queimar caixa. Vale 15 minutos pra te mostrar como?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t2_operacional",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T2 (ineficiencia operacional)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, a {{empresa}} está perdendo receita em ineficiência operacional. \n\nA gente mapeia, prioriza e resolve. Posso te mostrar 3 padrões que estamos resolvendo em {{segmento}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Tecnologia" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t3_mercado",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T3 (saturacao de mercado)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, {{segmento}} está saturado. Quem ganha agora é quem reposiciona. \n\nA V4 Bilinski&Co destrava posicionamento que rouba market share sem guerra de preço. Vale 15 minutos?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "segmento", "example": "Tecnologia" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t4_tech",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T4 (divida tecnica/sistemas legados)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, dívida técnica está custando receita pra {{empresa}}. \n\nA gente não vende tecnologia, vende destravamento de receita usando o que você já tem. Posso te mostrar como?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t5_org",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T5 (resistencia organizacional)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, time grande, decisão lenta, receita parada. Conheço bem o sintoma. \n\nA V4 Bilinski&Co alinha squad comercial em 30 dias. Vale uma conversa rápida sobre a {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t6_budget",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T6 (orcamento limitado)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, sei que orçamento está apertado. \n\nÉ exatamente por isso que a V4 Bilinski&Co opera com modelo que se paga sozinho em 60-90 dias. Topa entender o racional?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t7_compliance",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T7 (compliance/regulacao)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, regulação está mudando o jogo em {{segmento}}. \n\nA gente já operou esse tipo de transição com clientes de setores regulados. Vale 15 minutos pra adaptar à {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Saúde" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_trava_t8_geo",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Lead com Trava T8 (barreira geografica)",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, {{cidade}} é um mercado com particularidades fortes. \n\nA V4 Bilinski&Co opera com playbook regional adaptado. Vale uma troca rápida sobre {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "cidade", "example": "São Paulo" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_oferta_destrava_express",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Apresentar oferta DR-X (Destrava Receita Express)",
+      "components": [
+        {
+          "type": "HEADER", "format": "TEXT", "text": "Destrava Receita Express"
+        },
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, programa de 90 dias da V4 Bilinski&Co que mira primeiro resultado em 30. \n\nDiagnóstico, plano e execução assistida. Quer ver o caso aplicado à {{empresa}}?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" },
+        {
+          "type": "BUTTONS",
+          "buttons": [
+            { "type": "QUICK_REPLY", "text": "Quero saber mais" },
+            { "type": "QUICK_REPLY", "text": "Agora não" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "outbili_oferta_destrava_outbound",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 4,
+      "use_when": "Apresentar oferta DR-O (Destrava Receita Outbound)",
+      "components": [
+        {
+          "type": "HEADER", "format": "TEXT", "text": "Destrava Receita Outbound"
+        },
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, máquina de aquisição B2B montada pela V4 Bilinski&Co. \n\nLista, copy, disparo, qualificação e handoff pro seu time. {{empresa}} entra com pipeline previsível em 60 dias. Topa entender?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" },
+        {
+          "type": "BUTTONS",
+          "buttons": [
+            { "type": "QUICK_REPLY", "text": "Quero saber mais" },
+            { "type": "QUICK_REPLY", "text": "Agora não" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_3meses",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Lead frio ha 3 meses",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, faz 3 meses que a gente não conversa. \n\nMudou alguma coisa por aí na {{empresa}} que abre espaço pra discutir crescimento? Se sim, me chama.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_6meses",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Lead frio ha 6 meses",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, semestre passou rápido. Como a {{empresa}} fechou o trimestre? \n\nSe a meta de receita ficou abaixo, vale uma conversa nova. Estamos com novidades.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_news_empresa",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Lead frio com noticia recente da empresa",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, vi a notícia: {{evento}}. \n\nEsse tipo de movimento muda o jogo. A gente deveria reabrir a conversa? Posso te ligar 15 minutos.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "evento", "example": "expansão pra Nordeste anunciada essa semana" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_novo_servico",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Lancamos novo servico V4 que casa com o lead",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, lançamos algo novo que casa exatamente com o que conversamos: {{material}}. \n\nFaz sentido eu te apresentar em 15 minutos?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "material", "example": "Programa de Aceleração de Receita 2.0" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_case_recente",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Case recente de cliente similar ao lead",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, lembrei de você quando fechamos esse case: {{case_empresa}} multiplicou pipeline em 90 dias. \n\nPerfil parecido com {{empresa}}. Topa olhar o que fizemos?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "case_empresa", "example": "BetaTech" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_reativacao_qbr",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Convite para analise/QBR gratuita",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, estamos rodando análises gratuitas de funil pra empresas selecionadas em {{segmento}}. \n\n{{empresa}} está na lista. Quer reservar uma sessão de 45 minutos?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "segmento", "example": "Tecnologia" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_nutricao_artigo",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Envio de artigo relevante para nutrir lead",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, leitura curta que pode te interessar: {{material}}. \n\nNada de venda, só conteúdo. Bom proveito.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "material", "example": "5 sinais de que sua máquina de vendas está travada" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_nutricao_evento",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Convite para evento V4 ou parceiro",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, vamos rodar {{evento}}. \n\nQuero te garantir uma vaga porque acho que conteúdo casa muito com a {{empresa}}. Posso te confirmar?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" },
+              { "param_name": "evento", "example": "um workshop fechado de Aceleração de Receita dia 15/05" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_nutricao_pesquisa",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Convite para responder pesquisa rapida",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, estou rodando uma pesquisa de 4 perguntas com líderes de {{segmento}}. Leva 90 segundos. \n\nTroco com você o resultado consolidado depois. Topas?",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "segmento", "example": "Tecnologia" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    },
+    {
+      "name": "outbili_nutricao_aniversario_empresa",
+      "category": "MARKETING",
+      "language": "pt_BR",
+      "pillar": 5,
+      "use_when": "Aniversario de fundacao da empresa do lead",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "{{decisor}}, parabéns à {{empresa}} pelo marco. Construir empresa que dura é trabalho duro. \n\nQuando fizer sentido reabrir nossa conversa, é só me chamar.",
+          "example": {
+            "body_text_named_params": [
+              { "param_name": "decisor", "example": "Lucas" },
+              { "param_name": "empresa", "example": "Acme Corp" }
+            ]
+          }
+        },
+        { "type": "FOOTER", "text": "V4 Bilinski&Co" }
+      ]
+    }
+  ]
+}
