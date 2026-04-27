@@ -102,9 +102,9 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
   }
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '—'
+    if (!dateStr) return '-'
     const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return '—'
+    if (isNaN(d.getTime())) return '-'
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
@@ -186,15 +186,15 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
             </div>
             <div>
               <span className="text-text-muted">Stakeholder: </span>
-              <span className="text-text-primary">{mainContact?.name || '—'}</span>
+              <span className="text-text-primary">{mainContact?.name || '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">Telefone: </span>
-              <span className="text-text-primary">{mainContact?.whatsapp || lead.rfPhone || '—'}</span>
+              <span className="text-text-primary">{mainContact?.whatsapp || lead.rfPhone || '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">Email: </span>
-              <span className="text-text-primary">{mainContact?.email || lead.rfEmail || '—'}</span>
+              <span className="text-text-primary">{mainContact?.email || lead.rfEmail || '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">Origem: </span>
@@ -202,15 +202,15 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
             </div>
             <div>
               <span className="text-text-muted">Segmento: </span>
-              <span className="text-text-primary">{lead.segment || '—'}</span>
+              <span className="text-text-primary">{lead.segment || '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">Faturamento: </span>
-              <span className="text-text-primary">{lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue) + '/mês' : lead.tier || '—'}</span>
+              <span className="text-text-primary">{lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue) + '/mês' : lead.tier || '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">Score: </span>
-              <span className="text-text-primary">{lead.score || '—'} · {lead.temperature}</span>
+              <span className="text-text-primary">{lead.score || '-'} · {lead.temperature}</span>
             </div>
           </div>
           {phase.notes && (
@@ -223,7 +223,7 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
               <p className="text-caption text-text-muted">Origem: {phase.source}</p>
             )}
             <p className="text-caption text-text-muted">Criado em: {formatDate(phase.createdAt)}</p>
-            <p className="text-caption text-text-muted">Criado por: {phase.createdBy || '—'}</p>
+            <p className="text-caption text-text-muted">Criado por: {phase.createdBy || '-'}</p>
           </div>
         </div>
       )}
@@ -418,7 +418,7 @@ export function CompanyPage() {
               <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
               {lead.sourceHtmlReport === 'cadastro_manual' && (
                 <span
-                  title="Lead adicionado manualmente — enriquecimento automático via CNPJá + Assertiva executado na criação."
+                  title="Lead adicionado manualmente. Enriquecimento automático via CNPJá e Assertiva executado na criação."
                   className="inline-flex items-center gap-1 text-[10px] leading-tight font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-300 cursor-help"
                 >
                   Manual
@@ -435,7 +435,7 @@ export function CompanyPage() {
           </div>
           <div className="text-right shrink-0">
             <p className="text-xl md:text-2xl font-bold font-mono text-red leading-none">{score}</p>
-            <p className="text-caption uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision) — 0 a 5">SPICED</p>
+            <p className="text-caption uppercase tracking-wider text-text-muted mt-1 cursor-help" title="SPICED: Score de qualificação (Suitable, Problem, Implement, Champion, Decision). Escala 0 a 5.">SPICED</p>
             <p className="text-caption text-text-muted mt-0.5">{score >= 3.7 ? 'Lead qualificado' : score >= 2.5 ? 'Potencial médio' : 'Necessita qualificação'}</p>
           </div>
         </div>
@@ -446,7 +446,7 @@ export function CompanyPage() {
             { label: lead.monthlyRevenue ? 'Faturamento/ano' : 'Capital Social', value: lead.monthlyRevenue ? formatCurrencyShort(lead.monthlyRevenue * 12) : lead.capitalSocial ? formatCurrencyShort(lead.capitalSocial) : '-', tooltip: lead.monthlyRevenue ? 'Receita mensal × 12 meses' : 'Capital social registrado na Receita Federal' },
             { label: 'Funcionários', value: lead.employees ? `${lead.employees}${!['assertiva','complete'].includes(lead.enrichmentStatus || '') ? ' (est. via CNPJá)' : ''}` : '-', tooltip: 'Quantidade de funcionários estimada ou confirmada' },
             { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-', tooltip: yearsInMarket != null ? (yearsInMarket >= 10 ? 'Empresa consolidada' : yearsInMarket >= 3 ? 'Empresa em crescimento' : 'Empresa recente') : '' },
-            { label: 'Trava dominante', value: travaDominante ? `${travaDominante.codigo} ${travaDominante.nome}` : lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || '-', isHighlight: true, tooltip: travaDominante ? `${travaDominante.severidade} — ${travaDominante.impactoEstimado}` : 'Principal barreira de receita identificada pela análise' },
+            { label: 'Trava dominante', value: travaDominante ? `${travaDominante.codigo} ${travaDominante.nome}` : lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || '-', isHighlight: true, tooltip: travaDominante ? `${travaDominante.severidade}: ${travaDominante.impactoEstimado}` : 'Principal barreira de receita identificada pela análise' },
           ].map((stat: any) => (
             <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`} title={stat.tooltip || ''}>
               <p className="text-caption uppercase tracking-wider text-text-muted">{stat.label}</p>
@@ -624,9 +624,9 @@ export function CompanyPage() {
             {/* LTP anual — destaque */}
             {lead.monthlyRevenue && (
               <div className="p-3 rounded-xl bg-red/5 border border-red/15">
-                <span className="text-xs text-text-muted" title="LTP — Lifetime Throughput do Projeto">Potencial de investimento anual (LTP): </span>
+                <span className="text-xs text-text-muted" title="LTP: Lifetime Throughput do Projeto">Potencial de investimento anual (LTP): </span>
                 <span className="font-mono text-base font-bold text-red">
-                  {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)}–{formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
+                  {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.10)} a {formatCurrencyShort(lead.monthlyRevenue * 12 * 0.15)}
                 </span>
                 <p className="text-caption text-text-muted mt-1">Baseado em 10-15% do faturamento anual estimado</p>
               </div>
@@ -820,7 +820,7 @@ export function CompanyPage() {
               <span className="text-2xl md:text-3xl font-extrabold font-mono text-red px-4 py-1.5 bg-red/10 rounded-lg shadow-[0_0_16px_rgba(204,0,0,0.2)] animate-[scale-in_0.4s_ease-out]">
                 {score}/5
               </span>
-              <span className="text-base text-text-muted">—</span>
+              <span className="text-base text-text-muted">·</span>
               <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
                 lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
               }`}>
@@ -883,7 +883,7 @@ export function CompanyPage() {
             {/* Trava dominante — Fábrica de Receita */}
             {travaDominante && (
               <div className="mt-10 p-6 rounded-xl border border-red/30 bg-red/5">
-                <h3 className="text-lg font-bold text-red mb-3">Trava dominante — {travaDominante.codigo} {travaDominante.nome}</h3>
+                <h3 className="text-lg font-bold text-red mb-3">Trava dominante: {travaDominante.codigo} {travaDominante.nome}</h3>
                 <p className="text-base font-bold text-text-primary mb-2">{travaDominante.step.trava}</p>
                 {spicedNotes['trap'] && (
                   <p className="text-[15px] text-text-secondary leading-[1.8]">{spicedNotes['trap']}</p>

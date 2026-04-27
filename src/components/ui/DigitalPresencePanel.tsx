@@ -113,7 +113,7 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
         ) : (
           <span className="text-[11px] text-text-muted italic">
             Nenhuma rede social encontrada
-            {onReExtract && !isReExtracting ? ' — clique em Re-extrair' : ''}
+            {onReExtract && !isReExtracting ? '. Clique em Re-extrair.' : ''}
           </span>
         )}
       </div>

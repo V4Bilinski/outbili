@@ -11,14 +11,14 @@ import { Users, Plus, Search, X, ChevronRight } from 'lucide-react'
 import { LEAD_STATUSES, TEMPERATURES, SEGMENTS, TIERS } from '../lib/constants'
 
 const TRAP_OPTIONS = [
-  { value: 'T1', label: 'T1 — Aquisição' },
-  { value: 'T2', label: 'T2 — Conversão' },
-  { value: 'T3', label: 'T3 — Ticket Médio' },
-  { value: 'T4', label: 'T4 — Recorrência' },
-  { value: 'T5', label: 'T5 — Margem' },
-  { value: 'T6', label: 'T6 — Posicionamento' },
-  { value: 'T7', label: 'T7 — Escalabilidade' },
-  { value: 'T8', label: 'T8 — Dependência' },
+  { value: 'T1', label: 'T1 · Aquisição' },
+  { value: 'T2', label: 'T2 · Conversão' },
+  { value: 'T3', label: 'T3 · Ticket Médio' },
+  { value: 'T4', label: 'T4 · Recorrência' },
+  { value: 'T5', label: 'T5 · Margem' },
+  { value: 'T6', label: 'T6 · Posicionamento' },
+  { value: 'T7', label: 'T7 · Escalabilidade' },
+  { value: 'T8', label: 'T8 · Dependência' },
 ]
 import { formatCurrencyShort, calculateSpicedScore } from '../lib/utils'
 import type { Lead } from '../types'
@@ -279,11 +279,11 @@ export function LeadsPage() {
             <p className="text-xs text-text-muted mt-0.5">
               {hasActiveFilters
                 ? `${filteredLeads.length} de ${totalLeads} leads`
-                : `${totalLeads} leads encontrados`}
+                : `${totalLeads} leads no pipeline`}
             </p>
           </div>
           <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/search')}>
-            Novo
+            Adicionar lead
           </Button>
         </div>
       </AnimateIn>

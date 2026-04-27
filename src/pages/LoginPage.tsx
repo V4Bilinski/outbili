@@ -89,7 +89,7 @@ export function LoginPage() {
             Sem lista fria. Sem achismo. Sem trava.
           </p>
           <p className="text-xs text-text-muted animate-[fade-in_0.9s_ease-out] mt-1">
-            Sistema de inteligência comercial — V4 Bilinski &amp; Co
+            Sistema de inteligência comercial · V4 Bilinski &amp; Co
           </p>
         </div>
 

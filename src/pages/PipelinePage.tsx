@@ -65,7 +65,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         </div>
       </div>
       <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
-      <p className="text-label text-text-muted mt-0.5">{lead.segment || '—'} · {lead.tier || '—'}</p>
+      <p className="text-label text-text-muted mt-0.5">{lead.segment || '-'} · {lead.tier || '-'}</p>
       {lead.city && <p className="text-caption text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
       <div className="flex flex-wrap gap-1 mt-1.5">
         {lead.enrichmentStatus === 'complete' && (
@@ -110,7 +110,7 @@ export function PipelinePage() {
     createActivity({ leadId: lead.id, type: 'status_change', description: desc, createdBy: user?.fullName || user?.email || 'Sistema' }).catch(() => {})
 
     if (to === 'Fechado') {
-      toast.success(`🏆 ${lead.companyName} — Negócio fechado! Parabéns!`, { duration: 5000 })
+      toast.success(`🏆 ${lead.companyName}: negócio fechado.`, { duration: 5000 })
     } else {
       const emoji = to === 'Reunião' ? '📅' : to === 'Proposta' ? '📝' : '✅'
       toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })
@@ -142,7 +142,7 @@ export function PipelinePage() {
               <h1 className="text-xl font-bold font-heading gradient-text">Pipeline</h1>
             </div>
             <p className="text-xs text-text-muted mt-0.5">
-              Funil de vendas — arraste leads entre etapas · {allLeads.length} leads
+              Funil de vendas. Arraste leads entre etapas · {allLeads.length} leads
               {closedCount > 0 && <span className="text-success"> · {closedCount} fechados</span>}
             </p>
           </div>
@@ -162,7 +162,7 @@ export function PipelinePage() {
               </select>
             </div>
             <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/search')}>
-              Novo Lead
+              Adicionar lead
             </Button>
           </div>
         </div>

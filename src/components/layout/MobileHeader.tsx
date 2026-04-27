@@ -14,7 +14,7 @@ export function MobileHeader() {
       </button>
       <div className="flex items-center gap-2">
         <img src="/outbili/v4-icon.png" alt="V4" className="h-6 w-6 object-contain rounded" />
-        <span className="text-sm font-semibold text-text-primary">OUTBILI <span className="text-text-muted font-normal">— V4 Bilinski &amp;Co</span></span>
+        <span className="text-sm font-semibold text-text-primary">OUTBILI <span className="text-text-muted font-normal">· V4 Bilinski &amp;Co</span></span>
       </div>
       <div className="w-9" />
     </header>

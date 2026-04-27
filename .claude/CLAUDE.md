@@ -141,10 +141,13 @@ O AIOX carrega regras contextuais de `.claude/rules/` automaticamente. Regras co
 | `agent-handoff.md` | Agent switch compaction protocol for context optimization |
 | `agent-memory-imports.md` | Agent memory lifecycle and CLAUDE.md ownership |
 | `coderabbit-integration.md` | Automated code review integration rules |
+| `copy-tom-voz.md` | Tom de voz comercial profissional. Hook bloqueia travessoes e giria em UI/copy |
 | `ids-principles.md` | Incremental Development System principles |
 | `mcp-usage.md` | MCP server usage rules and tool selection priority |
 | `playwright-artifacts.md` | Playwright screenshots MUST be saved to `playwright/{categoria}/` |
+| `social-media-enrichment.md` | Pipeline Assertiva + Firecrawl para extracao de redes sociais |
 | `story-lifecycle.md` | Story status transitions and quality gates |
+| `tool-examples.md` | Concrete input examples for high-traffic tools |
 | `workflow-execution.md` | 4 primary workflows (SDC, QA Loop, Spec Pipeline, Brownfield) |
 
 > **Diretório:** `.claude/rules/` — rules são carregadas automaticamente pelo Claude Code quando relevantes.

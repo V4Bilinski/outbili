@@ -367,10 +367,10 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
   const revenueStr = revenue > 0 ? `R$ ${Math.round(revenue / 1000)}k/mês` : 'faturamento não informado'
   const revenuePerEmp = employees > 0 && revenue > 0 ? Math.round(revenue / employees) : 0
 
-  const drProduto = lead.tier === 'Medium=' ? 'DR-E (Estratégico — R$ 350k/ano)'
-    : lead.tier === 'Medium-' ? 'DR-T (Tático — R$ 150k/ano)'
-    : lead.tier === 'Small' ? 'DR-O (Operacional — R$ 50k/ano)'
-    : 'DR-X (Raio-X Diagnóstico — R$ 4.000, 45 dias)'
+  const drProduto = lead.tier === 'Medium=' ? 'DR-E (Estratégico, R$ 350k/ano)'
+    : lead.tier === 'Medium-' ? 'DR-T (Tático, R$ 150k/ano)'
+    : lead.tier === 'Small' ? 'DR-O (Operacional, R$ 50k/ano)'
+    : 'DR-X (Raio-X Diagnóstico, R$ 4.000, 45 dias)'
 
   // ═══════════════════════════════════════════════════════
   // T1 Cegueira — SOMENTE para leads genuinamente sem dados
@@ -387,7 +387,7 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
         estrategia: `Diagnóstico urgente: enriquecer dados via CNPJá + Assertiva, mapear as 8 travas de receita e auditar a presença digital do segmento de ${segmento}.`,
         produto: drProduto,
       },
-      acaoImediata: `Enriquecer o lead urgentemente e agendar reunião de diagnóstico — ${empresa} precisa de visibilidade.`,
+      acaoImediata: `Enriquecer o lead urgentemente e agendar reunião de diagnóstico. ${empresa} precisa de visibilidade.`,
     })
   }
 
@@ -403,7 +403,7 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
     travas.push({
       codigo: 'T5', nome: 'Qualificação', severidade: 'ALTA',
       sinaisDetectados: t5Sinais,
-      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k–${Math.max(18, Math.round(revenue * 0.15 / 1000))}k/mês`,
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k a ${Math.max(18, Math.round(revenue * 0.15 / 1000))}k/mês`,
       step: {
         situacao: `${empresa} tem ${employees} funcionários mas receita de ${revenueStr}${revenuePerEmp > 0 ? ` (R$ ${Math.round(revenuePerEmp / 1000)}k por funcionário)` : ''}. A equipe opera abaixo da capacidade produtiva.`,
         trava: `A empresa investe em estrutura mas não converte proporcionalmente. Leads errados no pipeline ou processo comercial ineficiente desperdiçam o potencial da equipe.`,
@@ -426,7 +426,7 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
     travas.push({
       codigo: 'T7', nome: 'Decisão', severidade: 'ALTA',
       sinaisDetectados: t7Sinais,
-      impactoEstimado: `R$ ${Math.round(revenue * 0.1 / 1000)}k–${Math.round(revenue * 0.2 / 1000)}k/mês em fechamentos perdidos`,
+      impactoEstimado: `R$ ${Math.round(revenue * 0.1 / 1000)}k a ${Math.round(revenue * 0.2 / 1000)}k/mês em fechamentos perdidos`,
       step: {
         situacao: `${empresa} fatura ${revenueStr} mas carece de elementos de autoridade: ${!lead.website ? 'sem website, ' : ''}${!lead.inpiHasRegisteredTrademark ? 'sem marca registrada, ' : ''}${!lead.instagram ? 'sem Instagram' : ''}. Prospects avaliam e não fecham.`,
         trava: `Clientes qualificados chegam à decisão final mas desistem. A falta de presença profissional, cases documentados e proposta estruturada gera insegurança.`,
@@ -443,12 +443,12 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
   const t6Sinais: string[] = []
   if (years > 8 && revenue > 0 && revenue < 500000) t6Sinais.push(`${years} anos no mercado com ${revenueStr}`)
   if ((lead.tier === 'Micro+' || lead.tier === 'Small') && years > 5) t6Sinais.push(`Tier ${lead.tier} após ${years} anos`)
-  if (lead.taxRegime === 'simples' && revenue > 200000) t6Sinais.push(`Simples Nacional com ${revenueStr} — pode estar no limite`)
+  if (lead.taxRegime === 'simples' && revenue > 200000) t6Sinais.push(`Simples Nacional com ${revenueStr}. Pode estar no limite.`)
   if (t6Sinais.length >= 1) {
     travas.push({
       codigo: 'T6', nome: 'Compromisso', severidade: 'MEDIA',
       sinaisDetectados: t6Sinais,
-      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k–${Math.max(12, Math.round(revenue * 0.12 / 1000))}k/mês`,
+      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k a ${Math.max(12, Math.round(revenue * 0.12 / 1000))}k/mês`,
       step: {
         situacao: `${empresa} opera há ${years} anos no ${lead.taxRegime || 'regime atual'} com faturamento de ${revenueStr}. A receita está estagnada proporcionalmente ao tempo de mercado.`,
         trava: `Prospects demonstram interesse mas abandonam antes de fechar. O ciclo de venda é longo, falta urgência e a proposta não gera comprometimento imediato.`,
@@ -473,7 +473,7 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
     travas.push({
       codigo: 'T2', nome: 'Exposição', severidade: travas.length === 0 ? 'ALTA' : 'MEDIA',
       sinaisDetectados: t2Sinais,
-      impactoEstimado: `R$ ${Math.max(10, Math.round(revenue * 0.08 / 1000))}k–${Math.max(25, Math.round(revenue * 0.15 / 1000))}k/mês`,
+      impactoEstimado: `R$ ${Math.max(10, Math.round(revenue * 0.08 / 1000))}k a ${Math.max(25, Math.round(revenue * 0.15 / 1000))}k/mês`,
       step: {
         situacao: `${empresa} fatura ${revenueStr} no segmento de ${segmento} mas ${!lead.website && !lead.instagram ? 'não tem presença digital' : !lead.website ? 'não tem website' : 'tem presença digital limitada'}. Potenciais clientes não encontram a empresa online.`,
         trava: `Sem exposição digital, a empresa depende de indicação e boca a boca. O público-alvo busca soluções online e encontra concorrentes que investem em tráfego.`,
@@ -490,12 +490,12 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
   const t8Sinais: string[] = []
   if (years > 10 && employees > 5) t8Sinais.push(`${years} anos no mercado com ${employees} funcionários`)
   if (years > 10 && revenue > 0 && revenue < 300000) t8Sinais.push(`Empresa madura com receita de ${revenueStr}`)
-  if (lead.simplesOptant && employees > 10) t8Sinais.push(`Simples Nacional com ${employees} funcionários — estrutura de retenção ausente`)
+  if (lead.simplesOptant && employees > 10) t8Sinais.push(`Simples Nacional com ${employees} funcionários. Estrutura de retenção ausente.`)
   if (t8Sinais.length >= 1) {
     travas.push({
       codigo: 'T8', nome: 'Retenção', severidade: 'MEDIA',
       sinaisDetectados: t8Sinais,
-      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.06 / 1000))}k–${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês em clientes perdidos`,
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.06 / 1000))}k a ${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês em clientes perdidos`,
       step: {
         situacao: `${empresa} está há ${years} anos no mercado com ${employees} funcionários. A maturidade sugere base de clientes recorrentes mas sem estratégia ativa de retenção.`,
         trava: `Perder 1 cliente custa 5-7x mais que reter. Sem NPS, régua de relacionamento ou programa de fidelidade, o churn corrói a base silenciosamente.`,
@@ -513,14 +513,14 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
     travas.push({
       codigo: 'T3', nome: 'Atenção', severidade: 'ALTA',
       sinaisDetectados: [`Rating ${lead.googleRating}/5 no Google`, `${lead.googleReviewsCount || 0} avaliações`],
-      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k–${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês`,
+      impactoEstimado: `R$ ${Math.max(8, Math.round(revenue * 0.08 / 1000))}k a ${Math.max(20, Math.round(revenue * 0.15 / 1000))}k/mês`,
       step: {
         situacao: `${empresa} tem rating de ${lead.googleRating}/5 no Google com ${lead.googleReviewsCount || 0} avaliações. A percepção de qualidade está abaixo do aceitável para o segmento.`,
         trava: `O público vê a empresa online mas não se interessa. Reputação fraca = desconfiança = lead perdido antes mesmo de chegar ao funil.`,
         estrategia: `Campanha intensiva de reputação: solicitar avaliações 5 estrelas, responder todas avaliações negativas, otimizar perfil Google Meu Negócio.`,
         produto: drProduto,
       },
-      acaoImediata: `Mostrar: "${empresa} tem ${lead.googleRating}/5 — a média do segmento de ${segmento} é 4.2. Isso custa clientes todos os dias."`,
+      acaoImediata: `Mostrar: "${empresa} tem ${lead.googleRating}/5. A média do segmento de ${segmento} é 4.2. Isso custa clientes todos os dias."`,
     })
   }
 
@@ -535,10 +535,10 @@ export function detectTravas(lead: Partial<Lead>): TravaDetectada[] {
     travas.push({
       codigo: 'T4', nome: 'Interesse', severidade: 'MEDIA',
       sinaisDetectados: sinais,
-      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k–${Math.max(15, Math.round(revenue * 0.12 / 1000))}k/mês`,
+      impactoEstimado: `R$ ${Math.max(5, Math.round(revenue * 0.05 / 1000))}k a ${Math.max(15, Math.round(revenue * 0.12 / 1000))}k/mês`,
       step: {
         situacao: `${empresa} tem website mas sem WhatsApp Business${isGeneric ? ' e email genérico' : ''}. Visitantes chegam mas não têm canal direto para converter.`,
-        trava: `Tráfego sem funil de captura é desperdício. Visitantes vão, olham e saem — sem forma fácil de contato, nenhum vira lead.`,
+        trava: `Tráfego sem funil de captura é desperdício. Visitantes vão, olham e saem. Sem forma fácil de contato, nenhum vira lead.`,
         estrategia: `Implementar WhatsApp Business com chatbot, formulários de captura com oferta de valor, e automação de follow-up para nutrir leads.`,
         produto: drProduto,
       },
@@ -580,7 +580,7 @@ export function generateProjecaoCompetitiva(lead: Partial<Lead>): ProjecaoCompet
   // Oportunidades baseadas no segmento
   const oportunidades = [
     `Empresas de ${segmento} que investem em tráfego pago crescem 2-3x mais rápido que as que dependem de orgânico`,
-    `O segmento de ${segmento} tem taxa média de conversão de 2-4% — otimização pode dobrar esse número`,
+    `O segmento de ${segmento} tem taxa média de conversão de 2 a 4%. Otimização pode dobrar esse número.`,
     `Automação de WhatsApp no segmento de ${segmento} reduz tempo de resposta de 24h para 5min`,
   ]
 
@@ -637,7 +637,7 @@ export function generatePlaybookBDR(lead: Partial<Lead>, travas: TravaDetectada[
   const segmento = lead.segment || 'seu segmento'
   const revenue = lead.monthlyRevenue || 0
   const revenueStr = revenue > 0 ? `R$ ${Math.round(revenue / 1000)}k/mês` : ''
-  const trava = travas[0] || { nome: 'Aquisição', codigo: 'T2', impactoEstimado: 'R$ 10k–25k/mês' }
+  const trava = travas[0] || { nome: 'Aquisição', codigo: 'T2', impactoEstimado: 'R$ 10k a 25k/mês' }
   // Prioridade: nome passado pelo componente (contacts) > partners JSON > fallback
   const decisor = extractDecisionMaker(lead.partners)
   const rawName = decisorName || decisor?.nome || ''
@@ -650,39 +650,39 @@ export function generatePlaybookBDR(lead: Partial<Lead>, travas: TravaDetectada[
 
   return {
     contexto: `${empresa} atua no segmento de ${segmento}${revenueStr ? ` com faturamento estimado de ${revenueStr}` : ''}. Trava principal identificada: ${trava.codigo} ${trava.nome}. ${travas.length} trava${travas.length > 1 ? 's' : ''} detectada${travas.length > 1 ? 's' : ''} no total.`,
-    travaPrincipal: `${trava.codigo} — ${trava.nome}`,
+    travaPrincipal: `${trava.codigo} ${trava.nome}`,
     canais: {
       whatsapp: {
         abertura: `Oi ${decisorNome}, tudo bem? Sou da V4 Company, maior consultoria de marketing do Brasil. Vi que a ${empresa} atua com ${segmento} e identifiquei uma oportunidade de destravar receita no seu negócio. Posso te explicar em 2 min?`,
         followUp: `${decisorNome}, passando aqui novamente. Analisei empresas do segmento de ${segmento} e identifiquei que a maioria perde ${trava.impactoEstimado} por não resolver a trava de ${trava.nome.toLowerCase()}. Vale 15min do seu tempo para eu mostrar como resolver isso?`,
         objecoes: {
-          'Não preciso disso': `Entendo, ${decisorNome}. Mas nossos dados mostram que empresas de ${segmento} que não resolvem a trava de ${trava.nome.toLowerCase()} perdem em média ${trava.impactoEstimado}. Posso te mostrar o comparativo em 15min — sem compromisso.`,
+          'Não preciso disso': `Entendo, ${decisorNome}. Mas nossos dados mostram que empresas de ${segmento} que não resolvem a trava de ${trava.nome.toLowerCase()} perdem em média ${trava.impactoEstimado}. Posso te mostrar o comparativo em 15min, sem compromisso.`,
           'Não tenho tempo': `Total, sei como é a correria. Por isso o diagnóstico leva apenas 45 dias e exige no máximo 2h/semana do seu lado. Nós executamos 80%. Que tal uma call de 15min essa semana para eu explicar o processo?`,
           'Já tenho agência': `Ótimo, isso mostra que vocês já investem em crescimento. A diferença é que nós focamos em RECEITA, não em métricas de vaidade. Inclusive, podemos complementar o trabalho da sua agência. Posso mostrar como?`,
         },
-        cta: `${decisorNome}, posso agendar 20 minutos na sua agenda essa semana? Vou te mostrar exatamente quanto a ${empresa} está deixando na mesa e como resolver em 90 dias. Qual melhor dia — terça ou quinta?`,
+        cta: `${decisorNome}, posso agendar 20 minutos na sua agenda essa semana? Vou te mostrar exatamente quanto a ${empresa} está deixando na mesa e como resolver em 90 dias. Qual melhor dia: terça ou quinta?`,
       },
       linkedin: {
         conexao: `${decisorNome}, vi que você lidera a ${empresa} no segmento de ${segmento}. Estou mapeando oportunidades de crescimento no setor e achei seu perfil relevante. Aceita conectar?`,
-        inmail: `${decisorNome}, sou consultor de receita na V4 Company. Analisamos mais de 50 empresas de ${segmento} e identificamos que a principal trava de crescimento no setor é ${trava.nome.toLowerCase()}. Preparei um diagnóstico gratuito para a ${empresa} — posso compartilhar em uma call de 15min?`,
+        inmail: `${decisorNome}, sou consultor de receita na V4 Company. Analisamos mais de 50 empresas de ${segmento} e identificamos que a principal trava de crescimento no setor é ${trava.nome.toLowerCase()}. Preparei um diagnóstico gratuito para a ${empresa}. Posso compartilhar em uma call de 15min?`,
         comentario: `Excelente ponto! Na V4 Company vemos isso constantemente no segmento de ${segmento}. Empresas que estruturam o funil de receita conseguem resolver essa trava rapidamente. Se quiser trocar ideias sobre como aplicar isso na ${empresa}, fico à disposição!`,
       },
       ligacao: {
-        abertura: `Oi ${decisorNome}, tudo bem? Meu nome é [SEU NOME], sou consultor de receita na V4 Company — a maior consultoria de marketing do Brasil. Estou ligando porque analisamos empresas do segmento de ${segmento} e identifiquei uma oportunidade específica para a ${empresa}. Posso tomar 2 minutos do seu tempo?`,
+        abertura: `Oi ${decisorNome}, tudo bem? Meu nome é [SEU NOME], sou consultor de receita na V4 Company, maior consultoria de marketing do Brasil. Estou ligando porque analisamos empresas do segmento de ${segmento} e identifiquei uma oportunidade específica para a ${empresa}. Posso tomar 2 minutos do seu tempo?`,
         qualificacao: [
           `Hoje a ${empresa} investe quanto em marketing e aquisição de clientes por mês?`,
-          `Qual o principal desafio para crescer — é trazer mais clientes, aumentar o ticket ou reter os atuais?`,
+          `Qual o principal desafio para crescer: trazer mais clientes, aumentar o ticket ou reter os atuais?`,
           `Se eu te mostrasse uma forma de gerar mais ${Math.round((revenue || 200000) * 0.2 / 1000)}k/mês em 90 dias, isso seria relevante para vocês?`,
         ],
         gatilho: `${decisorNome}, nossos dados mostram que empresas de ${segmento} com perfil similar ao da ${empresa} perdem em média ${trava.impactoEstimado} por não resolver a trava de ${trava.nome.toLowerCase()}. Em 6 meses, isso soma mais de R$ ${Math.round((revenue || 200000) * 0.15 * 6 / 1000)}k. Esse é o custo de não agir.`,
         objecoes: {
-          'Manda por e-mail': `Claro, posso mandar. Mas nosso material é personalizado para a ${empresa} — para montar ele preciso de 3 informações rápidas que levam 2 minutos. Posso fazer agora?`,
+          'Manda por e-mail': `Claro, posso mandar. Mas nosso material é personalizado para a ${empresa}. Para montar ele preciso de 3 informações rápidas que levam 2 minutos. Posso fazer agora?`,
           'Não é o momento': `Entendo. Mas cada mês custa ${trava.impactoEstimado} em receita perdida. Que tal agendarmos para a semana que vem? Assim você tem tempo de se organizar.`,
-          'Quanto custa?': `O diagnóstico ${lead.tier === 'Micro+' ? 'DR-X custa R$ 4.000 em 45 dias' : 'depende do porte — para a ' + empresa + ' seria a partir de R$ 50k/ano'}. Mas antes de falar de investimento, preciso entender se faz sentido para a ${empresa}. Posso te mostrar o ROI projetado em 15min?`,
+          'Quanto custa?': `O diagnóstico ${lead.tier === 'Micro+' ? 'DR-X custa R$ 4.000 em 45 dias' : 'depende do porte. Para a ' + empresa + ' seria a partir de R$ 50k/ano'}. Mas antes de falar de investimento, preciso entender se faz sentido para a ${empresa}. Posso te mostrar o ROI projetado em 15min?`,
           'Já tentei e não deu certo': `Exatamente por isso existimos. 87% dos nossos clientes já tinham tentado com agências tradicionais. A diferença é que focamos em RECEITA, não em cliques. Posso te mostrar um caso de sucesso do segmento de ${segmento}?`,
-          'Preciso pensar': `Total, ${decisorNome}. Mas para pensar com dados, posso te mandar o diagnóstico gratuito da ${empresa} mostrando exatamente onde está a trava? Sem compromisso — só para você ter clareza na decisão.`,
+          'Preciso pensar': `Total, ${decisorNome}. Mas para pensar com dados, posso te mandar o diagnóstico gratuito da ${empresa} mostrando exatamente onde está a trava? Sem compromisso. Só para você ter clareza na decisão.`,
         },
-        fechamento: `${decisorNome}, baseado no que conversamos, faz total sentido uma reunião de 20 minutos para eu apresentar o diagnóstico completo da ${empresa}. Tenho disponibilidade terça às 10h ou quinta às 14h — qual funciona melhor para você?`,
+        fechamento: `${decisorNome}, baseado no que conversamos, faz total sentido uma reunião de 20 minutos para eu apresentar o diagnóstico completo da ${empresa}. Tenho disponibilidade terça às 10h ou quinta às 14h. Qual funciona melhor para você?`,
       },
     },
     produtoRecomendado: drProduto,

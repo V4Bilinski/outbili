@@ -1,3 +1,25 @@
 {
-  "language": "portuguese"
+  "language": "portuguese",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__playwright__browser_take_screenshot",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/playwright-filename-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/copy-style-guard.js"
+          }
+        ]
+      }
+    ]
+  }
 }

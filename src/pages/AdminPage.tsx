@@ -112,7 +112,7 @@ export function AdminPage() {
               <Shield className="h-5 w-5 text-red" />
               <h1 className="text-xl font-bold font-heading gradient-text">Administração</h1>
             </div>
-            <p className="text-xs text-text-muted mt-0.5">Usuários, atividades e controle de acesso</p>
+            <p className="text-xs text-text-muted mt-0.5">Usuários, atividades e controle de acesso.</p>
           </div>
           <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3.5 w-3.5" />} onClick={loadData}>
             Atualizar
