@@ -584,7 +584,7 @@ export function SearchPage() {
     const summary = summaryParts.join(' · ') || 'Nenhum lead processado'
 
     if (createdLeads.length > 0) {
-      toast.success(`${summary} — enriquecimento complementar em andamento`)
+      toast.success(`${summary}. Enriquecimento complementar em andamento.`)
       massEnrichment.enrichAll(createdLeads.map(l => ({ id: l.id, companyName: (l.data as any).companyName } as any)))
       setTimeout(() => massEnrichmentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
     } else if (duplicates > 0) {
@@ -622,7 +622,7 @@ export function SearchPage() {
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
     const cnpjClean = specificCnpj.replace(/\D/g, '')
-    if (cnpjClean.length !== 14) { toast.error('CNPJ obrigatório — preencha os 14 dígitos para ativar o enriquecimento CNPJá + Assertiva'); return }
+    if (cnpjClean.length !== 14) { toast.error('CNPJ obrigatório. Preencha os 14 dígitos para ativar o enriquecimento CNPJá e Assertiva.'); return }
     setIsCreatingSpecific(true)
     try {
 
@@ -807,7 +807,7 @@ export function SearchPage() {
       } catch {
         const minimalData = { companyName: realCompanyName, cnpj: cnpjClean, score: spicedScore, temperature: getTemperatureFromScore(spicedScore), spicedS: spiced.spicedS, spicedP: spiced.spicedP, spicedI: spiced.spicedI, spicedC: spiced.spicedC, spicedD: spiced.spicedD }
         lead = await createLead(minimalData as any)
-        toast.warning('Salvo com dados básicos — campos extras não suportados pelo Airtable')
+        toast.warning('Salvo com dados básicos. Campos extras não suportados pelo Airtable.')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
 
@@ -853,7 +853,7 @@ export function SearchPage() {
           ? `${realCompanyName} salvo com decisor + WhatsApp!`
           : decisorName
             ? `${realCompanyName} salvo com decisor (sem WhatsApp celular)`
-            : `${realCompanyName} salvo — adicione o decisor manualmente`
+            : `${realCompanyName} salvo. Adicione o decisor manualmente.`
       )
 
       // 4. Trigger enrichment adicional se NÃO teve CNPJa
@@ -879,8 +879,8 @@ export function SearchPage() {
       <AnimateIn>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold font-heading gradient-text">Pesquisa de leads</h1>
-          <p className="text-xs text-text-muted mt-0.5">Encontre e analise empresas com inteligência de marketing completa</p>
+          <h1 className="text-xl font-bold font-heading gradient-text">Prospecção</h1>
+          <p className="text-xs text-text-muted mt-0.5">Busca por segmento ou cadastro manual de prospect específico. Enriquecimento CNPJá e Assertiva automático.</p>
         </div>
         {/* Mode toggle — 2 opcoes: Pesquisa em Massa (CNPJa) + Cadastro Manual */}
         <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1">
@@ -922,8 +922,8 @@ export function SearchPage() {
               <UserPlus className="h-5 w-5 text-red" />
             </div>
             <div>
-              <CardTitle>Cadastrar lead</CardTitle>
-              <p className="text-xs text-text-muted mt-0.5">CNPJ e nome são obrigatórios. O enriquecimento CNPJá + Assertiva roda automaticamente.</p>
+              <CardTitle>Cadastrar prospect</CardTitle>
+              <p className="text-xs text-text-muted mt-0.5">CNPJ e nome são obrigatórios. O enriquecimento CNPJá e Assertiva roda automaticamente.</p>
             </div>
           </div>
 
@@ -1364,7 +1364,7 @@ export function SearchPage() {
             </button>
             {!expandedSections.has('mass-location') && (
               <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                {city ? city : 'Opcional — refine por cidade para resultados mais precisos'}
+                {city ? city : 'Opcional. Refine por cidade para resultados mais precisos.'}
               </p>
             )}
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-location') ? 'max-h-[200px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
@@ -1387,7 +1387,7 @@ export function SearchPage() {
             </button>
             {!expandedSections.has('mass-keywords') && (
               <p className="text-caption text-text-muted px-4 pb-3 -mt-1">
-                {keywords.length > 0 ? keywords.join(', ') : 'Opcional — refine com termos específicos do nicho'}
+                {keywords.length > 0 ? keywords.join(', ') : 'Opcional. Refine com termos específicos do nicho.'}
               </p>
             )}
             <div className={cn('px-4 overflow-hidden transition-all duration-300 ease-in-out', expandedSections.has('mass-keywords') ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
@@ -1401,7 +1401,7 @@ export function SearchPage() {
               <CircleDot className="h-3.5 w-3.5 text-red" />
               <p className="text-xs uppercase tracking-[0.12em] text-text-secondary font-semibold">Faixa de faturamento</p>
               <span className="text-caption text-text-muted font-mono ml-1">
-                {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label || ''} — {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label || ''}
+                {REVENUE_MIN_OPTIONS.find(r => r.value === revenueMin)?.label || ''} a {REVENUE_MAX_OPTIONS.find(r => r.value === revenueMax)?.label || ''}
               </span>
               <ChevronDown className={cn('h-4 w-4 text-text-muted ml-auto transition-transform duration-300', expandedSections.has('mass-revenue') && 'rotate-180')} />
             </button>
@@ -1904,7 +1904,7 @@ export function SearchPage() {
                         const cnpjValid = cnpjDigits.length === 14
                         const cnpjFmt = cnpjValid
                           ? cnpjDigits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
-                          : c.cnpj || '—'
+                          : c.cnpj || '-'
                         return (
                           <div key={idx} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-border/60">
                             <span className="text-[10px] font-mono tabular-nums text-text-muted w-5 shrink-0">{String(idx + 1).padStart(2, '0')}</span>

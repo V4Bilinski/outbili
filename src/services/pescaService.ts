@@ -505,7 +505,7 @@ export async function enrichBatchWithAssertiva(
           const mergedForTrava = { ...leadRecord.fields, ...leadUpdate } as Partial<Lead>
           const travasDetectadas = detectTravas(mergedForTrava)
           if (travasDetectadas.length > 0) {
-            leadUpdate.hypotheticalTrap = `${travasDetectadas[0].codigo} — ${travasDetectadas[0].nome}`
+            leadUpdate.hypotheticalTrap = `${travasDetectadas[0].codigo} ${travasDetectadas[0].nome}`
           }
 
           // Atualizar lead com dados completos + trava

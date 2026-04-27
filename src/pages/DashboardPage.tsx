@@ -59,8 +59,8 @@ function KPICards({ leads }: { leads: Lead[] }) {
               <p className="text-label text-text-muted mt-0.5">
                 {closedCount > 0 && <span className="text-success">{closedCount} fechado{closedCount > 1 ? 's' : ''} </span>}
                 {meetingsCount > 0 && <span>· {meetingsCount} em reunião </span>}
-                {contactedCount > 0 && <span>· {contactedCount} em contato</span>}
-                {closedCount === 0 && meetingsCount === 0 && contactedCount === 0 && 'Comece qualificando seus leads'}
+                {contactedCount > 0 && <span>· {contactedCount} em cadência</span>}
+                {closedCount === 0 && meetingsCount === 0 && contactedCount === 0 && 'Comece pela qualificação para mover oportunidades'}
               </p>
             </div>
           </div>
@@ -132,19 +132,19 @@ function KPICards({ leads }: { leads: Lead[] }) {
           {
             label: 'Quentes', emoji: '🔥', value: hotCount, pct: hotPct, icon: Flame,
             color: 'text-hot', borderColor: 'border-hot/20', bgAccent: 'bg-hot/[0.06]',
-            hint: hotCount > 0 ? 'Prontos para contato direto' : 'Nenhum lead quente ainda',
+            hint: hotCount > 0 ? 'Prontos para primeiro toque ou agendamento direto.' : 'Sem leads quentes. Re-qualifique mornos para subir score.',
             action: () => navigate('/leads?temperatura=Quente'),
           },
           {
             label: 'Mornos', emoji: '🟡', value: warmCount, pct: warmPct, icon: TrendingUp,
             color: 'text-warm', borderColor: 'border-warm/20', bgAccent: 'bg-warm/[0.04]',
-            hint: warmCount > 0 ? 'Qualificar para avançar no funil' : 'Nenhum lead morno',
+            hint: warmCount > 0 ? 'Em qualificação. Aprofunde discovery ou descarte sem fit.' : 'Sem leads mornos. Importe lista ou inicie nova prospecção.',
             action: () => navigate('/leads?temperatura=Morno'),
           },
           {
             label: 'Frios', emoji: '❄️', value: coldCount, pct: coldPct, icon: Snowflake,
             color: 'text-success', borderColor: 'border-success/20', bgAccent: 'bg-success/[0.04]',
-            hint: coldCount > 0 ? 'Iniciar cadência de aquecimento' : 'Nenhum lead frio',
+            hint: coldCount > 0 ? 'Em cadência de aquecimento ou descarte por falta de fit.' : 'Pipeline limpo de leads frios.',
             action: () => navigate('/leads?temperatura=Frio'),
           },
         ].map((card, i) => (
@@ -201,7 +201,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
     switch (lead.status) {
       case 'Reunião': return { text: 'Preparar reunião', type: 'meeting' as const }
       case 'Contactado': return { text: 'Aguardando resposta', type: 'whatsapp' as const }
-      case 'Respondeu': return { text: 'Agendar reunião', type: 'meeting' as const }
+      case 'Respondeu': return { text: 'Avançar para reunião agendada', type: 'meeting' as const }
       case 'Qualificado': return { text: 'Iniciar cadência', type: 'whatsapp' as const }
       default: return { text: 'Analisar e qualificar', type: 'view' as const }
     }
@@ -211,7 +211,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
     <Card className="p-0 overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <CardTitle>Próximas ações</CardTitle>
-        <span className="text-label text-text-muted font-mono">{sorted.length} requerem ação</span>
+        <span className="text-label text-text-muted font-mono">{sorted.length} aguardando</span>
       </div>
       <div className="divide-y divide-border">
         {sorted.map((lead) => {
@@ -318,7 +318,7 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
               disabled={disabled}
               onClick={() => navigate(`/leads?trava=T${key}`)}
               aria-label={disabled ? `T${key} ${meta?.short}: nenhum lead` : `Ver ${count} leads com trava T${key} ${meta?.short}`}
-              title={disabled ? `T${key} — ${meta?.short}: nenhum lead nessa trava.` : `Ver ${count} lead${count > 1 ? 's' : ''} com trava de ${meta?.short}.`}
+              title={disabled ? `T${key} ${meta?.short}: nenhum lead nessa trava.` : `Ver ${count} lead${count > 1 ? 's' : ''} com trava de ${meta?.short}.`}
               className={`group relative overflow-hidden flex flex-col items-center justify-center rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red/60 ${
                 disabled
                   ? 'border-border/40 bg-transparent opacity-40 cursor-not-allowed'
@@ -359,7 +359,7 @@ function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipel
   const stationDefs: Array<{ name: string; icon: typeof Search; key: StationKey; hint: string }> = [
     { name: 'Pesquisa', icon: Search, key: 'pesquisa', hint: 'Leads novos descobertos, ainda sem enriquecimento.' },
     { name: 'Enriquecimento', icon: Database, key: 'enriquecimento', hint: 'Leads em coleta de dados (CNPJá, Assertiva, Firecrawl).' },
-    { name: 'Qualificação', icon: Filter, key: 'qualificacao', hint: 'Leads enriquecidos com SPICED calculado — prontos para abordagem.' },
+    { name: 'Qualificação', icon: Filter, key: 'qualificacao', hint: 'Leads enriquecidos com SPICED calculado, prontos para abordagem.' },
     { name: 'Inteligência', icon: Brain, key: 'inteligencia', hint: 'Leads em contato ativo (mensagem enviada, respondeu ou reunião marcada).' },
     { name: 'Prospecção', icon: Send, key: 'prospeccao', hint: 'Leads com proposta entregue, próximos do fechamento.' },
   ]
@@ -465,7 +465,7 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
       label: 'LTP Médio por Lead',
       value: formatCurrency(avgPerLead),
       sub: totalLeads > 0 ? `Base: ${totalLeads} leads ativos` : 'Sem leads ativos',
-      hint: 'Valor projetado por oportunidade — use para priorizar onde investir tempo.',
+      hint: 'Valor projetado por oportunidade. Use para priorizar onde investir tempo.',
       href: '/leads',
       ariaLabel: 'Ver todos os leads ativos',
     },
@@ -482,7 +482,7 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
           <CardTitle>LTP do Pipeline</CardTitle>
           <div className="flex items-center gap-1 mt-1">
             <p className="text-xs text-text-muted max-w-2xl">
-              Receita projetada do pipeline. Priorize os Quentes — são os leads prontos para fechar.
+              Receita projetada do pipeline. Priorize os Quentes: são os leads prontos para fechar.
             </p>
             <div className="border-l-4 border-red/60 pl-2 ml-1">
               <span
@@ -569,21 +569,20 @@ export function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-red" />
-              <span className="text-label uppercase tracking-[0.15em] text-red font-semibold">Sistema de prospecção outbound</span>
+              <span className="text-label uppercase tracking-[0.15em] text-red font-semibold">Sistema de inteligência comercial</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold font-heading gradient-text mb-3">
-              Bem-vindo ao OUTBILI
+              Pipeline vazio.
             </h1>
             <p className="text-sm text-text-secondary max-w-lg leading-relaxed mb-8">
-              Pesquise, analise e prospecte empresas com inteligência de marketing completa.
-              Encontre vulnerabilidades, mapeie concorrentes e prepare reuniões com dados reais.
+              Nenhum lead em prospecção ainda. Comece pela busca por segmento ou importe uma lista existente. Em minutos a Linha de Montagem entrega contatos qualificados, prontos para o primeiro toque.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button size="lg" icon={<Search className="h-4 w-4" />} onClick={() => navigate('/search')}>
-                Iniciar pesquisa de leads
+                Iniciar prospecção
               </Button>
               <Button size="lg" variant="secondary" icon={<FileDown className="h-4 w-4" />} onClick={() => setShowImport(true)}>
-                Importar relatório
+                Importar lista
               </Button>
             </div>
           </div>
@@ -591,13 +590,13 @@ export function DashboardPage() {
 
         {/* How it works */}
         <div>
-          <h2 className="text-sm font-semibold font-heading text-text-secondary uppercase tracking-[0.1em] mb-4">Como funciona</h2>
+          <h2 className="text-sm font-semibold font-heading text-text-secondary uppercase tracking-[0.1em] mb-4">Como a linha funciona</h2>
           <div className="grid md:grid-cols-4 gap-4">
             {[
-              { step: '01', icon: Search, title: 'Pesquisar', desc: 'Selecione segmento, região e palavras-chave. O sistema analisa presença digital, anúncios, SEO e concorrentes automaticamente.', color: 'text-red' },
-              { step: '02', icon: Target, title: 'Qualificar', desc: 'Cada lead recebe um score SPICED, vulnerabilidades mapeadas e projeção de cenários com dados reais.', color: 'text-warning' },
-              { step: '03', icon: Smartphone, title: 'Prospectar', desc: 'Crie cadências WhatsApp personalizadas via BilinskiZap com templates aprovados e merge tags.', color: 'text-whatsapp' },
-              { step: '04', icon: BarChart3, title: 'Converter', desc: 'Acompanhe funil de conversão, métricas de entrega e relatórios estratégicos em tempo real.', color: 'text-success' },
+              { step: '01', icon: Search, title: 'Prospectar', desc: 'Selecione CNAE, UF e faturamento. O sistema retorna empresas com presença digital, anúncios, SEO e concorrentes mapeados automaticamente.', color: 'text-red' },
+              { step: '02', icon: Target, title: 'Qualificar', desc: 'Cada lead recebe score SPICED, vulnerabilidades mapeadas e projeção de cenários com dados reais. Frio não avança.', color: 'text-warning' },
+              { step: '03', icon: Smartphone, title: 'Cadenciar', desc: 'Cadências WhatsApp via BilinskiZap com templates aprovados e merge tags. Cold direto no celular do decisor, não no email da recepção.', color: 'text-whatsapp' },
+              { step: '04', icon: BarChart3, title: 'Fechar', desc: '5 tabs de inteligência prontas pré-reunião. Stage gates evitam estagnação. Win rate, velocity e LTP em tempo real.', color: 'text-success' },
             ].map((item) => (
               <div key={item.step} className="group p-5 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center gap-3 mb-3">
@@ -624,10 +623,9 @@ export function DashboardPage() {
                 <div className="p-2.5 rounded-xl bg-red/10 inline-flex mb-3">
                   <Zap className="h-5 w-5 text-red" />
                 </div>
-                <h3 className="text-base font-semibold text-text-primary mb-1">Pesquisa rápida</h3>
+                <h3 className="text-base font-semibold text-text-primary mb-1">Nova prospecção</h3>
                 <p className="text-xs text-text-muted leading-relaxed">
-                  Configure segmento, região e faturamento.
-                  Em minutos receba análise completa de presença digital, vulnerabilidades e concorrentes.
+                  Defina CNAE, UF e faixa de faturamento. Em minutos a linha entrega leads enriquecidos com presença digital, concorrentes mapeados e gancho de abertura prontos.
                 </p>
               </div>
               <ArrowRight className="h-5 w-5 text-text-muted group-hover:text-red group-hover:translate-x-1 transition-all mt-2 shrink-0" />
@@ -643,10 +641,9 @@ export function DashboardPage() {
                 <div className="p-2.5 rounded-xl bg-white/[0.04] inline-flex mb-3">
                   <FileDown className="h-5 w-5 text-text-secondary" />
                 </div>
-                <h3 className="text-base font-semibold text-text-primary mb-1">Importar lista de empresas</h3>
+                <h3 className="text-base font-semibold text-text-primary mb-1">Importar lista existente</h3>
                 <p className="text-xs text-text-muted leading-relaxed">
-                  Importe planilhas, listas, PDFs ou arquivos HTML.
-                  O sistema reconhece automaticamente os dados das empresas.
+                  Suba planilhas, listas, PDFs ou HTML. O sistema reconhece os dados das empresas e enfileira na linha automaticamente.
                 </p>
               </div>
               <ArrowRight className="h-5 w-5 text-text-muted group-hover:text-text-primary group-hover:translate-x-1 transition-all mt-2 shrink-0" />
@@ -657,10 +654,10 @@ export function DashboardPage() {
         {/* Stats preview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Leads no pipeline', value: '0', sub: 'Comece pesquisando' },
-            { label: 'Pesquisas realizadas', value: '0', sub: 'Faça sua primeira' },
-            { label: 'Campanhas WhatsApp', value: '0', sub: 'Crie após importar' },
-            { label: 'Taxa de conversão', value: '—', sub: 'Aparece após seu primeiro fechamento' },
+            { label: 'Leads no pipeline', value: '0', sub: 'Comece pela prospecção' },
+            { label: 'Prospecções rodadas', value: '0', sub: 'Faça a primeira agora' },
+            { label: 'Campanhas BilinskiZap', value: '0', sub: 'Crie após qualificar leads' },
+            { label: 'Win rate', value: '0%', sub: 'Aparece após o primeiro fechamento' },
           ].map((stat) => (
             <div key={stat.label} className="p-4 rounded-2xl bg-white/[0.015] border border-border">
               <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>
@@ -681,12 +678,12 @@ export function DashboardPage() {
       <AnimateIn delay={0}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold font-heading gradient-text">Dashboard</h1>
-            <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads no pipeline</p>
+            <h1 className="text-xl font-bold font-heading gradient-text">Visão geral do pipeline</h1>
+            <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads em prospecção</p>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
-              Nova pesquisa
+              Nova prospecção
             </Button>
           </div>
         </div>

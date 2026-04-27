@@ -38,6 +38,7 @@ playwright/{categoria}/{nome-descritivo}.{png|jpeg}
 | `final/` | Validações finais antes de entregar story |
 | `fix/` | Screenshots comprovando correção de bug |
 | `test/` | Testes manuais (formulários, filled, result) |
+| `screenshots/orphans/` | Screenshots resgatados de `.playwright-mcp/` (sem categoria original) |
 
 Se nenhuma categoria se aplica, criar subpasta nova em `playwright/{nova-categoria}/` com nome descritivo (kebab-case).
 
@@ -99,3 +100,30 @@ A pasta `playwright/` está em `.gitignore` — screenshots não são commitados
 - **Violação:** Salvar screenshot fora de `playwright/{categoria}/`
 - **Correção:** Mover arquivo para categoria correta + reportar ao usuário
 - **Prevenção:** Sempre construir o `filename` começando com `playwright/{categoria}/` antes da chamada
+
+### Hook Automático (PreToolUse)
+
+A regra é **bloqueante por hook** — registrado em `.claude/settings.json`:
+
+```json
+"hooks": {
+  "PreToolUse": [
+    { "matcher": "mcp__playwright__browser_take_screenshot",
+      "hooks": [{ "type": "command", "command": "node .claude/hooks/playwright-filename-guard.js" }] }
+  ]
+}
+```
+
+O hook `.claude/hooks/playwright-filename-guard.js` valida o parâmetro `filename` antes da chamada e BLOQUEIA (exit 2) qualquer um destes cenários:
+
+| Cenário | Mensagem | Sugestão |
+|---------|----------|----------|
+| `filename` ausente | "salvaria em `.playwright-mcp/` (órfão)" | `playwright/screenshots/captura.png` |
+| Sem prefixo `playwright/` | "não começa com `playwright/{categoria}/`" | `playwright/screenshots/{base}` |
+| Sem subpasta de categoria | "faltou subpasta de categoria" | `playwright/screenshots/{base}` |
+| Path absoluto ou `..` | "path traversal não é permitido" | rebase em `playwright/screenshots/` |
+| Extensão fora de `.png/.jpg/.jpeg` | "extensão inválida" | troca para `.png` |
+
+Quando o hook bloqueia, o stderr é injetado no contexto do modelo — Claude vê o motivo + sugestão e refaz a chamada com o `filename` correto.
+
+**Fail-open:** se stdin/JSON malformado, o hook sai com exit 0 (não bloqueia trabalho não relacionado).

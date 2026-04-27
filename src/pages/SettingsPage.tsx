@@ -70,7 +70,7 @@ export function SettingsPage() {
       <AnimateIn>
         <div>
           <h1 className="text-xl font-bold font-heading gradient-text">Configurações</h1>
-          <p className="text-xs text-text-muted mt-0.5">Conexões, templates e configurações do sistema</p>
+          <p className="text-xs text-text-muted mt-0.5">Conexões, templates e ajustes do sistema.</p>
         </div>
       </AnimateIn>
 
@@ -236,7 +236,7 @@ export function SettingsPage() {
           <p className="text-label text-text-muted leading-relaxed italic">
             "A maioria das empresas não tem problema de mercado. Tem problema de sistema de receita. Nós resolvemos o nosso."
           </p>
-          <p className="text-caption text-text-muted mt-1">— V4 Bilinski &amp; Co</p>
+          <p className="text-caption text-text-muted mt-1">V4 Bilinski &amp; Co</p>
         </div>
       </Card>
       </AnimateIn>

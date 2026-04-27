@@ -136,10 +136,10 @@ export function ReportsPage() {
       <AnimateIn>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold font-heading gradient-text">Relatórios de performance</h1>
+          <h1 className="text-xl font-bold font-heading gradient-text">Relatórios</h1>
           <p className="text-xs text-text-muted mt-0.5">
-            Performance completa da sua operação outbound
-            {periodDays > 0 ? ` · Últimos ${periodDays} dias` : ' · Todos os dados'}
+            Performance comercial completa: pipeline, conversão, win rate e velocity.
+            {periodDays > 0 ? ` Últimos ${periodDays} dias.` : ' Todos os dados.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -173,8 +173,8 @@ export function ReportsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total no pipeline', value: totalLeads, sub: `${hotLeads} Quentes · ${warmLeads} Mornos`, icon: Target, color: 'text-text-primary', accent: 'from-white/5 to-transparent' },
-          { label: 'Taxa de contato', value: `${contactRate}%`, sub: contactRate >= 50 ? `${contactados} contactados — bom ritmo` : `${contactados} de ${totalLeads} leads — aumentar cadências`, icon: Zap, color: 'text-warning', accent: 'from-warning/8 to-transparent' },
-          { label: 'Taxa de resposta', value: `${responseRate}%`, sub: responseRate >= 30 ? `${responderam} responderam — acima do benchmark` : `${responderam} responderam — benchmark é 30%`, icon: Activity, color: 'text-success', accent: 'from-success/8 to-transparent' },
+          { label: 'Taxa de contato', value: `${contactRate}%`, sub: contactRate >= 50 ? `${contactados} contactados. Bom ritmo.` : `${contactados} de ${totalLeads} leads. Aumentar cadências.`, icon: Zap, color: 'text-warning', accent: 'from-warning/8 to-transparent' },
+          { label: 'Taxa de resposta', value: `${responseRate}%`, sub: responseRate >= 30 ? `${responderam} responderam. Acima do benchmark.` : `${responderam} responderam. Benchmark é 30%.`, icon: Activity, color: 'text-success', accent: 'from-success/8 to-transparent' },
           { label: 'Conversão final', value: `${closeRate}%`, sub: `${fechados} fechados · ${perdidos} perdidos`, icon: Trophy, color: 'text-red', accent: 'from-red/8 to-transparent' },
         ].map((kpi) => (
           <div key={kpi.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.accent} backdrop-blur-xl border border-border p-5`}>
@@ -339,16 +339,16 @@ export function ReportsPage() {
           <p className="text-xs font-semibold text-red uppercase tracking-wider mb-2">Recomendações estratégicas</p>
           <ul className="space-y-1.5 text-xs text-text-secondary">
             {hotLeads > 0 && contactRate < 50 && (
-              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads Quentes sem contato — criar cadência WhatsApp hoje (maior probabilidade de conversão)</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> {hotLeads} leads Quentes sem contato. Criar cadência WhatsApp hoje (maior probabilidade de conversão).</li>
             )}
             {responseRate < 30 && contactados > 5 && (
-              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> Taxa de resposta em {responseRate}%, abaixo do benchmark (30%) — revisar scripts e personalização das mensagens</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-3 w-3 text-warning mt-0.5 shrink-0" /> Taxa de resposta em {responseRate}%, abaixo do benchmark (30%). Revisar scripts e personalização das mensagens.</li>
             )}
             {segmentData.length > 0 && (
-              <li className="flex items-start gap-2"><TrendingUp className="h-3 w-3 text-success mt-0.5 shrink-0" /> Segmento com melhor conversão: <strong>{segmentData[0]?.name}</strong> ({segmentData[0]?.conversionRate}%) — aumentar volume de pesquisa</li>
+              <li className="flex items-start gap-2"><TrendingUp className="h-3 w-3 text-success mt-0.5 shrink-0" /> Segmento com melhor conversão: <strong>{segmentData[0]?.name}</strong> ({segmentData[0]?.conversionRate}%). Aumentar volume de prospecção.</li>
             )}
             {perdidos > 0 && (
-              <li className="flex items-start gap-2"><Activity className="h-3 w-3 text-info mt-0.5 shrink-0" /> {perdidos} leads perdidos — analisar motivos e criar cadência de reengajamento após 60 dias</li>
+              <li className="flex items-start gap-2"><Activity className="h-3 w-3 text-info mt-0.5 shrink-0" /> {perdidos} leads perdidos. Analisar motivos e criar cadência de reengajamento após 60 dias.</li>
             )}
             <li className="flex items-start gap-2"><Target className="h-3 w-3 text-red mt-0.5 shrink-0" /> Meta recomendada: {Math.max(10, Math.ceil(totalLeads * 1.5))} leads pesquisados/mês para manter pipeline saudável</li>
           </ul>

@@ -110,7 +110,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
           <div className="px-3 py-2 rounded-lg bg-white/[0.03] border border-border">
             <p className="text-[12px] font-semibold text-text-primary leading-tight">{lead.companyName}</p>
             <p className="text-[10px] text-text-muted leading-tight mt-0.5">
-              {lead.segment} · {lead.tier} · Score {lead.score || '—'}
+              {lead.segment} · {lead.tier} · Score {lead.score || '-'}
             </p>
           </div>
 

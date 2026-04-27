@@ -217,8 +217,8 @@ export function generateSpicedDescriptions(leadData: Partial<Lead>): Record<stri
   if (isGenericEmail) pFragments.push('E-mail genérico indica marketing amador')
   else if (!emailDomain) pFragments.push('Sem e-mail corporativo identificado')
   if (data.phoneType === 'LANDLINE' || (!data.assertivaWhatsappFlag && data.rfPhone)) pFragments.push('Apenas telefone fixo, sem WhatsApp')
-  if (data.capitalSocial && data.capitalSocial < 50000 && yearsInMarket && yearsInMarket > 5) pFragments.push(`Capital social baixo com ${yearsInMarket} anos — possível estagnação`)
-  if (data.simplesOptant && data.employees && data.employees > 10) pFragments.push(`Simples Nacional com ${data.employees}+ funcionários — pode limitar crescimento`)
+  if (data.capitalSocial && data.capitalSocial < 50000 && yearsInMarket && yearsInMarket > 5) pFragments.push(`Capital social baixo com ${yearsInMarket} anos. Possível estagnação.`)
+  if (data.simplesOptant && data.employees && data.employees > 10) pFragments.push(`Simples Nacional com ${data.employees}+ funcionários. Pode limitar crescimento.`)
 
   // I — Impacto
   const iFragments: string[] = []
@@ -237,12 +237,12 @@ export function generateSpicedDescriptions(leadData: Partial<Lead>): Record<stri
 
   // CE — Evento Crítico
   const cFragments: string[] = []
-  if (yearsInMarket !== undefined && yearsInMarket < 2) cFragments.push('Empresa nova — momento de decisão')
-  if (data.assertivaWhatsappFlag) cFragments.push('WhatsApp do decisor confirmado — canal aberto')
+  if (yearsInMarket !== undefined && yearsInMarket < 2) cFragments.push('Empresa nova. Momento de decisão.')
+  if (data.assertivaWhatsappFlag) cFragments.push('WhatsApp do decisor confirmado. Canal aberto.')
   if (data.statusDate) {
     const statusDate = new Date(data.statusDate)
     const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
-    if (!isNaN(statusDate.getTime()) && statusDate > sixMonthsAgo) cFragments.push('Mudança de status cadastral recente — momento de transição')
+    if (!isNaN(statusDate.getTime()) && statusDate > sixMonthsAgo) cFragments.push('Mudança de status cadastral recente. Momento de transição.')
   }
   if (data.registrationStatus === 'Ativa' && yearsInMarket !== undefined && yearsInMarket < 1) cFragments.push('Empresa recém-ativada')
 
@@ -661,7 +661,7 @@ export async function enrichLead(
     // Trava dominante: SEMPRE atualizar com detectTravas (Fábrica de Receita)
     const travasEnrich = detectTravas(fullLeadData)
     if (travasEnrich.length > 0) {
-      merged.hypotheticalTrap = `${travasEnrich[0].codigo} — ${travasEnrich[0].nome}`
+      merged.hypotheticalTrap = `${travasEnrich[0].codigo} ${travasEnrich[0].nome}`
     } else if (!leadData.hypotheticalTrap) {
       merged.hypotheticalTrap = strategic.hypotheticalTrap
     }

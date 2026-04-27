@@ -13,22 +13,22 @@ interface GlossaryTerm {
 const GLOSSARY: GlossaryTerm[] = [
   {
     term: 'SPICED',
-    definition: 'Situation, Pain, Impact, Critical Event, Decision — framework de qualificação em 5 dimensões. Score ponderado: S (25%) + P (25%) + I (20%) + C (15%) + D (15%).',
+    definition: 'Situation, Pain, Impact, Critical Event, Decision. Framework de qualificação em 5 dimensões. Score ponderado: S (25%) + P (25%) + I (20%) + C (15%) + D (15%).',
     example: 'Cada lead recebe score SPICED automático que define a temperatura.',
   },
   {
     term: 'LTP',
-    definition: 'Lifetime Throughput do Projeto — quanto ganho a unidade V4 gera com aquele cliente ao longo do contrato. Fórmula: (Fee mensal - Custo variável) x Meses de contrato.',
+    definition: 'Lifetime Throughput do Projeto. Quanto a unidade V4 gera com aquele cliente ao longo do contrato. Fórmula: (Fee mensal - Custo variável) x Meses de contrato.',
     example: 'O LTP médio do pipeline é calculado na Dashboard.',
   },
   {
     term: 'Temperatura',
-    definition: 'Classificação de prioridade do lead baseada no score SPICED. Quente (3.7–5.0): pronto para contato. Morno (2.5–3.6): qualificar mais. Frio (1.0–2.4): necessita trabalho.',
+    definition: 'Classificação de prioridade do lead baseada no score SPICED. Quente (3.7 a 5.0): pronto para contato. Morno (2.5 a 3.6): qualificar mais. Frio (1.0 a 2.4): necessita trabalho.',
     example: 'Leads quentes aparecem primeiro nas Próximas Ações.',
   },
   {
     term: 'Tier',
-    definition: 'Faixa de faturamento do prospect que define o potencial de investimento. Micro+ (R$ 70k–100k), Small (R$ 100k–200k), Medium- (R$ 200k–830k), Medium= (R$ 830k–2M).',
+    definition: 'Faixa de faturamento do prospect que define o potencial de investimento. Micro+ (R$ 70k a 100k), Small (R$ 100k a 200k), Medium- (R$ 200k a 830k), Medium= (R$ 830k a 2M).',
     example: 'O tier define o percentual de LTP na Tab Projeção.',
   },
   {
@@ -58,7 +58,7 @@ const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: 'Throughput',
-    definition: 'Taxa na qual o sistema gera dinheiro ATRAVÉS DAS VENDAS. Não é produção — se produziu e não vendeu, não é ganho. Prioridade absoluta sobre corte de custos.',
+    definition: 'Taxa na qual o sistema gera dinheiro ATRAVÉS DAS VENDAS. Não é produção. Se produziu e não vendeu, não é ganho. Prioridade absoluta sobre corte de custos.',
     example: 'O card Throughput na Dashboard mostra contratos fechados no período.',
   },
   {
@@ -88,7 +88,7 @@ export function GlossarioPage() {
       <AnimateIn>
         <div>
           <h1 className="text-xl font-bold font-heading gradient-text">Glossário</h1>
-          <p className="text-xs text-text-muted mt-0.5">Termos e conceitos do OUTBILI e da metodologia V4</p>
+          <p className="text-xs text-text-muted mt-0.5">Termos e conceitos do OUTBILI e da metodologia V4 Fábrica de Receita.</p>
         </div>
       </AnimateIn>
 

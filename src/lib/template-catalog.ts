@@ -169,7 +169,7 @@ export function pickColdOpeningTemplate(lead: LeadWithContact): ColdTemplatePick
 
   return {
     template: getTemplateByName('outbili_cold_curto')!,
-    reason: 'Fallback — abordagem neutra',
+    reason: 'Fallback. Abordagem neutra.',
   }
 }
 

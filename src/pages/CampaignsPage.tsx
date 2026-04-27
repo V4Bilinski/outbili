@@ -1317,8 +1317,8 @@ export function CampaignsPage() {
       <AnimateIn>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold font-heading gradient-text">Disparos PESCA</h1>
-            <p className="text-xs text-text-muted mt-0.5">WhatsApp em massa para leads qualificados da prospecção</p>
+            <h1 className="text-xl font-bold font-heading gradient-text">Campanhas BilinskiZap</h1>
+            <p className="text-xs text-text-muted mt-0.5">Cadências de WhatsApp em massa para leads qualificados.</p>
           </div>
           <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
             Nova campanha

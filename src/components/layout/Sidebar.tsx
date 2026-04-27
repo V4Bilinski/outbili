@@ -42,7 +42,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
             return (
               <div
                 key={item.to}
-                title={collapsed ? `${item.label} (indisponível)` : 'Em atualização — disponível em breve'}
+                title={collapsed ? `${item.label} (indisponível)` : 'Em atualização. Disponível em breve.'}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-not-allowed select-none',
                   'text-white/20',

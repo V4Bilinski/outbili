@@ -113,7 +113,7 @@ export function PipelineJourneyStepper({ lead, source, className }: PipelineJour
 
     const toLabel = PIPELINE_COLUMNS.find((s) => s.value === toValue)?.label || toValue
     if (toValue === 'Fechado') {
-      toast.success(`🏆 ${lead.companyName} — Negócio fechado! Parabéns!`, { duration: 5000 })
+      toast.success(`🏆 ${lead.companyName}: negócio fechado.`, { duration: 5000 })
     } else {
       const emoji = toValue === 'Reunião' ? '📅' : toValue === 'Proposta' ? '📝' : '✅'
       toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })

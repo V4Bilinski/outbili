@@ -117,7 +117,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
             </div>
 
             <ScriptCard
-              label="CTA — Fechamento para reunião"
+              label="CTA: Fechamento para reunião"
               text={playbook.canais.whatsapp.cta}
               labelColor="text-red" bgColor="bg-red/[0.06]" borderColor="border-red/20"
             />
@@ -193,7 +193,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
             </div>
 
             <ScriptCard
-              label="Fechamento — agendar reunião"
+              label="Fechamento: agendar reunião"
               text={playbook.canais.ligacao.fechamento}
               labelColor="text-red" bgColor="bg-red/[0.06]" borderColor="border-red/20"
             />
@@ -206,7 +206,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
         <div className="flex items-center justify-between">
           <div>
             <span className="text-caption uppercase tracking-wider text-red font-medium">Produto recomendado</span>
-            <p className="text-sm font-semibold text-red mt-1">{playbook.produtoRecomendado.nome} — {playbook.produtoRecomendado.faixa}</p>
+            <p className="text-sm font-semibold text-red mt-1">{playbook.produtoRecomendado.nome} · {playbook.produtoRecomendado.faixa}</p>
             <p className="text-xs text-text-muted mt-1">{playbook.produtoRecomendado.justificativa}</p>
           </div>
           <CopyButton
