@@ -1,0 +1,94 @@
+/**
+ * AIOX Brandbook Keyframes (extraídos)
+ * Fonte: https://brand.aioxsquad.ai/_next/static/css/359a677733689b8a.css
+ * Originais com prefixo bb-* (brandbook).
+ *
+ * Use estes keyframes diretamente OU como referência para CSS-only fallback.
+ */
+
+@keyframes bb-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes bb-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes bb-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes bb-barGrow {
+  0% { width: 0; }
+}
+
+@keyframes bb-drawLine {
+  0%   { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+@keyframes bb-drawLineV {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes bb-content-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bb-blinds-open {
+  to { --blinds-width: 0px; }
+}
+
+@keyframes bb-letter-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bb-x-tick {
+  0%, 10%   { transform: rotate(0deg); }
+  25%, 35%  { transform: rotate(90deg); }
+  50%, 60%  { transform: rotate(180deg); }
+  75%, 85%  { transform: rotate(270deg); }
+  100%      { transform: rotate(1turn); }
+}
+
+@keyframes bb-progress-fill {
+  0%  { width: 0; }
+  30% { width: 40%; }
+  60% { width: 70%; }
+  85% { width: 90%; }
+  100% { width: 100%; }
+}
+
+@keyframes bb-easing-run {
+  0%   { left: 0; }
+  100% { left: calc(100% - 12px); }
+}
+
+@keyframes bb-duration-fill {
+  0%   { width: 0; }
+  100% { width: 100%; }
+}
+
+@keyframes bb-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes bb-pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+
+@keyframes bb-scanline-sweep {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Bonus: ticker variant */
+@keyframes bb-ticker {
+  0%   { transform: translate(0); }
+  100% { transform: translate(-33.333%); }
+}
