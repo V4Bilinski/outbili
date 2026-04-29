@@ -100,13 +100,13 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'inline-flex items-center gap-1.5 text-label text-red-vivid border border-red/30 rounded-md transition-all font-medium',
+                'inline-flex items-center gap-1.5 text-[10px] text-red-vivid border border-red/30 rounded-md transition-all font-medium leading-none',
                 'hover:bg-red hover:text-white hover:border-red',
-                compact ? 'px-2 py-0.5' : 'px-2.5 py-1',
+                compact ? 'px-1.5 py-1' : 'px-2 py-1',
               )}
               aria-label={`Abrir ${item.platform}: ${item.label}`}
             >
-              <item.Icon className="h-3 w-3" />
+              <item.Icon className="h-2.5 w-2.5" />
               <span className="truncate max-w-[140px]">{item.label}</span>
             </a>
           ))

@@ -409,17 +409,17 @@ export function CompanyPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className={`text-[11px] leading-tight font-medium px-2 py-0.5 rounded ${
+              <span className={`text-[9px] uppercase tracking-wide leading-none font-medium px-1.5 py-[3px] rounded-full ${
                 lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </span>
-              <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.tier}</span>
-              <span className="text-[11px] leading-tight font-medium px-1.5 py-0.5 rounded bg-white/5 text-text-secondary">{lead.segment}</span>
+              <span className="text-[9px] uppercase tracking-wide leading-none font-medium px-1.5 py-[3px] rounded-full bg-white/5 text-text-secondary">{lead.tier}</span>
+              <span className="text-[9px] leading-none font-medium px-1.5 py-[3px] rounded-full bg-white/5 text-text-secondary">{lead.segment}</span>
               {lead.sourceHtmlReport === 'cadastro_manual' && (
                 <span
                   title="Lead adicionado manualmente. Enriquecimento automático via CNPJá e Assertiva executado na criação."
-                  className="inline-flex items-center gap-1 text-[10px] leading-tight font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-300 cursor-help"
+                  className="inline-flex items-center gap-1 text-[9px] leading-none font-semibold uppercase tracking-wide px-1.5 py-[3px] rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-300 cursor-help"
                 >
                   Manual
                 </span>
@@ -815,13 +815,13 @@ export function CompanyPage() {
             <h2 className="text-xl font-bold font-heading mb-6">Análise SPICED</h2>
 
             {/* Score ponderado final */}
-            <div className="flex items-center gap-3 md:gap-4 pb-6 mb-8 border-b-2 border-red/20 flex-wrap">
+            <div className="flex items-center gap-3 pb-5 mb-6 border-b border-red/20 flex-wrap">
               <span className="text-sm text-text-secondary">Score ponderado final:</span>
-              <span className="text-2xl md:text-3xl font-extrabold font-mono text-red px-4 py-1.5 bg-red/10 rounded-lg shadow-[0_0_16px_rgba(204,0,0,0.2)] animate-[scale-in_0.4s_ease-out]">
+              <span className="text-base md:text-lg font-bold font-mono text-red px-2.5 py-1 bg-red/10 rounded-md shadow-[0_0_8px_rgba(204,0,0,0.15)] animate-[scale-in_0.4s_ease-out]">
                 {score}/5
               </span>
-              <span className="text-base text-text-muted">·</span>
-              <span className={`text-micro font-medium px-1.5 py-0.5 rounded ${
+              <span className="text-xs text-text-muted">·</span>
+              <span className={`text-[9px] uppercase tracking-wide font-medium px-1.5 py-[3px] rounded-full leading-none ${
                 lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}

@@ -150,24 +150,24 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                     {lead.sourceHtmlReport === 'cadastro_manual' && (
                       <span
                         title="Cadastrado manualmente com enriquecimento automático (CNPJá + Assertiva)"
-                        className="text-micro font-bold uppercase tracking-wide bg-amber-400/10 border border-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded cursor-help"
+                        className="text-[9px] font-semibold uppercase tracking-wide bg-amber-400/10 border border-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded cursor-help leading-none"
                       >
                         Manual
                       </span>
                     )}
-                    {lead.enrichmentStatus === 'complete' && <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Enriquecido</span>}
-                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Processando...</span>}
+                    {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
+                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse leading-none">Processando...</span>}
                     {(() => {
                       const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
                       if (!abbrev) return null
                       return (
-                        <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
                       )
                     })()}
                     {(() => {
                       const days = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0
                       if (days < 7 || lead.status === 'Fechado' || lead.status === 'Perdido') return null
-                      return <span className={`text-micro font-bold px-1.5 py-0.5 rounded ${days >= 14 ? 'text-error bg-error/10' : 'text-warning bg-warning/10'}`}>{days}d parado</span>
+                      return <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none ${days >= 14 ? 'text-error bg-error/10' : 'text-warning bg-warning/10'}`}>{days}d parado</span>
                     })()}
                   </div>
                   <p className="text-label text-text-muted mt-0.5">
@@ -193,7 +193,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-caption font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${tempColors[lead.temperature] || tempColors.Frio}`}>
+                  <span className={`inline-block text-[9px] font-medium px-1.5 py-[3px] rounded-full uppercase tracking-wide leading-none ${tempColors[lead.temperature] || tempColors.Frio}`}>
                     {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
                   </span>
                 </td>

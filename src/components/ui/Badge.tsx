@@ -26,8 +26,8 @@ export function Badge({ children, variant = 'default', pulse = false, size = 'md
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full font-semibold uppercase tracking-wider',
-        size === 'xs' ? 'px-1.5 py-px text-micro' : size === 'sm' ? 'px-2 py-px text-caption' : 'px-2.5 py-0.5 text-label',
+        'inline-flex items-center gap-1 rounded-full font-medium uppercase tracking-wide leading-none',
+        size === 'xs' ? 'px-1.5 py-0.5 text-[8px]' : size === 'sm' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-[3px] text-[10px]',
         variantStyles[variant],
         pulse && 'animate-[pulse-glow_2s_ease-in-out_infinite]',
         className,
