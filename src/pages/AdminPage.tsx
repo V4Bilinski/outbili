@@ -7,8 +7,10 @@ import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
-import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight } from 'lucide-react'
+import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight, Plug } from 'lucide-react'
 import { useReEnrichment } from '../hooks/useReEnrichment'
+import { IntegrationStatusBanner } from '../components/IntegrationStatusBanner'
+import { ConnectionsApiPanel } from '../components/ConnectionsApiPanel'
 import { useSpicedRecalc } from '../hooks/useSpicedRecalc'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
@@ -43,7 +45,7 @@ export function AdminPage() {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<string>('')
-  const [tab, setTab] = useState<'activity' | 'users' | 'enrichment'>('activity')
+  const [tab, setTab] = useState<'activity' | 'users' | 'enrichment' | 'connections'>('activity')
   const { state: reEnrichState, diagnostics, diagLoading, loadDiagnostics, startReEnrich, abort } = useReEnrichment()
   const { progress: recalcProgress, recalcAll } = useSpicedRecalc()
 
@@ -170,7 +172,16 @@ export function AdminPage() {
         >
           <Database className="h-4 w-4" /> Enriquecimento
         </button>
+        <button
+          onClick={() => setTab('connections')}
+          className={cn('flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
+            tab === 'connections' ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary')}
+        >
+          <Plug className="h-4 w-4" /> Conexões
+        </button>
       </div>
+
+      {tab === 'connections' && <ConnectionsApiPanel />}
 
       {/* Activity Log */}
       {tab === 'activity' && (
@@ -223,6 +234,7 @@ export function AdminPage() {
       {/* Enrichment */}
       {tab === 'enrichment' && (
         <div className="space-y-4">
+          <IntegrationStatusBanner variant="panel" />
           {/* Diagnostico */}
           {diagLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

@@ -23,7 +23,7 @@ async function proxyFetch(url: string, body: Record<string, string>): Promise<Re
   })
 }
 
-async function assertivaViaProxy<T>(action: string, params: Record<string, string>): Promise<T> {
+async function assertivaViaProxyInner<T>(action: string, params: Record<string, string>): Promise<T> {
   const payload = { action, ...params }
 
   // Tentar Worker primeiro (primário — sem CORS, mais rápido)
@@ -48,6 +48,45 @@ async function assertivaViaProxy<T>(action: string, params: Record<string, strin
   }
 
   throw new Error('Assertiva indisponível: nenhum proxy configurado (Worker ou n8n)')
+}
+
+// --- Status observado: alimenta o health-check sem gastar consulta paga ---
+
+const ASSERTIVA_STATUS_KEY = 'outbili_assertiva_status'
+
+export interface AssertivaLastKnown {
+  state: 'ok' | 'down' | 'unknown'
+  at: number | null
+}
+
+function recordAssertivaOutcome(ok: boolean): void {
+  try {
+    localStorage.setItem(ASSERTIVA_STATUS_KEY, JSON.stringify({ ok, at: Date.now() }))
+  } catch { /* storage indisponivel */ }
+}
+
+export function getAssertivaLastKnown(): AssertivaLastKnown {
+  try {
+    const raw = localStorage.getItem(ASSERTIVA_STATUS_KEY)
+    if (!raw) return { state: 'unknown', at: null }
+    const parsed = JSON.parse(raw) as { ok?: boolean; at?: number }
+    return { state: parsed.ok ? 'ok' : 'down', at: parsed.at ?? null }
+  } catch {
+    return { state: 'unknown', at: null }
+  }
+}
+
+// Wrapper que registra o resultado de cada chamada real a Assertiva. O status
+// vem do uso real (enriquecimento), nunca de um probe que consumiria credito.
+async function assertivaViaProxy<T>(action: string, params: Record<string, string>): Promise<T> {
+  try {
+    const result = await assertivaViaProxyInner<T>(action, params)
+    recordAssertivaOutcome(true)
+    return result
+  } catch (err) {
+    recordAssertivaOutcome(false)
+    throw err
+  }
 }
 
 // --- Direct auth (fallback, for server-side contexts) ---

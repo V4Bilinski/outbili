@@ -4,6 +4,7 @@ import { useCampaignMetas, useSaveCampaignMeta } from '../hooks/useCampaignMeta'
 import { useLeads } from '../hooks/useLeads'
 import { getContacts } from '../services/contactService'
 import { precheckCampaign, calculateDeliveryRate, calculateReadRate, type ZapCampaign, type ZapTemplate } from '../lib/bilinskizap'
+import { WhatsappTemplatesPanel } from '../components/WhatsappTemplatesPanel'
 import { VARIABLE_FIELD_OPTIONS, DEFAULT_VARIABLE_MAPPING, resolveVariables, resolveVariableLabel } from '../lib/template-variables'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -1207,6 +1208,7 @@ export function CampaignsPage() {
   const { data: metas, isLoading: metasLoading } = useCampaignMetas()
   const cancelCampaign = useCancelZapCampaign()
   const [showBuilder, setShowBuilder] = useState(false)
+  const [view, setView] = useState<'campaigns' | 'templates'>('campaigns')
   const [selectedCampaign, setSelectedCampaign] = useState<ZapCampaign | null>(null)
   const [duplicateTemplate, setDuplicateTemplate] = useState<string>('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
@@ -1320,9 +1322,29 @@ export function CampaignsPage() {
             <h1 className="text-xl font-bold font-heading gradient-text">Campanhas BilinskiZap</h1>
             <p className="text-xs text-text-muted mt-0.5">Cadências de WhatsApp em massa para leads qualificados.</p>
           </div>
-          <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
-            Nova campanha
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1">
+              <button
+                onClick={() => setView('campaigns')}
+                className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
+                  view === 'campaigns' ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary')}
+              >
+                Campanhas
+              </button>
+              <button
+                onClick={() => setView('templates')}
+                className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
+                  view === 'templates' ? 'bg-red text-white' : 'text-text-muted hover:text-text-secondary')}
+              >
+                Templates
+              </button>
+            </div>
+            {view === 'campaigns' && (
+              <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowBuilder(true)}>
+                Nova campanha
+              </Button>
+            )}
+          </div>
         </div>
       </AnimateIn>
 
@@ -1331,7 +1353,9 @@ export function CampaignsPage() {
       {/* Wizard */}
       {showBuilder && <AnimateIn delay={80}><NewCampaignWizard onClose={() => { setShowBuilder(false); setDuplicateTemplate('') }} initialTemplate={duplicateTemplate} /></AnimateIn>}
 
-      {!showBuilder && (
+      {!showBuilder && view === 'templates' && <AnimateIn delay={80}><WhatsappTemplatesPanel /></AnimateIn>}
+
+      {!showBuilder && view === 'campaigns' && (
         <>
           {/* Filter Bar */}
           <div className="flex items-center gap-3 flex-wrap">

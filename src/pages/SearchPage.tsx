@@ -880,7 +880,7 @@ export function SearchPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold font-heading gradient-text">Prospecção</h1>
-          <p className="text-xs text-text-muted mt-0.5">Busca por segmento ou cadastro manual de prospect específico. Enriquecimento CNPJá e Assertiva automático.</p>
+          <p className="text-xs text-text-muted mt-0.5">Busca por segmento ou cadastro manual de um prospect específico. Cada lead chega enriquecido com telefone e decisor automaticamente.</p>
         </div>
         {/* Mode toggle — 2 opcoes: Pesquisa em Massa (CNPJa) + Cadastro Manual */}
         <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1">
@@ -891,7 +891,7 @@ export function SearchPage() {
             <Search className="h-3.5 w-3.5" />
             <div className="text-left">
               <span className="block leading-tight">Pesquisa em massa</span>
-              <span className={cn('block text-caption font-normal leading-tight', searchMode === 'pesca' ? 'text-white/70' : 'text-text-muted')}>CNPJa + Assertiva</span>
+              <span className={cn('block text-caption font-normal leading-tight', searchMode === 'pesca' ? 'text-white/70' : 'text-text-muted')}>Busca por segmento</span>
             </div>
           </button>
           <button
@@ -923,7 +923,7 @@ export function SearchPage() {
             </div>
             <div>
               <CardTitle>Cadastrar prospect</CardTitle>
-              <p className="text-xs text-text-muted mt-0.5">CNPJ e nome são obrigatórios. O enriquecimento CNPJá e Assertiva roda automaticamente.</p>
+              <p className="text-xs text-text-muted mt-0.5">CNPJ e nome são obrigatórios. O enriquecimento de dados e contato roda automaticamente.</p>
             </div>
           </div>
 
