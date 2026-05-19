@@ -27,26 +27,91 @@ export interface ActivityLogEntry {
   timestamp?: string
 }
 
-// Simple hash (not cryptographic - for client-side auth with Airtable)
-// In production, use a proper backend. This is sufficient for team-internal tools.
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password + '_outbili_salt_2026')
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+// --- Hashing de senha ---
+// Auth client-side de ferramenta interna (sem backend; hashes ficam no Airtable).
+// Esquema: PBKDF2-HMAC-SHA256, salt aleatorio por usuario, 210k iteracoes (OWASP 2023).
+// Formato gravado: pbkdf2$<iteracoes>$<saltBase64>$<hashBase64>
+// Hashes legados (SHA-256 + salt estatico) sao verificados e migrados no login.
+
+const PBKDF2_ITERATIONS = 210_000
+const PBKDF2_KEY_BITS = 256
+const LEGACY_STATIC_SALT = '_outbili_salt_2026'
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin)
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // Allow initial admin password
-  if (hash === '$admin_initial$' && password === 'admin123') return true
-  const computed = await hashPassword(password)
-  return computed === hash
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes
 }
+
+// Comparacao em tempo constante: evita timing attacks na verificacao do hash.
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+async function pbkdf2(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number): Promise<string> {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'],
+  )
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    keyMaterial, PBKDF2_KEY_BITS,
+  )
+  return bytesToBase64(new Uint8Array(bits))
+}
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const hash = await pbkdf2(password, salt, PBKDF2_ITERATIONS)
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToBase64(salt)}$${hash}`
+}
+
+// Hash legado (SHA-256 + salt estatico). Mantido SOMENTE para verificar e migrar
+// credenciais antigas no login. Nunca usado para gravar hash novo.
+async function legacyHash(password: string): Promise<string> {
+  const data = new TextEncoder().encode(password + LEGACY_STATIC_SALT)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+export interface VerifyResult {
+  valid: boolean
+  /** true quando a credencial validou via hash legado e deve ser re-hasheada. */
+  needsRehash: boolean
+}
+
+export async function verifyPassword(password: string, storedHash: string): Promise<VerifyResult> {
+  if (storedHash?.startsWith('pbkdf2$')) {
+    const parts = storedHash.split('$')
+    if (parts.length !== 4) return { valid: false, needsRehash: false }
+    const iterations = Number(parts[1])
+    if (!Number.isFinite(iterations) || iterations <= 0) return { valid: false, needsRehash: false }
+    const computed = await pbkdf2(password, base64ToBytes(parts[2]), iterations)
+    return { valid: constantTimeEqual(computed, parts[3]), needsRehash: false }
+  }
+  // Hash legado SHA-256: verifica e sinaliza migracao. Backdoor removido.
+  const legacy = await legacyHash(password)
+  return { valid: constantTimeEqual(legacy, storedHash ?? ''), needsRehash: true }
+}
+
+// Formato de e-mail seguro para interpolar em filterByFormula (sem injecao).
+const SAFE_EMAIL = /^[^\s"'\\@]+@[^\s"'\\@]+\.[^\s"'\\@]+$/
 
 export async function getUserByEmail(email: string): Promise<User | null> {
+  const normalized = email.toLowerCase().trim()
+  if (!SAFE_EMAIL.test(normalized)) return null
   const records = await listAllRecords(TABLE, {
-    filterByFormula: `{email} = "${email.toLowerCase().trim()}"`,
+    filterByFormula: `{email} = "${normalized}"`,
     maxRecords: 1,
   })
   if (records.length === 0) return null
@@ -96,20 +161,14 @@ export async function login(email: string, password: string): Promise<User> {
   if (!user) throw new Error('Email não encontrado')
   if (!user.isActive) throw new Error('Usuário desativado. Contate o administrador.')
 
-  const valid = await verifyPassword(password, user.passwordHash)
+  const { valid, needsRehash } = await verifyPassword(password, user.passwordHash)
   if (!valid) throw new Error('Senha incorreta')
 
-  // Update last login
-  await updateRecords(TABLE, [{
-    id: user.id,
-    fields: { lastLoginAt: new Date().toISOString() },
-  }]).catch(() => {})
-
-  // If initial admin password, flag for change
-  if (user.passwordHash === '$admin_initial$') {
-    const hash = await hashPassword(password)
-    await updateRecords(TABLE, [{ id: user.id, fields: { passwordHash: hash } }]).catch(() => {})
-  }
+  // Atualiza ultimo login e, se a credencial era legada, migra o hash para PBKDF2
+  // de forma transparente (numa unica escrita).
+  const fields: Record<string, string> = { lastLoginAt: new Date().toISOString() }
+  if (needsRehash) fields.passwordHash = await hashPassword(password)
+  await updateRecords(TABLE, [{ id: user.id, fields }]).catch(() => {})
 
   return user
 }
