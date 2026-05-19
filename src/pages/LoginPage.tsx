@@ -17,6 +17,7 @@ export function LoginPage() {
   const [fullName, setFullName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -46,16 +47,19 @@ export function LoginPage() {
     if (password.length < 6) return
 
     setIsLoading(true)
+    setError(null)
     try {
       if (mode === 'signup') {
         await createUser({ email, password, fullName })
-        toast.success('Conta criada! Fazendo login...')
+        toast.success('Conta criada. Fazendo login...')
       }
       await login(email, password)
-      toast.success('Bem-vindo ao Outbili!')
+      toast.success('Bem-vindo ao Outbili.')
       navigate('/')
     } catch (err: any) {
-      toast.error(err.message || 'Email ou senha incorretos. Tente novamente.')
+      const msg = err?.message || 'Email ou senha incorretos. Tente novamente.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setIsLoading(false)
     }
@@ -182,6 +186,16 @@ export function LoginPage() {
                 </div>
               )}
             </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="rounded-xl border border-error/40 bg-error/[0.08] px-4 py-3 flex items-start gap-2 animate-[fade-in_0.2s_ease-out]"
+              >
+                <AlertCircle className="h-4 w-4 text-error shrink-0 mt-0.5" />
+                <p className="text-sm text-error leading-snug">{error}</p>
+              </div>
+            )}
 
             <button
               type="submit"
