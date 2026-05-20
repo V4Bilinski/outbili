@@ -52,7 +52,7 @@ export async function logEnrichmentStep(
     status,
     detail,
     started_at: now,
-    finished_at: status !== 'pending' ? now : null,
+    finished_at: now,  // status union é done|error|skipped — todos terminais
   }
   const { data, error } = await supabase.from(TABLE).insert(row)
     .select('*, lead:leads!enrichment_runs_lead_id_fkey(airtable_record_id)').single()

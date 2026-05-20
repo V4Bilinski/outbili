@@ -1,5 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../types/supabase.types'
+
+// NOTA: o tipo `Database` gerado pelo MCP cobre apenas o schema `public`
+// (CLI Supabase com --schema app,audit é a única forma de tipar tudo).
+// Como o app vive 100% em `app` + `audit`, tipar com `any` aqui é mais honesto
+// que mentir com um tipo vazio que faz `from()` retornar `never` no tsc -b.
+// Tipos de domínio (Lead, Contact, Partner, etc) vivem em src/types/index.ts.
+// Tech debt: ver Story 021 (limpeza pós-cutover) — regenerar tipos completos.
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -10,7 +16,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 // Cliente principal: schema 'app' (CRM core)
-export const supabase: SupabaseClient<Database, 'app'> = createClient<Database, 'app'>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabase: SupabaseClient<any, 'app'> = createClient<any, 'app'>(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   {
@@ -21,7 +28,8 @@ export const supabase: SupabaseClient<Database, 'app'> = createClient<Database, 
 )
 
 // Cliente paralelo para schema 'audit' (trilha imutavel; SELECT restrito a admin)
-export const supabaseAudit: SupabaseClient<Database, 'audit'> = createClient<Database, 'audit'>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabaseAudit: SupabaseClient<any, 'audit'> = createClient<any, 'audit'>(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   {

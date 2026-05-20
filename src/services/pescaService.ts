@@ -14,7 +14,7 @@ import { TIERS } from '../lib/constants'
 import { calculateSpicedScore, getTemperatureFromScore } from '../lib/utils'
 import { createLead, updateLead, getLead } from './leadService'
 import { createContact } from './contactService'
-import type { Lead, Contact, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
+import type { Lead, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
 // --- Fase 1: Busca em massa via CNPJa API (GET /office) ---
 // CNPJa retorna dados completos: telefone (com tipo MOBILE/LANDLINE), email, socios, CNAE, endereco.
