@@ -1,0 +1,83 @@
+handoff:
+  from_agent: po
+  to_agent: dev
+  timestamp: 2026-05-20T13:18:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T13:25:00-03:00
+  consumed_by: dev (Dex)
+  execution_mode: interactive
+  decisions:
+    - "T-1.5: user de teste via dashboard Supabase (operador cria, Dex usa)"
+    - "Dev server: rodando em background nesta sessão"
+    - "Checkpoints: após cada AC (2, 3, 4, 5) — apresentar screenshots antes de prosseguir"
+  partial_completion:
+    completed:
+      - "T-1 (pre-flight) ✅"
+      - "T-1.5 fase 1: user criado, profile elevado, dev server up ✅"
+    blocked:
+      - "T-1.5 fase 2: signInWithPassword (requer Playwright MCP)"
+    handed_off_to: devops (handoff-dev-to-devops-2026-05-20T13-35.yaml)
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: Ready
+    story_points: 5
+    complexity_class: STANDARD
+    executor: '@dev'
+    quality_gate: '@qa'
+    branch: main (criar feature/W3-07-validacao-e2e-cutover ao iniciar)
+
+  validation_result:
+    verdict: GO
+    score: 9.5/10
+    confidence: High
+    implementation_readiness: 9/10
+    blocking_issues: []
+    should_fix: []   # zerados após enriquecimento da @po
+    nice_to_have:
+      - Spec Playwright .ts (opcional — se feito, CodeRabbit roda)
+
+  decisions_from_po:
+    - "Story pontuada em 5 (STANDARD): scope=3, integration=4, infra=2, knowledge=2, risk=4 (sum=15)"
+    - "Risco RLS escalado para 🚨 após auditoria via MCP — confirmou 12 policies só para authenticated"
+    - "T-1.5 (setup sessão Supabase) virou MITIGAÇÃO OBRIGATÓRIA — sem ela, AC-2..AC-5 falham por design"
+    - "Lupa Data (recBOJohel74nLSQb) é lead primário para AC-3 — tem 3 partners, 2 contacts, 2 social"
+    - "MCP supabase já confirmado autenticado (URL outbili-spo) — @dev não precisa repetir T-1 deste check"
+
+  files_modified:
+    - docs/stories/W3-07.validacao-e2e-cutover.story.md (enriquecimento + Status → Ready)
+
+  blockers: []
+
+  next_action: |
+    @dev executar *develop W3-07 ou *develop-story W3-07.
+
+    Modo recomendado: **Interactive** (5-10 prompts, checkpoints educacionais)
+    OU **Pre-Flight** se quiser confirmar a abordagem de T-1.5 antes (criar user de teste vs aplicar policy temporária).
+
+    Fluxo de execução:
+      1. T-1 → confirmar .env.local (MCP já confirmado pela @po)
+      2. T-1.5 → 🚨 OBRIGATÓRIA: criar user de teste no Supabase Auth e signIn no app antes de qualquer fluxo
+      3. T-2 → npm run dev + screenshot 00
+      4. T-3 → AC-2 listagem (Lupa Data deve aparecer) + screenshots 01-02
+      5. T-4 → AC-3 perfil Lupa Data + screenshots 03-06
+      6. T-5 → AC-4 PESCA + SQL verify + screenshots 07-10
+      7. T-6 → AC-5 cadastro manual + SQL verify + screenshots 11-13
+      8. T-7 → AC-6 troubleshooting (se necessário)
+      9. T-8 → File List + Change Log
+      10. T-9 → handoff para @qa via *qa-gate
+
+    Após T-9, criar handoff: handoff-dev-to-qa-{timestamp}.yaml
+
+  predicted_next_handoffs:
+    - dev → qa (após T-9): @qa *qa-gate W3-07 (7 quality checks + verdict PASS/CONCERNS/FAIL/WAIVED)
+    - qa → sm (após PASS): @sm *draft W3-06 (Auth + W2-P05 mergeado)
+    - qa → dev (se FAIL): @dev fixes + re-review via *qa-loop W3-07
+
+  reminders_for_dev:
+    - "Playwright artifacts: SEMPRE filename='playwright/e2e-pesca/NN-...' — hook bloqueia se fora desse padrão"
+    - "Git push é EXCLUSIVO do @devops — não tentar `git push` na conclusão"
+    - "CodeRabbit: aplicável apenas se você escrever .spec.ts em playwright/specs/; senão skipped"
+    - "Soft delete: queries em leads/contacts default precisam .is('deleted_at', null)"
+    - "ID dual: lead.id exposto = airtable_record_id (rec...) — usar generateRecordId() para novos leads em AC-5"

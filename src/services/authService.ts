@@ -1,14 +1,18 @@
-import { listAllRecords, createRecords, updateRecords, mapRecord, mapRecords } from '../lib/airtable'
+// authService — backend 100% Supabase.
+// Substitui implementação Airtable (W3-06 cutover, mergeado em W3-07).
+// Auth via supabase.auth.* (signInWithPassword, signOut, updateUser).
+// Perfis em app.profiles. Log de atividades em audit.user_activity.
 
-const TABLE = 'Users'
-const LOG_TABLE = 'ActivityLog'
+import { supabase, supabaseAudit, throwIfError } from '../lib/supabase'
 
+// Mantém shape histórico do User pra back-compat dos consumers (LoginPage, SettingsPage, AdminPage).
+// id continua sendo string mas agora é o auth.users.id (uuid).
 export interface User {
   id: string
   email: string
-  passwordHash: string
+  passwordHash: string  // sempre '' — preservado pra não quebrar SettingsPage
   fullName: string
-  role: 'admin' | 'user'
+  role: 'admin' | 'sdr' | 'closer' | 'viewer' | 'user'
   isActive: boolean
   lastLoginAt?: string
   avatarUrl?: string
@@ -27,169 +31,208 @@ export interface ActivityLogEntry {
   timestamp?: string
 }
 
-// --- Hashing de senha ---
-// Auth client-side de ferramenta interna (sem backend; hashes ficam no Airtable).
-// Esquema: PBKDF2-HMAC-SHA256, salt aleatorio por usuario, 210k iteracoes (OWASP 2023).
-// Formato gravado: pbkdf2$<iteracoes>$<saltBase64>$<hashBase64>
-// Hashes legados (SHA-256 + salt estatico) sao verificados e migrados no login.
-
-const PBKDF2_ITERATIONS = 210_000
-const PBKDF2_KEY_BITS = 256
-const LEGACY_STATIC_SALT = '_outbili_salt_2026'
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let bin = ''
-  for (const b of bytes) bin += String.fromCharCode(b)
-  return btoa(bin)
-}
-
-function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return bytes
-}
-
-// Comparacao em tempo constante: evita timing attacks na verificacao do hash.
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
-
-async function pbkdf2(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number): Promise<string> {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'],
-  )
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
-    keyMaterial, PBKDF2_KEY_BITS,
-  )
-  return bytesToBase64(new Uint8Array(bits))
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16))
-  const hash = await pbkdf2(password, salt, PBKDF2_ITERATIONS)
-  return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToBase64(salt)}$${hash}`
-}
-
-// Hash legado (SHA-256 + salt estatico). Mantido SOMENTE para verificar e migrar
-// credenciais antigas no login. Nunca usado para gravar hash novo.
-async function legacyHash(password: string): Promise<string> {
-  const data = new TextEncoder().encode(password + LEGACY_STATIC_SALT)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
 export interface VerifyResult {
   valid: boolean
-  /** true quando a credencial validou via hash legado e deve ser re-hasheada. */
-  needsRehash: boolean
+  needsRehash: boolean  // sempre false (Supabase Auth gerencia hashing)
 }
 
-export async function verifyPassword(password: string, storedHash: string): Promise<VerifyResult> {
-  if (storedHash?.startsWith('pbkdf2$')) {
-    const parts = storedHash.split('$')
-    if (parts.length !== 4) return { valid: false, needsRehash: false }
-    const iterations = Number(parts[1])
-    if (!Number.isFinite(iterations) || iterations <= 0) return { valid: false, needsRehash: false }
-    const computed = await pbkdf2(password, base64ToBytes(parts[2]), iterations)
-    return { valid: constantTimeEqual(computed, parts[3]), needsRehash: false }
+// ----------------------------- Helpers -----------------------------
+
+function rowToUser(profile: any, authUser?: { email?: string }): User {
+  return {
+    id: profile.user_id ?? profile.id,
+    email: profile.email ?? authUser?.email ?? '',
+    passwordHash: '',
+    fullName: profile.full_name ?? '',
+    role: profile.role ?? 'viewer',
+    isActive: profile.is_active ?? false,
+    lastLoginAt: profile.last_login_at ?? undefined,
+    avatarUrl: profile.avatar_url ?? undefined,
+    createdAt: profile.created_at ?? undefined,
   }
-  // Hash legado SHA-256: verifica e sinaliza migracao. Backdoor removido.
-  const legacy = await legacyHash(password)
-  return { valid: constantTimeEqual(legacy, storedHash ?? ''), needsRehash: true }
 }
 
-// Formato de e-mail seguro para interpolar em filterByFormula (sem injecao).
-const SAFE_EMAIL = /^[^\s"'\\@]+@[^\s"'\\@]+\.[^\s"'\\@]+$/
+async function profileByAuthId(authUserId: string): Promise<any | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', authUserId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  throwIfError(error, 'profileByAuthId')
+  return data
+}
+
+// ----------------------------- Verify (compat) -----------------------------
+
+// Mantida apenas pra SettingsPage (re-validação antes de trocar senha).
+// Como Supabase não expõe verify-only, fazemos signInWithPassword com email + senha atual.
+// O caller passa email no lugar de storedHash quando quer essa verificação.
+export async function verifyPassword(password: string, emailOrHash: string): Promise<VerifyResult> {
+  if (!emailOrHash.includes('@')) {
+    // Legado: alguém ainda passou um hash — sempre rejeita pra forçar fluxo novo
+    return { valid: false, needsRehash: false }
+  }
+  const { error } = await supabase.auth.signInWithPassword({
+    email: emailOrHash,
+    password,
+  })
+  return { valid: !error, needsRehash: false }
+}
+
+// ----------------------------- Login / Logout -----------------------------
+
+export async function login(email: string, password: string): Promise<User> {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.toLowerCase().trim(),
+    password,
+  })
+  if (error) {
+    if (/invalid login credentials/i.test(error.message)) throw new Error('Email ou senha incorretos')
+    throw new Error(error.message)
+  }
+  if (!data.user) throw new Error('Falha no login')
+
+  const profile = await profileByAuthId(data.user.id)
+  if (!profile) throw new Error('Perfil não encontrado. Contate o administrador.')
+  if (!profile.is_active) throw new Error('Usuário desativado. Contate o administrador.')
+
+  // Atualiza last_login_at
+  await supabase.from('profiles')
+    .update({ last_login_at: new Date().toISOString() })
+    .eq('user_id', data.user.id)
+    .then(() => {}, () => {})
+
+  // Log de login
+  logActivity({
+    action: 'login',
+    userId: data.user.id,
+    userEmail: data.user.email ?? '',
+    userName: profile.full_name ?? '',
+    details: 'Login realizado',
+  }).catch(() => {})
+
+  return rowToUser({ ...profile, last_login_at: new Date().toISOString() }, data.user)
+}
+
+export async function logout(): Promise<void> {
+  await supabase.auth.signOut()
+}
+
+// ----------------------------- Profile CRUD -----------------------------
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const normalized = email.toLowerCase().trim()
-  if (!SAFE_EMAIL.test(normalized)) return null
-  const records = await listAllRecords(TABLE, {
-    filterByFormula: `{email} = "${normalized}"`,
-    maxRecords: 1,
-  })
-  if (records.length === 0) return null
-  return mapRecord<User>(records[0])
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', email.toLowerCase().trim())
+    .is('deleted_at', null)
+    .maybeSingle()
+  throwIfError(error, 'getUserByEmail')
+  return data ? rowToUser(data) : null
 }
 
 export async function getAllUsers(): Promise<User[]> {
-  const records = await listAllRecords(TABLE)
-  return mapRecords<User>(records)
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .is('deleted_at', null)
+    .order('full_name')
+  throwIfError(error, 'getAllUsers')
+  return (data || []).map((r: any) => rowToUser(r))
 }
 
-export async function createUser(data: {
+// Cria conta via supabase.auth.signUp. Trigger on_auth_user_created popula app.profiles.
+// Caller deve chamar login() em seguida (signUp não loga automaticamente quando confirmação está OFF).
+export async function createUser(input: {
   email: string
   password: string
   fullName: string
 }): Promise<User> {
-  const existing = await getUserByEmail(data.email)
-  if (existing) throw new Error('Email já cadastrado')
-
-  const passwordHash = await hashPassword(data.password)
-  const records = await createRecords(TABLE, [{
-    fields: {
-      email: data.email.toLowerCase().trim(),
-      passwordHash,
-      fullName: data.fullName,
-      role: 'user',
-      isActive: true,
-      createdAt: new Date().toISOString(),
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email.toLowerCase().trim(),
+    password: input.password,
+    options: {
+      data: { full_name: input.fullName },
     },
-  }])
-  return mapRecord<User>(records[0])
+  })
+  if (error) {
+    if (/already registered|user.*exists/i.test(error.message)) throw new Error('Email já cadastrado')
+    throw new Error(error.message)
+  }
+  if (!data.user) throw new Error('Falha ao criar conta')
+
+  // Atualiza full_name no profile (caso trigger não pegue do raw_user_meta_data)
+  await supabase.from('profiles')
+    .update({ full_name: input.fullName })
+    .eq('user_id', data.user.id)
+    .then(() => {}, () => {})
+
+  return {
+    id: data.user.id,
+    email: input.email,
+    passwordHash: '',
+    fullName: input.fullName,
+    role: 'viewer',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
 }
 
+// Atualiza campos do profile. Apenas full_name, role, is_active, avatar_url.
+// Aceita id = auth.users.id (preferido) ou app.profiles.id (compat).
 export async function updateUser(id: string, data: Partial<User>): Promise<User> {
-  const { id: _id, createdAt, ...fields } = data as any
-  const records = await updateRecords(TABLE, [{ id, fields }])
-  return mapRecord<User>(records[0])
+  const update: Record<string, any> = {}
+  if (data.fullName !== undefined) update.full_name = data.fullName
+  if (data.role !== undefined) update.role = data.role
+  if (data.isActive !== undefined) update.is_active = data.isActive
+  if (data.avatarUrl !== undefined) update.avatar_url = data.avatarUrl
+  update.updated_at = new Date().toISOString()
+
+  // Tenta atualizar primeiro por user_id (auth.users.id). Se nada bate, tenta por profiles.id.
+  const byUserId = await supabase.from('profiles').update(update).eq('user_id', id).select('*').maybeSingle()
+  if (byUserId.data) return rowToUser(byUserId.data)
+
+  const byProfileId = await supabase.from('profiles').update(update).eq('id', id).select('*').maybeSingle()
+  throwIfError(byProfileId.error, 'updateUser')
+  if (!byProfileId.data) throw new Error(`Usuário não encontrado: ${id}`)
+  return rowToUser(byProfileId.data)
 }
 
-export async function changePassword(userId: string, newPassword: string): Promise<void> {
-  const hash = await hashPassword(newPassword)
-  await updateRecords(TABLE, [{ id: userId, fields: { passwordHash: hash } }])
+// Troca senha do user logado (usa Supabase Auth — só funciona com sessão ativa do próprio user).
+// Ignora userId (kept pra compat) — Supabase Auth troca sempre do session.user.
+export async function changePassword(_userId: string, newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw new Error(error.message)
+
+  // Limpa force_password_reset se estava setado
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    await supabase.auth.updateUser({
+      data: { ...user.user_metadata, force_password_reset: false },
+    }).then(() => {}, () => {})
+  }
 }
 
-export async function login(email: string, password: string): Promise<User> {
-  const user = await getUserByEmail(email)
-  if (!user) throw new Error('Email não encontrado')
-  if (!user.isActive) throw new Error('Usuário desativado. Contate o administrador.')
-
-  const { valid, needsRehash } = await verifyPassword(password, user.passwordHash)
-  if (!valid) throw new Error('Senha incorreta')
-
-  // Atualiza ultimo login e, se a credencial era legada, migra o hash para PBKDF2
-  // de forma transparente (numa unica escrita).
-  const fields: Record<string, string> = { lastLoginAt: new Date().toISOString() }
-  if (needsRehash) fields.passwordHash = await hashPassword(password)
-  await updateRecords(TABLE, [{ id: user.id, fields }]).catch(() => {})
-
-  return user
-}
-
-// --- Activity Logging ---
+// ----------------------------- Activity Log (audit.user_activity) -----------------------------
 
 export async function logActivity(entry: Omit<ActivityLogEntry, 'id'>): Promise<void> {
   try {
-    await createRecords(LOG_TABLE, [{
-      fields: {
-        action: entry.action,
-        userId: entry.userId,
-        userEmail: entry.userEmail,
-        userName: entry.userName,
-        page: entry.page || '',
-        details: entry.details || '',
-        timestamp: new Date().toISOString(),
-      },
-    }])
+    // RLS exige user_id = auth.uid() — não faz sentido logar sem sessão ativa
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+
+    await supabaseAudit.from('user_activity').insert({
+      user_id: session.user.id,  // sempre o auth.uid corrente (não confia em entry.userId obsoleto)
+      user_email: entry.userEmail,
+      user_name: entry.userName || null,
+      action: entry.action,
+      page: entry.page || null,
+      details: entry.details || null,
+      occurred_at: entry.timestamp ?? new Date().toISOString(),
+    })
   } catch {
-    // Non-blocking - don't break the app if logging fails
+    // Non-blocking: log não pode quebrar UX
   }
 }
 
@@ -197,11 +240,21 @@ export async function getActivityLog(params?: {
   userId?: string
   limit?: number
 }): Promise<ActivityLogEntry[]> {
-  const filter = params?.userId ? `{userId} = "${params.userId}"` : undefined
-  const records = await listAllRecords(LOG_TABLE, {
-    filterByFormula: filter,
-    sort: [{ field: 'timestamp', direction: 'desc' }],
-    maxRecords: params?.limit || 100,
-  })
-  return mapRecords<ActivityLogEntry>(records)
+  let q = supabaseAudit.from('user_activity').select('*').order('occurred_at', { ascending: false })
+  if (params?.userId) q = q.eq('user_id', params.userId)
+  q = q.limit(params?.limit ?? 100)
+
+  const { data, error } = await q
+  throwIfError(error, 'getActivityLog')
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    action: row.action,
+    userId: row.user_id ?? '',
+    userEmail: row.user_email,
+    userName: row.user_name ?? '',
+    page: row.page ?? undefined,
+    details: row.details ?? undefined,
+    ipAddress: row.ip_address ?? undefined,
+    timestamp: row.occurred_at,
+  }))
 }

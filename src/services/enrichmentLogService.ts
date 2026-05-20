@@ -1,6 +1,6 @@
 // enrichmentLogService — backend Supabase (schema 'app.enrichment_runs').
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { EnrichmentLogEntry } from '../types'
 
 const TABLE = 'enrichment_runs'
@@ -19,7 +19,7 @@ function rowToEntry(row: any): EnrichmentLogEntry {
 
 async function resolveLeadDbId(leadId: string): Promise<string | null> {
   const { data } = await supabase.from('leads').select('id')
-    .or(`airtable_record_id.eq.${leadId},id.eq.${leadId}`).maybeSingle()
+    .eq(isAirtableId(leadId) ? 'airtable_record_id' : 'id', leadId).maybeSingle()
   return data?.id ?? null
 }
 

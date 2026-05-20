@@ -1,6 +1,6 @@
 // trademarkService — backend Supabase (schema 'app.lead_trademarks').
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { Trademark } from '../types'
 
 const TABLE = 'lead_trademarks'
@@ -19,7 +19,7 @@ function rowToTrademark(row: any): Trademark {
 
 async function resolveLeadDbId(leadId: string): Promise<string | null> {
   const { data } = await supabase.from('leads').select('id')
-    .or(`airtable_record_id.eq.${leadId},id.eq.${leadId}`).maybeSingle()
+    .eq(isAirtableId(leadId) ? 'airtable_record_id' : 'id', leadId).maybeSingle()
   return data?.id ?? null
 }
 

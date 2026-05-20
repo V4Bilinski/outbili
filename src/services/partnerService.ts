@@ -1,7 +1,7 @@
 // partnerService — backend Supabase (schema 'app').
 // Substitui a tabela Airtable 'Partners' por 'app.lead_partners' (decomposicao do JSON).
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { Partner } from '../types'
 
 const TABLE = 'lead_partners'
@@ -22,7 +22,7 @@ function rowToPartner(row: any): Partner {
 
 async function resolveLeadDbId(leadId: string): Promise<string | null> {
   const { data } = await supabase.from('leads').select('id')
-    .or(`airtable_record_id.eq.${leadId},id.eq.${leadId}`).maybeSingle()
+    .eq(isAirtableId(leadId) ? 'airtable_record_id' : 'id', leadId).maybeSingle()
   return data?.id ?? null
 }
 

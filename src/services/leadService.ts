@@ -4,10 +4,16 @@
 // para minimizar quebra nos 7 callers. O `id` exposto continua sendo o `rec...` legado
 // (`airtable_record_id`), reaproveitado para leads novos via `generateRecordId()`.
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { Lead } from '../types'
 
 const TABLE = 'leads'
+
+// PostgREST falha com 400 ao tentar castar 'recXXX' para UUID em filtros `id.eq.<rec>`.
+// Usar a coluna correta conforme o formato do id evita o cast quebrado.
+function idColumn(id: string): 'airtable_record_id' | 'id' {
+  return isAirtableId(id) ? 'airtable_record_id' : 'id'
+}
 // Embed das redes sociais (lead_social) e telefones/emails preferidos por meio das
 // colunas denormalizadas em app.leads (rf_phone, assertiva_phone_validated, etc).
 const SELECT = '*, lead_social(*)'
@@ -265,7 +271,7 @@ export async function getLeads(filter?: string): Promise<Lead[]> {
 export async function getLead(id: string): Promise<Lead> {
   // Aceita tanto airtable_record_id (rec...) quanto UUID Supabase
   const { data, error } = await supabase.from(TABLE).select(SELECT)
-    .or(`airtable_record_id.eq.${id},id.eq.${id}`)
+    .eq(idColumn(id), id)
     .maybeSingle()
   throwIfError(error, 'getLead')
   if (!data) throw new Error(`Lead nao encontrado: ${id}`)
@@ -288,7 +294,7 @@ export async function createLead(data: Partial<Lead>): Promise<Lead> {
 export async function updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
   // Resolve UUID interno para fazer o UPDATE
   const target = await supabase.from(TABLE).select('id, airtable_record_id')
-    .or(`airtable_record_id.eq.${id},id.eq.${id}`).maybeSingle()
+    .eq(idColumn(id), id).maybeSingle()
   throwIfError(target.error, 'updateLead.lookup')
   if (!target.data) throw new Error(`Lead nao encontrado: ${id}`)
   const dbId = target.data.id
@@ -306,7 +312,7 @@ export async function updateLead(id: string, data: Partial<Lead>): Promise<Lead>
 export async function deleteLead(id: string): Promise<void> {
   // Soft delete via deleted_at, preservando audit trail e FK das filhas
   const { error } = await supabase.from(TABLE).update({ deleted_at: new Date().toISOString() })
-    .or(`airtable_record_id.eq.${id},id.eq.${id}`)
+    .eq(idColumn(id), id)
   throwIfError(error, 'deleteLead')
 }
 

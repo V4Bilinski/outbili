@@ -1,0 +1,89 @@
+handoff:
+  from_agent: dev
+  to_agent: devops
+  timestamp: 2026-05-20T14:15:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T14:32:00-03:00
+  consumed_by: devops
+  outcome: 'Atendido por handoff-devops-to-dev-2026-05-20T14-20.yaml (Opção A executada com sucesso, playwright em user-scope)'
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: 'InProgress (paused — re-bloqueada por trust state de MCP)'
+    current_task: 'T-1.5 fase 2 (signInWithPassword via Playwright)'
+    branch: feature/W3-07-validacao-e2e-cutover
+
+  context_recap:
+    previous_handoff: handoff-devops-to-dev-2026-05-20T13-45.yaml (marcar consumed)
+    previous_attempt: 'Adicionou playwright em .mcp.json project-scope (correto), mas tools mcp__playwright__* não apareceram na sessão TUI.'
+    operator_already_tried:
+      - 'Encerrou e reabriu terminal'
+      - 'Executou /mcp e Authorize'
+    new_diagnosis: |
+      Causa raiz NÃO é cache de sessão. Após investigação:
+        - .mcp.json em /Sistemas/outbili contém playwright ✅
+        - claude mcp list reporta "✓ Connected" ✅ (CLI ignora trust)
+        - /mcp TUI mostra Project MCPs vazio para playwright ❌
+        - ~/.claude.json tem 4 entries para "outbili" — TODAS em paths antigos:
+            /Users/luizhenrique/outbili
+            /Enterprise/active/outbili
+            /Enterprise/active/AIOX_Fullstack/Clientes/V4_Company/V4_Creator/Sistemas/outbili (com Clientes/)
+          Path canônico atual (sem /Clientes/) NÃO TEM entry.
+        - Resultado: Claude Code considera path canônico "primeira sessão" sempre,
+          mas algo está suprimindo o trust dialog → playwright nunca é aprovado.
+
+  user_decision:
+    chosen_option: A
+    rationale: 'Mover playwright para scope user — Playwright é cross-projeto. Libera todas as sessões E2E futuras sem trust dialog por path.'
+
+  required_actions:
+    1_remove_from_project_scope:
+      command: 'claude mcp remove playwright -s project'
+      expected_result: '.mcp.json fica só com supabase'
+      side_effect: 'Deve commitar a remoção no branch atual (feature/W3-07-validacao-e2e-cutover)'
+
+    2_add_to_user_scope:
+      command: 'claude mcp add playwright -s user -- npx -y @playwright/mcp@latest'
+      expected_result: '~/.claude.json passa a ter playwright em mcpServers global'
+      validation: 'claude mcp list deve mostrar playwright sem qualificador de scope (user-scope é default em list)'
+
+    3_verify_health:
+      command: 'claude mcp get playwright'
+      expected_output_contains: 'Scope: User config (available in all your projects)'
+
+    4_handoff_back_to_dev:
+      create: .aiox/handoffs/handoff-devops-to-dev-2026-05-20T14-XX.yaml
+      include:
+        - 'Status: pronto para retomar T-1.5 fase 2'
+        - 'Instrução ao operador: reiniciar Claude Code uma última vez (necessário para sessão pegar user-scope MCP)'
+        - 'Pickup script: handoff anterior (13:45) tem receita exata do T-1.5 fase 2 — copiar/referenciar'
+
+  out_of_scope_for_devops:
+    - 'NÃO executar T-1.5 fase 2 (signInWithPassword) — é trabalho de @dev'
+    - 'NÃO modificar story file além do Change Log'
+    - 'NÃO tocar em playwright/e2e-pesca/ (artefatos de @dev)'
+
+  rollback_if_user_scope_fails:
+    - 'claude mcp remove playwright -s user'
+    - 'Reverter para opção B (editar ~/.claude.json adicionando entry do path canônico com enabledMcpjsonServers: ["supabase","playwright"] + hasTrustDialogAccepted: true)'
+
+  files_to_modify:
+    - .mcp.json (remover playwright)
+    - ~/.claude.json (adicionar playwright em mcpServers user-level — via comando, não edit manual)
+
+  preserved_state:
+    - 'User qa-w3-07@outbili.test ativo no Supabase (admin/active)'
+    - 'Senha: Teste200$ (em playwright/e2e-pesca/_session.local.md gitignored)'
+    - 'Branch feature/W3-07-validacao-e2e-cutover local'
+    - 'Dev server provavelmente vai cair no restart — operador roda npm run dev de novo'
+
+  next_action: |
+    @devops Gage executa:
+      1. claude mcp remove playwright -s project
+      2. git add .mcp.json && git commit -m "chore(mcp): move playwright to user-scope [W3-07]"
+      3. claude mcp add playwright -s user -- npx -y @playwright/mcp@latest
+      4. claude mcp get playwright (validar Scope: User config)
+      5. Criar handoff devops→dev (timestamp 14:20+) confirmando
+      6. Avisar operador: "Reinicie Claude Code uma vez. Após restart, mcp__playwright__* fica
+         disponível em qualquer sessão. @dev pode retomar W3-07."

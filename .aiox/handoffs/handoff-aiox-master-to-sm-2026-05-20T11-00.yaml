@@ -1,0 +1,67 @@
+handoff:
+  from_agent: aiox-master
+  to_agent: sm
+  timestamp: 2026-05-20T11:00:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T13:05:00-03:00
+  consumed_by: sm (River)
+  resulted_in: docs/stories/W3-07.validacao-e2e-cutover.story.md (Status=Draft)
+
+  story_context:
+    epic_id: EPIC-airtable-to-supabase-migration
+    epic_path: docs/stories/epics/EPIC-airtable-to-supabase-migration.md
+    current_wave: W3 (cutover) — W2 já encerrada 2026-05-19 com paridade total 3.313/3.313
+    next_story_to_create: W3-07
+    branch: main (4 commits ahead origin/main, não pushed)
+
+  decisions:
+    - "Operador escolheu ordem: E2E primeiro (W3-07), Auth depois (W3-06)"
+    - "Workflow: SDC formal (sm → po → dev → qa)"
+    - "Pendências pós-W2: atacar todas as 6 antes do W3-08 (oficialização)"
+    - "W2-P05 (password reset 10 users) MERGEADA em W3-06 — confirmado pelo operador"
+    - "Total revisado: 7 stories — W3-07, W3-06(+P05), W2-P01..P04, W2-P06, W3-08, 021"
+    - "Receita E2E manual fornecida pelo operador entra como AC explícito da W3-07"
+
+  files_modified: []
+
+  blockers:
+    - "Operador anexou 2 imagens (Captura de Tela 2026-05-20 às 10.22.34) que chegaram como placeholder PNG — não renderizaram. Reanexar se contiverem contexto crítico."
+    - "MCP supabase-rw precisa estar autenticado para qa-gate validar Supabase E2E"
+
+  next_action: |
+    @sm executar *create-story para gerar W3-07.
+
+    AC obrigatórios (receita do operador):
+      1. `cd ~/Enterprise/active/AIOX_Fullstack/V4_Company/V4_Creator/Sistemas/outbili && npm run dev`
+      2. Validar manualmente NESTA ordem (cada passo bloqueia o próximo):
+         a. Listagem de leads (PipelinePage + LeadsPage) — abre e mostra leads?
+         b. Empresa específica (CompanyPage) — carrega contacts + partners + lead_social embed?
+         c. Cadência/PESCA (SearchPage) — CNPJa busca, deduplica via `airtable_record_id`, salva no Supabase?
+         d. Criar lead manual (ImportModal) — persiste no Supabase com `rec...` sintético gerado?
+      3. Checklist de falhas prováveis (incluir como troubleshooting na story):
+         - Sintaxe de embed `lead_social(*)` no select
+         - Nomes de constraints (FKs lead_id, contact_id)
+         - RLS sem `auth.uid()` resolve para anônimo (esperado nesta fase — auth ainda Airtable)
+      4. Screenshots de evidência em `playwright/e2e-pesca/` por passo
+      5. Quando passar → W3-06 (Auth + W2-P05 mergeado: force password reset 10 users)
+
+    Após draft, @po valida via *validate-story-draft (10-point checklist).
+
+  roadmap_summary:
+    fase_a_validacao_e2e:
+      - W3-07: Validação E2E Playwright (PESCA + cadastro + enriquecimento → Supabase)
+    fase_b_auth_migration:
+      - W3-06: authService + useAuth + LoginPage → Supabase Auth + remover src/lib/airtable.ts + W2-P05 mergeado (force password reset 10 users via generateLink(recovery), ativar is_active=true ao concluir)
+    fase_c_pendencias_pos_w2:
+      - W2-P01: Cifrar CPF (pgsodium) — PII (leads + 102 contacts)
+      - W2-P02: Resolver 29 órfãos (decisão manter NULL vs deletar)
+      - W2-P03: Normalizar 9 campos vagos (jsonb, date, etc.)
+      - W2-P04: Reclassificar role="user" → sdr/closer/admin (9 perfis)
+      - W2-P06: Decisão modelo audit.audit_log (colunas dedicadas page/actor_name?)
+    fase_d_oficializacao:
+      - W3-08: Declarar Supabase oficial em docs + remover Airtable como dependência
+      - 021: Drop 12 foreign tables airtable_fdw.*
+    encerramento:
+      - "@devops: reconciliar 14 migrations remotas via 'supabase migration repair --status applied'"
+      - "@devops: tratar 4 workers Cloudflare untracked (commit ou .gitignore)"
+      - "@devops: push 4 commits ahead + tudo novo"

@@ -1,0 +1,86 @@
+handoff:
+  from_agent: dev
+  to_agent: devops
+  timestamp: 2026-05-20T13:35:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T13:42:00-03:00
+  consumed_by: devops (Gage)
+  strategy: 'Opção B (project-scope .mcp.json) — persistência em sessões futuras'
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: 'InProgress (paused)'
+    epic_id: EPIC-airtable-to-supabase-migration
+    blocked_at_task: T-1.5 fase 2 (signInWithPassword via browser_evaluate)
+    branch: feature/W3-07-validacao-e2e-cutover (local, não pushed)
+
+  blockers:
+    - id: PLAYWRIGHT_MCP_MISSING
+      severity: blocking
+      description: |
+        @dev tentou usar mcp__playwright__* tools para automatizar T-2 a T-6 (4 fluxos E2E + screenshots) e descobriu que o MCP não está plugado nesta sessão.
+        ToolSearch para playwright retornou "No matching deferred tools found".
+        `claude mcp list` mostra: playwright/desktop-commander direto NÃO aparecem na lista atual.
+      what_works:
+        - Playwright CLI global instalado (~/.npm-global/bin/playwright v1.58.2)
+        - Diretório playwright/ + 19 subcategorias prontas para screenshots
+      what_fails:
+        - browser_navigate, browser_take_screenshot, browser_evaluate (ausentes)
+
+  request_to_devops: |
+    Adicionar o MCP `playwright` ao Claude Code (escopo recomendado: project-level no .mcp.json para
+    ficar disponível em retomadas futuras da W3-07 / W3-06 / qualquer story com E2E).
+
+    Comandos candidatos (escolher o que funcionar):
+
+    Opção A — MCP oficial Microsoft:
+      claude mcp add playwright -- npx @playwright/mcp@latest
+
+    Opção B — Adicionar ao .mcp.json do projeto (escopo project):
+      Editar /Users/luizhenrique/Enterprise/active/AIOX_Fullstack/V4_Company/V4_Creator/Sistemas/outbili/.mcp.json:
+      {
+        "mcpServers": {
+          "supabase": { ... existente ... },
+          "playwright": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"]
+          }
+        }
+      }
+      Depois reiniciar Claude Code para o MCP carregar.
+
+    Após plug, validar com `claude mcp list` — deve aparecer `playwright` connected.
+
+  context_preserved:
+    user_qa:
+      email: 'qa-w3-07@outbili.test'
+      auth_id: '2093550e-b19f-4ffc-876e-f01ad5606c88'
+      profile_id: '198f44e8-60c2-4f2c-a6e4-abda0ea0f238'
+      role: admin (elevado de viewer)
+      is_active: true (elevado de false)
+      senha: 'no chat da sessão atual; persistir manualmente se reiniciar Claude Code'
+    dev_server:
+      url: 'http://localhost:5173/outbili/'
+      bash_background_id: bvlkoeyms
+      output_path: /private/tmp/claude-501/-Users-luizhenrique-Enterprise-active-AIOX-Fullstack/31c9f946-7b9b-4506-96ea-94193cce6b70/tasks/bvlkoeyms.output
+      note: 'Reiniciar Claude Code pode derrubar o background process. Operador pode subir manualmente com `npm run dev` se necessário.'
+    feature_branch: feature/W3-07-validacao-e2e-cutover (local only)
+
+  next_action: |
+    @devops:
+      1. Adicionar MCP playwright via Opção A (mais simples) OU Opção B (mais persistente)
+      2. Validar com `claude mcp list`
+      3. Se Claude Code precisar reiniciar para carregar:
+         - Operador anota a senha do user qa-w3-07@outbili.test em local seguro antes de reiniciar
+         - Após restart, rodar `npm run dev` se o background process tiver caído
+      4. Criar handoff devops → dev confirmando que MCP está pronto
+      5. @dev retoma do T-1.5 fase 2 (signInWithPassword)
+
+  rollback_if_unable: |
+    Se @devops não conseguir habilitar Playwright MCP:
+      - @dev escreve spec .ts em playwright/specs/w3-07-e2e.spec.ts
+      - Operador roda `npx playwright test playwright/specs/w3-07-e2e.spec.ts` manualmente
+      - @dev analisa output + screenshots
+      - Story fecha em modo "spec-driven" em vez de "MCP-driven"

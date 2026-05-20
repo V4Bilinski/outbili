@@ -2,7 +2,7 @@
 // Mantem a API publica do service legado (getContacts, createContact, updateContact, deleteContact).
 // O leadId continua sendo o `rec...` (airtable_record_id de app.leads) para compat com componentes.
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { Contact } from '../types'
 
 const TABLE = 'contacts'
@@ -48,7 +48,7 @@ function contactToRow(data: Partial<Contact>): Record<string, any> {
 
 async function resolveLeadId(leadIdOrRec: string): Promise<string | null> {
   const { data } = await supabase.from('leads').select('id')
-    .or(`airtable_record_id.eq.${leadIdOrRec},id.eq.${leadIdOrRec}`).maybeSingle()
+    .eq(isAirtableId(leadIdOrRec) ? 'airtable_record_id' : 'id', leadIdOrRec).maybeSingle()
   return data?.id ?? null
 }
 
@@ -106,7 +106,7 @@ export async function updateContact(id: string, data: Partial<Contact>): Promise
     if (ld) row.lead_id = ld
   }
   const { data: updated, error } = await supabase.from(TABLE).update(row)
-    .or(`airtable_record_id.eq.${id},id.eq.${id}`)
+    .eq(isAirtableId(id) ? 'airtable_record_id' : 'id', id)
     .select('*, lead:leads!contacts_lead_id_fkey(airtable_record_id)').single()
   throwIfError(error, 'updateContact')
   return {
@@ -118,6 +118,6 @@ export async function updateContact(id: string, data: Partial<Contact>): Promise
 export async function deleteContact(id: string): Promise<void> {
   const { error } = await supabase.from(TABLE)
     .update({ deleted_at: new Date().toISOString() })
-    .or(`airtable_record_id.eq.${id},id.eq.${id}`)
+    .eq(isAirtableId(id) ? 'airtable_record_id' : 'id', id)
   throwIfError(error, 'deleteContact')
 }

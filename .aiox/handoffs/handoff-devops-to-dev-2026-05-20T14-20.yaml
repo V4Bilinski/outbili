@@ -1,0 +1,108 @@
+handoff:
+  from_agent: devops
+  to_agent: dev
+  timestamp: 2026-05-20T14:20:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T14:32:00-03:00
+  consumed_by: dev
+  responds_to: handoff-dev-to-devops-2026-05-20T14-15.yaml
+  outcome: 'mcp__playwright__* disponível na nova sessão. Dev server caiu no restart (esperado), sendo reiniciado. Retomando T-1.5 fase 2.'
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: 'InProgress (desbloqueada — playwright MCP em user-scope, aguardando restart do Claude Code)'
+    current_task: 'T-1.5 fase 2 (signInWithPassword via Playwright)'
+    branch: feature/W3-07-validacao-e2e-cutover
+
+  execution_summary:
+    chosen_option: A (mover playwright para user-scope)
+    steps_executed:
+      step_1_remove_project_scope:
+        command: 'claude mcp remove playwright -s project'
+        result: 'OK — Removed MCP server playwright from project config'
+        side_effect: '.mcp.json modificado (agora só supabase)'
+
+      step_2_git_commit:
+        status: SKIPPED
+        reason: |
+          .mcp.json está gitignored desde commit e0a2d2c
+          ("security: gitignore .mcp.json + npm audit fix").
+          git ls-files .mcp.json retornou vazio — arquivo é untracked.
+          Não há nada a commitar. Modificação fica só local (que é o
+          comportamento esperado para um arquivo gitignored com creds/scope).
+        handoff_correction: |
+          O handoff de entrada (14:15) pediu "git add .mcp.json && git commit".
+          Essa instrução não se aplica ao estado atual do repo. Pulei sem
+          consequência — operação 100% reversível via `claude mcp` CLI.
+
+      step_3_add_user_scope:
+        command: 'claude mcp add playwright -s user -- npx -y @playwright/mcp@latest'
+        result: 'OK — Added stdio MCP server playwright to user config'
+        side_effect: '~/.claude.json modificado (mcpServers global ganhou playwright)'
+
+      step_4_validate_health:
+        command: 'claude mcp get playwright'
+        result_excerpt: |
+          playwright:
+            Scope: User config (available in all your projects)
+            Status: ✓ Connected
+            Type: stdio
+            Command: npx
+            Args: -y @playwright/mcp@latest
+        validation: PASS — Scope confirmado "User config", Status Connected
+
+  current_state:
+    project_mcp_json: 'só supabase (playwright removido)'
+    user_claude_json: 'playwright presente em mcpServers global'
+    cli_reports: 'claude mcp get playwright → ✓ Connected (user-scope)'
+
+  operator_instructions:
+    required_action: |
+      REINICIAR Claude Code uma última vez:
+        1. Encerrar esta sessão (terminal/window)
+        2. Abrir nova sessão em qualquer projeto
+        3. Validar: digite /mcp e confirme que "playwright" aparece em
+           "User MCPs" com status Connected (não em "Project MCPs")
+      Após restart, mcp__playwright__* fica disponível em QUALQUER sessão futura
+      — sem trust dialog, sem reconfigurar por path.
+
+    secondary_action: |
+      Restart provavelmente derruba o dev server.
+      Após Claude Code voltar, rodar `npm run dev` no outbili novamente.
+
+  pickup_instructions_for_dev:
+    when_to_resume: 'Após operador reiniciar Claude Code e confirmar mcp__playwright__* disponível'
+    next_handoff_to_consult: 'handoff-devops-to-dev-2026-05-20T13-45.yaml (receita completa do T-1.5 fase 2)'
+    summary_of_pickup: |
+      @dev (Dex) deve retomar W3-07 a partir do T-1.5 fase 2:
+        - Abrir Playwright (chromium) no dev server localhost:5173
+        - Navegar pra /login
+        - signInWithPassword usando qa-w3-07@outbili.test / Teste200$
+        - Capturar screenshot pós-login em playwright/e2e-pesca/
+        - Atualizar checkbox T-1.5 no story file
+        - Seguir para T-1.6 (validação dashboard)
+
+  preserved_state:
+    - 'User qa-w3-07@outbili.test ativo no Supabase (admin/active)'
+    - 'Senha: Teste200$ (em playwright/e2e-pesca/_session.local.md gitignored)'
+    - 'Branch feature/W3-07-validacao-e2e-cutover local (não houve push)'
+    - 'Trabalho de @dev intocado: zero alteração em playwright/e2e-pesca/, story file ou src/'
+
+  out_of_scope_executed_now:
+    - 'Marcação consumed=true do handoff anterior (dev→devops 14:15) — deixo para @dev fazer no pickup, é higiene do consumer'
+    - 'Atualização do Change Log da story — @dev faz no pickup'
+
+  rollback_path_if_needed:
+    if_user_scope_breaks_other_projects:
+      - 'claude mcp remove playwright -s user'
+      - 'Cair para opção B do handoff original (editar ~/.claude.json manualmente)'
+
+  files_modified:
+    - .mcp.json (playwright removido do project scope — untracked/gitignored)
+    - ~/.claude.json (playwright adicionado em user scope mcpServers)
+
+  next_action: |
+    @dev Dex aguarda restart do Claude Code pelo operador.
+    Quando operador confirmar "/mcp mostra playwright em User MCPs",
+    @dev retoma T-1.5 fase 2 seguindo receita do handoff 13:45.

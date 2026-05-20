@@ -1,0 +1,73 @@
+handoff:
+  from_agent: devops
+  to_agent: dev
+  timestamp: 2026-05-20T13:45:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T14:15:00-03:00
+  consumed_by: dev
+  outcome: 'Tentativa de Opção A falhou — trust dialog suprimido. Causa raiz identificada (path canônico sem entry em ~/.claude.json). Novo handoff dev→devops 14:15 escalando para user-scope MCP.'
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: 'InProgress (paused — aguardando autorização da sessão)'
+    branch: feature/W3-07-validacao-e2e-cutover
+
+  delivery:
+    what_was_provisioned:
+      - 'MCP playwright adicionado ao .mcp.json (escopo project, persistente)'
+      - 'Configuração: stdio + npx -y @playwright/mcp@latest'
+      - 'Pacote @playwright/mcp v0.0.75 verificado no registry npm'
+      - 'claude mcp list confirma "✓ Connected"'
+      - 'claude mcp get playwright confirma project-scope'
+
+    blocking_step_remaining:
+      issue: 'Sessão Claude Code ativa carrega .mcp.json no boot. Project-scope MCPs precisam de approval explícito do operador para serem expostos como tools nesta sessão.'
+      evidence: 'ToolSearch retorna "No matching deferred tools found" para mcp__playwright__*. .mcp.json bem-formado e health check passou.'
+      resolution_options:
+        - id: A
+          label: '/mcp slash command (recomendado — sem perdas)'
+          steps:
+            - 'Operador digita /mcp no chat'
+            - 'Menu interativo abre listando todos MCPs'
+            - 'Selecionar playwright → Authorize / Reconnect'
+            - 'Tools mcp__playwright__* ficam disponíveis na sessão atual'
+            - 'Sessão preserva: senha do user qa-w3-07 no chat, dev server background, story state'
+        - id: B
+          label: 'Reiniciar Claude Code (último recurso)'
+          steps:
+            - 'Operador anota senha "Teste200$" em local seguro antes de fechar'
+            - 'Fecha e reabre Claude Code'
+            - 'Roda npm run dev novamente (background process foi perdido)'
+            - 'Tools mcp__playwright__* ficam disponíveis automaticamente'
+
+  files_modified:
+    - .mcp.json (adicionado playwright stdio server)
+    - .aiox/handoffs/handoff-dev-to-devops-2026-05-20T13-35.yaml (marcado consumed)
+    - .aiox/handoffs/handoff-devops-to-dev-2026-05-20T13-45.yaml (este arquivo)
+
+  side_effects:
+    - '.mcp.json deve entrar no próximo commit (project artifact, não gitignored)'
+    - 'Beneficia retomadas futuras de W3-07 + qualquer story E2E (W3-06, próximas validações)'
+
+  next_action: |
+    Após operador rodar /mcp + autorizar playwright (Opção A):
+
+    @dev retoma do T-1.5 fase 2 com a seguinte sequência:
+      1. Validar disponibilidade dos tools (ToolSearch select:mcp__playwright__browser_navigate)
+      2. browser_navigate http://localhost:5173/outbili/
+      3. browser_take_screenshot → playwright/e2e-pesca/00-pre-login.png
+      4. browser_evaluate executando fetch para Supabase Auth REST:
+         - POST https://yxppliytwvlajeqqrrny.supabase.co/auth/v1/token?grant_type=password
+         - Headers: apikey + Content-Type: application/json
+         - Body: { email: 'qa-w3-07@outbili.test', password: 'Teste200$' }
+         - Pegar access_token, refresh_token, user
+         - localStorage.setItem('sb-yxppliytwvlajeqqrrny-auth-token', JSON.stringify({...}))
+      5. browser_navigate para refresh
+      6. browser_console_messages para verificar warnings/erros
+      7. browser_take_screenshot → playwright/e2e-pesca/00-post-signin.png
+      8. Prosseguir T-2 (AC-1 ambiente) → T-9
+
+  rollback_if_a_fails:
+    - 'Se /mcp não oferecer authorize/reload: ir para Opção B (restart)'
+    - 'Se restart não resolver: claude mcp remove playwright -s project + claude mcp add playwright via CLI direta'

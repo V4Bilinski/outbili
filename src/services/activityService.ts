@@ -1,6 +1,6 @@
 // activityService — backend Supabase (schema 'app.activities').
 
-import { supabase, generateRecordId, throwIfError } from '../lib/supabase'
+import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
 import type { Activity } from '../types'
 
 const TABLE = 'activities'
@@ -19,13 +19,13 @@ function rowToActivity(row: any): Activity {
 
 async function resolveLeadDbId(leadId: string): Promise<string | null> {
   const { data } = await supabase.from('leads').select('id')
-    .or(`airtable_record_id.eq.${leadId},id.eq.${leadId}`).maybeSingle()
+    .eq(isAirtableId(leadId) ? 'airtable_record_id' : 'id', leadId).maybeSingle()
   return data?.id ?? null
 }
 
 async function resolveContactDbId(contactId: string): Promise<string | null> {
   const { data } = await supabase.from('contacts').select('id')
-    .or(`airtable_record_id.eq.${contactId},id.eq.${contactId}`).maybeSingle()
+    .eq(isAirtableId(contactId) ? 'airtable_record_id' : 'id', contactId).maybeSingle()
   return data?.id ?? null
 }
 

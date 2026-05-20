@@ -1,0 +1,62 @@
+handoff:
+  from_agent: sm
+  to_agent: po
+  timestamp: 2026-05-20T13:05:00-03:00
+  consumed: true
+  consumed_at: 2026-05-20T13:18:00-03:00
+  consumed_by: po (Pax)
+  verdict: GO
+  score: 9.5/10
+  status_transition: Draft → Ready
+  enriched_artifacts:
+    - 3 CNPJ reais para AC-3 (Lupa Data primário)
+    - Auditoria de 12 policies RLS confirmando bloqueio anon
+    - Nova task T-1.5 (setup sessão Supabase) como mitigação obrigatória
+    - Metadata YAML (executor=@dev, quality_gate=@qa, story_points=5, complexity=STANDARD)
+    - Inventário atualizado (601 ativos, 27 órfãos, 51 leads c/ social)
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: Draft
+    epic_id: EPIC-airtable-to-supabase-migration
+    epic_path: docs/stories/epics/EPIC-airtable-to-supabase-migration.md
+    current_task: 10-point validation checklist (@po *validate-story-draft)
+    branch: main (story ainda não tem feature branch — @dev criará ao iniciar implementação)
+
+  decisions:
+    - "Story W3-07 cobre os 4 fluxos manuais da receita do operador (listagem, perfil, PESCA, cadastro) + SQL verify via MCP supabase autenticado"
+    - "Auth ainda em Airtable nesta fase — RLS sem auth.uid() é risco AC-7 registrado com mitigação"
+    - "Pelo menos 12 screenshots obrigatórios em playwright/e2e-pesca/ (índices 00 a 13)"
+    - "AC-6 (troubleshooting) lista 4 candidatos prováveis de falha do operador"
+    - "CodeRabbit aplicável apenas se @dev escrever spec Playwright .ts; senão skipped"
+
+  files_modified:
+    - docs/stories/W3-07.validacao-e2e-cutover.story.md
+
+  blockers: []
+
+  next_action: |
+    @po executar *validate-story-draft sobre docs/stories/W3-07.validacao-e2e-cutover.story.md
+
+    Aplicar 10-point checklist do story-lifecycle.md:
+      1. Title claro
+      2. Description completa
+      3. AC testáveis (Given/When/Then preferred — esta story usa lista de checks com SQL verify)
+      4. Scope (IN/OUT) — Out of Scope explícito
+      5. Dependencies (W3-01..05 ✅, W2 ✅, MCP autenticado ✅)
+      6. Complexity (não estimei — @po atribuir pontos)
+      7. Business value (validação E2E é gate da Fase B do roteiro)
+      8. Risks (3 riscos documentados em AC-7)
+      9. Criteria of Done (DoD completo)
+      10. Alinhamento PRD/Epic (rastreável ao epic W3-07)
+
+    Verdict esperado: GO (>=7/10).
+    Ao marcar GO: ATUALIZAR Status no story file de Draft → Ready
+                    + adicionar entrada em Change Log
+                    (CRÍTICO conforme story-lifecycle.md L31).
+
+  predicted_next_handoffs:
+    - po → dev (após GO): @dev *develop-story W3-07
+    - dev → qa (após T-9): @qa qa-gate W3-07
+    - qa → sm (após PASS): @sm *draft W3-06 (próxima story do roteiro)
