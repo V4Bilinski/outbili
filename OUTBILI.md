@@ -40,7 +40,7 @@ Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" e
 | Estilo | Tailwind CSS 4 |
 | Roteamento | React Router (HashRouter) |
 | Estado servidor | TanStack React Query |
-| Banco de dados | Airtable (REST API) |
+| Banco de dados | **Supabase** (Postgres + Auth + Realtime) — cutover Airtable→Supabase em curso, ver [Migration Status](#estado-da-migração-airtable--supabase) |
 | Enriquecimento (cadastral) | CNPJa API (searchOffice + mapCnpjaToLead) |
 | Enriquecimento (telefone/WhatsApp) | Assertiva Localize (via Worker proxy + n8n fallback) |
 | WhatsApp | BilinskiZap API |
@@ -70,9 +70,34 @@ src/
     ImportModal.tsx    # Modal de importação de leads por arquivo
   hooks/              # useLeads, useLeadEnrichment, useMassEnrichment, useReEnrichment, useAuth, etc.
   services/           # leadService, contactService, enrichmentService, campaignService
-  lib/                # airtable, file-parser, n8n-webhook, bilinskizap, utils
+  lib/                # supabase (W3 ✓), airtable (legacy — só authService, removido pós W3-06), file-parser, n8n-webhook, bilinskizap, utils
   types/index.ts      # Interfaces: Lead, Contact, Campaign, Activity, etc.
 ```
+
+---
+
+## Estado da migração Airtable → Supabase
+
+**Atualizado em 2026-05-20.** Epic: `docs/stories/epics/EPIC-airtable-to-supabase-migration.md`.
+
+| Wave | Escopo | Status |
+|---|---|---|
+| **W1** | Schema `app` / `audit` + foreign tables FDW | ✅ concluída |
+| **W2** | ETL Airtable → Supabase (3.313 → 3.313, zero perda) | ✅ concluída 2026-05-19 |
+| **W3-01..05** | Cliente Supabase + tipos + 8 services repontados (lead, contact, partner, trademark, activity, enrichmentLog, campaignMeta, pesca) | ✅ concluída 2026-05-19/20 |
+| **W3-06** | `authService` → Supabase Auth | ⬜ pendente |
+| **W3-07** | Validação E2E Playwright | ⬜ pendente |
+| **W3-08** | Declarar Supabase oficial nesta doc + drop foreign tables (Story 021) | ⬜ pendente |
+
+**Projeto Supabase:** `outbili-spo` — ref `yxppliytwvlajeqqrrny`, São Paulo (sa-east-1).
+
+**Documentação da migração:**
+- [`docs/migration/PENDENCIAS-MIGRACAO.md`](./docs/migration/PENDENCIAS-MIGRACAO.md) — todos os gaps/bugs registrados para resolver pós-migração (PII CPF, 29 órfãos, 9 campos vagos, role="user", force password reset, mapeamento ActivityLog)
+- [`docs/migration/REMOTE-MIGRATIONS-LOG.md`](./docs/migration/REMOTE-MIGRATIONS-LOG.md) — 14 migrations W2/W3 aplicadas via MCP, a reconciliar localmente com `supabase migration repair`
+
+**Bug do W1 corrigido nesta migração:** `handle_new_user()` / `sync_profile_email()` usavam `::citext` sem schema qualificado com `search_path` vazio → quebravam qualquer signup. Resolvido em `fix_handle_new_user_citext_schema`.
+
+**ID dual durante a transição:** services expõem `Lead.id` = `airtable_record_id` (`rec...`) para compat com URLs/componentes legados. Leads/contacts novos criados via app pós-W3 geram `rec...` sintético via `generateRecordId()`. Lookups aceitam `rec...` OU UUID Supabase.
 
 ---
 
@@ -82,8 +107,10 @@ Configuradas como secrets no GitHub Actions (Settings > Secrets > Actions):
 
 | Secret | Uso |
 |--------|-----|
-| `VITE_AIRTABLE_PAT` | Token Airtable |
-| `VITE_AIRTABLE_BASE_ID` | ID da base Airtable |
+| `VITE_SUPABASE_URL` | URL do projeto Supabase (W3) |
+| `VITE_SUPABASE_ANON_KEY` | Anon key Supabase (W3) |
+| `VITE_AIRTABLE_PAT` | Token Airtable (legacy — removido pós W3-06) |
+| `VITE_AIRTABLE_BASE_ID` | ID da base Airtable (legacy — removido pós W3-06) |
 | `VITE_BILINSKIZAP_URL` | URL BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave BilinskiZap |
 | `VITE_N8N_WEBHOOK_URL` | Webhook n8n |
@@ -122,15 +149,16 @@ npm run preview   # Preview do build local
 - Commitar apenas arquivos relevantes (nunca `.env`, `node_modules`, `.DS_Store`)
 - Sempre fazer push para `main` após commit para disparar deploy
 
-### Banco de dados (Airtable)
-- Todas as operações via `src/lib/airtable.ts`
-- Services em `src/services/` encapsulam a lógica de cada entidade
-- Hooks em `src/hooks/` usam React Query para cache e mutations
-- **10 tabelas:** Leads, Contacts, Campaigns, Messages, Activities, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog
-- Campo `temperature` no código mapeia para `temperatura` no Airtable (via FIELD_TO_AIRTABLE)
-- **CRÍTICO — Contacts table:** campo `phone` NÃO existe. Usar `whatsapp` para telefones. Campos disponíveis: `whatsappConfirmed`, `phoneIsHot`, `source`, `cpf`. Campos inexistentes: `assertivaPhoneValidated`, `assertivaWhatsappValidated`, `assertivaEmailValidated`
-- **CRÍTICO — mapFieldsToAirtable:** é table-aware. `INVALID_LEAD_FIELDS` só se aplica à tabela Leads. Contacts e Users passam `whatsapp` e `email` normalmente
+### Banco de dados (Supabase + Airtable legacy)
+- **Operações principais via `src/lib/supabase.ts`** (cliente schema `app`) e `src/lib/supabase.ts` `supabaseAudit` (schema `audit`)
+- Services em `src/services/` encapsulam a lógica de cada entidade — 8 services já apontam para Supabase (lead, contact, partner, trademark, activity, enrichmentLog, campaignMeta, pesca). `authService` ainda usa Airtable até a W3-06
+- Hooks em `src/hooks/` usam React Query para cache e mutations — consomem services convertidos transitivamente
+- **22 tabelas Supabase** (`app` + `audit`): `leads`, `lead_phones`, `lead_emails`, `lead_social`, `lead_partners`, `lead_trademarks`, `contacts`, `activities`, `enrichment_runs`, `enrichment_jobs`, `pipeline_events`, `campaigns`, `campaign_targets`, `profiles`, `teams`, `sales_reps`, `segments`, `migration_state`, `airtable_bridge_log`, `audit.audit_log`, etc.
+- **Tipos:** interfaces de domínio em `src/types/index.ts` (Lead, Contact, Partner, Activity, etc.) mantidas. Database type em `src/types/supabase.types.ts` com 24 enums tipados
+- **ID legado:** `Lead.id` / `Contact.id` exposto ao app continua sendo `airtable_record_id` (`rec...`) durante a transição — ver seção "Estado da migração"
+- **Soft delete:** `leads` e `contacts` usam `deleted_at` (queries default filtram `.is('deleted_at', null)`)
 - **CRÍTICO — rfPhone:** deve conter o MELHOR telefone disponível (prioridade: WhatsApp celular > fixo). Assertiva sempre atualiza rfPhone quando encontra WhatsApp validado
+- **CRÍTICO — Airtable legacy:** `src/lib/airtable.ts` permanece SOMENTE para `authService` até W3-06. Não usar para nada novo — sempre via `supabase` client.
 
 ### Idioma e ortografia
 - **Obrigatório:** todo texto produzido (documentação, comentários, copys, mensagens de erro) deve ser em **português do Brasil (pt-BR)** com acentuação correta

@@ -1,0 +1,112 @@
+handoff:
+  from_agent: qa
+  to_agent: devops
+  timestamp: 2026-05-20T16:50:00-03:00
+  consumed: false
+  responds_to: handoff-dev-to-qa-2026-05-20T16-35.yaml
+
+  story_context:
+    story_id: W3-07
+    story_path: docs/stories/W3-07.validacao-e2e-cutover.story.md
+    story_status: 'InReview — Gate PASS com CONCERNS por @qa, pronto pra push'
+    branch: feature/W3-07-validacao-e2e-cutover
+
+  qa_verdict:
+    decision: PASS_WITH_CONCERNS
+    score: 8.5/10
+    blocking: false
+
+  delivery_summary:
+    files_modified: 8
+    diff_stat: '+290 / -185 linhas'
+    migrations: '1 applied (w3_06_user_activity_table_and_user_seeds) + ~10 SQL direct (GRANTs/ALTER ROLE)'
+    db_changes: '745 leads novos + 10 users ativados + audit.user_activity table criada'
+
+  required_actions_for_devops:
+    1_check_branch:
+      command: 'git status && git log feature/W3-07-validacao-e2e-cutover --oneline -10 main..HEAD'
+      validation: 'Branch local não tem upstream ainda'
+
+    2_stage_files_explicitly:
+      reason: 'Evitar git add . que arrastaria outbili-workers/* untracked (escopo de outra story)'
+      files_to_stage:
+        - src/lib/auth-context.tsx
+        - src/services/activityService.ts
+        - src/services/authService.ts
+        - src/services/contactService.ts
+        - src/services/enrichmentLogService.ts
+        - src/services/leadService.ts
+        - src/services/partnerService.ts
+        - src/services/trademarkService.ts
+        - docs/stories/W3-07.validacao-e2e-cutover.story.md
+
+    3_commit:
+      type: feat
+      scope: cutover
+      subject: 'complete W3-07 + W3-06 + W2-P05 (100% Supabase Auth, zero Airtable runtime) [W3-07]'
+      body_highlights:
+        - 'authService: PBKDF2/Airtable → supabase.auth.signInWithPassword (mantém API pública)'
+        - 'auth-context: localStorage outbili_user → supabase.auth.getSession + onAuthStateChange'
+        - 'logActivity: Airtable ActivityLog → audit.user_activity (nova tabela + RLS)'
+        - 'leadService + 5 services: fix anti-pattern .or(id, airtable_record_id) que quebra com 400 → .eq(idColumn, id) em 10 callsites'
+        - 'Migrations Supabase: expose schemas app+audit, GRANTs roles, audit.user_activity table, 10 users com senha temp + force_password_reset=true'
+        - 'Stories absorvidas: W3-06 (Auth), W2-P05 (force password reset)'
+
+    4_push:
+      command: 'git push -u origin feature/W3-07-validacao-e2e-cutover'
+
+    5_create_pr:
+      base: main
+      title: 'feat(cutover): W3-07 + W3-06 + W2-P05 — 100% Supabase Auth, zero Airtable runtime'
+      body_template: |
+        ## Summary
+        - Cutover Airtable→Supabase concluído: authService + logActivity + 10 users migrados
+        - 6 services com fix do anti-pattern .or() PostgREST que quebrava com 400
+        - audit.user_activity nova tabela + RLS (substitui Airtable ActivityLog)
+        - 745 leads novos no banco (144 PESCA + 1 cadastro manual + 600 baseline)
+
+        ## QA Gate
+        - Verdict: PASS com CONCERNS (8.5/10)
+        - tsc: 0 erros
+        - Lint: 8 erros novos `any` (consistente com 193 pre-existing — tech debt)
+        - Console: 0 erros em fluxo end-to-end real
+        - 16 screenshots de evidência em playwright/e2e-pesca/
+
+        ## Test plan
+        - [x] Login UI real com qa-w3-07@outbili.test
+        - [x] Dashboard 746 leads
+        - [x] CompanyPage Lupa Data (3 sócios, 2 contatos)
+        - [x] PESCA 144 leads salvos via CNPJa
+        - [x] Cadastro manual Banco do Brasil
+        - [x] audit.user_activity recebendo logs reais
+
+        ## Follow-up stories sugeridas
+        - W3-08: CORS no n8n assertiva-proxy
+        - W3-09: debug worker outbili.v4bilinski-ferramentas.workers.dev 400
+        - W3-10: drop coluna airtable_record_id quando todos consumers migrarem pra UUID
+        - W3-11: banner/modal force_password_reset
+
+        🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  out_of_scope_for_devops:
+    - 'NÃO adicionar outbili-workers/* untracked (escopo de outra story; @devops trata em encerramento de epic)'
+    - 'NÃO tentar reverter coluna airtable_record_id (compat ainda necessária)'
+    - 'NÃO comunicar senha temp aos 10 users — operador faz fora-banda'
+
+  rollback_plan_if_needed:
+    if_push_blocked: 'Branch é local-only ainda; rebase contra main resolve conflicts'
+    if_pr_review_negative: 'Voltar pra @dev via handoff qa→dev com observações'
+    if_supabase_migration_breaks_prod: 'Migration aplicada via apply_migration está reversível: DROP TABLE audit.user_activity (cascade) + REVOKE grants + ALTER ROLE authenticator RESET pgrst.db_schemas'
+
+  files_modified_by_qa:
+    - docs/stories/W3-07.validacao-e2e-cutover.story.md (QA Results section preenchida)
+    - .aiox/handoffs/handoff-qa-to-devops-2026-05-20T16-50.yaml (este)
+
+  next_action: |
+    @devops Gage executa:
+      1. git status + git log main..HEAD --oneline (confirmar branch + commits)
+      2. git add (explícito — só os 9 arquivos da lista files_to_stage)
+      3. git commit (HEREDOC com subject + body conforme template)
+      4. git push -u origin feature/W3-07-validacao-e2e-cutover
+      5. gh pr create com title + body conforme template
+      6. Reportar PR URL ao operador
