@@ -1,57 +1,57 @@
 name: Deploy to GitHub Pages
 
-  on:
-    push:
-      branches: [main]
-    workflow_dispatch:
-  
-  permissions:
-    contents: read
-    pages: write
-    id-token: write
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
-  concurrency:
-    group: pages
-    cancel-in-progress: true
-  
-  jobs:
-    build:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 20
-            cache: npm
-        - run: npm ci
-        - run: npm run build
-          env:
-            # Supabase (W3 cutover — fonte primária de dados/auth)
-            VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-            # Airtable (legacy — usado apenas por ConnectionsApiPanel health-check; drop em Story 021)
-            VITE_AIRTABLE_PAT: ${{ secrets.VITE_AIRTABLE_PAT }}
-            VITE_AIRTABLE_BASE_ID: ${{ secrets.VITE_AIRTABLE_BASE_ID }}
-            # Integrações externas
-            VITE_BILINSKIZAP_URL: ${{ secrets.VITE_BILINSKIZAP_URL }}
-            VITE_BILINSKIZAP_API_KEY: ${{ secrets.VITE_BILINSKIZAP_API_KEY }}
-            VITE_N8N_WEBHOOK_URL: ${{ secrets.VITE_N8N_WEBHOOK_URL }}
-            VITE_CNPJA_API_KEY: ${{ secrets.VITE_CNPJA_API_KEY }}
-            VITE_ASSERTIVA_CLIENT_ID: ${{ secrets.VITE_ASSERTIVA_CLIENT_ID }}
-            VITE_ASSERTIVA_CLIENT_SECRET: ${{ secrets.VITE_ASSERTIVA_CLIENT_SECRET }}
-            VITE_ASSERTIVA_WORKER_URL: https://outbili.v4bilinski-ferramentas.workers.dev
-            VITE_N8N_ASSERTIVA_PROXY: https://n8n.bilinski.cloud/webhook/assertiva-proxy
-        - run: cp dist/index.html dist/404.html
-        - uses: actions/upload-pages-artifact@v3
-          with:
-            path: dist
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-    deploy:
-      needs: build
-      runs-on: ubuntu-latest
-      environment:
-        name: github-pages
-        url: ${{ steps.deployment.outputs.page_url }}
-      steps:
-        - id: deployment
-          uses: actions/deploy-pages@v4
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Supabase (W3 cutover — fonte primária de dados/auth)
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Airtable (legacy — usado apenas por ConnectionsApiPanel health-check; drop em Story 021)
+          VITE_AIRTABLE_PAT: ${{ secrets.VITE_AIRTABLE_PAT }}
+          VITE_AIRTABLE_BASE_ID: ${{ secrets.VITE_AIRTABLE_BASE_ID }}
+          # Integrações externas
+          VITE_BILINSKIZAP_URL: ${{ secrets.VITE_BILINSKIZAP_URL }}
+          VITE_BILINSKIZAP_API_KEY: ${{ secrets.VITE_BILINSKIZAP_API_KEY }}
+          VITE_N8N_WEBHOOK_URL: ${{ secrets.VITE_N8N_WEBHOOK_URL }}
+          VITE_CNPJA_API_KEY: ${{ secrets.VITE_CNPJA_API_KEY }}
+          VITE_ASSERTIVA_CLIENT_ID: ${{ secrets.VITE_ASSERTIVA_CLIENT_ID }}
+          VITE_ASSERTIVA_CLIENT_SECRET: ${{ secrets.VITE_ASSERTIVA_CLIENT_SECRET }}
+          VITE_ASSERTIVA_WORKER_URL: https://outbili.v4bilinski-ferramentas.workers.dev
+          VITE_N8N_ASSERTIVA_PROXY: https://n8n.bilinski.cloud/webhook/assertiva-proxy
+      - run: cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
