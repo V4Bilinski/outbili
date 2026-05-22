@@ -29,6 +29,12 @@ Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" e
 
 **Regra absoluta:** toda alteração de código DEVE ser commitada e enviada com `git push origin main` para que o deploy seja disparado. Nenhuma mudança é considerada finalizada até estar no `main` do GitHub.
 
+> ⚠️ **Estado em 2026-05-20:** produção temporariamente quebrada (`supabaseUrl is required`) por bug de indentação no `deploy.yml`. Fix pronto, aguardando aplicação. Ver [`docs/migration/SESSION-HANDOFF-2026-05-20.md`](./docs/migration/SESSION-HANDOFF-2026-05-20.md) (prioridade #1).
+>
+> **2 lições registradas:**
+> 1. O `deploy.yml` build step precisa das envs `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (secrets já no GitHub). Sem elas, o bundle de produção tem Supabase URL vazia.
+> 2. Editar arquivos `.github/workflows/*` exige token com scope `workflow` (CLI, MCP e API REST respeitam isso). Editar pela UI do GitHub é o único caminho que dispensa o scope. Ao colar YAML, copiar do filesystem via `pbcopy` (NUNCA de code block de chat — herda indentação extra).
+
 ---
 
 ## Stack
