@@ -29,9 +29,9 @@ Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" e
 
 **Regra absoluta:** toda alteração de código DEVE ser commitada e enviada com `git push origin main` para que o deploy seja disparado. Nenhuma mudança é considerada finalizada até estar no `main` do GitHub.
 
-> ⚠️ **Estado em 2026-05-20:** produção temporariamente quebrada (`supabaseUrl is required`) por bug de indentação no `deploy.yml`. Fix pronto, aguardando aplicação. Ver [`docs/migration/SESSION-HANDOFF-2026-05-20.md`](./docs/migration/SESSION-HANDOFF-2026-05-20.md) (prioridade #1).
+> ✅ **Estado em 2026-05-23:** produção restaurada (commit `cb19d90`, fix de indentação do `deploy.yml` via MCP github). App no ar em https://v4bilinski.github.io/outbili/ (HTTP 200, Supabase URL embutida no bundle). Backend do W3-08 (deep enrichment Assertiva) deployado, ver [Estado da migração](#estado-da-migração-airtable--supabase).
 >
-> **2 lições registradas:**
+> **2 lições registradas (deploy):**
 > 1. O `deploy.yml` build step precisa das envs `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (secrets já no GitHub). Sem elas, o bundle de produção tem Supabase URL vazia.
 > 2. Editar arquivos `.github/workflows/*` exige token com scope `workflow` (CLI, MCP e API REST respeitam isso). Editar pela UI do GitHub é o único caminho que dispensa o scope. Ao colar YAML, copiar do filesystem via `pbcopy` (NUNCA de code block de chat — herda indentação extra).
 
@@ -48,7 +48,7 @@ Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" e
 | Estado servidor | TanStack React Query |
 | Banco de dados | **Supabase** (Postgres + Auth + Realtime) — cutover Airtable→Supabase em curso, ver [Migration Status](#estado-da-migração-airtable--supabase) |
 | Enriquecimento (cadastral) | CNPJa API (searchOffice + mapCnpjaToLead) |
-| Enriquecimento (telefone/WhatsApp) | Assertiva Localize (via Worker proxy + n8n fallback) |
+| Enriquecimento (telefone/WhatsApp) | Assertiva Localize. Deep enrichment via Edge Function `assertiva-enrich` (W3-08). Legado raso ainda via Worker proxy + n8n (em transição) |
 | WhatsApp | BilinskiZap API |
 | Ícones | Lucide React |
 | Fontes | Plus Jakarta Sans, Inter, JetBrains Mono |
@@ -84,18 +84,35 @@ src/
 
 ## Estado da migração Airtable → Supabase
 
-**Atualizado em 2026-05-20.** Epic: `docs/stories/epics/EPIC-airtable-to-supabase-migration.md`.
+**Atualizado em 2026-05-23.** Epic: `docs/stories/epics/EPIC-airtable-to-supabase-migration.md`.
 
 | Wave | Escopo | Status |
 |---|---|---|
 | **W1** | Schema `app` / `audit` + foreign tables FDW | ✅ concluída |
 | **W2** | ETL Airtable → Supabase (3.313 → 3.313, zero perda) | ✅ concluída 2026-05-19 |
 | **W3-01..05** | Cliente Supabase + tipos + 8 services repontados (lead, contact, partner, trademark, activity, enrichmentLog, campaignMeta, pesca) | ✅ concluída 2026-05-19/20 |
-| **W3-06** | `authService` → Supabase Auth | ⬜ pendente |
-| **W3-07** | Validação E2E Playwright | ⬜ pendente |
-| **W3-08** | Declarar Supabase oficial nesta doc + drop foreign tables (Story 021) | ⬜ pendente |
+| **W3-06** | `authService` → Supabase Auth | ✅ concluída 2026-05-20 |
+| **W3-07** | Cutover 100% Supabase + validação E2E + produção restaurada | ✅ concluída 2026-05-23 (commit `cb19d90`) |
+| **W3-08** | Deep enrichment Assertiva via Edge Function (sem n8n) + grafo de sócios cifrado | 🟡 backend ✅ 2026-05-23 · frontend pendente |
+| Story 021 | Declarar Supabase oficial + drop foreign tables + remover `src/lib/airtable.ts` órfão | ⬜ pendente |
 
 **Projeto Supabase:** `outbili-spo` — ref `yxppliytwvlajeqqrrny`, São Paulo (sa-east-1).
+
+### W3-08 · Deep enrichment Assertiva (grafo de sócios)
+
+Reescopado a partir da decisão de **eliminar o n8n** do fluxo Assertiva (operador, 2026-05-20). O enriquecimento profundo agora roda numa **Edge Function Supabase** (`supabase/functions/assertiva-enrich`), não mais via Worker Cloudflare + n8n.
+
+**Fluxo (síncrono, POST `{ cnpj, leadId, idFinalidade? }`):** OAuth2 server-side → `/localize/v3/cnpj` → `/possiveis-decisores` → por sócio: `/cpf` + `/conexoes` (familiares + societárias) + `/pessoas-de-referencia` + `/mais-telefones` → persiste o grafo.
+
+**Tabelas (schema `app`):** `socios` (1:N do lead) → `socio_vinculos` (familiares + societárias cruzadas) + `socio_telefones` (E.164, WhatsApp). Migrations `20260523145820` / `150650` / `151108`.
+
+**LGPD (art. 10, interesse legítimo · prospecção B2B outbound):** CPF **nunca em texto plano**. Cifragem `pgp_sym_encrypt` com chave `outbili_cpf_master_key` no Vault, via funções `SECURITY DEFINER` `app.encrypt_cpf` / `app.decrypt_cpf`. Hash SHA-256 com salt (`ASSERTIVA_CPF_HASH_SALT`) para dedupe sem decifrar. Inserção via `app.insert_socio` / `app.insert_vinculo_familiar` (cifram internamente, evitam round-trip bytea no PostgREST).
+
+**Índice de probabilidade de negociação** (0.0–1.0): score por sócio calculado na Edge Function (WhatsApp confirmado, telefone hot, vínculos, cargo decisor).
+
+**Secrets da Edge Function** (Project Settings → Edge Functions): `ASSERTIVA_CLIENT_ID`, `ASSERTIVA_CLIENT_SECRET`, `ASSERTIVA_CPF_HASH_SALT`, `ASSERTIVA_ID_FINALIDADE`. `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são injetados automaticamente.
+
+**Pendente:** integração frontend (service + hook + UI do grafo na CompanyPage); hoje `src/services/assertivaService.ts` ainda usa o caminho legado Worker + n8n.
 
 **Documentação da migração:**
 - [`docs/migration/PENDENCIAS-MIGRACAO.md`](./docs/migration/PENDENCIAS-MIGRACAO.md) — todos os gaps/bugs registrados para resolver pós-migração (PII CPF, 29 órfãos, 9 campos vagos, role="user", force password reset, mapeamento ActivityLog)
