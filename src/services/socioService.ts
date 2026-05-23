@@ -56,9 +56,25 @@ export interface EmpresaTelefone {
   operadora?: string
 }
 
+/** Rede social atribuída via Apify. socioId null = rede da empresa. */
+export interface RedeSocial {
+  id: string
+  socioId: string | null
+  plataforma: string
+  url: string
+  handle?: string
+  nomeExibicao?: string
+  seguidores?: number
+  verificado: boolean
+  contatoExterno?: string
+  confianca: string
+  matchMotivo?: string
+}
+
 export interface SociosResult {
   socios: Socio[]
   empresaTelefones: EmpresaTelefone[]
+  redes: RedeSocial[]
 }
 
 export interface DeepEnrichResult {
@@ -172,7 +188,39 @@ export async function getSociosByLead(leadIdOrRec: string): Promise<SociosResult
     })),
   }))
 
-  return { socios, empresaTelefones }
+  // Redes sociais atribuídas (Apify): empresa (socio_id null) + por sócio.
+  const { data: redesData } = await supabase
+    .from('socio_redes')
+    .select(
+      'id, socio_id, plataforma, url, handle, nome_exibicao, seguidores, verificado, contato_externo, confianca, match_motivo',
+    )
+    .eq('lead_id', leadId)
+  const redes: RedeSocial[] = ((redesData as unknown as Record<string, unknown>[]) || []).map((r) => ({
+    id: String(r.id),
+    socioId: (r.socio_id as string) || null,
+    plataforma: String(r.plataforma ?? ''),
+    url: String(r.url ?? ''),
+    handle: (r.handle as string) || undefined,
+    nomeExibicao: (r.nome_exibicao as string) || undefined,
+    seguidores: typeof r.seguidores === 'number' ? (r.seguidores as number) : undefined,
+    verificado: Boolean(r.verificado),
+    contatoExterno: (r.contato_externo as string) || undefined,
+    confianca: String(r.confianca ?? ''),
+    matchMotivo: (r.match_motivo as string) || undefined,
+  }))
+
+  return { socios, empresaTelefones, redes }
+}
+
+/** Dispara a Camada 2 (Fase 1): atribuição de redes sociais via Apify. */
+export async function runSocialEnrich(
+  leadIdOrRec: string,
+): Promise<{ ok: boolean; atribuidas: number; error?: string }> {
+  const leadId = await resolveLeadUuid(leadIdOrRec)
+  const { data, error } = await supabase.functions.invoke('social-enrich', { body: { leadId } })
+  if (error) return { ok: false, atribuidas: 0, error: error.message }
+  const atribuidas = (data as { redesAtribuidas?: unknown[] })?.redesAtribuidas
+  return { ok: true, atribuidas: Array.isArray(atribuidas) ? atribuidas.length : 0 }
 }
 
 /**
