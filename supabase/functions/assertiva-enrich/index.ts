@@ -597,6 +597,16 @@ async function persistir(
   socios: SocioOutput[],
   warnings: string[],
 ): Promise<void> {
+  // Idempotencia: remove socios anteriores deste lead antes de reinserir.
+  // FK ON DELETE CASCADE limpa socio_telefones e socio_vinculos juntos.
+  // Evita duplicacao quando o enriquecimento e reexecutado para o mesmo lead.
+  const { error: delErr } = await supabase
+    .schema('app')
+    .from('socios')
+    .delete()
+    .eq('lead_id', leadId)
+  if (delErr) warnings.push(`Erro ao limpar socios anteriores do lead: ${delErr.message}`)
+
   for (const socio of socios) {
     // Insere o sócio via função SECURITY DEFINER que cifra o CPF internamente.
     // O CPF em claro nunca transita como bytea no protocolo HTTP.
