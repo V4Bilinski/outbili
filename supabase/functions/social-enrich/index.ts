@@ -217,6 +217,42 @@ serve(async (req: Request): Promise<Response> => {
       if (insErr) warnings.push(`Erro ao inserir redes: ${insErr.message}`)
     }
 
+    // Alimenta o painel "Presença Digital" do header (lead_social -> lead.instagram).
+    // A melhor rede Instagram de match alta e a presenca digital da empresa.
+    const melhorIg =
+      rows.find((r) => r.plataforma === 'instagram' && r.confianca === 'alta') ||
+      rows.find((r) => r.plataforma === 'instagram')
+    if (melhorIg) {
+      const rawIg = (melhorIg.raw as Record<string, unknown>) || {}
+      const { error: lsErr } = await supabase
+        .schema('app')
+        .from('lead_social')
+        .upsert(
+          {
+            lead_id: leadId,
+            platform: 'instagram',
+            url: melhorIg.url,
+            handle: melhorIg.handle,
+            followers: melhorIg.seguidores,
+            is_verified: melhorIg.verificado,
+            is_business: Boolean(rawIg['isBusinessAccount']),
+            category: (rawIg['businessCategoryName'] as string) || null,
+            bio: melhorIg.bio,
+            source: 'apify',
+            extracted_at: new Date().toISOString(),
+          },
+          { onConflict: 'lead_id,platform' },
+        )
+      if (lsErr) warnings.push(`Erro ao popular lead_social (presenca digital): ${lsErr.message}`)
+
+      const { error: leadErr2 } = await supabase
+        .schema('app')
+        .from('leads')
+        .update({ social_media_source: 'apify', social_media_extracted_at: new Date().toISOString() })
+        .eq('id', leadId)
+      if (leadErr2) warnings.push(`Erro ao marcar presenca digital no lead: ${leadErr2.message}`)
+    }
+
     return new Response(
       JSON.stringify({
         termoBusca: termo,

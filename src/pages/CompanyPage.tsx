@@ -22,6 +22,7 @@ import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
 import { TabSocios } from '../components/company/TabSocios'
+import { getSociosByLead } from '../services/socioService'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
@@ -239,6 +240,8 @@ export function CompanyPage() {
   const { data: lead, isLoading } = useLead(id)
   const { data: contacts } = useContacts(id)
   const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
+  const { data: socioData } = useQuery({ queryKey: ['socios', id], queryFn: () => getSociosByLead(id!), enabled: !!id })
+  const socios = socioData?.socios ?? []
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const { data: activities } = useQuery({ queryKey: ['activities', id], queryFn: () => getActivities(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
@@ -427,8 +430,8 @@ export function CompanyPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold font-heading truncate">{lead.companyName}</h1>
-            {lead.tradeName && <p className="text-sm text-text-secondary">{lead.tradeName}</p>}
+            <h1 className="text-2xl font-bold font-heading truncate">{lead.tradeName || lead.companyName}</h1>
+            {lead.tradeName && <p className="text-sm text-text-secondary">{lead.companyName}</p>}
             {lead.city && (
               <p className="flex items-center gap-1 mt-1 text-xs text-text-muted">
                 <MapPin className="h-3 w-3" />{lead.city}{lead.state ? `, ${lead.state}` : ''}
@@ -718,8 +721,24 @@ export function CompanyPage() {
               </div>
             )}
 
-            {/* Socios (Partners table) */}
-            {(partners && partners.length > 0) && (
+            {/* Quadro Societario — prioriza socios enriquecidos (Assertiva, decisores reais);
+                fallback para o QSA da Receita (lead_partners) quando ainda nao enriquecido */}
+            {socios.length > 0 ? (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({socios.length})</p>
+                <div className="space-y-1.5">
+                  {socios.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
+                      <div className="min-w-0">
+                        <span className="text-text-primary font-medium">{s.nome}</span>
+                        {(s.cargo || s.participacao) && <span className="text-text-muted ml-1.5">· {s.cargo || s.participacao}</span>}
+                      </div>
+                      <span className="text-micro px-1.5 py-0.5 rounded bg-white/5 text-text-secondary shrink-0">PF</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (partners && partners.length > 0) ? (
               <div className="space-y-2 pt-2 border-t border-border">
                 <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({partners.length})</p>
                 <div className="space-y-1.5">
@@ -736,7 +755,7 @@ export function CompanyPage() {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Contatos com badges Assertiva */}
             {contacts && contacts.length > 0 && (

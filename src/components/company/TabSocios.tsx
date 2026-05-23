@@ -371,7 +371,6 @@ export function TabSocios({ lead }: Props) {
     }
   }
 
-  const redesEmpresa = redes.filter((r) => !r.socioId)
   const totalWaPessoal = socios.reduce(
     (acc, s) => acc + s.telefones.filter((t) => t.whatsappPessoal).length,
     0,
@@ -433,19 +432,7 @@ export function TabSocios({ lead }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          <EmpresaWhatsappBanner telefones={empresaTelefones} />
-          {redesEmpresa.length > 0 && (
-            <div className="rounded-xl border border-border bg-white/[0.02] p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Share2 className="h-4 w-4 text-red" />
-                <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                  Redes sociais da empresa
-                </span>
-                <Badge variant="outline" size="xs">{redesEmpresa.length}</Badge>
-              </div>
-              <RedesSociais redes={redesEmpresa} />
-            </div>
-          )}
+          {/* Sócios e seus WhatsApps PESSOAIS primeiro: referência máxima de contato */}
           {socios.map((s) => (
             <SocioCard
               key={s.id}
@@ -454,6 +441,8 @@ export function TabSocios({ lead }: Props) {
               redes={redes.filter((r) => r.socioId === s.id)}
             />
           ))}
+          {/* WhatsApp da empresa: canal compartilhado, menos relevante, ao final */}
+          <EmpresaWhatsappBanner telefones={empresaTelefones} />
         </div>
       )}
     </div>
