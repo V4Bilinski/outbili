@@ -15,13 +15,6 @@ interface Props {
   compact?: boolean
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  assertiva: 'Assertiva',
-  firecrawl: 'Firecrawl (raspado)',
-  mixed: 'Assertiva + Firecrawl',
-  manual: 'Manual',
-}
-
 /**
  * Painel de Presença Digital — 5 pills com prioridade visual:
  *   Instagram → LinkedIn → TikTok → Website → Facebook
@@ -46,30 +39,14 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
     facebookUrl && { platform: 'facebook' as const, url: facebookUrl, label: 'Facebook', Icon: FacebookIcon },
   ].filter(Boolean) as Array<{ platform: string; url: string; label: string; Icon: React.ComponentType<{ className?: string }> }>
 
-  const extractedAt = lead.socialMediaExtractedAt
-  const source = lead.socialMediaSource
-  const sourceLabel = source ? SOURCE_LABEL[source] || source : null
-
-  const showMeta = !compact && (extractedAt || sourceLabel || onReExtract)
+  const showMeta = !compact && !!onReExtract
 
   return (
     <div className={cn('flex flex-col', compact ? 'gap-1.5' : 'gap-2')}>
       {/* Header com meta + botão re-extrair (só não compact) */}
       {showMeta && (
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
-            <span className="uppercase tracking-wider font-semibold">Presença Digital</span>
-            {sourceLabel && (
-              <span className="px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-border text-[9px] font-medium text-text-secondary">
-                {sourceLabel}
-              </span>
-            )}
-            {extractedAt && (
-              <span className="text-[10px] text-text-muted/60" title={new Date(extractedAt).toLocaleString('pt-BR')}>
-                · {formatRelativeDate(extractedAt)}
-              </span>
-            )}
-          </div>
+          <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Presença Digital</span>
           {onReExtract && (
             <button
               type="button"
@@ -149,18 +126,3 @@ function normalizeTiktokUrl(raw?: string): string | undefined {
   return `https://tiktok.com/@${trimmed.replace(/^@/, '')}`
 }
 
-function formatRelativeDate(iso: string): string {
-  try {
-    const now = Date.now()
-    const then = new Date(iso).getTime()
-    const diffMs = now - then
-    const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
-    if (diffDays < 1) return 'hoje'
-    if (diffDays === 1) return 'ontem'
-    if (diffDays < 30) return `há ${diffDays}d`
-    if (diffDays < 365) return `há ${Math.floor(diffDays / 30)}mes`
-    return `há ${Math.floor(diffDays / 365)}a`
-  } catch {
-    return ''
-  }
-}

@@ -242,6 +242,13 @@ export function CompanyPage() {
   const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
   const { data: socioData } = useQuery({ queryKey: ['socios', id], queryFn: () => getSociosByLead(id!), enabled: !!id })
   const socios = socioData?.socios ?? []
+  // Contatos deduplicados por nome (evita repetir a mesma pessoa, ex: sócio + contato)
+  const dedupedContacts = (contacts ?? []).filter(
+    (c, i, arr) =>
+      arr.findIndex(
+        (x) => (x.name || '').trim().toLowerCase() === (c.name || '').trim().toLowerCase(),
+      ) === i,
+  )
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const { data: activities } = useQuery({ queryKey: ['activities', id], queryFn: () => getActivities(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
@@ -757,12 +764,12 @@ export function CompanyPage() {
               </div>
             ) : null}
 
-            {/* Contatos com badges Assertiva */}
-            {contacts && contacts.length > 0 && (
+            {/* Contatos com badges Assertiva (deduplicados por nome) */}
+            {dedupedContacts.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Contatos ({contacts.length})</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Contatos ({dedupedContacts.length})</p>
                 <div className="space-y-1.5">
-                  {contacts.map((c) => (
+                  {dedupedContacts.map((c) => (
                     <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-text-primary font-medium truncate">{c.name}</span>
@@ -795,10 +802,6 @@ export function CompanyPage() {
                 </div>
               </div>
             )}
-
-            {/* Presença Digital — versão compacta sem meta */}
-            <DigitalPresencePanel lead={lead} compact />
-
 
             {/* Market context */}
             {lead.marketContext && (
