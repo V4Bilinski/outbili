@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Users, Phone, ShieldAlert, RefreshCw, TrendingUp, Link2, Sparkles } from 'lucide-react'
+import { Users, Phone, ShieldAlert, RefreshCw, TrendingUp, Link2, Sparkles, Building2 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { WhatsAppIcon } from '../ui/WhatsAppIcon'
@@ -10,6 +10,7 @@ import {
   runDeepEnrichment,
   type Socio,
   type SocioTelefone,
+  type EmpresaTelefone,
 } from '../../services/socioService'
 
 interface Props {
@@ -31,7 +32,7 @@ function indiceVariant(v: number): 'hot' | 'warm' | 'cold' {
   return 'cold'
 }
 
-// Cartão de um número de WhatsApp pessoal com acesso direto à conversa.
+// Linha de um número de WhatsApp pessoal do sócio, com acesso direto à conversa.
 function WhatsAppRow({ tel }: { tel: SocioTelefone }) {
   return (
     <div
@@ -64,10 +65,7 @@ function WhatsAppRow({ tel }: { tel: SocioTelefone }) {
         href={tel.waLink}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-h-[40px]',
-          'bg-whatsapp/15 text-whatsapp hover:bg-whatsapp/25',
-        )}
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-h-[40px] bg-whatsapp/15 text-whatsapp hover:bg-whatsapp/25"
         title={`Abrir conversa no WhatsApp: ${tel.waLink}`}
       >
         <WhatsAppIcon className="text-sm" />
@@ -77,7 +75,46 @@ function WhatsAppRow({ tel }: { tel: SocioTelefone }) {
   )
 }
 
-function SocioCard({ socio }: { socio: Socio }) {
+// Banner com os telefones de contato da empresa que têm WhatsApp (consulta CNPJ).
+// Canal corporativo compartilhado. Em PMEs, costuma ser o WhatsApp do administrador.
+function EmpresaWhatsappBanner({ telefones }: { telefones: EmpresaTelefone[] }) {
+  const comWhatsapp = telefones.filter((t) => t.whatsapp)
+  if (comWhatsapp.length === 0) return null
+  return (
+    <div className="rounded-xl border border-whatsapp/25 bg-whatsapp/[0.04] p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Building2 className="h-4 w-4 text-whatsapp" />
+        <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+          WhatsApp da empresa
+        </span>
+        <Badge variant="outline" size="xs">{comWhatsapp.length}</Badge>
+      </div>
+      <p className="text-[11px] text-text-muted mb-3">
+        Telefones de contato da empresa com WhatsApp ativo (relação direta). Canal compartilhado dos sócios.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-2">
+        {comWhatsapp.map((t) => (
+          <a
+            key={t.id}
+            href={t.waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 rounded-lg border border-whatsapp/20 bg-whatsapp/[0.06] px-3 py-2.5 hover:bg-whatsapp/[0.12] transition-colors min-h-[44px]"
+            title={`Abrir conversa no WhatsApp: ${t.waLink}`}
+          >
+            <span className="text-sm font-semibold text-text-primary tabular-nums">{formatBr(t.e164)}</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-whatsapp shrink-0">
+              <WhatsAppIcon className="text-sm" />
+              Abrir
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SocioCard({ socio, temEmpresaWhatsapp }: { socio: Socio; temEmpresaWhatsapp: boolean }) {
   const whatsapps = socio.telefones.filter((t) => t.whatsappPessoal)
   const outros = socio.telefones.filter((t) => !t.whatsappPessoal)
   const indicePct = Math.round(socio.indiceProbabilidadeNegociacao * 100)
@@ -117,7 +154,11 @@ function SocioCard({ socio }: { socio: Socio }) {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-text-muted italic">Nenhum WhatsApp pessoal validado para este sócio.</p>
+            <p className="text-xs text-text-muted italic">
+              {temEmpresaWhatsapp
+                ? 'Sem WhatsApp pessoal na base Assertiva. Contato pelo WhatsApp da empresa (acima).'
+                : 'Sem WhatsApp pessoal validado para este sócio.'}
+            </p>
           )}
         </div>
 
@@ -174,6 +215,7 @@ function SocioCard({ socio }: { socio: Socio }) {
 
 export function TabSocios({ lead }: Props) {
   const [socios, setSocios] = useState<Socio[]>([])
+  const [empresaTelefones, setEmpresaTelefones] = useState<EmpresaTelefone[]>([])
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -182,7 +224,8 @@ export function TabSocios({ lead }: Props) {
     setLoading(true)
     try {
       const data = await getSociosByLead(lead.id)
-      setSocios(data)
+      setSocios(data.socios)
+      setEmpresaTelefones(data.empresaTelefones)
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Falha ao carregar sócios.')
     } finally {
@@ -217,7 +260,12 @@ export function TabSocios({ lead }: Props) {
     }
   }
 
-  const totalWhatsapp = socios.reduce((acc, s) => acc + s.telefones.filter((t) => t.whatsappPessoal).length, 0)
+  const totalWaPessoal = socios.reduce(
+    (acc, s) => acc + s.telefones.filter((t) => t.whatsappPessoal).length,
+    0,
+  )
+  const totalWaEmpresa = empresaTelefones.filter((t) => t.whatsapp).length
+  const temEmpresaWhatsapp = totalWaEmpresa > 0
 
   return (
     <div className="space-y-4">
@@ -228,7 +276,7 @@ export function TabSocios({ lead }: Props) {
           <h3 className="text-sm font-semibold text-text-primary">Sócios e decisores</h3>
           {socios.length > 0 && (
             <Badge variant="outline" size="sm">
-              {socios.length} sócios · {totalWhatsapp} WhatsApps
+              {socios.length} sócios · {totalWaPessoal} WhatsApp pessoal · {totalWaEmpresa} da empresa
             </Badge>
           )}
         </div>
@@ -252,7 +300,7 @@ export function TabSocios({ lead }: Props) {
       {/* Conteúdo */}
       {loading ? (
         <div className="text-xs text-text-muted py-8 text-center">Carregando sócios...</div>
-      ) : socios.length === 0 ? (
+      ) : socios.length === 0 && empresaTelefones.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-white/[0.02] py-10 px-4 text-center">
           <Users className="h-8 w-8 text-text-muted mx-auto mb-3 opacity-50" />
           <p className="text-sm text-text-secondary">Nenhum sócio enriquecido ainda.</p>
@@ -262,8 +310,9 @@ export function TabSocios({ lead }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
+          <EmpresaWhatsappBanner telefones={empresaTelefones} />
           {socios.map((s) => (
-            <SocioCard key={s.id} socio={s} />
+            <SocioCard key={s.id} socio={s} temEmpresaWhatsapp={temEmpresaWhatsapp} />
           ))}
         </div>
       )}

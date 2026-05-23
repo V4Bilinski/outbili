@@ -45,6 +45,22 @@ export interface Socio {
   vinculos: SocioVinculo[]
 }
 
+/** Telefone de contato da empresa (consulta CNPJ). Canal corporativo, compartilhado. */
+export interface EmpresaTelefone {
+  id: string
+  e164: string
+  waLink: string
+  whatsapp: boolean
+  isHot: boolean
+  tipo: string
+  operadora?: string
+}
+
+export interface SociosResult {
+  socios: Socio[]
+  empresaTelefones: EmpresaTelefone[]
+}
+
 export interface DeepEnrichResult {
   ok: boolean
   numSocios: number
@@ -96,8 +112,8 @@ function ordenarTelefones(a: SocioTelefone, b: SocioTelefone): number {
   return peso(b) - peso(a) || (a.ranking ?? 99) - (b.ranking ?? 99)
 }
 
-/** Busca o grafo de sócios persistido para um lead (100% Supabase). */
-export async function getSociosByLead(leadIdOrRec: string): Promise<Socio[]> {
+/** Busca o grafo de sócios + telefones da empresa para um lead (100% Supabase). */
+export async function getSociosByLead(leadIdOrRec: string): Promise<SociosResult> {
   const leadId = await resolveLeadUuid(leadIdOrRec)
   const { data, error } = await supabase
     .from('socios')
@@ -109,7 +125,35 @@ export async function getSociosByLead(leadIdOrRec: string): Promise<Socio[]> {
     .order('indice_probabilidade_negociacao', { ascending: false })
   if (error) throw new Error(error.message)
 
-  return ((data as unknown as Record<string, unknown>[]) || []).map((s) => ({
+  // Telefones de contato da empresa (consulta CNPJ): canal corporativo compartilhado.
+  const { data: phonesData } = await supabase
+    .from('lead_phones')
+    .select('id, e164, type, is_whatsapp, is_hotphone, raw')
+    .eq('lead_id', leadId)
+    .eq('owner', 'empresa')
+  const empresaTelefones: EmpresaTelefone[] = ((phonesData as unknown as Record<string, unknown>[]) || [])
+    .map((p) => {
+      let operadora: string | undefined
+      try {
+        const raw = typeof p.raw === 'string' ? JSON.parse(p.raw) : (p.raw as Record<string, unknown>)
+        operadora = (raw?.operadora as string) || undefined
+      } catch {
+        operadora = undefined
+      }
+      const e164 = String(p.e164 ?? '')
+      return {
+        id: String(p.id),
+        e164,
+        waLink: waLink(e164),
+        whatsapp: Boolean(p.is_whatsapp),
+        isHot: Boolean(p.is_hotphone),
+        tipo: String(p.type ?? 'MOBILE'),
+        operadora,
+      }
+    })
+    .sort((a, b) => (b.whatsapp ? 1 : 0) - (a.whatsapp ? 1 : 0))
+
+  const socios: Socio[] = ((data as unknown as Record<string, unknown>[]) || []).map((s) => ({
     id: String(s.id),
     nome: String(s.nome ?? ''),
     participacao: (s.participacao as string) || undefined,
@@ -127,6 +171,8 @@ export async function getSociosByLead(leadIdOrRec: string): Promise<Socio[]> {
       razaoSocialVinculada: (v.razao_social_vinculada as string) || undefined,
     })),
   }))
+
+  return { socios, empresaTelefones }
 }
 
 /**

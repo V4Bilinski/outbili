@@ -93,9 +93,20 @@ interface VinculoSocietario {
   raw: unknown
 }
 
+interface EmpresaTelefone {
+  e164: string
+  tipo: 'MOBILE' | 'LANDLINE'
+  whatsapp: boolean
+  isHot: boolean
+  operadora?: string
+  relacao?: string
+  raw: unknown
+}
+
 interface EnrichOutput {
   empresa: unknown
   socios: SocioOutput[]
+  empresaTelefones: EmpresaTelefone[]
   warnings: string[]
 }
 
@@ -237,6 +248,30 @@ function mapTelefones(
 }
 
 // ---------------------------------------------------------------------------
+// Helper: telefones da EMPRESA (consulta CNPJ) -> EmpresaTelefone[]
+// ---------------------------------------------------------------------------
+function mapEmpresaTelefones(rawArr: unknown[], tipo: 'MOBILE' | 'LANDLINE'): EmpresaTelefone[] {
+  return rawArr
+    .map((t) => {
+      const phone = t as Record<string, unknown>
+      const numero = String(phone['numero'] ?? '').replace(/\D/g, '')
+      if (!numero) return null
+      const apps = phone['aplicativos'] as Record<string, unknown> | undefined
+      const whatsapp = Boolean(apps?.['whatsApp'] ?? apps?.['whatsAppBusiness'])
+      return {
+        e164: normalizeToE164(numero),
+        tipo,
+        whatsapp,
+        isHot: Boolean(phone['hotphone']),
+        operadora: (phone['operadora'] as string) || undefined,
+        relacao: (phone['relacao'] as string) || undefined,
+        raw: t,
+      } satisfies EmpresaTelefone
+    })
+    .filter((p): p is EmpresaTelefone => p !== null)
+}
+
+// ---------------------------------------------------------------------------
 // Helper: gerar hash SHA-256 do documento para lookup/dedupe
 // Usa salt do env para evitar rainbow table.
 // TODO: substituir por pgsodium.crypto_secretbox quando disponivel via REST do Supabase.
@@ -301,6 +336,19 @@ async function enrichCnpj(
   if (sociosRaw.length === 0) {
     warnings.push('Nenhum socio em .resposta.socios na consulta CNPJ')
   }
+
+  // Etapa 2b: telefones da EMPRESA (consulta CNPJ .resposta.telefones).
+  // Varredura completa: TODOS os moveis/fixos com flags de WhatsApp. Sao o canal
+  // de contato corporativo (relacao=Direto) e, em PMEs, frequentemente o WhatsApp
+  // do socio-administrador. Persistidos em app.lead_phones e expostos no grafo.
+  const telEmpresaRaw = (respostaCnpj?.['telefones'] ?? {}) as Record<string, unknown>
+  const empresaTelefones: EmpresaTelefone[] = [
+    ...mapEmpresaTelefones(
+      (telEmpresaRaw['moveis'] ?? telEmpresaRaw['celulares'] ?? []) as unknown[],
+      'MOBILE',
+    ),
+    ...mapEmpresaTelefones((telEmpresaRaw['fixos'] ?? []) as unknown[], 'LANDLINE'),
+  ]
 
   // Etapa 3: enriquecer cada socio individualmente
   const socios: SocioOutput[] = []
@@ -473,7 +521,36 @@ async function enrichCnpj(
     socios.push(socioOutput)
   }
 
-  return { empresa, socios, warnings }
+  return { empresa, socios, empresaTelefones, warnings }
+}
+
+// ---------------------------------------------------------------------------
+// Persistencia dos telefones da EMPRESA em app.lead_phones (upsert por e164).
+// Varredura completa: garante que TODOS os moveis/fixos da consulta CNPJ fiquem
+// disponiveis (o enriquecimento raso so salvava 1). owner='empresa'.
+// ---------------------------------------------------------------------------
+async function persistirTelefonesEmpresa(
+  supabase: ReturnType<typeof createClient>,
+  leadId: string,
+  telefones: EmpresaTelefone[],
+  warnings: string[],
+): Promise<void> {
+  if (telefones.length === 0) return
+  const rows = telefones.map((t) => ({
+    lead_id: leadId,
+    e164: t.e164,
+    type: t.tipo,
+    source: 'cnpj_empresa',
+    owner: 'empresa',
+    is_whatsapp: t.whatsapp,
+    is_hotphone: t.isHot,
+    raw: typeof t.raw === 'string' ? t.raw : JSON.stringify(t.raw),
+  }))
+  const { error } = await supabase
+    .schema('app')
+    .from('lead_phones')
+    .upsert(rows, { onConflict: 'lead_id,e164', ignoreDuplicates: false })
+  if (error) warnings.push(`Erro ao persistir telefones da empresa: ${error.message}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -662,10 +739,18 @@ serve(async (req: Request): Promise<Response> => {
 
     // Persistir no banco
     await persistir(supabase, leadId, cnpj, result.socios, warnings)
+    await persistirTelefonesEmpresa(supabase, leadId, result.empresaTelefones, warnings)
 
     // Montar resposta: grafo empresa -> socios
     const responseBody = {
       empresa: result.empresa,
+      empresaTelefones: result.empresaTelefones.map((t) => ({
+        e164: t.e164,
+        tipo: t.tipo,
+        whatsapp: t.whatsapp,
+        isHot: t.isHot,
+        operadora: t.operadora,
+      })),
       socios: result.socios.map((s) => ({
         nome: s.nome,
         cpfFormatado: s.cpfFormatado,   // CPF formatado 000.000.000-00 (já disponível em claro)
