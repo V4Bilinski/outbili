@@ -289,44 +289,46 @@ async function enrichCnpj(
     warnings.push('Protocolo CNPJ ausente na resposta Assertiva: possiveis-decisores serao pulados')
   }
 
-  // Etapa 2: possiveis decisores (exige protocolo)
-  let decisores: unknown[] = []
-  if (protocoloCnpj) {
-    await delay(INTER_REQUEST_DELAY_MS)
-    const rawDecisores = await assertivaGet(
-      token,
-      `/localize/v3/possiveis-decisores?cnpj=${cleanCnpj}&protocolo=${protocoloCnpj}`,
-      warnings,
-    )
-    const resp = rawDecisores as Record<string, unknown> | null
-    decisores = (resp?.['resposta']?.['decisores'] ?? resp?.['decisores'] ?? []) as unknown[]
+  // Etapa 2: os sócios vêm DIRETO da consulta CNPJ em `.resposta.socios[]`.
+  // Cada item: { documento (CPF/CNPJ COMPLETO, sem máscara), nomeOuRazaoSocial, dataEntrada }.
+  // O endpoint /possiveis-decisores foi descontinuado: a consulta CNPJ já devolve
+  // o quadro societário com o documento em claro (validado contra a API real em 2026-05-23).
+  void protocoloCnpj // protocolo permanece disponível para sub-consultas (cpf/conexoes)
+  const respostaCnpj =
+    (rawCnpj as Record<string, unknown> | null)?.['resposta'] as Record<string, unknown> | undefined
+  const sociosRaw = (respostaCnpj?.['socios'] ?? []) as unknown[]
+
+  if (sociosRaw.length === 0) {
+    warnings.push('Nenhum socio em .resposta.socios na consulta CNPJ')
   }
 
   // Etapa 3: enriquecer cada socio individualmente
   const socios: SocioOutput[] = []
 
-  for (const decisor of decisores) {
-    const d = decisor as Record<string, unknown>
-    const cpf: string | undefined = d['cpf'] as string | undefined
-    const nome = String(d['nome'] ?? '')
+  for (const socioRaw of sociosRaw) {
+    const s = socioRaw as Record<string, unknown>
+    const docDigits = String(s['documento'] ?? '').replace(/\D/g, '')
+    const nome = String(s['nomeOuRazaoSocial'] ?? s['nome'] ?? '')
+    // PF = CPF (11 dígitos) -> cascata pessoal. PJ (14 dígitos) = sócio holding (sem cascata).
+    const cpf: string | undefined = docDigits.length === 11 ? docDigits : undefined
 
     const socioOutput: SocioOutput = {
       nome,
       cpf,
-      participacao: d['qualificacao'] as string | undefined,
-      cargo: d['cargo'] as string | undefined,
+      participacao: (s['participacao'] ?? s['qualificacao']) as string | undefined,
+      cargo: s['cargo'] as string | undefined,
       vinculosFamiliares: [],
       empresasVinculadas: [],
       telefones: [],
     }
 
     if (!cpf) {
-      warnings.push(`Socio "${nome}" sem CPF: etapas CPF/conexoes puladas`)
+      warnings.push(`Socio "${nome}" sem CPF de pessoa fisica (documento PJ ou ausente): cascata pulada`)
       socios.push(socioOutput)
       continue
     }
 
-    const cleanCpf = cpf.replace(/\D/g, '')
+    const cleanCpf = cpf
 
     // Hash do CPF para dedupe e lookup
     socioOutput.cpfHash = await hashDocumento(cleanCpf)
@@ -521,7 +523,7 @@ async function persistir(
   for (const socio of socios) {
     // Insere o sócio via função SECURITY DEFINER que cifra o CPF internamente.
     // O CPF em claro nunca transita como bytea no protocolo HTTP.
-    const { data: insertData, error: socioErr } = await supabase.rpc('insert_socio', {
+    const { data: insertData, error: socioErr } = await supabase.schema('app').rpc('insert_socio', {
       p_lead_id:             leadId,
       p_cnpj_origem:         cnpjOrigem.replace(/\D/g, ''),
       p_nome:                socio.nome,
@@ -543,7 +545,7 @@ async function persistir(
 
     // Vinculos familiares: CPF do familiar cifrado via função SECURITY DEFINER
     for (const vf of socio.vinculosFamiliares) {
-      const { error } = await supabase.rpc('insert_vinculo_familiar', {
+      const { error } = await supabase.schema('app').rpc('insert_vinculo_familiar', {
         p_socio_id:           socioId,
         p_nome_relacionado:   vf.nomeRelacionado ?? null,
         p_cpf_familiar_claro: vf.cpfFamiliarClaro ?? null,

@@ -21,6 +21,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
+import { TabSocios } from '../components/company/TabSocios'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
@@ -31,6 +32,7 @@ const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
   { id: 'spiced', label: 'SPICED', group: 'primary' },
   { id: 'reuniao', label: 'Reunião', group: 'primary' },
+  { id: 'socios', label: 'Sócios', group: 'primary' },
   { id: 'travas', label: 'Travas', group: 'analise' },
   { id: 'projecao-competitiva', label: 'Projeção', group: 'analise' },
   { id: 'playbook-bdr', label: 'Playbook', group: 'analise' },
@@ -925,6 +927,9 @@ export function CompanyPage() {
 
         {/* Tab: Reunião */}
         {activeTab === 'reuniao' && <TabReuniao lead={lead} />}
+
+        {/* Tab: Sócios e decisores (deep enrichment Assertiva W3-08) */}
+        {activeTab === 'socios' && <TabSocios lead={lead} />}
 
         {/* Tab: Diagnóstico de Travas */}
         {activeTab === 'travas' && <TabTravas lead={lead} />}
