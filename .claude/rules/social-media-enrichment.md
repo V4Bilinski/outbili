@@ -4,6 +4,17 @@
 
 Garantir que TODO lead enriquecido tenha Instagram, LinkedIn, TikTok, Facebook e Website extraídos de forma confiável via pipeline `Assertiva → Firecrawl → Persist`, com auditoria de origem e timestamp.
 
+## 🔗 Regra do link da bio (NON_NEGOTIABLE)
+
+> Estabelecida pelo operador em 2026-05-23.
+
+**Ao extrair QUALQUER link da bio de uma rede social (Instagram `externalUrl`, linktr.ee, link genérico, etc.), esse link DEVE ser vinculado como um link ACESSÍVEL na presença digital do lead**, exibido **ao lado** das mídias sociais extraídas (pill "Website" no `DigitalPresencePanel`).
+
+- O link da bio NÃO é insumo de fallback de WhatsApp. É um **link de presença digital** (website).
+- Implementação canônica: a Edge Function `social-enrich` grava o `contato_externo` (link da bio) em `app.leads.website` quando o campo está vazio (não sobrescreve website já existente). O `DigitalPresencePanel` lê `lead.website` e renderiza a pill "Website".
+- Vale para qualquer plataforma cuja bio exponha um link externo (linktree, beacons, site próprio, agregadores).
+- Validado em 2026-05-23: `@sorridents_augusta` → `linktr.ee/sorridentsaugusta` exibido como Website ao lado do Instagram (lead 4F CLINICA).
+
 ## Scope
 
 Aplica-se a:
