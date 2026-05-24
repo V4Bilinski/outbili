@@ -28,9 +28,18 @@ em `public` e não é resolvido sem qualificação → **todo signup/criação d
 
 ---
 
-## 2. 🟡 PII — CPF não cifrado
+## 2. ✅ PII — CPF cifrado (RESOLVIDO 2026-05-24)
 
-Colunas `bytea` (`pgsodium`) ficaram `NULL` na carga. Não foi inventado esquema de cifragem (Constituição, Art. IV).
+> **RESOLVIDO (W2-P01).** Os 102 CPFs de `app.contacts` foram cifrados via `app.encrypt_cpf`
+> (`pgp_sym` + chave `outbili_cpf_master_key` no Vault), puxando o texto plano de
+> `airtable_fdw.contacts.cpf` num `UPDATE` idempotente. 88 CPFs válidos (11 dígitos) +
+> 14 CNPJs (lançados no campo errado no Airtable). `decrypt_cpf`/`encrypt_cpf` restritos a
+> `service_role` (migration `20260524004012` — minimização de acesso LGPD).
+> `lead_partners` (sem CPF na origem) e `leads.assertiva_cpf_decisor` (sem fonte legada no FDW)
+> serão cifrados dali pra frente pelo `assertiva-enrich`. **Zero CPF em texto plano no Supabase.**
+> Detalhes: [`SESSION-HANDOFF-2026-05-24.md`](./SESSION-HANDOFF-2026-05-24.md).
+
+Histórico original: Colunas `bytea` (`pgsodium`) ficaram `NULL` na carga. Não foi inventado esquema de cifragem (Constituição, Art. IV).
 
 | Campo destino | Tabela | Volume | Origem Airtable |
 |---|---|---:|---|

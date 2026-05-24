@@ -93,7 +93,9 @@ src/
 | **W3-01..05** | Cliente Supabase + tipos + 8 services repontados (lead, contact, partner, trademark, activity, enrichmentLog, campaignMeta, pesca) | ✅ concluída 2026-05-19/20 |
 | **W3-06** | `authService` → Supabase Auth | ✅ concluída 2026-05-20 |
 | **W3-07** | Cutover 100% Supabase + validação E2E + produção restaurada | ✅ concluída 2026-05-23 (commit `cb19d90`) |
-| **W3-08** | Deep enrichment Assertiva via Edge Function (sem n8n) + grafo de sócios cifrado | 🟡 backend ✅ 2026-05-23 · frontend pendente |
+| **W3-08** | Deep enrichment Assertiva (Edge Function, sem n8n) + grafo de sócios cifrado + frontend | ✅ concluído 2026-05-24 |
+| **Camada 2** | Redes sociais via Apify (validação anti-filial) + presença digital (link da bio → website) | ✅ concluído 2026-05-24 |
+| **LGPD** | CPF legado cifrado (W2-P01, 102 contacts) + `decrypt`/`encrypt` restritos a `service_role` | ✅ concluído 2026-05-24 |
 | Story 021 | Declarar Supabase oficial + drop foreign tables + remover `src/lib/airtable.ts` órfão | ⬜ pendente |
 
 **Projeto Supabase:** `outbili-spo` — ref `yxppliytwvlajeqqrrny`, São Paulo (sa-east-1).
@@ -112,7 +114,17 @@ Reescopado a partir da decisão de **eliminar o n8n** do fluxo Assertiva (operad
 
 **Secrets da Edge Function** (Project Settings → Edge Functions): `ASSERTIVA_CLIENT_ID`, `ASSERTIVA_CLIENT_SECRET`, `ASSERTIVA_CPF_HASH_SALT`, `ASSERTIVA_ID_FINALIDADE`. `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são injetados automaticamente.
 
-**Pendente:** integração frontend (service + hook + UI do grafo na CompanyPage); hoje `src/services/assertivaService.ts` ainda usa o caminho legado Worker + n8n.
+**Frontend (✅ concluído):** `socioService.ts` + `TabSocios.tsx`, **indexado dentro da página de Resumo** (a aba "Sócios" separada deixou de existir). Mostra WhatsApp pessoal por sócio (todos os números, link `wa.me`, badge não-perturbe), índice de negociação, redes sociais e vínculos; WhatsApp da empresa ao final.
+
+### Camada 2 · Redes sociais (Apify)
+
+Edge Function `social-enrich` (separada), Apify **exclusivo** para redes sociais. **Validação anti-filial:** busca `nome+via+cidade`, valida o `businessAddress` do perfil contra o endereço real do lead (logradouro/CEP batem → alta; só cidade → média; nada → descarta). Detecta menção de sócio na bio. **Link da bio (linktr.ee, etc.) vira `leads.website`** (presença digital), exibido ao lado das redes. Popula `app.lead_social` (source=`apify`) → painel Presença Digital. Tabela `app.socio_redes`. Regra NON_NEGOTIABLE em `.claude/rules/social-media-enrichment.md`.
+
+**Validação de WhatsApp:** flag `aplicativos.whatsApp` da Assertiva (BilinskiZap não expõe check de presença — só campanhas).
+
+**LGPD:** CPF legado de `contacts` cifrado (102, via `airtable_fdw` → `encrypt_cpf`); `decrypt_cpf`/`encrypt_cpf` restritos a `service_role`.
+
+**Handoff completo da sessão:** [`docs/migration/SESSION-HANDOFF-2026-05-24.md`](./docs/migration/SESSION-HANDOFF-2026-05-24.md).
 
 **Documentação da migração:**
 - [`docs/migration/PENDENCIAS-MIGRACAO.md`](./docs/migration/PENDENCIAS-MIGRACAO.md) — todos os gaps/bugs registrados para resolver pós-migração (PII CPF, 29 órfãos, 9 campos vagos, role="user", force password reset, mapeamento ActivityLog)
