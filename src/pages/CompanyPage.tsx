@@ -9,7 +9,6 @@ import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
 import { useContacts, useCreateContact } from '../hooks/useContacts'
 import { formatCurrencyShort, calculateSpicedScore, parseJsonField } from '../lib/utils'
-import { getPartners } from '../services/partnerService'
 import { getEnrichmentLog } from '../services/enrichmentLogService'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { reEnrichLead } from '../services/enrichmentService'
@@ -22,7 +21,6 @@ import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
 import { TabSocios } from '../components/company/TabSocios'
-import { getSociosByLead } from '../services/socioService'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
@@ -33,7 +31,6 @@ const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
   { id: 'spiced', label: 'SPICED', group: 'primary' },
   { id: 'reuniao', label: 'Reunião', group: 'primary' },
-  { id: 'socios', label: 'Sócios', group: 'primary' },
   { id: 'travas', label: 'Travas', group: 'analise' },
   { id: 'projecao-competitiva', label: 'Projeção', group: 'analise' },
   { id: 'playbook-bdr', label: 'Playbook', group: 'analise' },
@@ -239,16 +236,6 @@ export function CompanyPage() {
   const navigate = useNavigate()
   const { data: lead, isLoading } = useLead(id)
   const { data: contacts } = useContacts(id)
-  const { data: partners } = useQuery({ queryKey: ['partners', id], queryFn: () => getPartners(id!), enabled: !!id })
-  const { data: socioData } = useQuery({ queryKey: ['socios', id], queryFn: () => getSociosByLead(id!), enabled: !!id })
-  const socios = socioData?.socios ?? []
-  // Contatos deduplicados por nome (evita repetir a mesma pessoa, ex: sócio + contato)
-  const dedupedContacts = (contacts ?? []).filter(
-    (c, i, arr) =>
-      arr.findIndex(
-        (x) => (x.name || '').trim().toLowerCase() === (c.name || '').trim().toLowerCase(),
-      ) === i,
-  )
   const { data: enrichmentLog } = useQuery({ queryKey: ['enrichmentLog', id], queryFn: () => getEnrichmentLog(id!), enabled: !!id })
   const { data: activities } = useQuery({ queryKey: ['activities', id], queryFn: () => getActivities(id!), enabled: !!id })
   const [activeTab, setActiveTab] = useState('resumo')
@@ -728,63 +715,11 @@ export function CompanyPage() {
               </div>
             )}
 
-            {/* Quadro Societario — prioriza socios enriquecidos (Assertiva, decisores reais);
-                fallback para o QSA da Receita (lead_partners) quando ainda nao enriquecido */}
-            {socios.length > 0 ? (
-              <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({socios.length})</p>
-                <div className="space-y-1.5">
-                  {socios.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
-                      <div className="min-w-0">
-                        <span className="text-text-primary font-medium">{s.nome}</span>
-                        {(s.cargo || s.participacao) && <span className="text-text-muted ml-1.5">· {s.cargo || s.participacao}</span>}
-                      </div>
-                      <span className="text-micro px-1.5 py-0.5 rounded bg-white/5 text-text-secondary shrink-0">PF</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (partners && partners.length > 0) ? (
-              <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Quadro Societario ({partners.length})</p>
-                <div className="space-y-1.5">
-                  {partners.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
-                      <div>
-                        <span className="text-text-primary font-medium">{p.name}</span>
-                        {p.qualification && <span className="text-text-muted ml-1.5">· {p.qualification}</span>}
-                      </div>
-                      {p.personType && (
-                        <span className={cn('text-micro px-1.5 py-0.5 rounded', p.personType === 'NATURAL' ? 'bg-white/5 text-text-secondary' : p.personType === 'LEGAL' ? 'bg-source-assertiva/10 text-source-assertiva' : 'bg-orange-500/10 text-orange-400')}>{p.personType === 'NATURAL' ? 'PF' : p.personType === 'LEGAL' ? 'PJ' : 'Estrangeiro'}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Contatos com badges Assertiva (deduplicados por nome) */}
-            {dedupedContacts.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Contatos ({dedupedContacts.length})</p>
-                <div className="space-y-1.5">
-                  {dedupedContacts.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-md/50">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-text-primary font-medium truncate">{c.name}</span>
-                        {c.role && <span className="text-text-muted shrink-0">· {c.role}</span>}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {c.whatsappConfirmed && <span className="text-micro px-1.5 py-0.5 rounded bg-whatsapp/15 text-whatsapp font-medium">WA</span>}
-                        {c.phoneIsHot && <span className="text-micro px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-medium">Hot</span>}
-                        {c.source && <span className="text-micro px-1.5 py-0.5 rounded bg-surface-md text-text-muted">{c.source}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Sócios e decisores (deep enrichment Assertiva + redes Apify) — indexado no Resumo.
+                Substitui o antigo "Quadro Societário + Contatos"; a aba Sócios deixou de existir. */}
+            <div className="pt-2 border-t border-border">
+              <TabSocios lead={lead} />
+            </div>
 
             {/* Timeline de Enriquecimento */}
             {enrichmentLog && enrichmentLog.length > 0 && (
@@ -949,9 +884,6 @@ export function CompanyPage() {
 
         {/* Tab: Reunião */}
         {activeTab === 'reuniao' && <TabReuniao lead={lead} />}
-
-        {/* Tab: Sócios e decisores (deep enrichment Assertiva W3-08) */}
-        {activeTab === 'socios' && <TabSocios lead={lead} />}
 
         {/* Tab: Diagnóstico de Travas */}
         {activeTab === 'travas' && <TabTravas lead={lead} />}
