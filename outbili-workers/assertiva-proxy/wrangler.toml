@@ -1,7 +1,0 @@
-name = "outbili"
-main = "index.js"
-compatibility_date = "2024-01-01"
-
-[vars]
-ASSERTIVA_CLIENT_ID = "abc9cjvp39LjlSplYpK0eeZMSPi0Z8/mgDDbwsl2IbJ/t7kaG7sxSDT9ZLQQNbGUXkj9yIJVVc1hoPGkHp/0bg=="
-ASSERTIVA_CLIENT_SECRET = "xtV0v08ohSMtusYbhwjN4F4qL9dSloV44Tdhuz7fOiwr7nHTpOsiPOrjfEyXOJK5dnE+j5YMaEFnQrw+kRI8Sg=="

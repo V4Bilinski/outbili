@@ -33,6 +33,10 @@ n8n/*.json
 .mcp.json
 .dev.vars
 
+# Cloudflare Workers (WIP local + legado). wrangler.toml tem secrets inline
+# (ASSERTIVA_CLIENT_ID/SECRET) — NUNCA commitar. Credenciais ficam só em secrets.
+outbili-workers/
+
 # Supabase (estado efêmero — schema versionado fica em supabase/migrations/)
 supabase/.temp/
 supabase/.branches/
