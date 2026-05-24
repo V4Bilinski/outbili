@@ -108,13 +108,13 @@ serve(async (req: Request): Promise<Response> => {
     const { data: leadData, error: leadErr } = await supabase
       .schema('app')
       .from('leads')
-      .select('id, address, city, state, trade_name, company_name')
+      .select('id, address, city, state, trade_name, company_name, website')
       .eq('id', leadId)
       .single()
     if (leadErr || !leadData) throw new Error(`Lead nao encontrado: ${leadErr?.message}`)
     const lead = leadData as {
       id: string; address: string | null; city: string | null; state: string | null
-      trade_name: string | null; company_name: string | null
+      trade_name: string | null; company_name: string | null; website: string | null
     }
 
     // 2. Termo de busca ESPECIFICO (nome + via + cidade), nunca so a franquia
@@ -245,10 +245,19 @@ serve(async (req: Request): Promise<Response> => {
         )
       if (lsErr) warnings.push(`Erro ao popular lead_social (presenca digital): ${lsErr.message}`)
 
+      const updatePayload: Record<string, unknown> = {
+        social_media_source: 'apify',
+        social_media_extracted_at: new Date().toISOString(),
+      }
+      // O link da bio (linktr.ee, etc.) vira o website de presenca digital do lead,
+      // exibido ao lado das redes sociais. Nao sobrescreve um website ja existente.
+      if (!lead.website && melhorIg.contato_externo) {
+        updatePayload.website = melhorIg.contato_externo
+      }
       const { error: leadErr2 } = await supabase
         .schema('app')
         .from('leads')
-        .update({ social_media_source: 'apify', social_media_extracted_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq('id', leadId)
       if (leadErr2) warnings.push(`Erro ao marcar presenca digital no lead: ${leadErr2.message}`)
     }
