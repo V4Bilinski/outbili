@@ -79,7 +79,7 @@ Usuário seleciona filtros → PESQUISAR
     │  Contact criado com Lead linked record
     ▼
 [FASE 5] Enriquecimento Assertiva Automático
-    │  Worker Cloudflare (primário) → n8n (fallback)
+    │  Edge Function Supabase `assertiva-proxy` (W3-09)
     │  Para cada lead: busca WhatsApp validado do decisor
     │  Atualiza Contact com whatsapp + whatsappConfirmed
     │  React Query invalida cache → UI atualiza automaticamente
@@ -93,11 +93,9 @@ A API Assertiva bloqueia CORS do browser. O proxy é automático:
 
 | Componente | URL | Função |
 |-----------|-----|--------|
-| **Worker Cloudflare** (primário) | `outbili.v4bilinski-ferramentas.workers.dev` | OAuth2 server-side, sem CORS |
-| **n8n webhook** (fallback) | `n8n.bilinski.cloud/webhook/assertiva-proxy` | Backup se Worker indisponível |
+| **Edge Function Supabase** | `assertiva-proxy` | OAuth2 server-side, sem CORS |
 
-O `assertivaService.ts` tenta Worker primeiro; se falhar, tenta n8n automaticamente.
-O código do Worker está em `workers/assertiva-proxy/index.js`.
+O `assertivaService.ts` invoca a Edge Function `assertiva-proxy` (W3-09). O proxy n8n e o Worker Cloudflare foram eliminados.
 
 ---
 
@@ -166,12 +164,7 @@ Deploy automático via **GitHub Actions** para **GitHub Pages**.
 | `VITE_AIRTABLE_BASE_ID` | ID da base do Airtable |
 | `VITE_BILINSKIZAP_URL` | URL da API BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave da API BilinskiZap |
-| `VITE_N8N_WEBHOOK_URL` | URL do webhook n8n |
 | `VITE_CNPJA_API_KEY` | Chave da API CNPJa |
-| `VITE_ASSERTIVA_CLIENT_ID` | Client ID OAuth2 Assertiva |
-| `VITE_ASSERTIVA_CLIENT_SECRET` | Client Secret OAuth2 Assertiva |
-| `VITE_ASSERTIVA_WORKER_URL` | URL do Cloudflare Worker proxy |
-| `VITE_N8N_ASSERTIVA_PROXY` | URL do webhook n8n (fallback) |
 
 ---
 

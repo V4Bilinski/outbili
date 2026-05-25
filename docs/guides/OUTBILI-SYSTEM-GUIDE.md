@@ -43,7 +43,7 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 │       │                                                        │
 │       ▼                                                        │
 │  ┌──────────────────────────────────────────────────────┐      │
-│  │ Assertiva Localize (Worker proxy | n8n fallback)     │      │
+│  │ Assertiva Localize (Edge Function `assertiva-proxy`) │      │
 │  │ Telefones validados + WhatsApp + email               │      │
 │  └──────────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────────┘
@@ -60,8 +60,8 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 | Graficos | Recharts v3 |
 | Database | Airtable (REST API — 10 tabelas) |
 | Enriquecimento cadastral | CNPJa API (searchOffice + mapCnpjaToLead) |
-| Enriquecimento telefone | Assertiva Localize (Worker proxy primario, n8n fallback) |
-| Automação | n8n (self-hosted em `n8n.bilinski.cloud`) |
+| Enriquecimento telefone | Assertiva Localize (Edge Function Supabase `assertiva-proxy`, W3-09) |
+| Automação | Edge Functions Supabase (n8n eliminado em W3-09/W3-10) |
 | WhatsApp | BilinskiZap API |
 | Deploy | Static files (base path `/outbili/`) |
 
@@ -135,7 +135,7 @@ O sistema transforma uma busca por segmento/localização em leads qualificados 
 4. Frontend chama CNPJa API diretamente (searchOffice)
 5. Resultados mapeados via mapCnpjaToLead
 6. Leads salvos no Airtable com enrichmentStatus: 'cnpja'
-7. Assertiva enriquece telefones/WhatsApp (via Worker proxy, fallback n8n)
+7. Assertiva enriquece telefones/WhatsApp (via Edge Function `assertiva-proxy`)
 8. enrichmentStatus atualizado: 'cnpja' → 'assertiva' → 'complete'
 9. Historico de busca salvo em localStorage (key: outbili_search_history)
 ```
@@ -154,7 +154,7 @@ SearchPage              CNPJa API                  Assertiva              Airtab
     │── Salvar Leads ────────────────────────────────────────────────────────>│
     │── Salvar Contacts ─────────────────────────────────────────────────────>│
     │                        │                          │                      │
-    │── Worker proxy / n8n ────────────────────────────>│                      │
+    │── Edge Function assertiva-proxy ─────────────────>│                      │
     │   (telefones, WhatsApp)│                          │                      │
     │                        │  ┌── Localize CNPJ ──────│                      │
     │                        │  └── Localize CPF ───────│                      │
@@ -172,7 +172,7 @@ SearchPage              CNPJa API                  Assertiva              Airtab
 | 1.2 | CNPJa API chamada | Frontend | GET /office/search retorna resultados |
 | 1.3 | Leads mapeados | Frontend | mapCnpjaToLead() converte schema CNPJa |
 | 1.4 | Leads salvos no Airtable | Frontend → Airtable | Records criados com enrichmentStatus 'cnpja' |
-| 1.5 | Assertiva enriquece | Worker/n8n | Telefones/WhatsApp validados |
+| 1.5 | Assertiva enriquece | Edge Function | Telefones/WhatsApp validados |
 | 1.6 | enrichmentStatus progride | Airtable | cnpja → assertiva → complete |
 | 1.7 | Frontend exibe dados | Frontend | Dados enriquecidos visiveis |
 | 1.8 | Historico salvo | Frontend | localStorage atualizado |
@@ -563,7 +563,7 @@ Primeiro relatório gerado com sucesso:
 | Fase | Fonte | Dados | Status resultante |
 |------|-------|-------|-------------------|
 | 1. Cadastral | CNPJa API (searchOffice + mapCnpjaToLead) | CNPJ, razao social, nome fantasia, socios, capital, endereco, CNAE, telefones RF | `cnpja` |
-| 2. Telefone/WhatsApp | Assertiva Localize (Worker proxy primario, n8n fallback) | Telefones validados, WhatsApp confirmado, email verificado | `complete` |
+| 2. Telefone/WhatsApp | Assertiva Localize (Edge Function Supabase `assertiva-proxy`, W3-09) | Telefones validados, WhatsApp confirmado, email verificado | `complete` |
 
 **Assertiva `_quantidadeFuncionarios` SEMPRE sobrescreve estimativa CNPJa** (fix 2026-04-14).
 
@@ -638,12 +638,12 @@ O campo `temperatura` e o nome no Airtable para temperature (code usa `temperatu
 
 **Rate Limiting:** Token-bucket (5 req/s) com auto-retry em HTTP 429.
 
-### 5.2 n8n (Automacao)
+### 5.2 Edge Functions Supabase (Automacao)
 
-- **Host:** `n8n.bilinski.cloud`
-- **Webhook:** `POST /webhook/outbili-search`
-- **Assertiva fallback:** `VITE_N8N_ASSERTIVA_PROXY` (usado quando Worker proxy falha)
-- **NOTA:** PESCA agora roda direto do frontend via CNPJa API. n8n usado como fallback Assertiva.
+- **Enriquecimento raso Assertiva:** `assertiva-proxy` (OAuth2 server-side, W3-09).
+- **Enriquecimento profundo Assertiva:** `assertiva-enrich` (grafo de socios, W3-08).
+- **Redes sociais:** `social-enrich`.
+- **NOTA:** PESCA roda direto do frontend via CNPJa API. O n8n e o Worker Cloudflare foram eliminados (W3-09/W3-10).
 
 ### 5.3 BilinskiZap (WhatsApp)
 
@@ -683,17 +683,12 @@ VITE_AIRTABLE_BASE_ID=                # ID da base (ex: appXXXXXX)
 VITE_BILINSKIZAP_URL=                 # Default: https://bilinskizap.vercel.app
 VITE_BILINSKIZAP_API_KEY=             # Bearer token
 
-# n8n
-VITE_N8N_WEBHOOK_URL=                 # Default: https://n8n.bilinski.cloud/webhook/outbili-search
-VITE_N8N_ASSERTIVA_PROXY=             # Webhook n8n fallback Assertiva
-
 # CNPJa
 VITE_CNPJA_API_KEY=                   # API key CNPJa (73 chars)
 
-# Assertiva
-VITE_ASSERTIVA_CLIENT_ID=             # OAuth2 client ID
-VITE_ASSERTIVA_CLIENT_SECRET=         # OAuth2 client secret
-VITE_ASSERTIVA_WORKER_URL=            # Worker proxy URL (primário)
+# Assertiva (server-side via Edge Functions — secrets do Supabase, W3-09)
+#   ASSERTIVA_CLIENT_ID, ASSERTIVA_CLIENT_SECRET, ASSERTIVA_ID_FINALIDADE
+# Nenhuma credencial Assertiva vive no bundle do navegador.
 
 ```
 
@@ -705,7 +700,6 @@ A página `/#/settings` verifica em tempo real:
 |---------|-------|-----------|
 | Airtable | GET /tables | Verde/Vermelho |
 | BilinskiZap | GET /api/health | Verde/Vermelho |
-| n8n | Webhook configured | Verde/Vermelho |
 
 ---
 
@@ -716,8 +710,7 @@ A página `/#/settings` verifica em tempo real:
 - [ ] Variáveis de ambiente configuradas (.env.local)
 - [ ] Airtable base criada com 10 tabelas (Leads, Contacts, Campaigns, Activities, Messages, Segments, Users, ActivityLog, Partners, Trademarks, EnrichmentLog)
 - [ ] CNPJa API key configurada e com créditos
-- [ ] Assertiva OAuth2 credentials configuradas (client_id + client_secret)
-- [ ] n8n workflow importado e ativo
+- [ ] Assertiva OAuth2 credentials configuradas como secrets do Supabase (client_id + client_secret + id_finalidade)
 - [ ] BilinskiZap conectado com número WhatsApp
 
 ### 7.2 Teste de Jornada Completa
@@ -779,7 +772,7 @@ A página `/#/settings` verifica em tempo real:
 | Risco | Impacto | Mitigação |
 |-------|---------|-----------|
 | Rate limit Airtable (5 req/s) | Lentidão em listas grandes | Token-bucket implementado em `airtable.ts` |
-| n8n workflow offline | Pesquisa não processa | Health check em /#/settings |
+| Edge Function `assertiva-proxy` indisponível | Enriquecimento de telefone/WhatsApp falha | Health check em /#/settings; fluxo degrada sem bloquear o save |
 | BilinskiZap desconectado | Campanhas não disparam | Health check + precheck antes do envio |
 | VITE_* expostas no frontend | Tokens visíveis no bundle | Sistema single-user interno; migrar para BFF se escalar |
 | Sem autenticação | Qualquer um com URL acessa | Proteger via VPN ou auth proxy se expor externamente |

@@ -35,7 +35,7 @@
 | Analytics / Reports | 7/10 | Bom — métricas com benchmarks, fórmulas explícitas, recomendações condicionais, filtro por período, export CSV |
 | Mobile Experience | 4/10 | Crítico — página Reports inacessível, filtros limitados |
 | Enriquecimento | 8/10 | Bom — CNPJa + Assertiva + re-enrichment batch + fix 422/rfPhone/Assertiva (2026-04-14) |
-| Automação | 3/10 | Básico — n8n funciona mas cadência multi-step não existe |
+| Automação | 3/10 | Básico — enriquecimento via Edge Functions Supabase (n8n eliminado em W3-09/W3-10); cadência multi-step não existe |
 | Pos-Venda / CS | 0/10 | Inexistente — sem health score, NPS, churn prevention |
 
 ### Veredicto
@@ -280,7 +280,7 @@ onClick={() => window.location.hash = '#/leads'}
 | **Probabilidade por estagio** | Pipedrive | Não | Sem weighted pipeline value |
 | **Health Score** pos-venda | HubSpot | Não | Zero CS no sistema |
 | **NPS automatizado** | HubSpot | Não | Sem surveys |
-| **Workflow builder** visual | HubSpot | Não | n8n cobre backend, sem UI |
+| **Workflow builder** visual | HubSpot | Não | Edge Functions cobrem o backend, sem UI |
 | **CS Workspace** | HubSpot | Não | Sem area dedicada a CS |
 | **Revenue forecasting** | Salesforce | Não | Sem forecast, apenas pipeline value simples |
 | **Cross-entity reporting** | Salesforce | Não | Reports single-entity (leads only) |
