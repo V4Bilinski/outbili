@@ -1,53 +1,21 @@
 import type { AssertivaCompanyResult, AssertivaDecisionMaker, AssertivaPhone, AssertivaSocialLinks } from '../types'
+import { supabase } from '../lib/supabase'
 
-// Assertiva proxy: Worker (primário) + n8n (fallback)
-// Worker Cloudflare elimina CORS server-side. Se falhar, tenta n8n.
-const WORKER_URL = import.meta.env.VITE_ASSERTIVA_WORKER_URL || ''
-const N8N_URL = import.meta.env.VITE_N8N_ASSERTIVA_PROXY || ''
-
-// Fallback: direct calls (only works from server contexts, not browser)
-const DIRECT_BASE_URL = 'https://api.assertivasolucoes.com.br'
-const CLIENT_ID = import.meta.env.VITE_ASSERTIVA_CLIENT_ID || ''
-const CLIENT_SECRET = import.meta.env.VITE_ASSERTIVA_CLIENT_SECRET || ''
-
-// Token cache for direct mode
-let tokenCache: { token: string; expiresAt: number } | null = null
-
-// --- Proxy fetch: Worker (primário) → n8n (fallback) ---
-
-async function proxyFetch(url: string, body: Record<string, string>): Promise<Response> {
-  return fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
+// Roteamento do enriquecimento RASO Assertiva via Edge Function `assertiva-proxy`
+// (Supabase). A função faz OAuth2 server-side, elimina CORS e retorna o JSON RAW
+// da Assertiva. Substitui o antigo Cloudflare Worker + n8n (Story W3-09, Fase A).
 
 async function assertivaViaProxyInner<T>(action: string, params: Record<string, string>): Promise<T> {
-  const payload = { action, ...params }
+  const { data, error } = await supabase.functions.invoke('assertiva-proxy', {
+    body: { action, ...params },
+  })
 
-  // Tentar Worker primeiro (primário — sem CORS, mais rápido)
-  if (WORKER_URL) {
-    try {
-      const res = await proxyFetch(WORKER_URL, payload)
-      if (res.ok) return res.json()
-    } catch { /* Worker falhou, tentar n8n */ }
+  if (error) {
+    // Propaga para o wrapper registrar recordAssertivaOutcome(false).
+    throw new Error(`Assertiva proxy (${action}): ${error.message || 'erro desconhecido'}`)
   }
 
-  // Fallback: n8n webhook
-  if (N8N_URL) {
-    try {
-      const res = await proxyFetch(N8N_URL, payload)
-      if (res.ok) return res.json()
-      const error = await res.json().catch(() => ({ message: res.statusText }))
-      throw new Error(`Assertiva n8n ${res.status}: ${error.message || res.statusText}`)
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('Assertiva n8n')) throw err
-      // n8n também falhou
-    }
-  }
-
-  throw new Error('Assertiva indisponível: nenhum proxy configurado (Worker ou n8n)')
+  return data as T
 }
 
 // --- Status observado: alimenta o health-check sem gastar consulta paga ---
@@ -87,36 +55,6 @@ async function assertivaViaProxy<T>(action: string, params: Record<string, strin
     recordAssertivaOutcome(false)
     throw err
   }
-}
-
-// --- Direct auth (fallback, for server-side contexts) ---
-
-export async function getToken(): Promise<string> {
-  if (tokenCache && Date.now() < tokenCache.expiresAt) {
-    return tokenCache.token
-  }
-
-  const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)
-  const res = await fetch(`${DIRECT_BASE_URL}/oauth2/v3/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  })
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(`Assertiva auth ${res.status}: ${error.message || res.statusText}`)
-  }
-
-  const data = await res.json()
-  tokenCache = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 5) * 1000,
-  }
-  return data.access_token
 }
 
 // --- Consulta CNPJ (telefones, emails, socios) ---

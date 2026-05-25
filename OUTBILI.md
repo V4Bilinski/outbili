@@ -48,7 +48,7 @@ Esta é a localização oficial e definitiva da unidade. Nunca usar "Curitiba" e
 | Estado servidor | TanStack React Query |
 | Banco de dados | **Supabase** (Postgres + Auth + Realtime) — cutover Airtable→Supabase em curso, ver [Migration Status](#estado-da-migração-airtable--supabase) |
 | Enriquecimento (cadastral) | CNPJa API (searchOffice + mapCnpjaToLead) |
-| Enriquecimento (telefone/WhatsApp) | Assertiva Localize. Deep enrichment via Edge Function `assertiva-enrich` (W3-08). Legado raso ainda via Worker proxy + n8n (em transição) |
+| Enriquecimento (telefone/WhatsApp) | Assertiva Localize. Deep enrichment via Edge Function `assertiva-enrich` (W3-08). Enriquecimento raso via Edge Function `assertiva-proxy` (W3-09). Sem Worker Cloudflare |
 | WhatsApp | BilinskiZap API |
 | Ícones | Lucide React |
 | Fontes | Plus Jakarta Sans, Inter, JetBrains Mono |
@@ -148,14 +148,12 @@ Configuradas como secrets no GitHub Actions (Settings > Secrets > Actions):
 | `VITE_AIRTABLE_BASE_ID` | ID da base Airtable (legacy — removido pós W3-06) |
 | `VITE_BILINSKIZAP_URL` | URL BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave BilinskiZap |
-| `VITE_N8N_WEBHOOK_URL` | Webhook n8n |
+| `VITE_N8N_WEBHOOK_URL` | Webhook n8n (busca por filtros — LEGADO, remoção em W3-10) |
 | `VITE_CNPJA_API_KEY` | Chave API CNPJa |
-| `VITE_ASSERTIVA_CLIENT_ID` | Client ID Assertiva OAuth2 |
-| `VITE_ASSERTIVA_CLIENT_SECRET` | Client Secret Assertiva OAuth2 |
-| `VITE_ASSERTIVA_WORKER_URL` | URL Worker proxy Assertiva |
-| `VITE_N8N_ASSERTIVA_PROXY` | Webhook n8n fallback Assertiva |
 
-Para desenvolvimento local, copiar `.env.example` para `.env` e preencher.
+> **Assertiva (W3-09):** as credenciais saíram do front. O enriquecimento raso (`assertiva-proxy`) e profundo (`assertiva-enrich`) roda em Edge Functions Supabase com OAuth2 server-side. Configurar como **secrets do Supabase**: `ASSERTIVA_CLIENT_ID`, `ASSERTIVA_CLIENT_SECRET`, `ASSERTIVA_ID_FINALIDADE`. Nenhuma credencial Assertiva vive no bundle do navegador.
+
+Para desenvolvimento local, copiar `.env.local.example` para `.env.local` e preencher.
 
 ---
 
@@ -213,7 +211,7 @@ npm run preview   # Preview do build local
 - Diagnóstico via `leadNeedsReEnrich()` helper
 - Upload de arquivos (CSV, Excel, PDF, TXT, MD) via `src/lib/file-parser.ts`
 - **PESCA pipeline:** frontend chama CNPJa diretamente (searchOfficesPaginated), salva no Airtable, depois enriquece via Assertiva em batch
-- **Assertiva proxy:** Worker Cloudflare (primário) → n8n webhook (fallback). Ambos tratam CORS server-side
+- **Assertiva proxy:** Edge Function Supabase `assertiva-proxy` (OAuth2 server-side, cache de token no isolate, retorno RAW). Substituiu o Worker Cloudflare + n8n (W3-09)
 
 ### Análises BDR — Fábrica de Receita V4
 
@@ -285,9 +283,9 @@ Todos os campos Assertiva foram criados no Airtable (2026-04-14) e aceitam PATCH
 | Lead (linked) | `fldTOTIfGn70ozcqm` | multipleRecordLinks |
 | **phone** | **NÃO EXISTE** | — |
 
-**Worker Cloudflare — User-Agent obrigatório:**
-- O Cloudflare Bot Fight Mode bloqueia requisições com User-Agent de bibliotecas (Python-urllib, etc.)
-- SEMPRE enviar User-Agent de navegador: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36`
+**Proxy Assertiva — Edge Function `assertiva-proxy` (W3-09):**
+- O roteamento raso da Assertiva roda na Edge Function Supabase `assertiva-proxy` (Deno): OAuth2 server-side, cache de token no isolate, chamada direta à Assertiva.
+- Sem Worker Cloudflare: o problema de Bot Fight Mode / User-Agent deixou de existir. As 5 ações (`lookup-cnpj`, `get-decision-makers`, `lookup-cpf`, `lookup-phone`, `discover-endpoints`) são despachadas por `action` no body e retornam o JSON RAW da Assertiva (os mappers do `assertivaService.ts` esperam `raw.resposta || raw`).
 
 ---
 
