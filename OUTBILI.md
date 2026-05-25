@@ -76,7 +76,7 @@ src/
     ImportModal.tsx    # Modal de importação de leads por arquivo
   hooks/              # useLeads, useLeadEnrichment, useMassEnrichment, useReEnrichment, useAuth, etc.
   services/           # leadService, contactService, enrichmentService, campaignService
-  lib/                # supabase (W3 ✓), airtable (legacy — só authService, removido pós W3-06), file-parser, n8n-webhook, bilinskizap, utils
+  lib/                # supabase (W3 ✓), airtable (legacy — só authService, removido pós W3-06), file-parser, bilinskizap, utils
   types/index.ts      # Interfaces: Lead, Contact, Campaign, Activity, etc.
 ```
 
@@ -148,7 +148,6 @@ Configuradas como secrets no GitHub Actions (Settings > Secrets > Actions):
 | `VITE_AIRTABLE_BASE_ID` | ID da base Airtable (legacy — removido pós W3-06) |
 | `VITE_BILINSKIZAP_URL` | URL BilinskiZap |
 | `VITE_BILINSKIZAP_API_KEY` | Chave BilinskiZap |
-| `VITE_N8N_WEBHOOK_URL` | Webhook n8n (busca por filtros — LEGADO, remoção em W3-10) |
 | `VITE_CNPJA_API_KEY` | Chave API CNPJa |
 
 > **Assertiva (W3-09):** as credenciais saíram do front. O enriquecimento raso (`assertiva-proxy`) e profundo (`assertiva-enrich`) roda em Edge Functions Supabase com OAuth2 server-side. Configurar como **secrets do Supabase**: `ASSERTIVA_CLIENT_ID`, `ASSERTIVA_CLIENT_SECRET`, `ASSERTIVA_ID_FINALIDADE`. Nenhuma credencial Assertiva vive no bundle do navegador.
