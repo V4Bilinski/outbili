@@ -71,6 +71,7 @@ function rowToLead(row: any): Lead {
     eligibilityChecklist: row.eligibility_checklist ?? undefined,
     sourceHtmlReport: row.source_html_report ?? undefined,
     enrichmentStatus: row.enrichment_status ?? undefined,
+    temGoogleMeuNegocio: row.tem_google_meu_negocio ?? undefined,
     googleRating: row.google_rating ?? undefined,
     googleReviewsCount: row.google_reviews_count ?? undefined,
     instagramFollowers: ig?.followers ?? undefined,

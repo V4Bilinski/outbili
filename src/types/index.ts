@@ -43,6 +43,7 @@ export interface Lead {
   sourceHtmlReport?: string
   enrichmentStatus?: 'none' | 'cnpja' | 'cnpja_n8n' | 'assertiva' | 'complete'
   // --- Presença Digital (estruturado) ---
+  temGoogleMeuNegocio?: boolean
   googleRating?: number
   googleReviewsCount?: number
   instagramFollowers?: number

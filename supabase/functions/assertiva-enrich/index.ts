@@ -21,6 +21,12 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Tipo permissivo do client (o schema é selecionado por .schema('app') em cada query).
+// `any` evita o ruído de genéricos do supabase-js (esm.sh latest) entre createClient()
+// e os helpers — os tipos são apagados em runtime; o deploy faz o próprio bundle.
+// deno-lint-ignore no-explicit-any
+type SbClient = any
+
 // ---------------------------------------------------------------------------
 // Constantes
 // ---------------------------------------------------------------------------
@@ -107,6 +113,7 @@ interface EnrichOutput {
   empresa: unknown
   socios: SocioOutput[]
   empresaTelefones: EmpresaTelefone[]
+  digitalPresence: DigitalPresence
   warnings: string[]
 }
 
@@ -505,6 +512,101 @@ async function enrichSocio(
 }
 
 // ---------------------------------------------------------------------------
+// PRESENÇA DIGITAL (nativa Assertiva): site + redes sociais + Google Meu Negócio.
+// A consulta CNPJ já devolve `resposta.redesSociais[]` ({nome,url,temGoogleMeuNegocio})
+// e `resposta.dadosCadastrais` (site, temGoogleMeuNegocio). Extraído sem custo extra.
+// ---------------------------------------------------------------------------
+interface DigitalPresence {
+  website: string | null
+  redes: { platform: string; url: string }[]
+  temGoogleMeuNegocio: boolean
+}
+
+function extractDigitalPresence(rawCnpj: unknown): DigitalPresence {
+  const resp = (rawCnpj as Record<string, unknown> | null)?.['resposta'] as Record<string, unknown> | undefined
+  const cad = (resp?.['dadosCadastrais'] ?? {}) as Record<string, unknown>
+  const redesArr = (Array.isArray(resp?.['redesSociais']) ? resp?.['redesSociais'] : []) as Record<string, unknown>[]
+
+  let website: string | null = (cad['site'] as string) || null
+  let temGmb = Boolean(cad['temGoogleMeuNegocio'])
+  const redes: { platform: string; url: string }[] = []
+  const seen = new Set<string>()
+
+  for (const item of redesArr) {
+    const nome = String(item['nome'] ?? item['tipo'] ?? item['rede'] ?? '').toLowerCase()
+    const url = String(item['url'] ?? item['link'] ?? item['perfil'] ?? '')
+    if (item['temGoogleMeuNegocio']) temGmb = true
+    if (!url) continue
+
+    let platform: string | null = null
+    if (nome.includes('instagram')) platform = 'instagram'
+    else if (nome.includes('facebook')) platform = 'facebook'
+    else if (nome.includes('linkedin')) platform = 'linkedin'
+    else if (nome.includes('tiktok') || nome.includes('tik_tok') || nome.includes('tik-tok')) platform = 'tiktok'
+    else if (nome.includes('youtube')) platform = 'youtube'
+    else if (nome.includes('twitter') || nome.includes('x.com')) platform = 'twitter'
+    else if (nome.includes('site') || nome.includes('website') || nome.includes('homepage') || nome.includes('url')) {
+      if (!website) website = url
+      continue
+    } else if (nome.includes('google') || nome.includes('maps')) {
+      temGmb = true
+      continue
+    } else {
+      continue
+    }
+
+    if (platform && !seen.has(platform)) {
+      seen.add(platform)
+      redes.push({ platform, url })
+    }
+  }
+
+  return { website, redes, temGoogleMeuNegocio: temGmb }
+}
+
+// Persiste a presença digital. website: só preenche se vazio (não sobrescreve a bio
+// linktr.ee gravada pelo social-enrich). redes: insere apenas plataformas que o lead
+// ainda NÃO possui (preserva o Apify validado anti-filial). Idempotente.
+async function persistirPresencaDigital(
+  supabase: SbClient,
+  leadId: string,
+  presence: DigitalPresence,
+  warnings: string[],
+): Promise<void> {
+  // website: preenche só se o lead ainda não tiver (não sobrescreve a bio do social-enrich).
+  // GMB NÃO é gravado aqui: o flag temGoogleMeuNegocio da Assertiva é não-confiável
+  // (retorna false até para quem tem GMB). A fonte correta é o social-enrich (Google Maps
+  // via Apify), que grava tem_google_meu_negocio/google_rating/google_reviews_count.
+  if (presence.website) {
+    const { data: leadRow, error: selErr } = await supabase
+      .schema('app').from('leads').select('website').eq('id', leadId).maybeSingle()
+    if (!selErr && leadRow && !(leadRow as { website?: string }).website) {
+      const { error } = await supabase
+        .schema('app').from('leads').update({ website: presence.website }).eq('id', leadId)
+      if (error) warnings.push(`Erro ao gravar website: ${error.message}`)
+    }
+  }
+
+  if (presence.redes.length > 0) {
+    const { data: existing } = await supabase
+      .schema('app').from('lead_social').select('platform').eq('lead_id', leadId)
+    const have = new Set(((existing ?? []) as { platform: string }[]).map((r) => r.platform))
+    const novas = presence.redes.filter((r) => !have.has(r.platform))
+    if (novas.length > 0) {
+      const rows = novas.map((r) => ({
+        lead_id: leadId,
+        platform: r.platform,
+        url: r.url,
+        source: 'assertiva',
+        extracted_at: new Date().toISOString(),
+      }))
+      const { error } = await supabase.schema('app').from('lead_social').insert(rows)
+      if (error) warnings.push(`Erro ao gravar redes (assertiva): ${error.message}`)
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pipeline principal: enriquece um CNPJ completo
 // ---------------------------------------------------------------------------
 async function enrichCnpj(
@@ -569,7 +671,7 @@ async function enrichCnpj(
     (socioRaw) => enrichSocio(socioRaw, idFinalidade, token, warnings),
   )
 
-  return { empresa, socios, empresaTelefones, warnings }
+  return { empresa, socios, empresaTelefones, digitalPresence: extractDigitalPresence(rawCnpj), warnings }
 }
 
 // ---------------------------------------------------------------------------
@@ -578,7 +680,7 @@ async function enrichCnpj(
 // disponiveis (o enriquecimento raso so salvava 1). owner='empresa'.
 // ---------------------------------------------------------------------------
 async function persistirTelefonesEmpresa(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
   leadId: string,
   telefones: EmpresaTelefone[],
   warnings: string[],
@@ -639,7 +741,7 @@ function calcularIndiceProbabilidade(socio: SocioOutput): number {
 //   - CNPJ vinculado (societário_cruzado): não é PII — gravado em texto normal.
 // ---------------------------------------------------------------------------
 async function persistir(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
   leadId: string,
   cnpjOrigem: string,
   socios: SocioOutput[],
@@ -752,7 +854,7 @@ async function persistir(
 // Best-effort: nunca derruba a resposta principal.
 // ---------------------------------------------------------------------------
 async function finishJob(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
   leadId: string,
   jobId: string | undefined,
   ok: boolean,
@@ -805,11 +907,13 @@ serve(async (req: Request): Promise<Response> => {
       leadId?: string
       jobId?: string
       idFinalidade?: string
+      mode?: 'full' | 'presence'
     }
 
     const cnpj = body.cnpj
     leadId = body.leadId
     jobId = body.jobId   // W3-08: presente quando disparado pelo worker da fila
+    const mode = body.mode ?? 'full'   // 'presence' = só presença digital (consulta CNPJ leve)
 
     if (!cnpj || !leadId) {
       return new Response(
@@ -830,19 +934,48 @@ serve(async (req: Request): Promise<Response> => {
 
     // Obter token Assertiva
     const token = await getAssertivaToken()
-
-    // Executar pipeline
     const warnings: string[] = []
+
+    // MODO PRESENCE: só presença digital (1 consulta CNPJ), sem a cascata de sócios.
+    // Usado para popular a presença digital em massa de forma barata (leads já com sócios).
+    if (mode === 'presence') {
+      const cleanCnpj = cnpj.replace(/\D/g, '')
+      const rawCnpj = await assertivaGet(
+        token,
+        `/localize/v3/cnpj?cnpj=${cleanCnpj}&idFinalidade=${idFinalidade}`,
+        warnings,
+      )
+      const presence = extractDigitalPresence(rawCnpj)
+      await persistirPresencaDigital(supabase, leadId, presence, warnings)
+      await finishJob(supabase, leadId, jobId, true, null, {
+        mode: 'presence',
+        website: Boolean(presence.website),
+        redes: presence.redes.length,
+        googleMeuNegocio: presence.temGoogleMeuNegocio,
+        warnings: warnings.length,
+      })
+      return new Response(
+        JSON.stringify({ digitalPresence: presence, warnings: warnings.length > 0 ? warnings : undefined }),
+        { status: 200, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // MODO FULL (default): cascata completa de sócios + presença digital
     const result = await enrichCnpj(cnpj, leadId, idFinalidade, token, warnings)
 
     // Persistir no banco
     await persistir(supabase, leadId, cnpj, result.socios, warnings)
     await persistirTelefonesEmpresa(supabase, leadId, result.empresaTelefones, warnings)
+    // Camada de presença digital (site + redes + Google Meu Negócio), nativa da Assertiva
+    await persistirPresencaDigital(supabase, leadId, result.digitalPresence, warnings)
 
     // W3-08: fecha o job (done) + registra enrichment_runs (impede re-enfileiramento)
     await finishJob(supabase, leadId, jobId, true, null, {
       numSocios: result.socios.length,
       numTelefonesEmpresa: result.empresaTelefones.length,
+      website: Boolean(result.digitalPresence.website),
+      redes: result.digitalPresence.redes.length,
+      googleMeuNegocio: result.digitalPresence.temGoogleMeuNegocio,
       warnings: warnings.length,
     })
 
