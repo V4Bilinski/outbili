@@ -573,6 +573,10 @@ async function persistirPresencaDigital(
   presence: DigitalPresence,
   warnings: string[],
 ): Promise<void> {
+  // website: preenche só se o lead ainda não tiver (não sobrescreve a bio do social-enrich).
+  // GMB NÃO é gravado aqui: o flag temGoogleMeuNegocio da Assertiva é não-confiável
+  // (retorna false até para quem tem GMB). A fonte correta é o social-enrich (Google Maps
+  // via Apify), que grava tem_google_meu_negocio/google_rating/google_reviews_count.
   if (presence.website) {
     const { data: leadRow, error: selErr } = await supabase
       .schema('app').from('leads').select('website').eq('id', leadId).maybeSingle()
