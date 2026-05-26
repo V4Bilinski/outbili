@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react'
+import { MapPin, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { extractHandle } from '../../services/socialMediaExtractor'
 import type { Lead } from '../../types'
@@ -13,31 +13,38 @@ interface Props {
   onReExtract?: () => void
   isReExtracting?: boolean
   compact?: boolean
+  /** URL do perfil no Google Maps (lead_social platform='google'), quando disponível. */
+  googleMapsUrl?: string
 }
 
 /**
- * Painel de Presença Digital — 5 pills com prioridade visual:
- *   Instagram → LinkedIn → TikTok → Website → Facebook
+ * Painel de Presença Digital — pills com prioridade visual:
+ *   Instagram → LinkedIn → Google Meu Negócio → TikTok → Website → Facebook
  *
  * Estado "presente": pill vermelho outline com ícone + handle
  * Estado "ausente": pill cinza dashed opacity-40 "Não encontrado"
  *
- * Extraído via pipeline de enriquecimento (Assertiva → Firecrawl fallback).
+ * Extraído via pipeline de enriquecimento (Assertiva → Firecrawl fallback) e
+ * presença comercial via Edge Function social-enrich (Google Meu Negócio).
  */
-export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compact }: Props) {
+export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compact, googleMapsUrl }: Props) {
   const instagramUrl = normalizeInstagramUrl(lead.instagram)
   const linkedinUrl = normalizeLinkedinUrl(lead.linkedin)
   const tiktokUrl = normalizeTiktokUrl(lead.tiktok)
   const websiteUrl = lead.website?.trim()
   const facebookUrl = lead.facebook?.trim()
 
+  const hasGoogle = lead.temGoogleMeuNegocio === true || typeof lead.googleRating === 'number'
+  const googleLabel = buildGoogleLabel(lead.googleRating, lead.googleReviewsCount)
+
   const items = [
     instagramUrl && { platform: 'instagram' as const, url: instagramUrl, label: extractHandle(instagramUrl, 'instagram'), Icon: InstagramIcon },
     linkedinUrl && { platform: 'linkedin' as const, url: linkedinUrl, label: 'LinkedIn', Icon: LinkedInIcon },
+    hasGoogle && { platform: 'google' as const, url: googleMapsUrl?.trim() || undefined, label: googleLabel, Icon: GoogleBusinessIcon },
     tiktokUrl && { platform: 'tiktok' as const, url: tiktokUrl, label: extractHandle(tiktokUrl, 'tiktok'), Icon: TikTokIcon },
     websiteUrl && !websiteUrl.toLowerCase().includes('instagram.com') && { platform: 'website' as const, url: websiteUrl, label: 'Website', Icon: GlobeIcon },
     facebookUrl && { platform: 'facebook' as const, url: facebookUrl, label: 'Facebook', Icon: FacebookIcon },
-  ].filter(Boolean) as Array<{ platform: string; url: string; label: string; Icon: React.ComponentType<{ className?: string }> }>
+  ].filter(Boolean) as Array<{ platform: string; url?: string; label: string; Icon: React.ComponentType<{ className?: string }> }>
 
   const showMeta = !compact && !!onReExtract
 
@@ -70,23 +77,35 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
       {/* Pills */}
       <div className="flex gap-2 flex-wrap">
         {items.length > 0 ? (
-          items.map((item) => (
-            <a
-              key={item.platform}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                'inline-flex items-center gap-1.5 text-[10px] text-red-vivid border border-red/30 rounded-md transition-all font-medium leading-none',
-                'hover:bg-red hover:text-white hover:border-red',
-                compact ? 'px-1.5 py-1' : 'px-2 py-1',
-              )}
-              aria-label={`Abrir ${item.platform}: ${item.label}`}
-            >
-              <item.Icon className="h-2.5 w-2.5" />
-              <span className="truncate max-w-[140px]">{item.label}</span>
-            </a>
-          ))
+          items.map((item) => {
+            const pillClass = cn(
+              'inline-flex items-center gap-1.5 text-[10px] text-red-vivid border border-red/30 rounded-md transition-all font-medium leading-none',
+              item.url && 'hover:bg-red hover:text-white hover:border-red',
+              compact ? 'px-1.5 py-1' : 'px-2 py-1',
+            )
+            // Pill sem URL (ex.: Google sem link de Maps): vira badge informativo.
+            if (!item.url) {
+              return (
+                <span key={item.platform} className={pillClass} aria-label={`${item.platform}: ${item.label}`}>
+                  <item.Icon className="h-2.5 w-2.5" />
+                  <span className="truncate max-w-[140px]">{item.label}</span>
+                </span>
+              )
+            }
+            return (
+              <a
+                key={item.platform}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={pillClass}
+                aria-label={`Abrir ${item.platform}: ${item.label}`}
+              >
+                <item.Icon className="h-2.5 w-2.5" />
+                <span className="truncate max-w-[140px]">{item.label}</span>
+              </a>
+            )
+          })
         ) : (
           <span className="text-[11px] text-text-muted italic">
             Nenhuma rede social encontrada
@@ -99,6 +118,21 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
 }
 
 // --- Helpers ---
+
+/** Ícone do Google Meu Negócio (pin de mapa, coerente com os demais ícones lucide). */
+function GoogleBusinessIcon({ className }: { className?: string }) {
+  return <MapPin className={cn('shrink-0', className)} aria-hidden="true" />
+}
+
+/**
+ * Monta o rótulo do pill Google Meu Negócio.
+ * Com nota: "★ 4.8 (158)". Só com nota: "★ 4.8". Sem nota: "Google Meu Negócio".
+ */
+function buildGoogleLabel(rating?: number, reviews?: number): string {
+  if (typeof rating !== 'number') return 'Google Meu Negócio'
+  const nota = rating.toFixed(1).replace('.', ',')
+  return typeof reviews === 'number' ? `★ ${nota} (${reviews})` : `★ ${nota}`
+}
 
 function normalizeInstagramUrl(raw?: string): string | undefined {
   if (!raw) return undefined
