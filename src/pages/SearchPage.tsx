@@ -11,6 +11,7 @@ import { SEGMENTS } from '../lib/constants'
 import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
 import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
+import { requestEnrichment } from '../services/socioService'
 import { createContact } from '../services/contactService'
 import { createActivity } from '../services/activityService'
 import { buildStageChangeDescription } from '../components/pipeline/stageConfig'
@@ -559,6 +560,21 @@ export function SearchPage() {
         toast.warning('Salvo com dados básicos. Campos extras não suportados pelo Airtable.')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
+
+      // 2.05. Dispara o deep-enrichment (grafo de sócios/decisores via Assertiva) em
+      // realtime. O worker (W3-08) processa em segundo plano (~30s) e o grafo aparece
+      // na aba Sócios da ficha. Non-blocking — não atrasa o feedback do cadastro.
+      if (lead.id) {
+        requestEnrichment(lead.id, 'realtime')
+          .then((r) => {
+            if (r.ok) {
+              toast.info('Enriquecimento de sócios iniciado. Os dados aparecem na ficha em instantes.')
+            } else {
+              console.warn('Falha ao enfileirar deep-enrichment:', r.error)
+            }
+          })
+          .catch(() => {})
+      }
 
       // 2.1. Registrar transição inicial no Histórico das Fases (Novo → Contactado)
       if (lead.id) {

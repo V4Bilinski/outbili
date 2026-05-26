@@ -7,6 +7,7 @@ import {
   savePescaToAirtable,
   enrichBatchWithAssertiva,
 } from '../services/pescaService'
+import { enqueueEnrichmentBatch } from '../services/socioService'
 import type { PescaFilters, PescaLead, PescaPhase, PescaProgress } from '../types'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -197,6 +198,17 @@ export function usePesca(): UsePescaReturn {
       }
 
       if (signal.aborted) return
+
+      // Fase 6: enfileira o deep-enrichment (grafo de sócios/decisores via Assertiva)
+      // de TODOS os leads salvos, prioridade 'high'. Os leads "já vêm enriquecendo":
+      // o worker da fila (W3-08) processa em background, com teto anti-saturação.
+      // Non-blocking — falha aqui não invalida a pesquisa.
+      try {
+        await enqueueEnrichmentBatch(result.leadIds, 'high')
+      } catch (enqErr) {
+        console.warn('PESCA: falha ao enfileirar deep-enrichment (nao bloqueia)', enqErr)
+      }
+
       setPhase('done')
 
       // Invalidar cache de leads para refletir novos dados

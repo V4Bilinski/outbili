@@ -223,43 +223,46 @@ export async function runSocialEnrich(
   return { ok: true, atribuidas: Array.isArray(atribuidas) ? atribuidas.length : 0 }
 }
 
-/**
- * Dispara o enriquecimento profundo via Edge Function `assertiva-enrich`.
- * Persiste o grafo de sócios no Supabase. Autentica com a sessão atual (JWT).
- */
-export async function runDeepEnrichment(
-  cnpj: string,
-  leadIdOrRec: string,
-): Promise<DeepEnrichResult> {
-  const leadId = await resolveLeadUuid(leadIdOrRec)
-  const { data, error } = await supabase.functions.invoke('assertiva-enrich', {
-    body: { cnpj: (cnpj || '').replace(/\D/g, ''), leadId },
-  })
-  if (error) return { ok: false, numSocios: 0, error: error.message }
-  const socios = (data as { socios?: unknown[]; warnings?: string[] })?.socios
-  const warnings = (data as { warnings?: string[] })?.warnings
-  return {
-    ok: true,
-    numSocios: Array.isArray(socios) ? socios.length : 0,
-    warnings: warnings && warnings.length > 0 ? warnings : undefined,
-  }
-}
-
 export type EnrichmentJobStatus = 'queued' | 'processing' | 'done' | 'failed' | 'retrying'
+export type EnrichmentPriority = 'realtime' | 'high' | 'normal'
 
 /**
- * W3-08 (assíncrono): enfileira (ou eleva a realtime) o enriquecimento profundo do lead.
- * O worker da fila processa em segundo plano via Edge Function; acompanhe o andamento
- * com getEnrichmentJobStatus. Substitui a invocação síncrona de runDeepEnrichment, que
- * estourava o wall-clock de ~150s do gateway Edge em QSAs grandes.
+ * W3-08 (assíncrono): enfileira (ou eleva) o enriquecimento profundo do lead.
+ * O worker da fila processa em segundo plano via Edge Function `assertiva-enrich`;
+ * acompanhe o andamento com getEnrichmentJobStatus. À prova do timeout de ~150s
+ * do gateway Edge (não invoca a Edge de forma síncrona).
+ * Default 'realtime' (clique do usuário). Cadastro manual também usa 'realtime'.
  */
 export async function requestEnrichment(
   leadIdOrRec: string,
+  priority: EnrichmentPriority = 'realtime',
 ): Promise<{ ok: boolean; jobId?: string; error?: string }> {
   const leadId = await resolveLeadUuid(leadIdOrRec)
-  const { data, error } = await supabase.rpc('request_enrichment', { p_lead_id: leadId })
+  const { data, error } = await supabase.rpc('request_enrichment', {
+    p_lead_id: leadId,
+    p_priority: priority,
+  })
   if (error) return { ok: false, error: error.message }
   return { ok: true, jobId: (data as string) || undefined }
+}
+
+/**
+ * W3-08: enfileira deep-enrichment em LOTE (PESCA / pesquisa em massa).
+ * Aceita ids no formato UUID ou 'rec...' (a RPC resolve). Prioridade 'high' por
+ * padrão (processada antes da drenagem 'normal', com teto anti-saturação).
+ * Retorna quantos jobs novos foram criados (eleva os já existentes em silêncio).
+ */
+export async function enqueueEnrichmentBatch(
+  leadRefs: string[],
+  priority: EnrichmentPriority = 'high',
+): Promise<{ ok: boolean; enqueued: number; error?: string }> {
+  if (!leadRefs || leadRefs.length === 0) return { ok: true, enqueued: 0 }
+  const { data, error } = await supabase.rpc('enqueue_enrichment_batch', {
+    p_lead_refs: leadRefs,
+    p_priority: priority,
+  })
+  if (error) return { ok: false, enqueued: 0, error: error.message }
+  return { ok: true, enqueued: (data as number) ?? 0 }
 }
 
 /** W3-08: lê o status atual de um job de enriquecimento (usado no polling do front). */
