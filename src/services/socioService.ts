@@ -244,3 +244,37 @@ export async function runDeepEnrichment(
     warnings: warnings && warnings.length > 0 ? warnings : undefined,
   }
 }
+
+export type EnrichmentJobStatus = 'queued' | 'processing' | 'done' | 'failed' | 'retrying'
+
+/**
+ * W3-08 (assíncrono): enfileira (ou eleva a realtime) o enriquecimento profundo do lead.
+ * O worker da fila processa em segundo plano via Edge Function; acompanhe o andamento
+ * com getEnrichmentJobStatus. Substitui a invocação síncrona de runDeepEnrichment, que
+ * estourava o wall-clock de ~150s do gateway Edge em QSAs grandes.
+ */
+export async function requestEnrichment(
+  leadIdOrRec: string,
+): Promise<{ ok: boolean; jobId?: string; error?: string }> {
+  const leadId = await resolveLeadUuid(leadIdOrRec)
+  const { data, error } = await supabase.rpc('request_enrichment', { p_lead_id: leadId })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, jobId: (data as string) || undefined }
+}
+
+/** W3-08: lê o status atual de um job de enriquecimento (usado no polling do front). */
+export async function getEnrichmentJobStatus(
+  jobId: string,
+): Promise<{ status: EnrichmentJobStatus | null; error?: string }> {
+  const { data, error } = await supabase
+    .from('enrichment_jobs')
+    .select('status, error')
+    .eq('id', jobId)
+    .maybeSingle()
+  if (error) return { status: null, error: error.message }
+  const row = data as { status?: string; error?: string } | null
+  return {
+    status: (row?.status as EnrichmentJobStatus) ?? null,
+    error: row?.error || undefined,
+  }
+}

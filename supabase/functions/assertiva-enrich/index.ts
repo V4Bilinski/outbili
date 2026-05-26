@@ -296,6 +296,215 @@ function formatCpf(cpf: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: map com pool de concorrencia limitada.
+// Processa `items` aplicando `fn`, com no maximo `limit` execucoes simultaneas.
+// Preserva a ordem original do array de saida.
+// W3-08: paraleliza os socios (independentes entre si) para caber no wall-clock
+// de ~150s do gateway Edge. A sequencia INTERNA de cada socio (cpf -> conexoes ->
+// referencias -> mais-telefones) permanece serial por causa do protocolo CPF.
+// ---------------------------------------------------------------------------
+const SOCIO_CONCURRENCY = 3
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let cursor = 0
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const i = cursor++
+      if (i >= items.length) return
+      results[i] = await fn(items[i], i)
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  await Promise.all(workers)
+  return results
+}
+
+// ---------------------------------------------------------------------------
+// Enriquecimento de UM socio (cascata serial interna: cpf -> conexoes ->
+// referencias -> mais-telefones). Extraido do loop para permitir paralelizacao
+// por socio. Erros de etapa acumulam em `warnings` (push em array JS e seguro
+// no event loop single-thread do Deno).
+// ---------------------------------------------------------------------------
+async function enrichSocio(
+  socioRaw: unknown,
+  idFinalidade: string,
+  token: string,
+  warnings: string[],
+): Promise<SocioOutput> {
+  const s = socioRaw as Record<string, unknown>
+  const docDigits = String(s['documento'] ?? '').replace(/\D/g, '')
+  const nome = String(s['nomeOuRazaoSocial'] ?? s['nome'] ?? '')
+  // PF = CPF (11 dígitos) -> cascata pessoal. PJ (14 dígitos) = sócio holding (sem cascata).
+  const cpf: string | undefined = docDigits.length === 11 ? docDigits : undefined
+
+  const socioOutput: SocioOutput = {
+    nome,
+    cpf,
+    participacao: (s['participacao'] ?? s['qualificacao']) as string | undefined,
+    cargo: s['cargo'] as string | undefined,
+    vinculosFamiliares: [],
+    empresasVinculadas: [],
+    telefones: [],
+  }
+
+  if (!cpf) {
+    warnings.push(`Socio "${nome}" sem CPF de pessoa fisica (documento PJ ou ausente): cascata pulada`)
+    return socioOutput
+  }
+
+  const cleanCpf = cpf
+
+  // Hash do CPF para dedupe e lookup
+  socioOutput.cpfHash = await hashDocumento(cleanCpf)
+
+  // CPF formatado para retorno no grafo (sem necessidade de decifrar)
+  socioOutput.cpfFormatado = formatCpf(cleanCpf)
+
+  // Etapa 3a: consulta CPF
+  await delay(INTER_REQUEST_DELAY_MS)
+  const rawCpf = await assertivaGet(
+    token,
+    `/localize/v3/cpf?cpf=${cleanCpf}&idFinalidade=${idFinalidade}`,
+    warnings,
+  )
+
+  socioOutput._rawCpf = rawCpf
+
+  const cpfResp = rawCpf as Record<string, unknown> | null
+  const protocoloCpf: string | undefined =
+    cpfResp?.['cabecalho']?.['protocolo'] as string | undefined
+
+  socioOutput._protocolo = protocoloCpf
+
+  // Telefones da consulta CPF
+  const telefonesCpfResp = cpfResp?.['resposta']?.['telefones'] as Record<string, unknown> | undefined
+  const moveisRaw = (telefonesCpfResp?.['moveis'] ?? telefonesCpfResp?.['celulares'] ?? []) as unknown[]
+  const fixosRaw = (telefonesCpfResp?.['fixos'] ?? []) as unknown[]
+
+  socioOutput.telefones.push(...mapTelefones(moveisRaw, 'cpf_localize', 0))
+  socioOutput.telefones.push(...mapTelefones(fixosRaw, 'cpf_localize', moveisRaw.length))
+
+  // Etapa 3b: conexoes (familiares + societarias cruzadas + telefones adicionais)
+  await delay(INTER_REQUEST_DELAY_MS)
+  const rawConexoes = await assertivaGet(
+    token,
+    `/localize-api/v1/base-cadastral/conexoes?documento=${cleanCpf}&tipo=CPF&idFinalidade=${idFinalidade}&conjuge=true&telefones=true`,
+    warnings,
+  )
+
+  if (rawConexoes) {
+    const conexoesResp = rawConexoes as Record<string, unknown>
+
+    // Vinculos familiares
+    const familiares = (conexoesResp['vinculosFamiliares'] ?? conexoesResp['familiares'] ?? []) as unknown[]
+    for (const fam of familiares) {
+      const f = fam as Record<string, unknown>
+      const docFam = String(f['cpf'] ?? f['documento'] ?? '').replace(/\D/g, '')
+      socioOutput.vinculosFamiliares.push({
+        nomeRelacionado: f['nome'] as string | undefined,
+        // CPF do familiar em claro: cifrado pela função SQL no momento do insert
+        cpfFamiliarClaro: docFam || undefined,
+        documentoHash: docFam ? await hashDocumento(docFam) : undefined,
+        grauParentesco: f['grauParentesco'] as string | undefined ?? f['vinculo'] as string | undefined,
+        raw: fam,
+      })
+    }
+
+    // Vinculos societarios cruzados
+    const empresas = (conexoesResp['empresasVinculadas'] ?? conexoesResp['participacoes'] ?? []) as unknown[]
+    for (const emp of empresas) {
+      const e = emp as Record<string, unknown>
+      const cnpjVinc = String(e['cnpj'] ?? '').replace(/\D/g, '')
+      socioOutput.empresasVinculadas.push({
+        cnpjVinculado: cnpjVinc || undefined,
+        razaoSocialVinculada: e['razaoSocial'] as string | undefined,
+        documentoHash: cnpjVinc ? await hashDocumento(cnpjVinc) : undefined,
+        raw: emp,
+      })
+    }
+
+    // Telefones extras da resposta conexoes
+    const telConexoes = (conexoesResp['telefones'] ?? []) as unknown[]
+    if (telConexoes.length > 0) {
+      socioOutput.telefones.push(
+        ...mapTelefones(telConexoes, 'conexoes', socioOutput.telefones.length),
+      )
+    }
+  }
+
+  // Etapa 3c: pessoas de referencia (mae, etc.)
+  if (protocoloCpf) {
+    await delay(INTER_REQUEST_DELAY_MS)
+    const rawRef = await assertivaGet(
+      token,
+      `/localize/v3/pessoas-de-referencia?cpf=${cleanCpf}&retornarMae=true&protocolo=${protocoloCpf}`,
+      warnings,
+    )
+
+    if (rawRef) {
+      const refResp = rawRef as Record<string, unknown>
+      const refs = (refResp['resposta']?.['referencias'] ?? refResp['referencias'] ?? []) as unknown[]
+      for (const ref of refs) {
+        const r = ref as Record<string, unknown>
+        const docRef = String(r['cpf'] ?? r['documento'] ?? '').replace(/\D/g, '')
+        // Pessoas de referencia sao tratadas como vinculos familiares
+        socioOutput.vinculosFamiliares.push({
+          nomeRelacionado: r['nome'] as string | undefined,
+          cpfFamiliarClaro: docRef || undefined,
+          documentoHash: docRef ? await hashDocumento(docRef) : undefined,
+          grauParentesco: r['vinculo'] as string | undefined ?? 'referencia',
+          raw: ref,
+        })
+      }
+    }
+  }
+
+  // Etapa 3d: mais telefones
+  if (protocoloCpf) {
+    await delay(INTER_REQUEST_DELAY_MS)
+    const rawMaisTel = await assertivaGet(
+      token,
+      `/localize/v3/mais-telefones?tipo=CPF&documento=${cleanCpf}&protocolo=${protocoloCpf}`,
+      warnings,
+    )
+
+    if (rawMaisTel) {
+      const maisTelResp = rawMaisTel as Record<string, unknown>
+      const extras = (
+        maisTelResp['resposta']?.['telefones'] ??
+        maisTelResp['telefones'] ??
+        []
+      ) as unknown[]
+      if (extras.length > 0) {
+        socioOutput.telefones.push(
+          ...mapTelefones(extras, 'mais_telefones', socioOutput.telefones.length),
+        )
+      }
+    }
+  }
+
+  // Deduplicar telefones pelo numero E.164 (manter o primeiro por ranking)
+  const seenE164 = new Set<string>()
+  socioOutput.telefones = socioOutput.telefones.filter((t) => {
+    if (seenE164.has(t.e164)) return false
+    seenE164.add(t.e164)
+    return true
+  })
+
+  // Calcular indice de probabilidade de negociacao (heuristica)
+  socioOutput.indiceProbabilidadeNegociacao = calcularIndiceProbabilidade(socioOutput)
+
+  return socioOutput
+}
+
+// ---------------------------------------------------------------------------
 // Pipeline principal: enriquece um CNPJ completo
 // ---------------------------------------------------------------------------
 async function enrichCnpj(
@@ -350,176 +559,15 @@ async function enrichCnpj(
     ...mapEmpresaTelefones((telEmpresaRaw['fixos'] ?? []) as unknown[], 'LANDLINE'),
   ]
 
-  // Etapa 3: enriquecer cada socio individualmente
-  const socios: SocioOutput[] = []
-
-  for (const socioRaw of sociosRaw) {
-    const s = socioRaw as Record<string, unknown>
-    const docDigits = String(s['documento'] ?? '').replace(/\D/g, '')
-    const nome = String(s['nomeOuRazaoSocial'] ?? s['nome'] ?? '')
-    // PF = CPF (11 dígitos) -> cascata pessoal. PJ (14 dígitos) = sócio holding (sem cascata).
-    const cpf: string | undefined = docDigits.length === 11 ? docDigits : undefined
-
-    const socioOutput: SocioOutput = {
-      nome,
-      cpf,
-      participacao: (s['participacao'] ?? s['qualificacao']) as string | undefined,
-      cargo: s['cargo'] as string | undefined,
-      vinculosFamiliares: [],
-      empresasVinculadas: [],
-      telefones: [],
-    }
-
-    if (!cpf) {
-      warnings.push(`Socio "${nome}" sem CPF de pessoa fisica (documento PJ ou ausente): cascata pulada`)
-      socios.push(socioOutput)
-      continue
-    }
-
-    const cleanCpf = cpf
-
-    // Hash do CPF para dedupe e lookup
-    socioOutput.cpfHash = await hashDocumento(cleanCpf)
-
-    // CPF formatado para retorno no grafo (sem necessidade de decifrar)
-    socioOutput.cpfFormatado = formatCpf(cleanCpf)
-
-    // Etapa 3a: consulta CPF
-    await delay(INTER_REQUEST_DELAY_MS)
-    const rawCpf = await assertivaGet(
-      token,
-      `/localize/v3/cpf?cpf=${cleanCpf}&idFinalidade=${idFinalidade}`,
-      warnings,
-    )
-
-    socioOutput._rawCpf = rawCpf
-
-    const cpfResp = rawCpf as Record<string, unknown> | null
-    const protocoloCpf: string | undefined =
-      cpfResp?.['cabecalho']?.['protocolo'] as string | undefined
-
-    socioOutput._protocolo = protocoloCpf
-
-    // Telefones da consulta CPF
-    const telefonesCpfResp = cpfResp?.['resposta']?.['telefones'] as Record<string, unknown> | undefined
-    const moveisRaw = (telefonesCpfResp?.['moveis'] ?? telefonesCpfResp?.['celulares'] ?? []) as unknown[]
-    const fixosRaw = (telefonesCpfResp?.['fixos'] ?? []) as unknown[]
-
-    socioOutput.telefones.push(...mapTelefones(moveisRaw, 'cpf_localize', 0))
-    socioOutput.telefones.push(...mapTelefones(fixosRaw, 'cpf_localize', moveisRaw.length))
-
-    // Etapa 3b: conexoes (familiares + societarias cruzadas + telefones adicionais)
-    await delay(INTER_REQUEST_DELAY_MS)
-    const rawConexoes = await assertivaGet(
-      token,
-      `/localize-api/v1/base-cadastral/conexoes?documento=${cleanCpf}&tipo=CPF&idFinalidade=${idFinalidade}&conjuge=true&telefones=true`,
-      warnings,
-    )
-
-    if (rawConexoes) {
-      const conexoesResp = rawConexoes as Record<string, unknown>
-
-      // Vinculos familiares
-      const familiares = (conexoesResp['vinculosFamiliares'] ?? conexoesResp['familiares'] ?? []) as unknown[]
-      for (const fam of familiares) {
-        const f = fam as Record<string, unknown>
-        const docFam = String(f['cpf'] ?? f['documento'] ?? '').replace(/\D/g, '')
-        socioOutput.vinculosFamiliares.push({
-          nomeRelacionado: f['nome'] as string | undefined,
-          // CPF do familiar em claro: cifrado pela função SQL no momento do insert
-          cpfFamiliarClaro: docFam || undefined,
-          documentoHash: docFam ? await hashDocumento(docFam) : undefined,
-          grauParentesco: f['grauParentesco'] as string | undefined ?? f['vinculo'] as string | undefined,
-          raw: fam,
-        })
-      }
-
-      // Vinculos societarios cruzados
-      const empresas = (conexoesResp['empresasVinculadas'] ?? conexoesResp['participacoes'] ?? []) as unknown[]
-      for (const emp of empresas) {
-        const e = emp as Record<string, unknown>
-        const cnpjVinc = String(e['cnpj'] ?? '').replace(/\D/g, '')
-        socioOutput.empresasVinculadas.push({
-          cnpjVinculado: cnpjVinc || undefined,
-          razaoSocialVinculada: e['razaoSocial'] as string | undefined,
-          documentoHash: cnpjVinc ? await hashDocumento(cnpjVinc) : undefined,
-          raw: emp,
-        })
-      }
-
-      // Telefones extras da resposta conexoes
-      const telConexoes = (conexoesResp['telefones'] ?? []) as unknown[]
-      if (telConexoes.length > 0) {
-        socioOutput.telefones.push(
-          ...mapTelefones(telConexoes, 'conexoes', socioOutput.telefones.length),
-        )
-      }
-    }
-
-    // Etapa 3c: pessoas de referencia (mae, etc.)
-    if (protocoloCpf) {
-      await delay(INTER_REQUEST_DELAY_MS)
-      const rawRef = await assertivaGet(
-        token,
-        `/localize/v3/pessoas-de-referencia?cpf=${cleanCpf}&retornarMae=true&protocolo=${protocoloCpf}`,
-        warnings,
-      )
-
-      if (rawRef) {
-        const refResp = rawRef as Record<string, unknown>
-        const refs = (refResp['resposta']?.['referencias'] ?? refResp['referencias'] ?? []) as unknown[]
-        for (const ref of refs) {
-          const r = ref as Record<string, unknown>
-          const docRef = String(r['cpf'] ?? r['documento'] ?? '').replace(/\D/g, '')
-          // Pessoas de referencia sao tratadas como vinculos familiares
-          socioOutput.vinculosFamiliares.push({
-            nomeRelacionado: r['nome'] as string | undefined,
-            cpfFamiliarClaro: docRef || undefined,
-            documentoHash: docRef ? await hashDocumento(docRef) : undefined,
-            grauParentesco: r['vinculo'] as string | undefined ?? 'referencia',
-            raw: ref,
-          })
-        }
-      }
-    }
-
-    // Etapa 3d: mais telefones
-    if (protocoloCpf) {
-      await delay(INTER_REQUEST_DELAY_MS)
-      const rawMaisTel = await assertivaGet(
-        token,
-        `/localize/v3/mais-telefones?tipo=CPF&documento=${cleanCpf}&protocolo=${protocoloCpf}`,
-        warnings,
-      )
-
-      if (rawMaisTel) {
-        const maisTelResp = rawMaisTel as Record<string, unknown>
-        const extras = (
-          maisTelResp['resposta']?.['telefones'] ??
-          maisTelResp['telefones'] ??
-          []
-        ) as unknown[]
-        if (extras.length > 0) {
-          socioOutput.telefones.push(
-            ...mapTelefones(extras, 'mais_telefones', socioOutput.telefones.length),
-          )
-        }
-      }
-    }
-
-    // Deduplicar telefones pelo numero E.164 (manter o primeiro por ranking)
-    const seenE164 = new Set<string>()
-    socioOutput.telefones = socioOutput.telefones.filter((t) => {
-      if (seenE164.has(t.e164)) return false
-      seenE164.add(t.e164)
-      return true
-    })
-
-    // Calcular indice de probabilidade de negociacao (heuristica)
-    socioOutput.indiceProbabilidadeNegociacao = calcularIndiceProbabilidade(socioOutput)
-
-    socios.push(socioOutput)
-  }
+  // Etapa 3: enriquecer cada socio individualmente (paralelizado).
+  // W3-08: socios sao independentes -> pool de ate SOCIO_CONCURRENCY simultaneos
+  // (a cascata interna de cada socio permanece serial via enrichSocio). Corta o
+  // tempo total de N×~6s para ⌈N/SOCIO_CONCURRENCY⌉×~6s, cabendo no wall-clock ~150s.
+  const socios = await mapWithConcurrency(
+    sociosRaw,
+    SOCIO_CONCURRENCY,
+    (socioRaw) => enrichSocio(socioRaw, idFinalidade, token, warnings),
+  )
 
   return { empresa, socios, empresaTelefones, warnings }
 }
@@ -693,6 +741,40 @@ async function persistir(
 // ---------------------------------------------------------------------------
 // Handler principal
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// W3-08: fecha o job da fila e registra o run de enriquecimento.
+// Encapsula a logica de retry no banco (RPC app.finish_enrichment_job):
+//   - INSERT app.enrichment_runs (source=assertiva_decisores, status done|error)
+//     -> impede o sweeper de re-enfileirar o lead por 7 dias
+//   - se p_job_id != null: UPDATE app.enrichment_jobs
+//       ok        -> done
+//       erro      -> retrying (attempts < 3) | failed (>= 3)
+// Best-effort: nunca derruba a resposta principal.
+// ---------------------------------------------------------------------------
+async function finishJob(
+  supabase: ReturnType<typeof createClient>,
+  leadId: string,
+  jobId: string | undefined,
+  ok: boolean,
+  error: string | null,
+  result: Record<string, unknown> | null,
+): Promise<void> {
+  try {
+    const { error: rpcErr } = await supabase.schema('app').rpc('finish_enrichment_job', {
+      p_lead_id: leadId,
+      p_job_id: jobId ?? null,
+      p_ok: ok,
+      p_error: error,
+      p_result: result,
+    })
+    if (rpcErr) {
+      console.error('[assertiva-enrich] finish_enrichment_job falhou:', rpcErr.message)
+    }
+  } catch (e) {
+    console.error('[assertiva-enrich] finish_enrichment_job exception:', e instanceof Error ? e.message : String(e))
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
@@ -706,14 +788,28 @@ serve(async (req: Request): Promise<Response> => {
     )
   }
 
+  // Cliente Supabase com service_role (criado fora do try p/ estar disponivel no catch)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const supabase = supabaseUrl && serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+    : null
+
+  // leadId/jobId em escopo externo p/ o catch poder fechar o job em caso de erro
+  let leadId: string | undefined
+  let jobId: string | undefined
+
   try {
     const body = await req.json() as {
       cnpj?: string
       leadId?: string
+      jobId?: string
       idFinalidade?: string
     }
 
-    const { cnpj, leadId } = body
+    const cnpj = body.cnpj
+    leadId = body.leadId
+    jobId = body.jobId   // W3-08: presente quando disparado pelo worker da fila
 
     if (!cnpj || !leadId) {
       return new Response(
@@ -728,17 +824,9 @@ serve(async (req: Request): Promise<Response> => {
       Deno.env.get('ASSERTIVA_ID_FINALIDADE') ??
       '5'
 
-    // Cliente Supabase com service_role (escrita nas tabelas app.*)
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabase) {
       throw new Error('SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY nao configurados')
     }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    })
 
     // Obter token Assertiva
     const token = await getAssertivaToken()
@@ -750,6 +838,13 @@ serve(async (req: Request): Promise<Response> => {
     // Persistir no banco
     await persistir(supabase, leadId, cnpj, result.socios, warnings)
     await persistirTelefonesEmpresa(supabase, leadId, result.empresaTelefones, warnings)
+
+    // W3-08: fecha o job (done) + registra enrichment_runs (impede re-enfileiramento)
+    await finishJob(supabase, leadId, jobId, true, null, {
+      numSocios: result.socios.length,
+      numTelefonesEmpresa: result.empresaTelefones.length,
+      warnings: warnings.length,
+    })
 
     // Montar resposta: grafo empresa -> socios
     const responseBody = {
@@ -798,6 +893,11 @@ serve(async (req: Request): Promise<Response> => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[assertiva-enrich] erro nao tratado:', message)
+
+    // W3-08: fecha o job (retrying|failed) + registra run de erro (best-effort)
+    if (supabase && leadId) {
+      await finishJob(supabase, leadId, jobId, false, message, null)
+    }
 
     return new Response(
       JSON.stringify({ error: message }),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Users, Phone, ShieldAlert, RefreshCw, TrendingUp, Link2, Sparkles, Building2,
   AtSign, Briefcase, Globe, ExternalLink, Share2,
@@ -10,7 +10,8 @@ import { cn } from '../../lib/cn'
 import type { Lead } from '../../types'
 import {
   getSociosByLead,
-  runDeepEnrichment,
+  requestEnrichment,
+  getEnrichmentJobStatus,
   runSocialEnrich,
   type Socio,
   type SocioTelefone,
@@ -311,6 +312,7 @@ export function TabSocios({ lead }: Props) {
   const [enriching, setEnriching] = useState(false)
   const [searchingSocial, setSearchingSocial] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const pollRef = useRef<number | null>(null)
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -330,25 +332,54 @@ export function TabSocios({ lead }: Props) {
     carregar()
   }, [carregar])
 
+  // W3-08: cancela o polling pendente ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) window.clearTimeout(pollRef.current)
+    }
+  }, [])
+
+  // W3-08: enriquecimento assíncrono via fila. Enfileira o job (realtime) e
+  // acompanha o status por polling, sem travar a tela nem estourar timeout.
   const enriquecer = async () => {
     if (!lead.cnpj) {
       setMsg('Lead sem CNPJ. Não é possível enriquecer os sócios.')
       return
     }
     setEnriching(true)
-    setMsg(null)
+    setMsg('Enriquecimento na fila. Os dados aparecem assim que ficarem prontos.')
     try {
-      const r = await runDeepEnrichment(lead.cnpj, lead.id)
-      if (!r.ok) {
-        setMsg(`Falha no enriquecimento: ${r.error || 'erro desconhecido'}`)
+      const r = await requestEnrichment(lead.id)
+      if (!r.ok || !r.jobId) {
+        setMsg(`Falha ao enfileirar: ${r.error || 'erro desconhecido'}`)
+        setEnriching(false)
         return
       }
-      const aviso = r.warnings && r.warnings.length > 0 ? ` (${r.warnings.length} avisos)` : ''
-      setMsg(`Enriquecimento concluído. ${r.numSocios} sócios processados${aviso}.`)
-      await carregar()
+      const jobId = r.jobId
+      const inicio = Date.now()
+      const poll = async () => {
+        const st = await getEnrichmentJobStatus(jobId)
+        if (st.status === 'done') {
+          setMsg('Enriquecimento concluído.')
+          await carregar()
+          setEnriching(false)
+          return
+        }
+        if (st.status === 'failed') {
+          setMsg(`Enriquecimento falhou: ${st.error || 'tente novamente em instantes'}`)
+          setEnriching(false)
+          return
+        }
+        if (Date.now() - inicio > 180000) {
+          setMsg('Enriquecimento ainda em processamento. Atualize a página em instantes.')
+          setEnriching(false)
+          return
+        }
+        pollRef.current = window.setTimeout(poll, 5000)
+      }
+      pollRef.current = window.setTimeout(poll, 5000)
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Falha no enriquecimento.')
-    } finally {
       setEnriching(false)
     }
   }
