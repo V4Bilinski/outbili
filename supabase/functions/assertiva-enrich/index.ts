@@ -984,12 +984,16 @@ serve(async (req: Request): Promise<Response> => {
     // waitUntil) sem bloquear a resposta. Assim TODO enriquecimento (PESCA massa via
     // worker, cadastro manual via worker, re-processamento) traz os dois CONECTADOS.
     try {
-      const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      // Bearer = anon key JWT legacy (a publishable key nova `sb_publishable_` e a
+      // service_role nova não passam no verify_jwt do gateway -> 401). Esta anon key é
+      // pública (vai no bundle do front); é a mesma do Vault edge_bearer_anon (smoke 200).
+      const bearer = Deno.env.get('EDGE_BEARER_ANON')
+        || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cHBsaXl0d3ZsYWplcXFycm55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTU2MjUsImV4cCI6MjA5MzU3MTYyNX0.YriksE6yp942sBks6UB6tMdcMP_7afXjrH4KAe3Vuvg'
       const baseUrl = Deno.env.get('SUPABASE_URL')
-      if (srk && baseUrl) {
+      if (bearer && baseUrl) {
         const socialCall = fetch(`${baseUrl}/functions/v1/social-enrich`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${srk}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearer}` },
           body: JSON.stringify({ leadId }),
         })
           .then(async (r) => { await r.text().catch(() => {}) })
