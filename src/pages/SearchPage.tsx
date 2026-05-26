@@ -11,7 +11,7 @@ import { SEGMENTS } from '../lib/constants'
 import { useLeadEnrichment } from '../hooks/useLeadEnrichment'
 import { useMassEnrichment, loadPendingQueue, clearPendingQueue } from '../hooks/useMassEnrichment'
 import { createLead, getLeads } from '../services/leadService'
-import { requestEnrichment, runSocialEnrich } from '../services/socioService'
+import { requestEnrichment } from '../services/socioService'
 import { createContact } from '../services/contactService'
 import { createActivity } from '../services/activityService'
 import { buildStageChangeDescription } from '../components/pipeline/stageConfig'
@@ -561,28 +561,16 @@ export function SearchPage() {
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
 
-      // 2.05. Dispara o deep-enrichment (grafo de sócios/decisores via Assertiva) em
-      // realtime. O worker (W3-08) processa em segundo plano (~30s) e o grafo aparece
-      // na aba Sócios da ficha. Non-blocking — não atrasa o feedback do cadastro.
+      // 2.05. Dispara o deep-enrichment (sócios/decisores) em realtime. O worker (W3-08)
+      // processa em segundo plano (~30s) e, ao final, ENCADEIA automaticamente o
+      // social-enrich (Google Meu Negócio + Instagram + LinkedIn). Tudo na mesma cadeia.
       if (lead.id) {
         requestEnrichment(lead.id, 'realtime')
           .then((r) => {
             if (r.ok) {
-              toast.info('Enriquecimento de sócios iniciado. Os dados aparecem na ficha em instantes.')
+              toast.info('Enriquecimento iniciado. Sócios e presença digital aparecem na ficha em instantes.')
             } else {
-              console.warn('Falha ao enfileirar deep-enrichment:', r.error)
-            }
-          })
-          .catch(() => {})
-
-        // 2.06. Extrai a presença digital (Google Meu Negócio, Instagram, LinkedIn) via
-        // Edge Function social-enrich. Fire-and-forget: não atrasa o feedback do cadastro.
-        runSocialEnrich(lead.id)
-          .then((r) => {
-            if (r.ok) {
-              toast.info('Presença digital em análise. As redes aparecem na ficha em instantes.')
-            } else {
-              console.warn('Falha ao extrair presença digital:', r.error)
+              console.warn('Falha ao enfileirar enriquecimento:', r.error)
             }
           })
           .catch(() => {})

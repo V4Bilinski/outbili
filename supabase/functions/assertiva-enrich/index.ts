@@ -979,6 +979,29 @@ serve(async (req: Request): Promise<Response> => {
       warnings: warnings.length,
     })
 
+    // W3-08: ENCADEIA o social-enrich (presença digital: GMB + IG + LinkedIn) de
+    // forma automática após o deep-enrichment. Roda em segundo plano (EdgeRuntime.
+    // waitUntil) sem bloquear a resposta. Assim TODO enriquecimento (PESCA massa via
+    // worker, cadastro manual via worker, re-processamento) traz os dois CONECTADOS.
+    try {
+      const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      const baseUrl = Deno.env.get('SUPABASE_URL')
+      if (srk && baseUrl) {
+        const socialCall = fetch(`${baseUrl}/functions/v1/social-enrich`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${srk}` },
+          body: JSON.stringify({ leadId }),
+        })
+          .then(async (r) => { await r.text().catch(() => {}) })
+          .catch((e) => console.error('[assertiva-enrich] social-enrich encadeado falhou:', e instanceof Error ? e.message : String(e)))
+        // EdgeRuntime é global no Supabase Edge Runtime; mantém o isolate vivo até o social terminar.
+        const er = (globalThis as Record<string, unknown>)['EdgeRuntime'] as { waitUntil?: (p: Promise<unknown>) => void } | undefined
+        if (er?.waitUntil) er.waitUntil(socialCall)
+      }
+    } catch (e) {
+      console.error('[assertiva-enrich] erro ao encadear social-enrich:', e instanceof Error ? e.message : String(e))
+    }
+
     // Montar resposta: grafo empresa -> socios
     const responseBody = {
       empresa: result.empresa,
