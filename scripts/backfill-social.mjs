@@ -18,6 +18,13 @@
  */
 import { readFileSync } from 'fs'
 
+// DEPRECATED (W3 cutover Supabase): este script grava no AIRTABLE, que nao e mais a
+// fonte de dados (migrada para Supabase). O backfill de redes sociais agora e feito
+// pela Edge Function social-enrich (enfileirada via app.enrichment_jobs, mode 'social').
+// Para nao escrever em base morta, abortamos a execucao.
+console.error('backfill-social.mjs DEPRECATED: usa Airtable (descontinuado no cutover Supabase W3). Nao executar. Use a Edge Function social-enrich via fila enrichment_jobs.')
+process.exit(1)
+
 // Carregar .env.local
 try {
   const envContent = readFileSync('.env.local', 'utf8')

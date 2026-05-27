@@ -6,6 +6,12 @@
  */
 import { readFileSync } from 'fs'
 
+// DEPRECATED (W3 cutover Supabase): este script grava no AIRTABLE, que nao e mais a
+// fonte de dados (migrada para Supabase). Mantido so como referencia historica da
+// logica SPICED. Para nao escrever em base morta, abortamos a execucao.
+console.error('recalc-spiced.mjs DEPRECATED: usa Airtable (descontinuado no cutover Supabase W3). Nao executar. O recalculo agora vive no Supabase/Edge Functions.')
+process.exit(1)
+
 // Carregar .env.local
 try {
   const envContent = readFileSync('.env.local', 'utf8')

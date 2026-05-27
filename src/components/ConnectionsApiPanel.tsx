@@ -6,11 +6,12 @@ import { useZapHealth, useZapContactStats } from '../hooks/useBilinskiZap'
 import { CheckCircle, AlertCircle, Loader2, RefreshCw, ChevronDown } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { toast } from 'sonner'
+import { supabase } from '../lib/supabase'
 
-// Conexoes de sistema (Airtable, BilinskiZap). Vive na tela Administracao.
+// Conexoes de sistema (Supabase, BilinskiZap). Vive na tela Administracao.
 export function ConnectionsApiPanel() {
-  const airtablePat = import.meta.env.VITE_AIRTABLE_PAT
-  const airtableBaseId = import.meta.env.VITE_AIRTABLE_BASE_ID
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
   const bilinskizapUrl = import.meta.env.VITE_BILINSKIZAP_URL
   const bilinskizapKey = import.meta.env.VITE_BILINSKIZAP_API_KEY
   const { data: zapHealthy, isLoading: healthLoading } = useZapHealth()
@@ -22,12 +23,10 @@ export function ConnectionsApiPanel() {
   const testConnection = async (name: string) => {
     setTesting(name)
     try {
-      if (name === 'Airtable') {
-        const res = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Leads?maxRecords=1`, {
-          headers: { Authorization: `Bearer ${airtablePat}` },
-        })
-        if (res.ok) toast.success('Airtable conectado com sucesso')
-        else toast.error(`Airtable erro: ${res.status}`)
+      if (name === 'Supabase') {
+        const { error } = await supabase.schema('app').from('leads').select('id', { head: true, count: 'exact' })
+        if (!error) toast.success('Supabase conectado com sucesso')
+        else toast.error(`Supabase erro: ${error.message}`)
       } else if (name === 'BilinskiZap') {
         const res = await fetch(`${bilinskizapUrl}/api/health`, {
           headers: { 'x-api-key': bilinskizapKey },
@@ -43,13 +42,13 @@ export function ConnectionsApiPanel() {
 
   const connections = [
     {
-      name: 'Airtable',
+      name: 'Supabase',
       desc: 'Base de dados dos leads',
-      connected: !!(airtablePat && airtableBaseId),
+      connected: !!(supabaseUrl && supabaseKey),
       loading: false,
-      status: airtablePat && airtableBaseId ? 'Conectado' : airtablePat ? 'Base ID pendente' : 'Token ausente',
-      details: airtableBaseId ? `Base: ${airtableBaseId}` : undefined,
-      errorHint: !airtablePat ? 'Adicione VITE_AIRTABLE_PAT no .env.local' : !airtableBaseId ? 'Adicione VITE_AIRTABLE_BASE_ID no .env.local' : undefined,
+      status: supabaseUrl && supabaseKey ? 'Conectado' : 'Configuração pendente',
+      details: supabaseUrl ? supabaseUrl.replace('https://', '').replace('.supabase.co', '') : undefined,
+      errorHint: !supabaseUrl ? 'Adicione VITE_SUPABASE_URL no .env.local' : !supabaseKey ? 'Adicione VITE_SUPABASE_ANON_KEY no .env.local' : undefined,
     },
     {
       name: 'BilinskiZap',
