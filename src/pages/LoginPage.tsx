@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context'
-import { createUser } from '../services/authService'
+import { createUser, isAllowedSignupEmail, type SignupRole } from '../services/authService'
 import { toast } from 'sonner'
 import { LogIn, UserPlus, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '../lib/cn'
@@ -10,11 +10,18 @@ type Mode = 'login' | 'signup'
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 
+const ROLE_OPTIONS: { value: SignupRole; label: string }[] = [
+  { value: 'sdr', label: 'SDR' },
+  { value: 'closer', label: 'Closer' },
+  { value: 'viewer', label: 'Visualizador' },
+]
+
 export function LoginPage() {
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [role, setRole] = useState<SignupRole>('sdr')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +36,8 @@ export function LoginPage() {
   const passwordError = touched.password && password.length > 0 && password.length < 6 ? `Faltam ${6 - password.length} caractere${6 - password.length > 1 ? 's' : ''}` : null
   const passwordOk = password.length >= 6
   const nameError = touched.fullName && mode === 'signup' && fullName.length === 0 ? 'Nome obrigatório' : null
+  const domainError = touched.email && mode === 'signup' && email.length > 0 && isValidEmail(email) && !isAllowedSignupEmail(email)
+    ? 'Use seu e-mail @v4company.com' : null
 
   const inputBase = 'h-12 w-full rounded-xl bg-elevated-2 border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors'
   const inputClass = (error: string | null, ok: boolean) => cn(
@@ -45,12 +54,16 @@ export function LoginPage() {
     if (!isValidEmail(email)) return
     if (mode === 'signup' && !fullName) return
     if (password.length < 6) return
+    if (mode === 'signup' && !isAllowedSignupEmail(email)) {
+      setError('Cadastro permitido apenas para e-mails @v4company.com')
+      return
+    }
 
     setIsLoading(true)
     setError(null)
     try {
       if (mode === 'signup') {
-        await createUser({ email, password, fullName })
+        await createUser({ email, password, fullName, role })
         toast.success('Conta criada. Fazendo login...')
       }
       await login(email, password)
@@ -154,6 +167,7 @@ export function LoginPage() {
                 {emailError && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-error" />}
               </div>
               {emailError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{emailError}</p>}
+              {domainError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{domainError}</p>}
             </div>
 
             <div>
@@ -187,6 +201,30 @@ export function LoginPage() {
               )}
             </div>
 
+            {mode === 'signup' && (
+              <div className="animate-[fade-in_0.3s_ease-out]">
+                <label className="text-label uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Cargo</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {ROLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRole(opt.value)}
+                      className={cn(
+                        'h-11 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer',
+                        role === opt.value
+                          ? 'bg-red text-white border-red shadow-lg shadow-red/20'
+                          : 'bg-elevated-2 text-text-muted border-border hover:text-text-secondary',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-micro text-text-muted mt-1.5">Selecione seu cargo. O acesso de administrador é concedido por um admin.</p>
+              </div>
+            )}
+
             {error && (
               <div
                 role="alert"
@@ -213,7 +251,7 @@ export function LoginPage() {
 
             {mode === 'login' && (
               <p className="text-micro text-text-muted text-center leading-snug">
-                Primeiro acesso? Entre com a senha temporária recebida do administrador. O sistema vai pedir para você criar a sua senha pessoal.
+                Primeiro acesso? Crie sua conta na aba "Criar conta" com seu e-mail @v4company.com e o seu cargo.
               </p>
             )}
           </form>

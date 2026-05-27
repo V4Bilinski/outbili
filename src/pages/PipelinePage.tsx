@@ -35,7 +35,9 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
   const navigate = useNavigate()
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const trapAbbrev = getTrapAbbrev(lead.hypotheticalTrap)
-  const scoreColorClass = score >= 3.7 ? 'text-red bg-red/10' : score >= 2.5 ? 'text-warning bg-warning/10' : 'text-cold bg-cold/10'
+  const scoreColorClass = score >= 3.7 ? 'text-hot bg-hot/10' : score >= 2.5 ? 'text-warm bg-warm/10' : 'text-cold bg-cold/10'
+  const tempClass = lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
+  const enriching = !!lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none'
 
   return (
     <div
@@ -49,31 +51,37 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         }
       }}
       onClick={() => navigate(`/leads/${lead.id}`)}
-      className="p-3 rounded-xl bg-elevated-1 border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
+      className="p-3.5 rounded-xl bg-elevated-1 border border-border hover:border-red/30 hover:bg-elevated-2 transition-colors duration-200 cursor-grab active:cursor-grabbing"
     >
-      <div className="flex items-center justify-between gap-1.5 mb-1.5">
-        <span className={`text-[11px] font-bold font-mono tabular-nums tracking-tight leading-none px-1.5 py-1 rounded ${scoreColorClass}`}>{score.toFixed(1)}</span>
+      {/* Sinais: score (+trava) a esquerda, temperatura a direita */}
+      <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5">
+          <span className={`text-[11px] font-bold font-mono tabular-nums leading-none px-1.5 py-1 rounded ${scoreColorClass}`}>{score.toFixed(1)}</span>
           {trapAbbrev && (
-            <span className={`text-[11px] font-bold tracking-tight leading-none px-1.5 py-1 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
+            <span className={`text-[11px] font-semibold tracking-tight leading-none px-1.5 py-1 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
           )}
-          <span className={`text-[11px] font-semibold tracking-tight leading-none px-1.5 py-1 rounded ${
-            lead.temperature === 'Quente' ? 'bg-hot/15 text-hot' : lead.temperature === 'Morno' ? 'bg-warm/15 text-warm' : 'bg-cold/15 text-cold'
-          }`}>
-            {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-          </span>
         </div>
+        <span className={`text-[10px] font-semibold leading-none px-2 py-1 rounded-full ${tempClass}`}>
+          {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
+        </span>
       </div>
-      <p className="text-sm font-semibold text-text-primary truncate group-hover:text-text-primary transition-colors">{lead.tradeName || lead.companyName}</p>
-      <p className="text-label text-text-muted mt-0.5">{lead.tier || '-'}{lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}</p>
-      <div className="flex flex-wrap gap-1 mt-1.5">
-        {lead.enrichmentStatus === 'complete' && (
-          <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
-        )}
-        {lead.enrichmentStatus && lead.enrichmentStatus !== 'complete' && lead.enrichmentStatus !== 'none' && (
-          <span className="text-micro font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse">Enriquecendo...</span>
-        )}
-      </div>
+      <p className="text-sm font-semibold text-text-primary truncate leading-tight">{lead.tradeName || lead.companyName}</p>
+      <p className="text-xs text-text-muted truncate mt-1">{lead.tier || '-'}{lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}</p>
+      {(lead.enrichmentStatus === 'complete' || enriching) && (
+        <div className="mt-2.5 pt-2.5 border-t border-border/60">
+          {lead.enrichmentStatus === 'complete' ? (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-success">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              Dados completos
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-warning">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+              Enriquecendo
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

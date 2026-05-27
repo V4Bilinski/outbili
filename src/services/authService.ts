@@ -144,18 +144,40 @@ export async function getAllUsers(): Promise<User[]> {
   return (data || []).map((r: any) => rowToUser(r))
 }
 
-// Cria conta via supabase.auth.signUp. Trigger on_auth_user_created popula app.profiles.
+// Cargos auto-selecionáveis no autocadastro. 'admin' NÃO entra aqui — só por promoção
+// via adminUpdateUser. Espelha o gate do trigger handle_new_user no banco.
+export type SignupRole = 'sdr' | 'closer' | 'viewer'
+
+// Domínios autorizados a se cadastrar (gate de domínio). Reforço client-side do
+// mesmo gate aplicado no trigger handle_new_user (defense-in-depth).
+export const ALLOWED_SIGNUP_DOMAINS = ['v4company.com']
+
+export function isAllowedSignupEmail(email: string): boolean {
+  const domain = (email.toLowerCase().trim().split('@')[1] || '').trim()
+  return ALLOWED_SIGNUP_DOMAINS.includes(domain)
+}
+
+// Cria conta via supabase.auth.signUp. O trigger on_auth_user_created popula app.profiles
+// JÁ ativo e no cargo escolhido (requested_role), com gate de domínio @v4company.com.
 // Caller deve chamar login() em seguida (signUp não loga automaticamente quando confirmação está OFF).
 export async function createUser(input: {
   email: string
   password: string
   fullName: string
+  role: SignupRole
 }): Promise<User> {
+  const email = input.email.toLowerCase().trim()
+  // Gate de domínio (1ª barreira; o trigger reforça no banco)
+  if (!isAllowedSignupEmail(email)) {
+    throw new Error('Cadastro permitido apenas para e-mails @v4company.com')
+  }
+
   const { data, error } = await supabase.auth.signUp({
-    email: input.email.toLowerCase().trim(),
+    email,
     password: input.password,
     options: {
-      data: { full_name: input.fullName },
+      // requested_role é lido pelo trigger handle_new_user para associar o cargo.
+      data: { full_name: input.fullName, requested_role: input.role },
     },
   })
   if (error) {
@@ -164,7 +186,8 @@ export async function createUser(input: {
   }
   if (!data.user) throw new Error('Falha ao criar conta')
 
-  // Atualiza full_name no profile (caso trigger não pegue do raw_user_meta_data)
+  // Garante full_name no profile (caso trigger não pegue do raw_user_meta_data).
+  // O role/is_active são definidos pelo trigger (fonte da verdade) — não sobrescrevemos aqui.
   await supabase.from('profiles')
     .update({ full_name: input.fullName })
     .eq('user_id', data.user.id)
@@ -172,10 +195,10 @@ export async function createUser(input: {
 
   return {
     id: data.user.id,
-    email: input.email,
+    email,
     passwordHash: '',
     fullName: input.fullName,
-    role: 'viewer',
+    role: input.role,
     isActive: true,
     createdAt: new Date().toISOString(),
   }
