@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType | null>(null)
 function rowToUser(profile: any, sessionUser?: { email?: string | null }): User {
   return {
     id: profile.user_id ?? profile.id,
+    profileId: profile.id,
     email: profile.email ?? sessionUser?.email ?? '',
     passwordHash: '',
     fullName: profile.full_name ?? '',

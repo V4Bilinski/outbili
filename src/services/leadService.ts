@@ -118,6 +118,7 @@ function rowToLead(row: any): Lead {
     enrichmentLog: row.enrichment_log ?? undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
+    assignedTo: row.assigned_to ?? undefined,
   } as Lead
 }
 
@@ -131,6 +132,7 @@ function leadToRow(data: Partial<Lead>): Record<string, any> {
   set('trade_name', data.tradeName)
   set('segment', data.segment)
   set('tier', data.tier)
+  set('assigned_to', data.assignedTo)
   set('monthly_revenue', data.monthlyRevenue)
   set('status', data.status)
   set('score', data.score)
@@ -333,4 +335,46 @@ export async function getLeadsByTemperature(temperature: string): Promise<Lead[]
 
 export async function getHotLeads(): Promise<Lead[]> {
   return getLeadsByTemperature('Quente')
+}
+
+// ---------- Atribuicao (FASE 1 multi-usuario) ----------
+
+export interface AssignableProfile {
+  id: string       // profiles.id (vai em assigned_to)
+  fullName: string
+  role: string
+}
+
+/** Lista os perfis ativos que podem ser responsaveis por leads (dropdown de atribuicao). */
+export async function listAssignableProfiles(): Promise<AssignableProfile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, role')
+    .is('deleted_at', null)
+    .eq('is_active', true)
+    .order('full_name', { ascending: true })
+  throwIfError(error, 'listAssignableProfiles')
+  return (data || []).map((p: any) => ({
+    id: p.id,
+    fullName: p.full_name || '(sem nome)',
+    role: p.role || 'sdr',
+  }))
+}
+
+/**
+ * (Re)atribui um lead a um responsavel (profiles.id) via RPC app.assign_lead.
+ * profileId null = devolve ao pool. A RPC valida autorizacao (admin/dono) e registra
+ * no historico (audit.user_activity, action 'lead_assigned'). Resolve UUID interno se vier 'rec...'.
+ */
+export async function assignLead(leadId: string, profileId: string | null): Promise<void> {
+  let dbId = leadId
+  if (isAirtableId(leadId)) {
+    const { data, error } = await supabase.from(TABLE).select('id')
+      .eq('airtable_record_id', leadId).maybeSingle()
+    throwIfError(error, 'assignLead.resolve')
+    if (!data) throw new Error(`Lead nao encontrado: ${leadId}`)
+    dbId = data.id
+  }
+  const { error } = await supabase.rpc('assign_lead', { p_lead_id: dbId, p_profile_id: profileId })
+  throwIfError(error, 'assignLead')
 }

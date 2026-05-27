@@ -9,6 +9,7 @@ import { supabase, supabaseAudit, throwIfError } from '../lib/supabase'
 // id continua sendo string mas agora é o auth.users.id (uuid).
 export interface User {
   id: string
+  profileId?: string  // profiles.id — usado para atribuicao (assigned_to/created_by referenciam profiles.id)
   email: string
   passwordHash: string  // sempre '' — preservado pra não quebrar SettingsPage
   fullName: string
@@ -41,6 +42,7 @@ export interface VerifyResult {
 function rowToUser(profile: any, authUser?: { email?: string }): User {
   return {
     id: profile.user_id ?? profile.id,
+    profileId: profile.id,
     email: profile.email ?? authUser?.email ?? '',
     passwordHash: '',
     fullName: profile.full_name ?? '',

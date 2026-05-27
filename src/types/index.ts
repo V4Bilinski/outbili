@@ -97,6 +97,7 @@ export interface Lead {
   enrichmentLog?: string      // JSON: log de cada etapa
   createdAt?: string
   updatedAt?: string
+  assignedTo?: string  // profiles.id do responsavel (dono do lead); null = pool nao atribuido
 }
 
 export interface Contact {

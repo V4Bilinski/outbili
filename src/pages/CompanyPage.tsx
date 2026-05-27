@@ -26,6 +26,7 @@ import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompeti
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
 import { PipelineJourneyStepper } from '../components/pipeline/PipelineJourneyStepper'
 import { parseStageChangeSource } from '../components/pipeline/stageConfig'
+import { AssignLeadControl } from '../components/company/AssignLeadControl'
 
 const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
@@ -431,6 +432,7 @@ export function CompanyPage() {
                 <MapPin className="h-3 w-3" />{lead.city}{lead.state ? `, ${lead.state}` : ''}
               </p>
             )}
+            <AssignLeadControl leadId={lead.id} assignedTo={lead.assignedTo} />
           </div>
           <div className="text-right shrink-0">
             <p className="text-xl md:text-2xl font-bold font-mono text-red leading-none">{score}</p>
