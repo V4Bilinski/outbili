@@ -1,4 +1,5 @@
 import { useLeads } from '../hooks/useLeads'
+import { useAuth } from '../lib/auth-context'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
@@ -532,8 +533,10 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
 
 export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [showImport, setShowImport] = useState(false)
+  const [mineOnly, setMineOnly] = useState(false)
   const massEnrichment = useMassEnrichment()
 
   const handleEnrichRequest = useCallback((importedLeads: any[]) => {
@@ -558,7 +561,8 @@ export function DashboardPage() {
   }
 
   const allLeads = leads || []
-  const pipeline = calculatePipelineLTP(allLeads)
+  const viewLeads = mineOnly ? allLeads.filter((l) => l.assignedTo === user?.profileId) : allLeads
+  const pipeline = calculatePipelineLTP(viewLeads)
 
   if (allLeads.length === 0) {
     return (
@@ -679,9 +683,15 @@ export function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-heading gradient-text">Visão geral do pipeline</h1>
-            <p className="text-xs text-text-muted mt-0.5">{allLeads.length} leads em prospecção</p>
+            <p className="text-xs text-text-muted mt-0.5">{viewLeads.length} {mineOnly ? 'leads seus' : 'leads em prospecção'}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setMineOnly(false)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
+              <button type="button" onClick={() => setMineOnly(true)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus</button>
+            </div>
             <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
               Nova prospecção
             </Button>
@@ -689,10 +699,10 @@ export function DashboardPage() {
         </div>
       </AnimateIn>
 
-      <KPICards leads={allLeads} />
+      <KPICards leads={viewLeads} />
 
       <AnimateIn delay={100}>
-        <NextActions leads={allLeads} />
+        <NextActions leads={viewLeads} />
       </AnimateIn>
 
       {/* CampaignStats, PipelineFunnel e QuickActions ocultos — funcionalidades em desenvolvimento */}
@@ -701,7 +711,7 @@ export function DashboardPage() {
 
       {/* Fábrica de Receita */}
       <AnimateIn delay={100}>
-        <TrapDiagnostic leads={allLeads} />
+        <TrapDiagnostic leads={viewLeads} />
       </AnimateIn>
 
       <AnimateIn delay={150}>

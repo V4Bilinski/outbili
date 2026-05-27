@@ -7,7 +7,7 @@ import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Columns3, Plus, Filter } from 'lucide-react'
+import { Columns3, Plus, Filter, Search } from 'lucide-react'
 import { TEMPERATURES, SEGMENTS } from '../lib/constants'
 import { calculateSpicedScore } from '../lib/utils'
 import { cn } from '../lib/cn'
@@ -92,11 +92,22 @@ export function PipelinePage() {
   // Filters
   const [segFilter, setSegFilter] = useState('')
   const [tempFilter, setTempFilter] = useState('')
+  const [mineOnly, setMineOnly] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const allLeads = (leads || []).filter((l) => {
     if (l.status === 'Perdido') return false
+    if (mineOnly && l.assignedTo !== user?.profileId) return false
     if (segFilter && l.segment !== segFilter) return false
     if (tempFilter && l.temperature !== tempFilter) return false
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      const matches = l.companyName?.toLowerCase().includes(q)
+        || l.tradeName?.toLowerCase().includes(q)
+        || l.city?.toLowerCase().includes(q)
+        || l.cnpj?.includes(q)
+      if (!matches) return false
+    }
     return true
   })
 
@@ -146,7 +157,25 @@ export function PipelinePage() {
               {closedCount > 0 && <span className="text-success"> · {closedCount} fechados</span>}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Busca de leads no pipeline */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar lead (nome, CNPJ, cidade)"
+                className="text-xs bg-white/[0.04] border border-border rounded-lg pl-8 pr-2 py-1.5 text-text-primary w-52 focus:outline-none focus:ring-1 focus:ring-red/40"
+              />
+            </div>
+            {/* Meus leads / Todos */}
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setMineOnly(false)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
+              <button type="button" onClick={() => setMineOnly(true)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus</button>
+            </div>
             {/* Filters */}
             <div className="flex items-center gap-1.5">
               <Filter className="h-3.5 w-3.5 text-text-muted" />

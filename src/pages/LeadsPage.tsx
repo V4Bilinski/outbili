@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads } from '../hooks/useLeads'
+import { useAuth } from '../lib/auth-context'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -209,8 +210,10 @@ function LeadTable({ leads }: { leads: Lead[] }) {
 // --- Main page ---
 export function LeadsPage() {
   const { data: leads, isLoading } = useLeads()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [mineOnly, setMineOnly] = useState(false)
   const [segment, setSegment] = useState('')
   const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
   const [status, setStatus] = useState('')
@@ -218,7 +221,7 @@ export function LeadsPage() {
   const [tier, setTier] = useState(() => searchParams.get('tier') || '')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!searchQuery
+  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!searchQuery || mineOnly
 
   const clearFilters = () => {
     setSegment('')
@@ -230,9 +233,11 @@ export function LeadsPage() {
       setSearchParams({}, { replace: true })
     }
     setSearchQuery('')
+    setMineOnly(false)
   }
 
   const filteredLeads = (leads || []).filter((l) => {
+    if (mineOnly && l.assignedTo !== user?.profileId) return false
     if (segment && l.segment !== segment) return false
     if (temperature && l.temperature !== temperature) return false
     if (status && l.status !== status) return false
@@ -287,6 +292,19 @@ export function LeadsPage() {
           </Button>
         </div>
       </AnimateIn>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setMineOnly(false)}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+        >Todos</button>
+        <button
+          type="button"
+          onClick={() => setMineOnly(true)}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+        >Meus leads</button>
+      </div>
 
       <AnimateIn delay={80}>
         <LeadFilters
