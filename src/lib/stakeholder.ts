@@ -44,8 +44,9 @@ export function resolveStakeholder(lead: Lead, contacts?: Contact[]): ResolvedSt
     return {
       name: decisor.name,
       role: clean(decisor.role),
-      email: clean(decisor.email),
-      whatsapp: clean(decisor.whatsapp) || clean(decisor.phone),
+      // Fallback para o contato da Receita (mantem paridade com o bloco de cadastro antigo)
+      email: clean(decisor.email) || clean(lead.rfEmail),
+      whatsapp: clean(decisor.whatsapp) || clean(decisor.phone) || clean(lead.rfPhone),
       source: 'decisor',
       sourceLabel: 'Decisor',
     }
@@ -57,8 +58,8 @@ export function resolveStakeholder(lead: Lead, contacts?: Contact[]): ResolvedSt
     return {
       name: first.name,
       role: clean(first.role),
-      email: clean(first.email),
-      whatsapp: clean(first.whatsapp) || clean(first.phone),
+      email: clean(first.email) || clean(lead.rfEmail),
+      whatsapp: clean(first.whatsapp) || clean(first.phone) || clean(lead.rfPhone),
       source: 'contato',
       sourceLabel: 'Contato',
     }
