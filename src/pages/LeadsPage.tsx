@@ -106,13 +106,6 @@ function getTrapAbbrev(trap?: string): string | null {
   return match ? match[1] : null
 }
 
-function trapBadgeClass(abbrev: string): string {
-  const num = parseInt(abbrev.replace('T', ''), 10)
-  if (num >= 7) return 'text-red bg-red/10'
-  if (num >= 4) return 'text-orange-400 bg-orange-400/10'
-  return 'text-amber-400 bg-amber-400/10'
-}
-
 // --- Table view ---
 function LeadTable({ leads }: { leads: Lead[] }) {
   const navigate = useNavigate()
@@ -160,18 +153,6 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                     )}
                     {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
                     {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse leading-none">Processando...</span>}
-                    {(() => {
-                      const abbrev = getTrapAbbrev(lead.hypotheticalTrap)
-                      if (!abbrev) return null
-                      return (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none ${trapBadgeClass(abbrev)}`}>{abbrev}</span>
-                      )
-                    })()}
-                    {(() => {
-                      const days = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0
-                      if (days < 7 || lead.status === 'Fechado' || lead.status === 'Perdido') return null
-                      return <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none ${days >= 14 ? 'text-error bg-error/10' : 'text-warning bg-warning/10'}`}>{days}d parado</span>
-                    })()}
                   </div>
                   <p className="text-label text-text-muted mt-0.5">
                     {lead.segment || 'Segmento pendente'}

@@ -24,9 +24,6 @@ function barColor(score: number): string {
 export function LeadCard({ lead, ownerName, onClick }: Props) {
   const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
   const temp = lead.temperature || 'Frio'
-  const trapAbbrev = lead.hypotheticalTrap?.match(/T\d+/)?.[0]
-  const days = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / 86400000) : 0
-  const parado = days >= 7 && lead.status !== 'Fechado' && lead.status !== 'Perdido'
 
   return (
     <button
@@ -54,8 +51,6 @@ export function LeadCard({ lead, ownerName, onClick }: Props) {
       <div className="flex items-center gap-1.5 flex-wrap">
         {lead.segment && <span className="text-[9px] font-medium text-text-secondary bg-white/5 px-1.5 py-0.5 rounded leading-none">{lead.segment}</span>}
         {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
-        {trapAbbrev && <span className="text-[9px] font-semibold text-red bg-red/10 px-1.5 py-0.5 rounded leading-none">{trapAbbrev}</span>}
-        {parado && <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded leading-none ${days >= 14 ? 'text-error bg-error/10' : 'text-warning bg-warning/10'}`}>{days}d parado</span>}
       </div>
 
       {/* Rodape: score SPICED + responsavel */}
