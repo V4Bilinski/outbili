@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads } from '../hooks/useLeads'
 import { useAuth } from '../lib/auth-context'
+import { LeadCard } from '../components/leads/LeadCard'
+import { listAssignableProfiles } from '../services/leadService'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Users, Plus, Search, X, ChevronRight } from 'lucide-react'
+import { Users, Plus, Search, X, ChevronRight, List, LayoutGrid } from 'lucide-react'
 import { LEAD_STATUSES, TEMPERATURES, SEGMENTS, TIERS } from '../lib/constants'
 
 const TRAP_OPTIONS = [
@@ -214,12 +216,25 @@ export function LeadsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [mineOnly, setMineOnly] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
+    try { return (localStorage.getItem('outbili-leads-view') as 'list' | 'cards') || 'list' } catch { return 'list' }
+  })
+  const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
   const [segment, setSegment] = useState('')
   const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
   const [status, setStatus] = useState('')
   const [trava, setTrava] = useState(() => searchParams.get('trava') || '')
   const [tier, setTier] = useState(() => searchParams.get('tier') || '')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => { try { localStorage.setItem('outbili-leads-view', viewMode) } catch { /* ignore */ } }, [viewMode])
+  useEffect(() => {
+    listAssignableProfiles().then((ps) => {
+      const m: Record<string, string> = {}
+      for (const p of ps) m[p.id] = p.fullName
+      setProfilesMap(m)
+    }).catch(() => {})
+  }, [])
 
   const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!searchQuery || mineOnly
 
@@ -293,17 +308,33 @@ export function LeadsPage() {
         </div>
       </AnimateIn>
 
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => setMineOnly(false)}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
-        >Todos</button>
-        <button
-          type="button"
-          onClick={() => setMineOnly(true)}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
-        >Meus leads</button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setMineOnly(false)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+          >Todos</button>
+          <button
+            type="button"
+            onClick={() => setMineOnly(true)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+          >Meus leads</button>
+        </div>
+        <div className="flex items-center gap-1 bg-white/[0.03] border border-border rounded-lg p-0.5" title="Formato de visualização">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            title="Visualizar em lista"
+            className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-red/15 text-red' : 'text-text-muted hover:text-text-secondary'}`}
+          ><List className="h-4 w-4" /></button>
+          <button
+            type="button"
+            onClick={() => setViewMode('cards')}
+            title="Visualizar em cards"
+            className={`p-1.5 rounded-md transition-colors ${viewMode === 'cards' ? 'bg-red/15 text-red' : 'text-text-muted hover:text-text-secondary'}`}
+          ><LayoutGrid className="h-4 w-4" /></button>
+        </div>
       </div>
 
       <AnimateIn delay={80}>
@@ -336,6 +367,17 @@ export function LeadsPage() {
             action={{ label: 'Limpar filtros', onClick: clearFilters }}
           />
         </AnimateIn>
+      ) : viewMode === 'cards' ? (
+        <div className="animate-[fade-in_0.4s_ease-out] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredLeads.map((lead) => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              ownerName={lead.assignedTo ? profilesMap[lead.assignedTo] : null}
+              onClick={() => navigate(`/leads/${lead.id}`)}
+            />
+          ))}
+        </div>
       ) : (
         <div className="animate-[fade-in_0.4s_ease-out]">
           <Card className="p-0 overflow-hidden">
