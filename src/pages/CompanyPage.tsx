@@ -20,6 +20,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
+import { ActivityLog } from '../components/company/ActivityLog'
 import { TabSocios } from '../components/company/TabSocios'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
@@ -32,6 +33,7 @@ const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
   { id: 'spiced', label: 'SPICED', group: 'primary' },
   { id: 'reuniao', label: 'Reunião', group: 'primary' },
+  { id: 'historico', label: 'Histórico', group: 'primary' },
   { id: 'travas', label: 'Travas', group: 'analise' },
   { id: 'projecao-competitiva', label: 'Projeção', group: 'analise' },
   { id: 'playbook-bdr', label: 'Playbook', group: 'analise' },
@@ -886,6 +888,15 @@ export function CompanyPage() {
 
         {/* Tab: Reunião */}
         {activeTab === 'reuniao' && <TabReuniao lead={lead} />}
+
+        {/* Tab: Histórico de ações */}
+        {activeTab === 'historico' && (
+          <ActivityLog
+            leadId={lead.id}
+            activities={activities || []}
+            onLogged={() => queryClient.invalidateQueries({ queryKey: ['activities', id] })}
+          />
+        )}
 
         {/* Tab: Diagnóstico de Travas */}
         {activeTab === 'travas' && <TabTravas lead={lead} />}

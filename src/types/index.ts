@@ -180,7 +180,8 @@ export interface Activity {
   contactId?: string
   type: 'nota' | 'whatsapp_enviado' | 'whatsapp_recebido' | 'reunião' | 'proposta' | 'status_change'
   description: string
-  createdBy?: string
+  createdBy?: string       // profiles.id do autor
+  createdByName?: string   // nome do autor (resolvido via join em getActivities)
   createdAt?: string
 }
 
