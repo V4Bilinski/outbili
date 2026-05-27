@@ -29,9 +29,6 @@ jobs:
           # Supabase (W3 cutover — fonte primária de dados/auth)
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          # Airtable (legacy — usado apenas por ConnectionsApiPanel health-check; drop em Story 021)
-          VITE_AIRTABLE_PAT: ${{ secrets.VITE_AIRTABLE_PAT }}
-          VITE_AIRTABLE_BASE_ID: ${{ secrets.VITE_AIRTABLE_BASE_ID }}
           # Integrações externas
           VITE_BILINSKIZAP_URL: ${{ secrets.VITE_BILINSKIZAP_URL }}
           VITE_BILINSKIZAP_API_KEY: ${{ secrets.VITE_BILINSKIZAP_API_KEY }}
