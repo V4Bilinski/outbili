@@ -147,7 +147,7 @@ export function PipelinePage() {
     <div className="space-y-5">
       {/* Header */}
       <AnimateIn>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <Columns3 className="h-5 w-5 text-red" />
@@ -158,42 +158,44 @@ export function PipelinePage() {
               {closedCount > 0 && <span className="text-success"> · {closedCount} fechados</span>}
             </p>
           </div>
+          <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/search')}>
+            Adicionar lead
+          </Button>
+        </div>
+      </AnimateIn>
+
+      {/* Controles: busca + visão + filtros (card dedicado, mais espaçado e legível) */}
+      <AnimateIn delay={60}>
+        <div className="rounded-2xl border border-border bg-white/[0.02] p-3 md:p-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar lead por nome, CNPJ ou cidade..."
+              className="h-10 w-full bg-white/[0.04] border border-border rounded-xl pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-red/40 transition-colors"
+            />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* Busca de leads no pipeline */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar lead (nome, CNPJ, cidade)"
-                className="text-xs bg-white/[0.04] border border-border rounded-lg pl-8 pr-2 py-1.5 text-text-primary w-52 focus:outline-none focus:ring-1 focus:ring-red/40"
-              />
-            </div>
-            {/* Meus leads / Todos */}
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setMineOnly(false)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
               <button type="button" onClick={() => setMineOnly(true)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus</button>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus leads</button>
             </div>
-            {/* Filters */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-text-muted" />
-              <select value={segFilter} onChange={(e) => setSegFilter(e.target.value)}
-                className="text-xs bg-white/[0.04] border border-border rounded-lg px-2 py-1.5 text-text-primary cursor-pointer">
-                <option value="">Segmento</option>
-                {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
-              </select>
-              <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)}
-                className="text-xs bg-white/[0.04] border border-border rounded-lg px-2 py-1.5 text-text-primary cursor-pointer">
-                <option value="">Temperatura</option>
-                {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
-              </select>
-            </div>
-            <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/search')}>
-              Adicionar lead
-            </Button>
+            <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
+            <Filter className="h-4 w-4 text-text-muted hidden sm:block" />
+            <select value={segFilter} onChange={(e) => setSegFilter(e.target.value)}
+              className="h-9 text-xs bg-white/[0.04] border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
+              <option value="">Segmento</option>
+              {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
+            </select>
+            <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)}
+              className="h-9 text-xs bg-white/[0.04] border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
+              <option value="">Temperatura</option>
+              {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
+            </select>
           </div>
         </div>
       </AnimateIn>
