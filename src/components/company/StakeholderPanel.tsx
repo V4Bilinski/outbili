@@ -23,14 +23,7 @@ export function StakeholderPanel({ lead, contacts, onAdd }: Props) {
 
   return (
     <div className="space-y-2 pt-2 border-t border-border">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Stakeholder</p>
-        {sk && (
-          <span className={cn('text-micro font-semibold px-1.5 py-0.5 rounded-full leading-none', stakeholderSourceClass(sk.source))}>
-            {sk.sourceLabel}
-          </span>
-        )}
-      </div>
+      <p className="text-caption font-bold uppercase tracking-wider text-text-muted">Stakeholder</p>
 
       {sk ? (
         <div className="flex items-start gap-3 p-3 rounded-xl bg-elevated-1 border border-border">
@@ -38,7 +31,12 @@ export function StakeholderPanel({ lead, contacts, onAdd }: Props) {
             <span className="text-sm font-semibold text-text-secondary">{initial(sk.name)}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-text-primary truncate leading-tight">{sk.name}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold text-text-primary truncate leading-tight">{sk.name}</p>
+              <span className={cn('shrink-0 text-micro font-semibold px-1.5 py-0.5 rounded-full leading-none', stakeholderSourceClass(sk.source))}>
+                {sk.sourceLabel}
+              </span>
+            </div>
             {sk.role && <p className="text-xs text-text-muted truncate mt-0.5">{sk.role}</p>}
 
             {(sk.email || sk.whatsapp) && (
