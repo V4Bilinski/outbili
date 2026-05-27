@@ -49,7 +49,6 @@ export function LeadCard({ lead, ownerName, onClick }: Props) {
 
       {/* Tags */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {lead.segment && <span className="text-[9px] font-medium text-text-secondary bg-elevated-2 px-1.5 py-0.5 rounded leading-none">{lead.segment}</span>}
         {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
       </div>
 

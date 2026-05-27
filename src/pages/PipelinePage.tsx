@@ -64,9 +64,8 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
           </span>
         </div>
       </div>
-      <p className="text-sm font-semibold text-text-primary truncate group-hover:text-text-primary transition-colors">{lead.companyName}</p>
-      <p className="text-label text-text-muted mt-0.5">{lead.segment || '-'} · {lead.tier || '-'}</p>
-      {lead.city && <p className="text-caption text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
+      <p className="text-sm font-semibold text-text-primary truncate group-hover:text-text-primary transition-colors">{lead.tradeName || lead.companyName}</p>
+      <p className="text-label text-text-muted mt-0.5">{lead.tier || '-'}{lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}</p>
       <div className="flex flex-wrap gap-1 mt-1.5">
         {lead.enrichmentStatus === 'complete' && (
           <span className="text-micro font-medium text-success bg-success/10 px-1.5 py-0.5 rounded">Dados completos</span>
