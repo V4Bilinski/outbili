@@ -220,6 +220,69 @@ async function fetchWebsiteHtml(website: string): Promise<string | null> {
   }
 }
 
+// Extrai o nome da MARCA do HTML do site (a empresa se nomeia aqui, NAO no CNPJ).
+// Prioridade: og:site_name > og:title > <title>. Pega o 1o segmento antes de
+// separadores ("Sorridents - Clinicas Odontologicas" -> "Sorridents") e rejeita
+// titulos genericos (Home/Inicio/...). Retorna null se nada util.
+function extractBrandFromHtml(html: string): string | null {
+  if (!html) return null
+  const pick = (re: RegExp): string | null => {
+    const m = html.match(re)
+    return m && m[1] ? m[1].trim() : null
+  }
+  const ogSite =
+    pick(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i) ||
+    pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i)
+  const ogTitle =
+    pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+    pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)
+  const titleTag = pick(/<title[^>]*>([^<]+)<\/title>/i)
+
+  const generico =
+    /^(home|in[ií]cio|index|bem[\s-]?vind[oa]s?|p[aá]gina inicial|loading|untitled|site|welcome|in[ií]cio)$/i
+  for (const bruto of [ogSite, ogTitle, titleTag]) {
+    if (!bruto) continue
+    const seg = bruto.split(/[|–—\-:·•]/)[0].trim()
+    const nome = (seg || bruto).trim()
+    if (nome.length >= 2 && nome.length <= 60 && !generico.test(nome)) return nome
+  }
+  return null
+}
+
+// Deriva o nome da marca a partir do DOMINIO (sorridents.com.br -> "sorridents").
+// Em agregadores de link (linktr.ee/<marca>) a marca esta no PATH, nao no host.
+function brandFromDomain(website: string | null): string | null {
+  const url = normUrl(website)
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./i, '').toLowerCase()
+    const agregadores = [
+      'linktr.ee', 'linktree.com', 'beacons.ai', 'bio.link', 'linkbio',
+      'campsite.bio', 'lnk.bio', 'about.me', 'taplink.cc', 'linkbio.co',
+    ]
+    if (agregadores.some((a) => host === a || host.endsWith('.' + a))) {
+      const seg = u.pathname.split('/').filter(Boolean)[0]
+      const nome = seg ? seg.replace(/[._-]+/g, ' ').trim() : ''
+      return nome.length >= 2 ? nome : null
+    }
+    const partes = host.split('.')
+    let sld = partes[0]
+    if (partes.length >= 2) {
+      const penult = partes[partes.length - 2]
+      if (['com', 'net', 'org', 'gov', 'edu'].includes(penult) && partes.length >= 3) {
+        sld = partes[partes.length - 3]
+      } else {
+        sld = partes[partes.length - 2]
+      }
+    }
+    sld = (sld || '').replace(/[-_]+/g, ' ').trim()
+    return sld.length >= 2 ? sld : null
+  } catch {
+    return null
+  }
+}
+
 interface GmbResult {
   confirmado: boolean
   title: string | null
@@ -252,46 +315,79 @@ async function runGmbApify(
     motivo: 'GMB nao buscado',
   }
 
-  const res = await fetch(`${APIFY_GMB_ENDPOINT}?token=${apifyToken}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      searchStringsArray: [termo],
-      maxCrawledPlacesPerSearch: 1,
-      scrapePlaceDetailPage: false,
-      maxReviews: 0,
-      language: 'pt-BR',
-      skipClosedPlaces: false,
-    }),
+  // Apify pode responder 429 (rate limit) sob concorrencia. Retry com backoff para
+  // nao perder o GMB silenciosamente: ate 3 tentativas (espera 2.5s, 5s).
+  const gmbBody = JSON.stringify({
+    searchStringsArray: [termo],
+    // Top 3: o 1o resultado as vezes e' um homonimo/local errado. Avaliamos varios
+    // e escolhemos o melhor match de endereco, em vez de aceitar/descartar so o 1o.
+    // 3 equilibra recall e custo Apify (pay-per-place).
+    maxCrawledPlacesPerSearch: 3,
+    scrapePlaceDetailPage: false,
+    maxReviews: 0,
+    language: 'pt-BR',
+    skipClosedPlaces: false,
   })
-  if (!res.ok) {
-    const txt = await res.text()
+  let res: Response | undefined
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    res = await fetch(`${APIFY_GMB_ENDPOINT}?token=${apifyToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: gmbBody,
+    })
+    if (res.ok) break
+    const recuperavel = res.status === 429 || res.status >= 500
+    if (recuperavel && tentativa < 3) {
+      await res.body?.cancel().catch(() => {})
+      await new Promise((r) => setTimeout(r, tentativa * 2500))
+      continue
+    }
+    const txt = await res.text().catch(() => '')
     return { ...base, motivo: `Apify GMB ${res.status}: ${txt.slice(0, 160)}` }
   }
+  if (!res || !res.ok) return { ...base, motivo: 'Apify GMB sem resposta apos retries' }
   const items = (await res.json()) as Record<string, unknown>[]
-  const place = Array.isArray(items) ? items[0] : undefined
-  if (!place) return { ...base, motivo: 'GMB sem resultado para o termo' }
+  const places = Array.isArray(items) ? items : []
+  if (places.length === 0) return { ...base, motivo: 'GMB sem resultado para o termo' }
 
-  const placeAddress = (place['address'] as string) ?? null
-  const title = (place['title'] as string) ?? null
-  const m = avaliarMatchEndereco(lead, placeAddress)
+  // Mapeia cada place e descarta nao-negocios: quando o nome nao tem GMB, o Google
+  // devolve a localidade/orgao publico (title = cidade, sem categoryName e sem rating).
+  // Para os negocios, avalia o match de endereco e descarta BAIXA (outra cidade).
+  const candidatos = places
+    .map((p) => {
+      const placeAddress = (p['address'] as string) ?? null
+      const categoria = (p['categoryName'] as string) ?? null
+      const rating = typeof p['totalScore'] === 'number' ? (p['totalScore'] as number) : null
+      const ehNegocio = Boolean(categoria) || rating !== null
+      return { p, placeAddress, categoria, rating, ehNegocio, m: avaliarMatchEndereco(lead, placeAddress) }
+    })
+    .filter((c) => c.ehNegocio && c.m.confianca !== 'baixa')
 
-  const out: GmbResult = {
-    ...base,
-    title,
-    rating: typeof place['totalScore'] === 'number' ? (place['totalScore'] as number) : null,
-    reviews: typeof place['reviewsCount'] === 'number' ? (place['reviewsCount'] as number) : null,
-    categoria: (place['categoryName'] as string) ?? null,
-    website: normUrl(place['website'] as string),
-    mapsUrl: (place['url'] as string) ?? null,
-    placeAddress,
-    match: m,
-    motivo: m.motivo,
+  if (candidatos.length === 0) {
+    return {
+      ...base,
+      motivo: `nenhum match valido entre ${places.length} resultado(s) (cidade/endereco divergentes ou sem GMB de empresa)`,
+    }
   }
 
-  // Anti-filial: aceita ALTA ou MEDIA; descarta BAIXA (outro endereco/cidade).
-  out.confirmado = m.confianca === 'alta' || m.confianca === 'media'
-  return out
+  // Preferir match ALTA (endereco confere) na ordem de rank do Google; senao o
+  // primeiro MEDIA (cidade confere) — o resultado mais relevante ao termo de busca.
+  const escolhido = candidatos.find((c) => c.m.confianca === 'alta') ?? candidatos[0]
+  const place = escolhido.p
+
+  return {
+    ...base,
+    confirmado: true,
+    title: (place['title'] as string) ?? null,
+    rating: escolhido.rating,
+    reviews: typeof place['reviewsCount'] === 'number' ? (place['reviewsCount'] as number) : null,
+    categoria: escolhido.categoria,
+    website: normUrl(place['website'] as string),
+    mapsUrl: (place['url'] as string) ?? null,
+    placeAddress: escolhido.placeAddress,
+    match: escolhido.m,
+    motivo: escolhido.m.motivo,
+  }
 }
 
 interface IgFromApify {
@@ -372,8 +468,17 @@ serve(async (req: Request): Promise<Response> => {
     })
   }
 
+  // jobId opcional: quando presente, o social-enrich foi acionado por uma fila/worker.
+  // Ao concluir (sucesso ou erro) fechamos o job em app.enrichment_jobs. Best-effort.
+  let jobId: string | null = null
+  // Client service_role criado dentro do try; mantemos referencia para fechar o job no catch.
+  // deno-lint-ignore no-explicit-any
+  let supabaseForJob: any = null
+
   try {
-    const { leadId } = (await req.json()) as { leadId?: string; cnpj?: string }
+    const body = (await req.json()) as { leadId?: string; cnpj?: string; jobId?: string }
+    const { leadId } = body
+    jobId = body.jobId ?? null
     if (!leadId) {
       return new Response(JSON.stringify({ error: 'leadId obrigatorio' }), {
         status: 400,
@@ -388,6 +493,7 @@ serve(async (req: Request): Promise<Response> => {
     if (!apifyToken) throw new Error('API_APIFY nao configurado no env da Edge Function')
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+    supabaseForJob = supabase
     const warnings: string[] = []
 
     // 1. Dados do lead
@@ -403,19 +509,58 @@ serve(async (req: Request): Promise<Response> => {
       trade_name: string | null; company_name: string | null; website: string | null
     }
 
-    const nomeBase = (lead.company_name || lead.trade_name || '').trim()
     const via = extrairVia(lead.address)
     const cidade = (lead.city || '').split(',')[0].trim()
     const uf = (lead.state || '').trim()
-    if (!nomeBase && !via && !cidade) throw new Error('Lead sem nome/endereco para busca')
 
-    // ── 2. GMB via Apify (google-places). Termo = nome + (via|cidade), UF. ──
-    const gmbTermoLocal = via || cidade
-    const gmbTermo = [
-      [nomeBase, gmbTermoLocal].filter(Boolean).join(' '),
-      uf,
-    ].filter(Boolean).join(', ')
+    // ── 1. Fetch do site PRIMEIRO: revela a MARCA real + IG/LinkedIn/Facebook.
+    // O nome da empresa na presenca digital (site/dominio) NAO e' o nome do CNPJ
+    // (ex.: "TATUAPE CLINICA ODONTOLOGICA LTDA" se posiciona como "Sorridents").
+    // Buscar pelo nome formal e' busca burra; o site/dominio dao o nome real. ──
+    const websiteLead = normUrl(lead.website) || lead.website || null
+    const redes: SocialLinks = {}
+    let brandSite: string | null = null
+    if (websiteLead) {
+      try {
+        const html = await fetchWebsiteHtml(websiteLead)
+        if (html) {
+          brandSite = extractBrandFromHtml(html)
+          const found = extractSocialsFromHtml(html)
+          if (found.instagram) redes.instagram = found.instagram
+          if (found.linkedin) redes.linkedin = found.linkedin
+          if (found.facebook) redes.facebook = found.facebook
+        } else {
+          warnings.push(`Site nao retornou HTML aproveitavel: ${websiteLead}`)
+        }
+      } catch (e) {
+        warnings.push(`Falha ao ler site: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
 
+    // ── 2. NOME DE BUSCA = MARCA da presenca digital, nunca o nome formal do CNPJ.
+    // Prioridade: nome no site (<title>/og) > nome do dominio > nome fantasia
+    // (trade_name) limpo > razao social sem sufixo (ultimo recurso). Remove aspas,
+    // lixo e sufixo societario (LTDA/ME/EPP/...). ──
+    const limparNome = (s: string | null | undefined): string =>
+      (s || '')
+        .replace(/["'`´]/g, '')
+        .replace(/\s+(ltda|me|epp|eireli|s\/a|s\.a\.?|sa)\.?\s*$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    const brandDominio = brandFromDomain(lead.website)
+    const trade = limparNome(lead.trade_name)
+    const razao = limparNome(lead.company_name)
+    const nomeBusca =
+      (brandSite && brandSite.trim()) ||
+      (brandDominio && brandDominio.trim()) ||
+      (trade.length >= 2 ? trade : '') ||
+      razao
+    const fonteNome = brandSite ? 'site' : brandDominio ? 'dominio' : trade.length >= 2 ? 'trade_name' : 'cnpj'
+
+    if (!nomeBusca && !via && !cidade) throw new Error('Lead sem nome/endereco para busca')
+
+    // ── 3. GMB via Apify (google-places). Termo = MARCA + CIDADE + UF. ──
+    const gmbTermo = [[nomeBusca, cidade].filter(Boolean).join(' '), uf].filter(Boolean).join(', ')
     let gmb: GmbResult | null = null
     if (gmbTermo) {
       try {
@@ -424,35 +569,29 @@ serve(async (req: Request): Promise<Response> => {
         warnings.push(`Falha GMB: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
-
-    // ── 3. Website: place.website (se GMB confirmado) ou website atual do lead. ──
+    if (gmb) gmb.motivo = `[nome via ${fonteNome}: "${nomeBusca}"] ${gmb.motivo}`
     const gmbConfirmado = Boolean(gmb && gmb.confirmado)
     const websiteGmb = gmbConfirmado ? gmb?.website ?? null : null
-    const websiteFinal = websiteGmb || normUrl(lead.website) || lead.website || null
+    const websiteFinal = websiteLead || websiteGmb || null
 
-    // ── 4. IG + LinkedIn + Facebook GRATIS via fetch do site. ──
-    const redes: SocialLinks = {}
-    if (websiteFinal) {
+    // ── 3b. Lead sem site mas GMB revelou um: fetch dele p/ pegar IG/LinkedIn. ──
+    if (!websiteLead && websiteGmb && (!redes.instagram || !redes.linkedin)) {
       try {
-        const html = await fetchWebsiteHtml(websiteFinal)
-        if (html) {
-          const found = extractSocialsFromHtml(html)
-          if (found.instagram) redes.instagram = found.instagram
-          if (found.linkedin) redes.linkedin = found.linkedin
-          if (found.facebook) redes.facebook = found.facebook
-        } else {
-          warnings.push(`Site nao retornou HTML aproveitavel: ${websiteFinal}`)
+        const html2 = await fetchWebsiteHtml(websiteGmb)
+        if (html2) {
+          const f2 = extractSocialsFromHtml(html2)
+          if (!redes.instagram && f2.instagram) redes.instagram = f2.instagram
+          if (!redes.linkedin && f2.linkedin) redes.linkedin = f2.linkedin
+          if (!redes.facebook && f2.facebook) redes.facebook = f2.facebook
         }
-      } catch (e) {
-        warnings.push(`Falha ao ler site: ${e instanceof Error ? e.message : String(e)}`)
-      }
+      } catch { /* best-effort */ }
     }
 
-    // ── 5. Fallback Instagram via Apify (so se o site nao revelou IG). ──
+    // ── 4. Fallback Instagram via Apify (so se o site nao revelou IG): usa a MARCA. ──
     const avaliadosIg: { handle: string; confianca: string; motivo: string }[] = []
     let igApify: IgFromApify | null = null
     if (!redes.instagram) {
-      const igTermo = [nomeBase, via || cidade].filter(Boolean).join(' ')
+      const igTermo = [nomeBusca, via || cidade].filter(Boolean).join(' ')
       if (igTermo) {
         try {
           igApify = await runInstagramApify(apifyToken, lead, igTermo, avaliadosIg)
@@ -627,6 +766,19 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // ── Fechamento do job (best-effort): so quando acionado por fila. ──
+    if (jobId) {
+      try {
+        await supabase
+          .schema('app')
+          .from('enrichment_jobs')
+          .update({ status: 'done', finished_at: new Date().toISOString() })
+          .eq('id', jobId)
+      } catch (e) {
+        warnings.push(`Erro ao fechar enrichment_job (done): ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+
     // ── Retorno (compat) ──
     return new Response(
       JSON.stringify({
@@ -651,6 +803,28 @@ serve(async (req: Request): Promise<Response> => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[social-enrich] erro:', message)
+
+    // ── Fechamento do job em erro (best-effort): retrying (attempts<3) ou failed. ──
+    if (jobId && supabaseForJob) {
+      try {
+        const { data: jobRow } = await supabaseForJob
+          .schema('app')
+          .from('enrichment_jobs')
+          .select('attempts')
+          .eq('id', jobId)
+          .single()
+        const attempts = typeof jobRow?.attempts === 'number' ? jobRow.attempts : 0
+        const nextStatus = attempts < 3 ? 'retrying' : 'failed'
+        await supabaseForJob
+          .schema('app')
+          .from('enrichment_jobs')
+          .update({ status: nextStatus, finished_at: new Date().toISOString(), error: message })
+          .eq('id', jobId)
+      } catch (e) {
+        console.error('[social-enrich] erro ao fechar enrichment_job (erro):', e instanceof Error ? e.message : String(e))
+      }
+    }
+
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
