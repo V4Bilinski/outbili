@@ -30,7 +30,7 @@ export function LoginPage() {
   const passwordOk = password.length >= 6
   const nameError = touched.fullName && mode === 'signup' && fullName.length === 0 ? 'Nome obrigatório' : null
 
-  const inputBase = 'h-12 w-full rounded-xl bg-white/[0.05] border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors'
+  const inputBase = 'h-12 w-full rounded-xl bg-elevated-2 border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors'
   const inputClass = (error: string | null, ok: boolean) => cn(
     inputBase,
     error ? 'border-error/50 focus:border-error/60 focus:ring-error/20' :
@@ -100,7 +100,7 @@ export function LoginPage() {
         {/* Card */}
         <div className="rounded-2xl bg-surface border border-border p-6 space-y-5 animate-[slide-up_0.5s_cubic-bezier(0.16,1,0.3,1)] backdrop-blur-sm shadow-2xl shadow-black/20">
           {/* Mode toggle */}
-          <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border">
+          <div className="flex rounded-xl p-1 bg-elevated-1 border border-border">
             <button
               onClick={() => setMode('login')}
               className={cn(
@@ -181,7 +181,7 @@ export function LoginPage() {
               </div>
               {passwordError && <p className="text-micro text-error mt-1.5 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{passwordError}</p>}
               {password.length > 0 && password.length < 6 && !touched.password && (
-                <div className="mt-1.5 h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                <div className="mt-1.5 h-1 rounded-full bg-elevated-2 overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-error to-warning rounded-full transition-all duration-300" style={{ width: `${(password.length / 6) * 100}%` }} />
                 </div>
               )}

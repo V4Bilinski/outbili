@@ -10,7 +10,7 @@ import { updateUser, changePassword, verifyPassword } from '../services/authServ
 import { Mail, Shield, Clock, Eye, EyeOff, Loader2, AlertCircle, Save } from 'lucide-react'
 import { toast } from 'sonner'
 
-const inputClass = 'h-11 w-full rounded-xl bg-white/[0.05] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:border-red/40 focus:ring-1 focus:ring-red/20 transition-colors'
+const inputClass = 'h-11 w-full rounded-xl bg-elevated-2 border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:outline-none focus:border-red/40 focus:ring-1 focus:ring-red/20 transition-colors'
 
 export function SettingsPage() {
   const navigate = useNavigate()
@@ -123,11 +123,11 @@ export function SettingsPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border">
               <p className="text-caption text-text-muted uppercase flex items-center gap-1.5"><Shield className="h-3 w-3" /> Papel</p>
               <p className="text-sm text-text-primary mt-0.5">{user.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
             </div>
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border">
               <p className="text-caption text-text-muted uppercase flex items-center gap-1.5"><Clock className="h-3 w-3" /> Último acesso</p>
               <p className="text-sm text-text-primary mt-0.5">{lastLogin}</p>
             </div>

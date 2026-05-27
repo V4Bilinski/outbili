@@ -73,7 +73,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
       aria-label={gate?.title || `Mover para ${toLabel}`}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={onCancel} />
       {/* Popup card centralizado */}
       <div className={cn(
         'relative w-full max-w-md mx-4 rounded-2xl border shadow-2xl shadow-black/50 overflow-y-auto max-h-[90vh] animate-[scale-in_0.2s_ease-out]',
@@ -100,14 +100,14 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
             <button
               onClick={onCancel}
               aria-label="Fechar"
-              className="p-1.5 rounded-lg hover:bg-white/[0.05] text-text-muted hover:text-text-primary cursor-pointer transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-elevated-2 text-text-muted hover:text-text-primary cursor-pointer transition-colors shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Lead info — ligeiramente reduzido para ceder destaque ao título */}
-          <div className="px-3 py-2 rounded-lg bg-white/[0.03] border border-border">
+          <div className="px-3 py-2 rounded-lg bg-elevated-1 border border-border">
             <p className="text-[12px] font-semibold text-text-primary leading-tight">{lead.companyName}</p>
             <p className="text-[10px] text-text-muted leading-tight mt-0.5">
               {lead.segment} · {lead.tier} · Score {lead.score || '-'}
@@ -135,8 +135,8 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
                       checked.has(idx)
                         ? 'bg-success/10 border-success/30'
                         : check.required
-                          ? 'bg-white/[0.02] border-border hover:border-red/30'
-                          : 'bg-white/[0.01] border-border/50 hover:border-border opacity-70',
+                          ? 'bg-elevated-1 border-border hover:border-red/30'
+                          : 'bg-elevated-1 border-border/50 hover:border-border opacity-70',
                     )}
                   >
                     <div className={cn(
@@ -156,7 +156,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
                   </button>
                 ))}
               </div>
-              <div className="h-0.5 w-full rounded-full bg-white/[0.05] overflow-hidden mt-2">
+              <div className="h-0.5 w-full rounded-full bg-elevated-2 overflow-hidden mt-2">
                 <div className="h-full bg-gradient-to-r from-red to-success rounded-full transition-all duration-500" style={{ width: `${(checked.size / gate.checks.length) * 100}%` }} />
               </div>
             </div>
@@ -164,7 +164,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
 
           {/* Notes */}
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
-            className="w-full rounded-lg bg-white/[0.03] border border-border text-[12px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
+            className="w-full rounded-lg bg-elevated-1 border border-border text-[12px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
 
           {/* Actions */}
           <div className="flex gap-2.5">

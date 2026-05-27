@@ -31,7 +31,7 @@ export function WelcomeTour() {
   const s = STEPS[step]
 
   return (
-    <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9990] bg-overlay backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 space-y-4 shadow-2xl animate-[fade-in_0.2s_ease-out]">
         <div className="flex items-start justify-between gap-2">
           <p className="text-base font-bold text-text-primary">{s.title}</p>
@@ -43,7 +43,7 @@ export function WelcomeTour() {
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-center gap-1.5">
             {STEPS.map((_, i) => (
-              <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-5 bg-red' : 'w-1.5 bg-white/15'}`} />
+              <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-5 bg-red' : 'w-1.5 bg-elevated-hover'}`} />
             ))}
           </div>
           <div className="flex items-center gap-2">

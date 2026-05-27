@@ -16,7 +16,7 @@ export function AccordionItem({ title, children, defaultOpen = false, className,
   return (
     <div
       className={cn(
-        'rounded-xl bg-white/[0.02] border border-border overflow-hidden',
+        'rounded-xl bg-elevated-1 border border-border overflow-hidden',
         accentColor && 'border-l-[3px]',
         className,
       )}
@@ -24,7 +24,7 @@ export function AccordionItem({ title, children, defaultOpen = false, className,
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between p-4 text-left cursor-pointer hover:bg-white/[0.03] transition-colors"
+        className="flex w-full items-center justify-between p-4 text-left cursor-pointer hover:bg-elevated-1 transition-colors"
       >
         <div className="flex-1">{title}</div>
         <ChevronDown

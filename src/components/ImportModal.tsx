@@ -92,7 +92,7 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
   return (
     <div className="py-8 space-y-6">
       {/* File being read */}
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-border mx-auto max-w-sm">
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-elevated-1 border border-border mx-auto max-w-sm">
         <div className="p-2.5 rounded-xl bg-red/10 animate-pulse">
           <Scan className="h-5 w-5 text-red" />
         </div>
@@ -112,7 +112,7 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
         )}
 
         {/* Fields grid — light up when detected */}
-        <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-white/[0.01] border border-border">
+        <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-elevated-1 border border-border">
           {DETECTABLE_FIELDS.map((field) => {
             const isDetected = detectedFields.includes(field.key)
             return (
@@ -122,7 +122,7 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
                   'flex items-center gap-2.5 p-2.5 rounded-xl border transition-all duration-500',
                   isDetected
                     ? 'bg-success/8 border-success/20 shadow-[0_0_12px_rgba(34,197,94,0.1)]'
-                    : 'bg-white/[0.01] border-border/50 opacity-30',
+                    : 'bg-elevated-1 border-border/50 opacity-30',
                 )}
               >
                 <span className="text-sm">{field.icon}</span>
@@ -231,7 +231,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-overlay backdrop-blur-sm" />
       <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-surface border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-5 border-b border-border bg-surface/95 backdrop-blur-xl rounded-t-2xl">
@@ -239,7 +239,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
             <h2 className="text-base font-bold font-heading text-text-primary">Importar empresas</h2>
             <p className="text-xs text-text-muted mt-0.5">Aceita {FORMAT_LABELS}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/[0.04] text-text-muted hover:text-text-primary transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-elevated-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -257,10 +257,10 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                   'flex flex-col items-center justify-center p-12 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300',
                   isDragging
                     ? 'border-red bg-red/5 scale-[1.02]'
-                    : 'border-border hover:border-border-strong hover:bg-white/[0.02]',
+                    : 'border-border hover:border-border-strong hover:bg-elevated-1',
                 )}
               >
-                <div className={cn('p-4 rounded-2xl mb-4 transition-all', isDragging ? 'bg-red/10 scale-110' : 'bg-white/[0.04]')}>
+                <div className={cn('p-4 rounded-2xl mb-4 transition-all', isDragging ? 'bg-red/10 scale-110' : 'bg-elevated-2')}>
                   <Upload className={cn('h-8 w-8 transition-colors', isDragging ? 'text-red' : 'text-text-muted')} />
                 </div>
                 <p className="text-sm font-semibold text-text-primary mb-1">
@@ -286,7 +286,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                   { ext: 'HTML', label: 'HTML' },
                   { ext: 'TXT', label: 'Texto' },
                 ].map((f) => (
-                  <div key={f.ext} className="p-2.5 rounded-xl bg-white/[0.02] border border-border text-center">
+                  <div key={f.ext} className="p-2.5 rounded-xl bg-elevated-1 border border-border text-center">
                     <p className="text-caption font-bold font-mono text-text-muted">.{f.ext}</p>
                     <p className="text-micro text-text-muted">{f.label}</p>
                   </div>
@@ -329,7 +329,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                   </span>
                 ))}
                 {DETECTABLE_FIELDS.filter((f) => !parseResult.companies.some((c: any) => c[f.key])).slice(0, 4).map((field) => (
-                  <span key={field.key} className="inline-flex items-center gap-1 text-caption text-text-muted bg-white/[0.03] border border-border px-2 py-1 rounded-lg opacity-40">
+                  <span key={field.key} className="inline-flex items-center gap-1 text-caption text-text-muted bg-elevated-1 border border-border px-2 py-1 rounded-lg opacity-40">
                     {field.icon} {field.label}
                   </span>
                 ))}
@@ -355,7 +355,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                     value={segment}
                     onChange={(e) => setSegment(e.target.value)}
                     placeholder="Ex: Odontologia, Estética, Varejo..."
-                    className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none"
+                    className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none"
                   />
                 </div>
               )}
@@ -376,7 +376,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                         key={i}
                         className={cn(
                           'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200',
-                          selected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-white/[0.02] border border-transparent',
+                          selected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-elevated-1 border border-transparent',
                         )}
                       >
                         <input
@@ -388,10 +388,10 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-text-primary">{company.companyName}</p>
                           <div className="flex flex-wrap gap-1 mt-0.5">
-                            {company.phone && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
-                            {company.email && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.email}</span>}
-                            {company.city && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}{company.state ? `, ${company.state}` : ''}</span>}
-                            {company.website && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.website}</span>}
+                            {company.phone && <span className="text-caption text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.phone}</span>}
+                            {company.email && <span className="text-caption text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.email}</span>}
+                            {company.city && <span className="text-caption text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.city}{company.state ? `, ${company.state}` : ''}</span>}
+                            {company.website && <span className="text-caption text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.website}</span>}
                           </div>
                         </div>
                       </label>
@@ -421,7 +421,7 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
               </div>
               <p className="text-sm font-medium text-text-primary">Importando empresas...</p>
               <p className="text-xs text-text-muted">{Math.round(importProgress / 100 * (selected.size || 1))} de {selected.size}</p>
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden max-w-xs mx-auto">
+              <div className="h-2 rounded-full bg-elevated-2 overflow-hidden max-w-xs mx-auto">
                 <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-300" style={{ width: `${importProgress}%` }} />
               </div>
             </div>

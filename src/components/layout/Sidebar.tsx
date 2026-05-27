@@ -55,7 +55,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
                 {!collapsed && (
                   <span className="flex-1 flex items-center justify-between gap-2 min-w-0">
                     <span className="truncate">{item.label}</span>
-                    <span className="text-[8px] font-semibold uppercase tracking-wide bg-white/10 text-text-muted px-1.5 py-0.5 rounded-full leading-none shrink-0">em breve</span>
+                    <span className="text-[8px] font-semibold uppercase tracking-wide bg-elevated-3 text-text-muted px-1.5 py-0.5 rounded-full leading-none shrink-0">em breve</span>
                   </span>
                 )}
               </div>
@@ -73,7 +73,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
                     ? 'bg-red/10 text-red shadow-[inset_0_0_0_1px_rgba(230,51,41,0.15)]'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+                    : 'text-text-secondary hover:text-text-primary hover:bg-elevated-1',
                   collapsed && 'justify-center px-2',
                 )
               }
@@ -94,7 +94,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
           className={({ isActive }) =>
             cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-              isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+              isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-elevated-1',
               collapsed && 'justify-center px-2',
             )
           }
@@ -111,7 +111,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]',
+                isActive ? 'bg-red/10 text-red' : 'text-text-secondary hover:text-text-primary hover:bg-elevated-1',
                 collapsed && 'justify-center px-2',
               )
             }
@@ -191,7 +191,7 @@ export function Sidebar() {
       >
         {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-overlay backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
         {/* Drawer */}
@@ -206,7 +206,7 @@ export function Sidebar() {
           {/* Close button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/[0.05] transition-colors cursor-pointer z-10"
+            className="absolute top-4 right-4 p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-elevated-2 transition-colors cursor-pointer z-10"
           >
             <X className="h-5 w-5" />
           </button>

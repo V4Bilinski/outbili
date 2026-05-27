@@ -153,19 +153,19 @@ export function AdminPage() {
       {/* KPIs */}
       <AnimateIn delay={80}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+        <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
           <p className="text-2xl font-bold font-mono">{users.length}</p>
           <p className="text-caption text-text-muted uppercase">Usuários</p>
         </div>
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+        <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
           <p className="text-2xl font-bold font-mono text-success">{users.filter(u => u.isActive).length}</p>
           <p className="text-caption text-text-muted uppercase">Ativos</p>
         </div>
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+        <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
           <p className="text-2xl font-bold font-mono text-info">{logs.length}</p>
           <p className="text-caption text-text-muted uppercase">Ações registradas</p>
         </div>
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+        <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
           <p className="text-2xl font-bold font-mono">{logs.filter(l => l.action === 'login').length}</p>
           <p className="text-caption text-text-muted uppercase">Logins</p>
         </div>
@@ -176,7 +176,7 @@ export function AdminPage() {
 
       {/* Tabs */}
       <AnimateIn delay={120}>
-      <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1 w-fit">
+      <div className="flex rounded-xl p-1 bg-elevated-1 border border-border gap-1 w-fit">
         <button
           onClick={() => setTab('activity')}
           className={cn('flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
@@ -217,7 +217,7 @@ export function AdminPage() {
             <select
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
-              className="text-xs bg-white/[0.04] border border-border rounded-lg px-3 py-1.5 text-text-primary cursor-pointer"
+              className="text-xs bg-elevated-2 border border-border rounded-lg px-3 py-1.5 text-text-primary cursor-pointer"
             >
               <option value="">Todos os usuários</option>
               {users.map((u) => (
@@ -236,12 +236,12 @@ export function AdminPage() {
                 const time = log.timestamp ? new Date(log.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
 
                 return (
-                  <div key={log.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors">
+                  <div key={log.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-elevated-1 transition-colors">
                     <div className={cn('w-2 h-2 rounded-full shrink-0', actionInfo.color.replace('text-', 'bg-'))} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={cn('text-xs font-semibold', actionInfo.color)}>{actionInfo.label}</span>
-                        {pageLabel && <span className="text-caption text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{pageLabel}</span>}
+                        {pageLabel && <span className="text-caption text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{pageLabel}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-label text-text-secondary">{log.userName || log.userEmail}</span>
@@ -271,7 +271,7 @@ export function AdminPage() {
               <Card>
                 <CardTitle className="mb-3">Diagnostico de dados</CardTitle>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+                  <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
                     <p className="text-2xl font-bold font-mono">{diagnostics.totalLeads}</p>
                     <p className="text-caption text-text-muted uppercase">Total de leads</p>
                   </div>
@@ -369,7 +369,7 @@ export function AdminPage() {
                       <Loader2 className="h-4 w-4 text-warning animate-spin" />
                       <span className="text-sm text-text-primary truncate">{recalcProgress.currentLead}</span>
                     </div>
-                    <div className="w-full h-2.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-elevated-2 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-warning to-red rounded-full transition-all duration-300"
                         style={{ width: `${recalcProgress.total > 0 ? (recalcProgress.processed / recalcProgress.total) * 100 : 0}%` }}
@@ -455,7 +455,7 @@ export function AdminPage() {
                   <span className="text-sm text-text-primary truncate">{reEnrichState.currentLead}</span>
                 </div>
                 {/* Progress bar */}
-                <div className="w-full h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-elevated-2 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-red to-red-vivid rounded-full transition-all duration-500"
                     style={{ width: `${reEnrichState.total > 0 ? ((reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped) / reEnrichState.total) * 100 : 0}%` }}
@@ -519,7 +519,7 @@ export function AdminPage() {
           <CardTitle className="mb-4">Usuários do sistema</CardTitle>
           <div className="space-y-2">
             {users.map((user) => (
-              <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+              <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-elevated-1 border border-border">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red/20 to-red-dark/20 flex items-center justify-center text-sm font-bold text-red shrink-0">
                   {user.fullName?.charAt(0)?.toUpperCase() || '?'}
                 </div>
@@ -571,7 +571,7 @@ export function AdminPage() {
 
       {/* Modal: editar perfil de usuario (admin) */}
       {editingUser && (
-        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingUser(null)}>
+        <div className="fixed inset-0 z-[9999] bg-overlay backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingUser(null)}>
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-bold text-text-primary">Editar usuário</p>
@@ -586,7 +586,7 @@ export function AdminPage() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Nome completo"
-                  className="w-full text-sm bg-white/[0.04] border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+                  className="w-full text-sm bg-elevated-2 border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
                 />
               </div>
               <div className="space-y-1">
@@ -594,7 +594,7 @@ export function AdminPage() {
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  className="w-full text-sm bg-white/[0.04] border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+                  className="w-full text-sm bg-elevated-2 border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
                 >
                   <option value="sdr">SDR</option>
                   <option value="closer">Closer</option>

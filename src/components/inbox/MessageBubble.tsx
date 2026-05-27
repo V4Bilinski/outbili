@@ -27,7 +27,7 @@ function formatWhatsAppText(text: string): string {
     .replace(/>/g, '&gt;')
   // WhatsApp formatting (order matters: monospace first, then single-char)
   html = html
-    .replace(/```([^`]+)```/g, '<code class="px-1 py-0.5 rounded bg-black/20 font-mono text-[0.9em]">$1</code>')
+    .replace(/```([^`]+)```/g, '<code class="px-1 py-0.5 rounded bg-overlay font-mono text-[0.9em]">$1</code>')
     .replace(/\*([^*]+)\*/g, '<strong class="font-semibold">$1</strong>')
     .replace(/_([^_]+)_/g, '<em class="italic">$1</em>')
     .replace(/~([^~]+)~/g, '<s class="line-through">$1</s>')

@@ -49,7 +49,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
         }
       }}
       onClick={() => navigate(`/leads/${lead.id}`)}
-      className="p-3 rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
+      className="p-3 rounded-xl bg-elevated-1 border border-border hover:border-border-strong transition-all cursor-grab active:cursor-grabbing group"
     >
       <div className="flex items-center justify-between gap-1.5 mb-1.5">
         <span className={`text-[11px] font-bold font-mono tabular-nums tracking-tight leading-none px-1.5 py-1 rounded ${scoreColorClass}`}>{score.toFixed(1)}</span>
@@ -64,7 +64,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
           </span>
         </div>
       </div>
-      <p className="text-sm font-semibold text-text-primary truncate group-hover:text-white transition-colors">{lead.companyName}</p>
+      <p className="text-sm font-semibold text-text-primary truncate group-hover:text-text-primary transition-colors">{lead.companyName}</p>
       <p className="text-label text-text-muted mt-0.5">{lead.segment || '-'} · {lead.tier || '-'}</p>
       {lead.city && <p className="text-caption text-text-muted mt-0.5">{lead.city}{lead.state ? `, ${lead.state}` : ''}</p>}
       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -166,7 +166,7 @@ export function PipelinePage() {
 
       {/* Controles: busca + visão + filtros (card dedicado, mais espaçado e legível) */}
       <AnimateIn delay={60}>
-        <div className="rounded-2xl border border-border bg-white/[0.02] p-3 md:p-4 space-y-3">
+        <div className="rounded-2xl border border-border bg-elevated-1 p-3 md:p-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
             <input
@@ -174,25 +174,25 @@ export function PipelinePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar lead por nome, CNPJ ou cidade..."
-              className="h-10 w-full bg-white/[0.04] border border-border rounded-xl pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-red/40 transition-colors"
+              className="h-10 w-full bg-elevated-2 border border-border rounded-xl pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-red/40 transition-colors"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setMineOnly(false)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}>Todos</button>
               <button type="button" onClick={() => setMineOnly(true)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus leads</button>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}>Meus leads</button>
             </div>
             <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
             <Filter className="h-4 w-4 text-text-muted hidden sm:block" />
             <select value={segFilter} onChange={(e) => setSegFilter(e.target.value)}
-              className="h-9 text-xs bg-white/[0.04] border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
+              className="h-9 text-xs bg-elevated-2 border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
               <option value="">Segmento</option>
               {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
             </select>
             <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)}
-              className="h-9 text-xs bg-white/[0.04] border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
+              className="h-9 text-xs bg-elevated-2 border border-border rounded-xl px-3 text-text-secondary cursor-pointer focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors">
               <option value="">Temperatura</option>
               {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
             </select>
@@ -244,7 +244,7 @@ export function PipelinePage() {
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
                       <span className="text-xs font-semibold text-text-secondary">{col.label}</span>
                     </div>
-                    <span className="text-label text-text-muted font-mono bg-white/5 rounded-md px-1.5 py-0.5 ml-auto">{colLeads.length}</span>
+                    <span className="text-label text-text-muted font-mono bg-elevated-2 rounded-md px-1.5 py-0.5 ml-auto">{colLeads.length}</span>
                   </div>
 
                   {/* Column body */}

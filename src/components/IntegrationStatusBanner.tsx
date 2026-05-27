@@ -12,8 +12,8 @@ const STATE_UI: Record<IntegrationState, { icon: typeof CheckCircle2; text: stri
   ok:       { icon: CheckCircle2,  text: 'text-success',    chip: 'bg-success/10 text-success border-success/20', label: 'Operando' },
   degraded: { icon: AlertTriangle, text: 'text-warning',    chip: 'bg-warning/10 text-warning border-warning/20', label: 'Parcial' },
   down:     { icon: XCircle,       text: 'text-error',      chip: 'bg-error/10 text-error border-error/20',       label: 'Indisponivel' },
-  optional: { icon: MinusCircle,   text: 'text-text-muted', chip: 'bg-white/[0.04] text-text-muted border-border', label: 'Nao configurado' },
-  unknown:  { icon: HelpCircle,    text: 'text-text-muted', chip: 'bg-white/[0.04] text-text-muted border-border', label: 'Nao verificado' },
+  optional: { icon: MinusCircle,   text: 'text-text-muted', chip: 'bg-elevated-2 text-text-muted border-border', label: 'Nao configurado' },
+  unknown:  { icon: HelpCircle,    text: 'text-text-muted', chip: 'bg-elevated-2 text-text-muted border-border', label: 'Nao verificado' },
 }
 
 function relativeTime(ts: number): string {
@@ -77,7 +77,7 @@ export function IntegrationStatusBanner({ variant = 'banner' }: { variant?: 'ban
           const ui = STATE_UI[i.state]
           const Icon = ui.icon
           return (
-            <div key={i.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div key={i.id} className="flex items-start gap-3 p-3 rounded-xl bg-elevated-1 border border-border">
               <Icon className={cn('h-4 w-4 shrink-0 mt-0.5', ui.text)} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">

@@ -80,7 +80,7 @@ export function DigitalPresencePanel({ lead, onReExtract, isReExtracting, compac
           items.map((item) => {
             const pillClass = cn(
               'inline-flex items-center gap-1.5 text-[10px] text-red-vivid border border-red/30 rounded-md transition-all font-medium leading-none',
-              item.url && 'hover:bg-red hover:text-white hover:border-red',
+              item.url && 'hover:bg-red hover:text-text-primary hover:border-red',
               compact ? 'px-1.5 py-1' : 'px-2 py-1',
             )
             // Pill sem URL (ex.: Google sem link de Maps): vira badge informativo.

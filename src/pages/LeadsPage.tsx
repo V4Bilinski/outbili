@@ -41,7 +41,7 @@ function LeadFilters({
   searchQuery: string; setSearchQuery: (v: string) => void
   hasActiveFilters: boolean; onClearFilters: () => void
 }) {
-  const selectClass = 'h-9 rounded-xl bg-white/[0.03] border border-border text-xs text-text-secondary px-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors appearance-none cursor-pointer'
+  const selectClass = 'h-9 rounded-xl bg-elevated-1 border border-border text-xs text-text-secondary px-3 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors appearance-none cursor-pointer'
   return (
     <div className="space-y-2">
       {/* Search input */}
@@ -52,7 +52,7 @@ function LeadFilters({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Buscar por empresa, segmento, cidade..."
-          className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary pl-10 pr-9 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
+          className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary pl-10 pr-9 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
         />
         {searchQuery && (
           <button
@@ -143,11 +143,11 @@ function LeadTable({ leads }: { leads: Lead[] }) {
             const tempColors: Record<string, string> = { Quente: 'bg-red text-white', Morno: 'bg-warning text-black', Frio: 'bg-cold text-white' }
             const statusInfo = LEAD_STATUSES.find((s) => s.value === lead.status)
             return (
-              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}>
+              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-elevated-2 transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}>
                 <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-text-primary group-hover:text-white transition-colors">{lead.companyName}</span>
+                    <span className="text-sm font-bold text-text-primary group-hover:text-text-primary transition-colors">{lead.companyName}</span>
                     {lead.sourceHtmlReport === 'cadastro_manual' && (
                       <span
                         title="Cadastrado manualmente com enriquecimento automático (CNPJá + Assertiva)"
@@ -168,7 +168,7 @@ function LeadTable({ leads }: { leads: Lead[] }) {
                 <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs font-semibold text-text-primary">{lead.tier}</span></td>
                 <td className="py-4 px-4">
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-16 h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div className="w-16 h-2 rounded-full bg-elevated-2 overflow-hidden">
                       <div className={`h-full rounded-full ${barColor(score)} animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]`} style={{ width: `${(score / 5) * 100}%`, animationDelay: `${Math.min(index, 20) * 30 + 200}ms` }} />
                     </div>
                     <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
@@ -304,15 +304,15 @@ export function LeadsPage() {
           <button
             type="button"
             onClick={() => setMineOnly(false)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}
           >Todos</button>
           <button
             type="button"
             onClick={() => setMineOnly(true)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}
           >Meus leads</button>
         </div>
-        <div className="flex items-center gap-1 bg-white/[0.03] border border-border rounded-lg p-0.5" title="Formato de visualização">
+        <div className="flex items-center gap-1 bg-elevated-1 border border-border rounded-lg p-0.5" title="Formato de visualização">
           <button
             type="button"
             onClick={() => setViewMode('list')}

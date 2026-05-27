@@ -63,13 +63,13 @@ export function ActivityLog({ leadId, activities, onLogged }: Props) {
   return (
     <div className="space-y-4">
       {/* Registro de atividade */}
-      <div className="rounded-2xl border border-border bg-white/[0.02] p-4 space-y-3">
+      <div className="rounded-2xl border border-border bg-elevated-1 p-4 space-y-3">
         <p className="text-sm font-semibold text-text-primary">Registrar contato / atividade</p>
         <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={type}
             onChange={(e) => setType(e.target.value as Activity['type'])}
-            className="text-xs bg-white/[0.04] border border-border rounded-lg px-2 py-2 text-text-primary sm:w-44 focus:outline-none focus:ring-1 focus:ring-red/40"
+            className="text-xs bg-elevated-2 border border-border rounded-lg px-2 py-2 text-text-primary sm:w-44 focus:outline-none focus:ring-1 focus:ring-red/40"
           >
             {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -78,7 +78,7 @@ export function ActivityLog({ leadId, activities, onLogged }: Props) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="O que aconteceu? (ex.: liguei, o decisor pediu proposta até sexta)"
             rows={2}
-            className="flex-1 text-xs bg-white/[0.04] border border-border rounded-lg px-3 py-2 text-text-primary resize-none focus:outline-none focus:ring-1 focus:ring-red/40"
+            className="flex-1 text-xs bg-elevated-2 border border-border rounded-lg px-3 py-2 text-text-primary resize-none focus:outline-none focus:ring-1 focus:ring-red/40"
           />
         </div>
         <div className="flex justify-end">
@@ -104,8 +104,8 @@ export function ActivityLog({ leadId, activities, onLogged }: Props) {
             const meta = typeMeta(a.type)
             const Icon = meta.icon
             return (
-              <div key={a.id} className="flex gap-3 p-3 rounded-xl bg-white/[0.02] border border-border/40">
-                <div className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+              <div key={a.id} className="flex gap-3 p-3 rounded-xl bg-elevated-1 border border-border/40">
+                <div className="w-7 h-7 rounded-lg bg-elevated-3 flex items-center justify-center shrink-0">
                   <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
                 </div>
                 <div className="min-w-0 flex-1">

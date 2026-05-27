@@ -140,7 +140,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
             <ScriptCard
               label="Comentário em post do decisor"
               text={playbook.canais.linkedin.comentario}
-              labelColor="text-text-muted" bgColor="bg-white/[0.02]" borderColor="border-border"
+              labelColor="text-text-muted" bgColor="bg-elevated-1" borderColor="border-border"
             />
           </>
         )}
@@ -154,7 +154,7 @@ export function TabPlaybookBDR({ lead, contacts }: { lead: Lead; contacts?: Cont
             />
 
             {/* Perguntas de qualificação */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-4 rounded-xl bg-elevated-1 border border-border">
               <span className="text-caption uppercase tracking-wider text-text-muted font-medium block mb-3">3 perguntas de qualificação</span>
               <div className="space-y-3">
                 {playbook.canais.ligacao.qualificacao.map((pergunta, i) => (

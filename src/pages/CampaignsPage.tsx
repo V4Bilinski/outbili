@@ -62,11 +62,11 @@ function CampaignRow({ campaign, meta, onView, onDuplicate, onDelete }: { campai
   return (
     <tr
       onClick={onView}
-      className="border-b border-border hover:bg-white/[0.02] cursor-pointer transition-colors group"
+      className="border-b border-border hover:bg-elevated-1 cursor-pointer transition-colors group"
     >
       {/* Nome + Template + Segmentos PESCA */}
       <td className="py-4 px-4">
-        <p className="text-sm font-medium text-text-primary group-hover:text-white transition-colors">{campaign.name}</p>
+        <p className="text-sm font-medium text-text-primary group-hover:text-text-primary transition-colors">{campaign.name}</p>
         <p className="text-label text-text-muted mt-0.5">
           {campaign.templateName}
           {meta && ` · ${meta.totalLeadsTargeted} leads`}
@@ -74,7 +74,7 @@ function CampaignRow({ campaign, meta, onView, onDuplicate, onDelete }: { campai
         {topSegments.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
             {topSegments.map(([seg, count]) => (
-              <span key={seg} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/[0.04] text-caption text-text-muted">
+              <span key={seg} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-elevated-2 text-caption text-text-muted">
                 {seg} ({count})
               </span>
             ))}
@@ -95,7 +95,7 @@ function CampaignRow({ campaign, meta, onView, onDuplicate, onDelete }: { campai
       {/* Entrega (barra + %) */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
-          <div className="w-24 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="w-24 h-1.5 rounded-full bg-elevated-2 overflow-hidden">
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
@@ -130,7 +130,7 @@ function CampaignRow({ campaign, meta, onView, onDuplicate, onDelete }: { campai
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate() }}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
+            className="p-1.5 rounded-lg hover:bg-elevated-2 text-text-muted hover:text-text-primary transition-colors"
             title="Duplicar"
           >
             <Copy className="h-4 w-4" />
@@ -223,7 +223,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/5 transition-colors text-text-muted hover:text-text-primary">
+          <button onClick={onBack} className="p-2 rounded-xl hover:bg-elevated-2 transition-colors text-text-muted hover:text-text-primary">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
@@ -258,7 +258,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
       {/* KPI Cards — 5 cards like BilinskiZap */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className={cn('p-4 rounded-xl bg-white/[0.02] border transition-colors', kpi.borderColor)}>
+          <div key={kpi.label} className={cn('p-4 rounded-xl bg-elevated-1 border transition-colors', kpi.borderColor)}>
             <div className="flex items-start justify-between mb-2">
               <p className="text-xs text-text-muted font-medium">{kpi.label}</p>
               <span className={kpi.iconColor}>{kpi.icon}</span>
@@ -281,7 +281,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
           </div>
           <div className="grid md:grid-cols-3 gap-3">
             {/* Segmentos */}
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border">
               <p className="text-xs text-text-muted font-medium mb-2">Segmentos</p>
               <div className="space-y-1.5">
                 {Object.entries(meta.segmentBreakdown).length > 0
@@ -296,7 +296,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
               </div>
             </div>
             {/* Tiers */}
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border">
               <p className="text-xs text-text-muted font-medium mb-2">Tiers</p>
               <div className="space-y-1.5">
                 {Object.entries(meta.tierBreakdown).length > 0
@@ -311,7 +311,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
               </div>
             </div>
             {/* Mapeamento de variáveis */}
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border">
               <p className="text-xs text-text-muted font-medium mb-2">Variáveis do template</p>
               <div className="space-y-1.5">
                 {Object.entries(meta.variableMapping).map(([num, field]) => (
@@ -347,7 +347,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
           </div>
           <div className="grid md:grid-cols-[1fr,auto] gap-3">
             {/* Throughput */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-border">
+            <div className="p-4 rounded-xl bg-elevated-1 border border-border">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-text-muted mb-1">Velocidade (throughput)</p>
@@ -360,7 +360,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
               </div>
             </div>
             {/* Tempo total */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-border min-w-[180px]">
+            <div className="p-4 rounded-xl bg-elevated-1 border border-border min-w-[180px]">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-text-muted mb-1">Tempo total</p>
@@ -379,7 +379,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CardTitle>Logs de Envio</CardTitle>
-            <span className="px-2 py-0.5 rounded-full bg-white/5 text-label font-mono text-text-secondary">{messages.length}</span>
+            <span className="px-2 py-0.5 rounded-full bg-elevated-2 text-label font-mono text-text-secondary">{messages.length}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -388,13 +388,13 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
                 value={logSearch}
                 onChange={(e) => setLogSearch(e.target.value)}
                 placeholder="Buscar destinatário..."
-                className="h-8 w-52 rounded-lg bg-white/[0.03] border border-border text-xs text-text-primary pl-8 pr-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
+                className="h-8 w-52 rounded-lg bg-elevated-1 border border-border text-xs text-text-primary pl-8 pr-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
               />
             </div>
             <select
               value={logStatusFilter}
               onChange={(e) => setLogStatusFilter(e.target.value)}
-              className="h-8 rounded-lg bg-white/[0.03] border border-border text-xs text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
+              className="h-8 rounded-lg bg-elevated-1 border border-border text-xs text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
             >
               <option value="all">Todos</option>
               <option value="delivered">Entregue</option>
@@ -421,14 +421,14 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
                 URL.revokeObjectURL(url)
                 toast.success(`${filteredMessages.length} registros exportados`)
               }}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
+              className="p-1.5 rounded-lg hover:bg-elevated-2 text-text-muted hover:text-text-primary transition-colors"
               title="Exportar CSV"
             >
               <Download className="h-4 w-4" />
             </button>
             <button
               onClick={() => toast.info('Logs atualizados automaticamente a cada 15s')}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors"
+              className="p-1.5 rounded-lg hover:bg-elevated-2 text-text-muted hover:text-text-primary transition-colors"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -461,7 +461,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
                   {filteredMessages.slice((logPage - 1) * LOG_PAGE_SIZE, logPage * LOG_PAGE_SIZE).map((msg) => {
                     const msgStatus = MSG_STATUS_CONFIG[msg.status] || MSG_STATUS_CONFIG.pending
                     return (
-                      <tr key={msg.id} className="border-b border-border/50 hover:bg-white/[0.01] transition-colors">
+                      <tr key={msg.id} className="border-b border-border/50 hover:bg-elevated-1 transition-colors">
                         <td className="py-3 px-4 text-sm text-text-primary">{msg.contactName || '-'}</td>
                         <td className="py-3 px-4 text-sm font-mono text-text-secondary">{msg.contactPhone ? `+${msg.contactPhone}` : '-'}</td>
                         <td className="py-3 px-4">
@@ -492,7 +492,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
                   <button
                     onClick={() => setLogPage(p => Math.max(1, p - 1))}
                     disabled={logPage === 1}
-                    className="px-3 py-1 rounded-lg text-xs bg-white/[0.03] border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] transition-colors"
+                    className="px-3 py-1 rounded-lg text-xs bg-elevated-1 border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-elevated-3 transition-colors"
                   >
                     Anterior
                   </button>
@@ -502,7 +502,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
                   <button
                     onClick={() => setLogPage(p => Math.min(Math.ceil(filteredMessages.length / LOG_PAGE_SIZE), p + 1))}
                     disabled={logPage >= Math.ceil(filteredMessages.length / LOG_PAGE_SIZE)}
-                    className="px-3 py-1 rounded-lg text-xs bg-white/[0.03] border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] transition-colors"
+                    className="px-3 py-1 rounded-lg text-xs bg-elevated-1 border border-border text-text-primary disabled:opacity-30 disabled:cursor-not-allowed hover:bg-elevated-3 transition-colors"
                   >
                     Próximo
                   </button>
@@ -522,7 +522,7 @@ function CampaignDetail({ campaign, meta, onBack }: { campaign: ZapCampaign; met
 function TemplatePreview({ template, sampleLead, variableMapping }: { template: ZapTemplate | null; sampleLead?: Lead & { decisorContact?: Contact }; variableMapping?: Record<string, string> }) {
   if (!template) {
     return (
-      <div className="p-4 rounded-xl bg-white/[0.02] border border-border text-center">
+      <div className="p-4 rounded-xl bg-elevated-1 border border-border text-center">
         <Smartphone className="h-8 w-8 text-text-muted mx-auto mb-2" />
         <p className="text-sm text-text-muted">Selecione um template</p>
       </div>
@@ -536,7 +536,7 @@ function TemplatePreview({ template, sampleLead, variableMapping }: { template: 
 
   return (
     <div className="p-4 rounded-2xl bg-[#0B141A] border border-border">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/5">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border-strong">
         <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
           <Smartphone className="h-4 w-4 text-success" />
         </div>
@@ -548,7 +548,7 @@ function TemplatePreview({ template, sampleLead, variableMapping }: { template: 
       </div>
       <div className="rounded-xl bg-[#1F2C34] p-3 space-y-2">
         {header?.text && <p className="text-sm font-semibold text-text-primary">{header.text}</p>}
-        {header?.format === 'IMAGE' && <div className="h-32 rounded-lg bg-white/5 flex items-center justify-center text-text-muted text-xs">Imagem</div>}
+        {header?.format === 'IMAGE' && <div className="h-32 rounded-lg bg-elevated-2 flex items-center justify-center text-text-muted text-xs">Imagem</div>}
         {body?.text && (
           <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
             {body.text.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => {
@@ -561,9 +561,9 @@ function TemplatePreview({ template, sampleLead, variableMapping }: { template: 
         )}
         {footer?.text && <p className="text-label text-text-muted italic">{footer.text}</p>}
         {buttons?.buttons && buttons.buttons.length > 0 && (
-          <div className="space-y-1 pt-1 border-t border-white/5">
+          <div className="space-y-1 pt-1 border-t border-border-strong">
             {buttons.buttons.map((btn, i) => (
-              <div key={i} className="text-center py-1.5 rounded-lg bg-white/[0.04] text-xs font-medium text-info">
+              <div key={i} className="text-center py-1.5 rounded-lg bg-elevated-2 text-xs font-medium text-info">
                 {btn.text}
               </div>
             ))}
@@ -623,7 +623,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
     return campaigns.some(c => c.status === 'COMPLETED' && c.completedAt && new Date(c.completedAt).getTime() > cutoff)
   }, [recentCampaignsData])
 
-  const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
+  const inputClass = 'h-11 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
 
   useEffect(() => {
     if (!leads?.length) return
@@ -790,7 +790,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                   onClick={() => s < step && setStep(s)}
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                    isDone ? 'bg-success text-white cursor-pointer hover:bg-success/80' : isActive ? 'bg-red text-white ring-2 ring-red/30' : 'bg-white/5 text-text-muted',
+                    isDone ? 'bg-success text-white cursor-pointer hover:bg-success/80' : isActive ? 'bg-red text-white ring-2 ring-red/30' : 'bg-elevated-2 text-text-muted',
                   )}
                 >
                   {isDone ? <CheckCircle className="h-4 w-4" /> : s}
@@ -799,7 +799,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                   {label}
                 </span>
               </div>
-              {i < stepLabels.length - 1 && <div className={cn('h-0.5 flex-1 rounded mx-2 mt-[-14px]', isDone ? 'bg-success' : 'bg-white/5')} />}
+              {i < stepLabels.length - 1 && <div className={cn('h-0.5 flex-1 rounded mx-2 mt-[-14px]', isDone ? 'bg-success' : 'bg-elevated-2')} />}
             </div>
           )
         })}
@@ -832,7 +832,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
             )}
           </div>
           {/* Campaign mode toggle */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-elevated-1 border border-border">
             <span className="text-label text-text-muted">Tipo:</span>
             <button
               onClick={() => setIsCadence(false)}
@@ -889,7 +889,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                         'w-full text-left p-3 rounded-xl transition-all cursor-pointer',
                         templateName === t.name
                           ? 'bg-red/8 border border-red/20'
-                          : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.04] hover:border-border',
+                          : 'bg-elevated-1 border border-transparent hover:bg-elevated-2 hover:border-border',
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -923,7 +923,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
           )}
 
           {/* A/B Test toggle */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-border">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-elevated-1 border border-border">
             <label className="flex items-center gap-2 text-[12px] text-text-primary cursor-pointer">
               <input type="checkbox" checked={isABTest} onChange={(e) => setIsABTest(e.target.checked)} className="accent-red w-3.5 h-3.5" />
               Teste A/B
@@ -935,7 +935,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
 
           {/* A/B Template B selector */}
           {isABTest && (
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-border space-y-2">
+            <div className="p-3 rounded-xl bg-elevated-1 border border-border space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-label font-semibold text-text-primary">Variante B</span>
                 <div className="flex items-center gap-2 text-caption">
@@ -947,7 +947,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
               <select
                 value={templateNameB}
                 onChange={(e) => setTemplateNameB(e.target.value)}
-                className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
+                className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
               >
                 <option value="">Selecionar template B...</option>
                 {filteredTemplates.filter(t => t.name !== templateName).map(t => (
@@ -967,16 +967,16 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
       {/* STEP 2: Audience Selection */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-white/[0.02] border border-border">
+          <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-elevated-1 border border-border">
             <div className="flex items-center gap-1.5 text-xs text-text-muted">
               <Filter className="h-3.5 w-3.5" />
               Filtros:
             </div>
-            <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)} className="text-xs bg-white/[0.04] border border-border rounded-lg px-2 py-1 text-text-primary cursor-pointer">
+            <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)} className="text-xs bg-elevated-2 border border-border rounded-lg px-2 py-1 text-text-primary cursor-pointer">
               <option value="all">Temperatura</option>
               {TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
             </select>
-            <select value={segFilter} onChange={(e) => setSegFilter(e.target.value)} className="text-xs bg-white/[0.04] border border-border rounded-lg px-2 py-1 text-text-primary cursor-pointer">
+            <select value={segFilter} onChange={(e) => setSegFilter(e.target.value)} className="text-xs bg-elevated-2 border border-border rounded-lg px-2 py-1 text-text-primary cursor-pointer">
               <option value="all">Segmento</option>
               {SEGMENTS.map((s) => <option key={s.slug} value={s.name}>{s.name}</option>)}
             </select>
@@ -1028,7 +1028,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                     key={lead.id}
                     className={cn(
                       'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors',
-                      selectedLeadIds.includes(lead.id) ? 'bg-red/8 border border-red/20' : 'bg-white/[0.02] border border-border hover:bg-white/[0.04]',
+                      selectedLeadIds.includes(lead.id) ? 'bg-red/8 border border-red/20' : 'bg-elevated-1 border border-border hover:bg-elevated-2',
                     )}
                   >
                     <input
@@ -1083,7 +1083,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
       {/* STEP 3: Validation + Dispatch */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-border space-y-2">
+          <div className="p-4 rounded-xl bg-elevated-1 border border-border space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-text-muted">Campanha</span>
               <span className="font-medium text-text-primary">{name}</span>
@@ -1172,7 +1172,7 @@ function NewCampaignWizard({ onClose, initialTemplate }: { onClose: () => void; 
                     <select
                       value={variableMapping[String(n)] || 'decisorName'}
                       onChange={(e) => setVariableMapping((prev) => ({ ...prev, [String(n)]: e.target.value }))}
-                      className="flex-1 h-7 rounded-lg bg-white/[0.03] border border-border text-label text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
+                      className="flex-1 h-7 rounded-lg bg-elevated-1 border border-border text-label text-text-primary px-2 cursor-pointer focus:border-red/30 focus:outline-none"
                     >
                       {VARIABLE_FIELD_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1323,7 +1323,7 @@ export function CampaignsPage() {
             <p className="text-xs text-text-muted mt-0.5">Cadências de WhatsApp em massa para leads qualificados.</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1">
+            <div className="flex rounded-xl p-1 bg-elevated-1 border border-border gap-1">
               <button
                 onClick={() => setView('campaigns')}
                 className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
@@ -1366,14 +1366,14 @@ export function CampaignsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar campanhas..."
-                className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary pl-10 pr-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
+                className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary pl-10 pr-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors"
               />
             </div>
 
             {/* Refresh */}
             <button
               onClick={() => refetch()}
-              className="h-10 w-10 rounded-xl bg-white/[0.03] border border-border flex items-center justify-center hover:bg-white/[0.06] transition-colors text-text-muted hover:text-text-primary"
+              className="h-10 w-10 rounded-xl bg-elevated-1 border border-border flex items-center justify-center hover:bg-elevated-3 transition-colors text-text-muted hover:text-text-primary"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -1382,7 +1382,7 @@ export function CampaignsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
+              className="h-10 rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
             >
               <option value="all">Todos os Status ({campaigns.length})</option>
               <option value="SENDING">Enviando ({statusCounts.SENDING || 0})</option>
@@ -1398,7 +1398,7 @@ export function CampaignsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-10 rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
+              className="h-10 rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none"
             >
               <option value="recent">Mais recentes</option>
               <option value="delivery">Melhor entrega</option>
@@ -1479,7 +1479,7 @@ export function CampaignsPage() {
       {/* Delete confirmation modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
+          <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
           <div className="relative w-full max-w-sm rounded-2xl bg-gradient-to-br from-surface/95 to-surface-md/90 border border-border p-5 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2.5 rounded-xl bg-error/10"><Trash2 className="h-5 w-5 text-error" /></div>

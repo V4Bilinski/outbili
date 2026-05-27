@@ -186,9 +186,9 @@ export function TabReuniao({ lead }: { lead: Lead }) {
           const gatilhoColor = gatilhoColors[block.gatilhoIcon]
 
           return (
-            <div key={i} className="rounded-2xl bg-white/[0.02] border border-border overflow-hidden">
+            <div key={i} className="rounded-2xl bg-elevated-1 border border-border overflow-hidden">
               {/* Block header */}
-              <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-white/[0.01]">
+              <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-elevated-1">
                 <span className="text-label font-mono text-red bg-red/10 px-2.5 py-1 rounded-lg font-bold">{block.minutos}</span>
                 <h4 className="text-sm font-bold text-text-primary flex-1">{block.titulo}</h4>
                 <div className={`flex items-center gap-1.5 ${gatilhoColor}`}>
@@ -205,7 +205,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
                 </div>
 
                 {/* Tom */}
-                <div className="p-3 rounded-xl bg-white/[0.03] border-l-[3px] border-l-info">
+                <div className="p-3 rounded-xl bg-elevated-1 border-l-[3px] border-l-info">
                   <p className="text-caption uppercase tracking-wider text-info font-medium mb-1">Tom e postura</p>
                   <p className="text-sm text-text-secondary leading-relaxed">{block.tom}</p>
                 </div>
@@ -221,7 +221,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
                   <p className="text-caption uppercase tracking-wider text-text-muted font-medium mb-2">Perguntas para fazer</p>
                   <div className="space-y-1.5">
                     {block.perguntasChave.map((q, j) => (
-                      <div key={j} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/[0.02]">
+                      <div key={j} className="flex items-start gap-2 p-2.5 rounded-lg bg-elevated-1">
                         <Lightbulb className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
                         <p className="text-sm text-text-secondary italic">"{q}"</p>
                       </div>
@@ -291,7 +291,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
                   <p className="text-caption uppercase tracking-wider text-warning font-medium mb-1">Abordagem</p>
                   <p className="text-xs text-text-secondary">{obj.abordagem}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/[0.03] border-l-[3px] border-l-success">
+                <div className="p-3 rounded-lg bg-elevated-1 border-l-[3px] border-l-success">
                   <p className="text-caption uppercase tracking-wider text-success font-medium mb-1">Sugestão de resposta</p>
                   <p className="text-sm text-text-secondary leading-relaxed">{obj.resposta}</p>
                 </div>
@@ -316,7 +316,7 @@ export function TabReuniao({ lead }: { lead: Lead }) {
             'Revisar vulnerabilidades na tab Vulnerabilidades',
             'Testar link da videoconferência 5 min antes',
           ].map((item, i) => (
-            <label key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/[0.02] cursor-pointer group">
+            <label key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-elevated-1 cursor-pointer group">
               <input type="checkbox" className="w-4 h-4 rounded accent-red cursor-pointer" />
               <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">{item}</span>
             </label>

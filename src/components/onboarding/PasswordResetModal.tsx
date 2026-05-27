@@ -34,7 +34,7 @@ export function PasswordResetModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] bg-overlay backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 space-y-4 shadow-2xl">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-red/15 flex items-center justify-center shrink-0">
@@ -55,7 +55,7 @@ export function PasswordResetModal() {
               value={pw}
               onChange={(e) => setPw(e.target.value)}
               placeholder="Nova senha (mín. 8 caracteres)"
-              className="w-full text-sm bg-white/[0.04] border border-border rounded-lg pl-9 pr-10 py-2.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+              className="w-full text-sm bg-elevated-2 border border-border rounded-lg pl-9 pr-10 py-2.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
             />
             <button
               type="button"
@@ -74,7 +74,7 @@ export function PasswordResetModal() {
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
               placeholder="Confirmar senha"
-              className="w-full text-sm bg-white/[0.04] border border-border rounded-lg pl-9 pr-3 py-2.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+              className="w-full text-sm bg-elevated-2 border border-border rounded-lg pl-9 pr-3 py-2.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
             />
           </div>
         </div>

@@ -56,7 +56,7 @@ export function CadenceBuilder({
     onStepsChange(steps.filter(s => s.id !== id))
   }
 
-  const inputClass = 'h-9 rounded-lg bg-white/[0.03] border border-border text-xs text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none'
+  const inputClass = 'h-9 rounded-lg bg-elevated-1 border border-border text-xs text-text-primary px-3 cursor-pointer focus:border-red/30 focus:outline-none'
 
   return (
     <div className="space-y-3">
@@ -90,13 +90,13 @@ export function CadenceBuilder({
               'p-3 rounded-xl border transition-colors',
               index === 0
                 ? 'bg-red/5 border-red/15'
-                : 'bg-white/[0.02] border-border hover:border-border-strong',
+                : 'bg-elevated-1 border-border hover:border-border-strong',
             )}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold',
-                    index === 0 ? 'bg-red text-white' : 'bg-white/5 text-text-muted',
+                    index === 0 ? 'bg-red text-white' : 'bg-elevated-2 text-text-muted',
                   )}>
                     {index + 1}
                   </div>
@@ -180,7 +180,7 @@ export function CadenceBuilder({
 
       {/* Summary */}
       {steps.length > 1 && (
-        <div className="p-2.5 rounded-lg bg-white/[0.02] border border-border">
+        <div className="p-2.5 rounded-lg bg-elevated-1 border border-border">
           <p className="text-caption text-text-muted">
             <MessageSquare className="inline h-3 w-3 mr-1" />
             Cadência: {steps.length} mensagens ao longo de{' '}

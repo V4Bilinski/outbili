@@ -118,7 +118,7 @@ function PhaseHistory({ lead, activities, contacts }: { lead: Lead; activities: 
         className="flex items-center justify-between w-full cursor-pointer group"
       >
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-white/[0.03]">
+          <div className="p-1.5 rounded-lg bg-elevated-1">
             <svg className="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <span className="text-sm font-semibold text-text-primary">Histórico das Fases</span>
@@ -158,7 +158,7 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
     <div className="rounded-xl border border-border overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+        className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-elevated-1 transition-colors"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <span className={cn(
@@ -172,7 +172,7 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
             <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
           )}
           {phase.source && (
-            <span className="text-micro text-text-muted bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">
+            <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded shrink-0">
               via {phase.source}
             </span>
           )}
@@ -217,7 +217,7 @@ function PhaseCard({ phase, lead, mainContact, isFirst, formatDate }: {
             </div>
           </div>
           {phase.notes && (
-            <div className="mt-2 p-2 rounded-lg bg-white/[0.02] border border-border/50">
+            <div className="mt-2 p-2 rounded-lg bg-elevated-1 border border-border/50">
               <p className="text-caption text-text-secondary italic">{phase.notes}</p>
             </div>
           )}
@@ -341,7 +341,7 @@ export function CompanyPage() {
         <div className="relative">
           <button
             onClick={() => setShowActionMenu(!showActionMenu)}
-            className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors cursor-pointer"
+            className="p-2 rounded-lg hover:bg-elevated-2 transition-colors cursor-pointer"
             aria-label="Acoes do lead"
           >
             <MoreVertical className="h-4 w-4 text-text-muted" />
@@ -352,7 +352,7 @@ export function CompanyPage() {
               <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-surface border border-border shadow-xl shadow-black/30 py-1.5 z-50 animate-[fade-in_0.15s_ease-out]">
                 <button
                   onClick={() => { setShowActionMenu(false); navigate(-1) }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text-secondary hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text-secondary hover:bg-elevated-2 cursor-pointer transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" /> Voltar
                 </button>
@@ -372,7 +372,7 @@ export function CompanyPage() {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
           <div className="relative w-full max-w-sm rounded-2xl bg-surface border border-border p-6 space-y-4 animate-[scale-in_0.3s_cubic-bezier(0.16,1,0.3,1)]">
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-3">
@@ -416,8 +416,8 @@ export function CompanyPage() {
               }`}>
                 {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
               </span>
-              <span className="text-[9px] uppercase tracking-wide leading-none font-medium px-1.5 py-[3px] rounded-full bg-white/5 text-text-secondary">{lead.tier}</span>
-              <span className="text-[9px] leading-none font-medium px-1.5 py-[3px] rounded-full bg-white/5 text-text-secondary">{lead.segment}</span>
+              <span className="text-[9px] uppercase tracking-wide leading-none font-medium px-1.5 py-[3px] rounded-full bg-elevated-2 text-text-secondary">{lead.tier}</span>
+              <span className="text-[9px] leading-none font-medium px-1.5 py-[3px] rounded-full bg-elevated-2 text-text-secondary">{lead.segment}</span>
               {lead.sourceHtmlReport === 'cadastro_manual' && (
                 <span
                   title="Lead adicionado manualmente. Enriquecimento automático via CNPJá e Assertiva executado na criação."
@@ -450,7 +450,7 @@ export function CompanyPage() {
             { label: 'Anos no mercado', value: yearsInMarket != null ? `${yearsInMarket} anos` : '-', tooltip: yearsInMarket != null ? (yearsInMarket >= 10 ? 'Empresa consolidada' : yearsInMarket >= 3 ? 'Empresa em crescimento' : 'Empresa recente') : '' },
             { label: 'Trava dominante', value: travaDominante ? `${travaDominante.codigo} ${travaDominante.nome}` : lead.hypotheticalTrap?.replace(/^T\d+\s*[-–]\s*/, '') || '-', isHighlight: true, tooltip: travaDominante ? `${travaDominante.severidade}: ${travaDominante.impactoEstimado}` : 'Principal barreira de receita identificada pela análise' },
           ].map((stat: any) => (
-            <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-white/[0.02] border-l-red'}`} title={stat.tooltip || ''}>
+            <div key={stat.label} className={`p-3 rounded-xl border-l-[3px] ${stat.isHighlight ? 'bg-red/5 border-l-red' : 'bg-elevated-1 border-l-red'}`} title={stat.tooltip || ''}>
               <p className="text-caption uppercase tracking-wider text-text-muted">{stat.label}</p>
               <p className={`text-lg font-bold font-mono mt-0.5 ${stat.isHighlight ? 'text-red text-sm' : ''}`}>{stat.value}</p>
             </div>
@@ -462,11 +462,11 @@ export function CompanyPage() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
             <div className={cn(
               'flex items-center gap-2.5 p-2.5 rounded-xl flex-1 min-w-0',
-              hasWhatsapp ? 'bg-whatsapp/6 border border-whatsapp/15' : 'bg-white/[0.03] border border-border',
+              hasWhatsapp ? 'bg-whatsapp/6 border border-whatsapp/15' : 'bg-elevated-1 border border-border',
             )}>
               <div className={cn(
                 'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                hasWhatsapp ? 'bg-whatsapp/15' : 'bg-white/[0.06]',
+                hasWhatsapp ? 'bg-whatsapp/15' : 'bg-elevated-3',
               )}>
                 {hasWhatsapp ? <WhatsAppIcon className="text-base text-whatsapp" /> : <Phone className="h-4 w-4 text-text-muted" />}
               </div>
@@ -571,15 +571,15 @@ export function CompanyPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 flex items-center gap-1 block">Nome <span className="text-red">*</span></label>
-                <input name="name" type="text" placeholder="Nome completo" required className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
+                <input name="name" type="text" placeholder="Nome completo" required className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
               </div>
               <div>
                 <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 block">Cargo</label>
-                <input name="role" type="text" placeholder="CEO, Proprietário..." className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
+                <input name="role" type="text" placeholder="CEO, Proprietário..." className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors" />
               </div>
               <div>
                 <label className="text-caption uppercase tracking-[0.1em] text-text-muted font-medium mb-1.5 flex items-center gap-1 block">WhatsApp <span className="text-red">*</span></label>
-                <input name="whatsapp" type="tel" placeholder="11999998888" required pattern="[0-9]{10,13}" className="h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
+                <input name="whatsapp" type="tel" placeholder="11999998888" required pattern="[0-9]{10,13}" className="h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors invalid:border-error/40" />
               </div>
             </div>
             <Button type="submit" size="sm" loading={createContact.isPending} icon={<UserPlus className="h-3.5 w-3.5" />}>
@@ -600,7 +600,7 @@ export function CompanyPage() {
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium transition-all duration-300 whitespace-nowrap cursor-pointer',
                   'hover:text-text-primary',
-                  activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-white/[0.02]',
+                  activeTab === tab.id ? 'text-red' : 'text-text-muted hover:bg-elevated-1',
                   i === 3 && 'ml-3 pl-4 border-l border-border',
                 )}
               >
@@ -871,7 +871,7 @@ export function CompanyPage() {
                 <h3 className="text-base font-bold font-heading mb-4">Checklist de elegibilidade DR-X</h3>
                 <div className="space-y-2">
                   {eligibility.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02]">
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-elevated-1">
                       <span className={cn('text-lg', item.value ? 'text-success' : 'text-error')}>{item.value ? '✅' : '❌'}</span>
                       <span className="text-sm text-text-secondary">{item.label}</span>
                     </div>
@@ -886,7 +886,7 @@ export function CompanyPage() {
                 <h3 className="text-base font-bold font-heading mb-4">Perguntas de discovery</h3>
                 <div className="space-y-3">
                   {discoveryQuestions.map((q, i) => (
-                    <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border-l-[3px] border-l-red/40">
+                    <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-elevated-1 border-l-[3px] border-l-red/40">
                       <span className="text-sm font-mono font-bold text-red shrink-0">{i + 1}.</span>
                       <p className="text-[15px] text-text-secondary leading-[1.8] flex-1">{q}</p>
                     </div>

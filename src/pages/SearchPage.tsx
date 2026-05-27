@@ -367,7 +367,7 @@ export function SearchPage() {
     enrichment.reset()
   }
 
-  const inputClass = 'h-11 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
+  const inputClass = 'h-11 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-4 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
 
   const handleSpecificSearch = async () => {
     if (!specificName) { toast.error('Nome da empresa é obrigatório'); return }
@@ -644,10 +644,10 @@ export function SearchPage() {
           <p className="text-xs text-text-muted mt-0.5">Busca por segmento ou cadastro manual de um prospect específico. Cada lead chega enriquecido com telefone e decisor automaticamente.</p>
         </div>
         {/* Mode toggle — 2 opcoes: Pesquisa em Massa (CNPJa) + Cadastro Manual */}
-        <div className="flex rounded-xl p-1 bg-white/[0.03] border border-border gap-1">
+        <div className="flex rounded-xl p-1 bg-elevated-1 border border-border gap-1">
           <button
             onClick={() => setSearchMode('pesca')}
-            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer', searchMode === 'pesca' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary hover:bg-white/[0.03]')}
+            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer', searchMode === 'pesca' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary hover:bg-elevated-1')}
           >
             <Search className="h-3.5 w-3.5" />
             <div className="text-left">
@@ -657,7 +657,7 @@ export function SearchPage() {
           </button>
           <button
             onClick={() => setSearchMode('specific')}
-            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer', searchMode === 'specific' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary hover:bg-white/[0.03]')}
+            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer', searchMode === 'specific' ? 'bg-red text-white shadow-lg shadow-red/20' : 'text-text-muted hover:text-text-secondary hover:bg-elevated-1')}
           >
             <UserPlus className="h-3.5 w-3.5" />
             <div className="text-left">
@@ -707,7 +707,7 @@ export function SearchPage() {
             {/* Name field — large, prominent */}
             <div>
               <label htmlFor="specific-name" className="text-xs uppercase tracking-[0.1em] text-text-muted font-medium mb-2 block">Nome da empresa *</label>
-              <input id="specific-name" type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clinica Odonto Premium" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base')} />
+              <input id="specific-name" type="text" value={specificName} onChange={(e) => setSpecificName(e.target.value)} placeholder="Ex: Clinica Odonto Premium" className={cn(inputClass, 'h-12 bg-elevated-2 border-red/30 text-base')} />
             </div>
 
             {/* CNPJ field — optional when file is uploaded */}
@@ -716,7 +716,7 @@ export function SearchPage() {
                 <Hash className="h-3 w-3" /> CNPJ *
                 <span className="ml-1 text-[10px] normal-case font-normal tracking-normal text-text-muted">(obrigatório para enriquecimento)</span>
               </label>
-              <input id="specific-cnpj" type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" className={cn(inputClass, 'h-12 bg-white/[0.05] border-red/30 text-base font-mono')} />
+              <input id="specific-cnpj" type="text" value={specificCnpj} onChange={(e) => setSpecificCnpj(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" className={cn(inputClass, 'h-12 bg-elevated-2 border-red/30 text-base font-mono')} />
             </div>
 
             {/* Dynamic enrichment preview pills */}
@@ -764,7 +764,7 @@ export function SearchPage() {
                   'flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300',
                   fileDragging
                     ? 'border-red bg-red/5 scale-[1.01]'
-                    : 'border-border/60 hover:border-red/30 hover:bg-white/[0.02]',
+                    : 'border-border/60 hover:border-red/30 hover:bg-elevated-1',
                 )}
               >
                 <Upload className={cn('h-6 w-6 mb-2 transition-colors', fileDragging ? 'text-red' : 'text-text-muted')} />
@@ -786,7 +786,7 @@ export function SearchPage() {
 
             {/* Reading animation */}
             {fileReadingStep === 'reading' && (
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-border text-center">
+              <div className="p-6 rounded-2xl bg-elevated-1 border border-border text-center">
                 <div className="flex items-center justify-center gap-3 mb-3">
                   <div className="p-2.5 rounded-xl bg-red/10 animate-pulse">
                     <FileUp className="h-5 w-5 text-red" />
@@ -796,7 +796,7 @@ export function SearchPage() {
                     <p className="text-label text-amber-300 animate-pulse">Analisando estrutura e identificando leads...</p>
                   </div>
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden">
+                <div className="h-1.5 w-full rounded-full bg-elevated-2 overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-red to-amber-400 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
                 </div>
               </div>
@@ -804,7 +804,7 @@ export function SearchPage() {
 
             {/* Preview parsed leads */}
             {fileReadingStep === 'preview' && fileParseResult && (
-              <div className="rounded-2xl bg-white/[0.02] border border-border overflow-hidden animate-[fade-in_0.3s_ease-out]">
+              <div className="rounded-2xl bg-elevated-1 border border-border overflow-hidden animate-[fade-in_0.3s_ease-out]">
                 {/* File info header */}
                 <div className="flex items-center gap-3 p-4 border-b border-border">
                   <div className="p-2 rounded-lg bg-success/10">
@@ -816,7 +816,7 @@ export function SearchPage() {
                       {fileParseResult.fileType} · {fileParseResult.companies.length} leads identificados
                     </p>
                   </div>
-                  <button onClick={resetFileUpload} className="p-2 rounded-xl hover:bg-white/[0.04] text-text-muted hover:text-error transition-colors cursor-pointer" title="Remover arquivo">
+                  <button onClick={resetFileUpload} className="p-2 rounded-xl hover:bg-elevated-2 text-text-muted hover:text-error transition-colors cursor-pointer" title="Remover arquivo">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -829,7 +829,7 @@ export function SearchPage() {
                     return (
                       <span key={key} className={cn(
                         'text-caption px-2 py-0.5 rounded-lg border',
-                        found ? 'text-success bg-success/8 border-success/15 font-medium' : 'text-text-muted bg-white/[0.02] border-border/50 opacity-40',
+                        found ? 'text-success bg-success/8 border-success/15 font-medium' : 'text-text-muted bg-elevated-1 border-border/50 opacity-40',
                       )}>
                         {found ? '✓' : '·'} {labels[key]}
                       </span>
@@ -852,7 +852,7 @@ export function SearchPage() {
                         key={i}
                         className={cn(
                           'flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200',
-                          fileSelected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-white/[0.02] border border-transparent',
+                          fileSelected.has(i) ? 'bg-red/5 border border-red/15' : 'hover:bg-elevated-1 border border-transparent',
                         )}
                       >
                         <input
@@ -864,11 +864,11 @@ export function SearchPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-medium text-text-primary truncate">{company.companyName}</p>
                           <div className="flex flex-wrap gap-1 mt-0.5">
-                            {company.cnpj && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded font-mono">{company.cnpj}</span>}
-                            {company.phone && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.phone}</span>}
-                            {company.email && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.email}</span>}
-                            {company.city && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.city}</span>}
-                            {company.segment && <span className="text-micro text-text-muted bg-white/5 px-1.5 py-0.5 rounded">{company.segment}</span>}
+                            {company.cnpj && <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded font-mono">{company.cnpj}</span>}
+                            {company.phone && <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.phone}</span>}
+                            {company.email && <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded truncate max-w-[120px]">{company.email}</span>}
+                            {company.city && <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.city}</span>}
+                            {company.segment && <span className="text-micro text-text-muted bg-elevated-2 px-1.5 py-0.5 rounded">{company.segment}</span>}
                           </div>
                         </div>
                       </label>
@@ -885,7 +885,7 @@ export function SearchPage() {
                         <span className="text-text-primary font-medium">Importando e enriquecendo...</span>
                         <span className="text-label text-text-muted ml-auto font-mono">{fileImportProgress}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-elevated-2 overflow-hidden">
                         <div className="h-full rounded-full bg-gradient-to-r from-red-dark to-red transition-all duration-300" style={{ width: `${fileImportProgress}%` }} />
                       </div>
                     </div>
@@ -937,9 +937,9 @@ export function SearchPage() {
 
           {/* ===== ENRICHMENT PROGRESS — TWO-PHASE VISUAL ===== */}
           {enrichment.progress && enrichment.progress.steps.length > 0 && (
-            <div ref={enrichmentProgressRef} className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-border">
+            <div ref={enrichmentProgressRef} className="mt-6 p-4 rounded-xl bg-elevated-1 border border-border">
               {/* Progress bar */}
-              <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-4">
+              <div className="h-1.5 w-full rounded-full bg-elevated-2 overflow-hidden mb-4">
                 <div
                   className="h-full bg-gradient-to-r from-red to-amber-400 rounded-full transition-all duration-500"
                   style={{ width: `${(enrichment.progress.currentStep / enrichment.progress.totalSteps) * 100}%` }}
@@ -1129,7 +1129,7 @@ export function SearchPage() {
             </div>
 
             {/* Global progress bar */}
-            <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-4">
+            <div className="h-1.5 w-full rounded-full bg-elevated-2 overflow-hidden mb-4">
               <div
                 className="h-full bg-gradient-to-r from-amber-400 to-success rounded-full transition-all duration-500"
                 style={{ width: `${(massEnrichment.completedLeads / massEnrichment.totalLeads) * 100}%` }}
@@ -1182,8 +1182,8 @@ export function SearchPage() {
                                   step.status === 'done' && 'bg-success',
                                   step.status === 'running' && 'bg-amber-400 animate-pulse',
                                   step.status === 'error' && 'bg-error',
-                                  step.status === 'skipped' && 'bg-white/10',
-                                  step.status === 'pending' && 'bg-white/[0.05]',
+                                  step.status === 'skipped' && 'bg-elevated-3',
+                                  step.status === 'pending' && 'bg-elevated-2',
                                 )}
                               />
                             ))}
@@ -1198,7 +1198,7 @@ export function SearchPage() {
 
                   {/* Queued summary (collapsed) */}
                   {queued.length > 0 && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.02] border border-border">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-elevated-1 border border-border">
                       <div className="h-4 w-4 rounded-full border border-border shrink-0 flex items-center justify-center">
                         <span className="text-[8px] text-text-muted font-mono">{queued.length}</span>
                       </div>
@@ -1226,7 +1226,7 @@ export function SearchPage() {
                     </p>
                     <p className="text-caption text-text-muted uppercase tracking-wider">Fontes coletadas</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-border text-center">
+                  <div className="p-3 rounded-xl bg-elevated-1 border border-border text-center">
                     <p className="text-lg font-bold font-mono text-red">
                       {massEnrichment.queue.filter((q) => q.sourcesFound >= 3).length}
                     </p>
@@ -1248,7 +1248,7 @@ export function SearchPage() {
       {/* ===== FILE IMPORT CONFIRMATION MODAL ===== */}
       {fileConfirmOpen && fileParseResult && createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fade-in_0.18s_ease-out]"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-overlay backdrop-blur-sm animate-[fade-in_0.18s_ease-out]"
           onClick={() => setFileConfirmOpen(false)}
         >
           <div
@@ -1268,7 +1268,7 @@ export function SearchPage() {
               </div>
               <button
                 onClick={() => setFileConfirmOpen(false)}
-                className="p-1 rounded-md hover:bg-white/[0.04] text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                className="p-1 rounded-md hover:bg-elevated-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
                 title="Fechar"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1283,7 +1283,7 @@ export function SearchPage() {
               return (
                 <>
                   <div className="grid grid-cols-3 gap-2 p-4 border-b border-border">
-                    <div className="py-2 px-2.5 rounded-lg bg-white/[0.02] border border-border text-center">
+                    <div className="py-2 px-2.5 rounded-lg bg-elevated-1 border border-border text-center">
                       <p className="text-[15px] font-bold font-mono tabular-nums text-text-primary leading-none">{toConfirm.length}</p>
                       <p className="text-[9px] uppercase tracking-wider text-text-muted mt-1">Para enriquecer</p>
                     </div>
@@ -1293,7 +1293,7 @@ export function SearchPage() {
                     </div>
                     <div className={cn(
                       'py-2 px-2.5 rounded-lg border text-center',
-                      withoutCnpj > 0 ? 'bg-amber-400/5 border-amber-400/20' : 'bg-white/[0.02] border-border',
+                      withoutCnpj > 0 ? 'bg-amber-400/5 border-amber-400/20' : 'bg-elevated-1 border-border',
                     )}>
                       <p className={cn('text-[15px] font-bold font-mono tabular-nums leading-none', withoutCnpj > 0 ? 'text-amber-400' : 'text-text-muted')}>{withoutCnpj}</p>
                       <p className="text-[9px] uppercase tracking-wider text-text-muted mt-1">Sem CNPJ</p>
@@ -1314,7 +1314,7 @@ export function SearchPage() {
                           ? cnpjDigits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
                           : c.cnpj || '-'
                         return (
-                          <div key={idx} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-border/60">
+                          <div key={idx} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-elevated-1 border border-border/60">
                             <span className="text-[10px] font-mono tabular-nums text-text-muted w-5 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                             <div className="flex-1 min-w-0">
                               <p className="text-[12px] font-medium text-text-primary truncate leading-tight">{c.companyName}</p>

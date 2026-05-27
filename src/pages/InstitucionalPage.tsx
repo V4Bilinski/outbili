@@ -440,7 +440,7 @@ export function InstitucionalPage() {
                     <div className="flex items-center justify-between">
                       <div className={[
                         'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110',
-                        trap.highlight ? 'bg-red/30 ring-2 ring-red/50' : 'bg-white/[0.06] group-hover:bg-red/20 group-hover:ring-1 group-hover:ring-red/30',
+                        trap.highlight ? 'bg-red/30 ring-2 ring-red/50' : 'bg-elevated-3 group-hover:bg-red/20 group-hover:ring-1 group-hover:ring-red/30',
                       ].join(' ')}>
                         <span className={[
                           'font-mono text-sm font-bold transition-colors duration-300',
@@ -457,7 +457,7 @@ export function InstitucionalPage() {
                     {/* Name */}
                     <h3 className={[
                       'font-heading font-extrabold text-base tracking-tight',
-                      trap.highlight ? 'text-white' : 'text-text-primary group-hover:text-white transition-colors',
+                      trap.highlight ? 'text-white' : 'text-text-primary group-hover:text-text-primary transition-colors',
                     ].join(' ')}>
                       {trap.name}
                     </h3>

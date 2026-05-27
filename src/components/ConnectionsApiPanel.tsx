@@ -66,7 +66,7 @@ export function ConnectionsApiPanel() {
       <CardTitle className="mb-5">Conexões API</CardTitle>
       <div className="space-y-3">
         {connections.map((conn) => (
-          <div key={conn.name} className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+          <div key={conn.name} className="rounded-xl bg-elevated-1 border border-border overflow-hidden">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className={`p-2 rounded-lg shrink-0 ${conn.connected ? 'bg-success/10' : 'bg-warning/10'}`}>

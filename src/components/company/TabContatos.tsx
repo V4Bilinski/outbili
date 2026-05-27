@@ -19,7 +19,7 @@ function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete:
 
   return (
     <div
-      className="group rounded-xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 overflow-hidden animate-[fade-in_0.4s_ease-out_both]"
+      className="group rounded-xl bg-elevated-1 border border-border hover:border-border-strong transition-all duration-300 overflow-hidden animate-[fade-in_0.4s_ease-out_both]"
       style={{ animationDelay: `${index * 60}ms` }}
     >
       {/* Contact header */}
@@ -63,7 +63,7 @@ function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete:
         {contact.email && (
           <a
             href={`mailto:${contact.email}`}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] text-text-secondary text-xs font-medium hover:bg-white/[0.08] transition-colors min-h-[36px]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-elevated-2 text-text-secondary text-xs font-medium hover:bg-elevated-hover transition-colors min-h-[36px]"
           >
             <Mail className="h-3.5 w-3.5" />
             {contact.email}
@@ -85,7 +85,7 @@ function AddContactForm({ leadId, onClose }: { leadId: string; onClose: () => vo
   const [whatsapp, setWhatsapp] = useState('')
   const [email, setEmail] = useState('')
 
-  const inputClass = 'h-10 w-full rounded-xl bg-white/[0.03] border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
+  const inputClass = 'h-10 w-full rounded-xl bg-elevated-1 border border-border text-sm text-text-primary px-3 placeholder:text-text-muted focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,7 +96,7 @@ function AddContactForm({ leadId, onClose }: { leadId: string; onClose: () => vo
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 rounded-xl bg-white/[0.02] border border-red/20 space-y-3">
+    <form onSubmit={handleSubmit} className="p-4 rounded-xl bg-elevated-1 border border-red/20 space-y-3">
       <p className="text-xs font-semibold text-red uppercase tracking-wider">Novo contato</p>
       <div className="grid md:grid-cols-2 gap-3">
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo *" className={inputClass} required />

@@ -29,16 +29,16 @@ export function LeadCard({ lead, ownerName, onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="text-left w-full rounded-2xl border border-border bg-white/[0.02] hover:bg-white/[0.04] hover:border-red/30 transition-all duration-300 p-4 flex flex-col gap-3 group"
+      className="text-left w-full rounded-2xl border border-border bg-elevated-1 hover:bg-elevated-2 hover:border-red/30 transition-all duration-300 p-4 flex flex-col gap-3 group"
     >
       {/* Header: empresa + temperatura */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-elevated-3 flex items-center justify-center shrink-0">
             <Building2 className="h-4 w-4 text-text-muted" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-text-primary truncate group-hover:text-white transition-colors">{lead.tradeName || lead.companyName}</p>
+            <p className="text-sm font-bold text-text-primary truncate group-hover:text-text-primary transition-colors">{lead.tradeName || lead.companyName}</p>
             <p className="text-label text-text-muted truncate">
               {lead.tier || 'Sem tier'}{lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
             </p>
@@ -49,14 +49,14 @@ export function LeadCard({ lead, ownerName, onClick }: Props) {
 
       {/* Tags */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {lead.segment && <span className="text-[9px] font-medium text-text-secondary bg-white/5 px-1.5 py-0.5 rounded leading-none">{lead.segment}</span>}
+        {lead.segment && <span className="text-[9px] font-medium text-text-secondary bg-elevated-2 px-1.5 py-0.5 rounded leading-none">{lead.segment}</span>}
         {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
       </div>
 
       {/* Rodape: score SPICED + responsavel */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40">
         <div className="flex items-center gap-2">
-          <div className="w-14 h-2 rounded-full bg-white/5 overflow-hidden">
+          <div className="w-14 h-2 rounded-full bg-elevated-2 overflow-hidden">
             <div className={`h-full rounded-full ${barColor(score)}`} style={{ width: `${(score / 5) * 100}%` }} />
           </div>
           <span className="text-xs font-mono font-bold text-text-primary">{score}</span>

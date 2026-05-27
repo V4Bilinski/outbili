@@ -50,7 +50,7 @@ export function AssignLeadControl({ leadId, assignedTo, onAssigned }: Props) {
           value={owner ?? ''}
           disabled={saving}
           onChange={(e) => change(e.target.value || null)}
-          className="bg-white/5 border border-border rounded-md px-1.5 py-0.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-red/40 disabled:opacity-50 max-w-[180px]"
+          className="bg-elevated-2 border border-border rounded-md px-1.5 py-0.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-red/40 disabled:opacity-50 max-w-[180px]"
         >
           <option value="">Sem dono (pool)</option>
           {profiles.map((p) => (

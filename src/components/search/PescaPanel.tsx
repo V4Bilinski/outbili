@@ -83,7 +83,7 @@ function getLeadQuality(lead: PescaLead): 'gold' | 'silver' | 'bronze' {
 const QUALITY_CONFIG = {
   gold: { label: 'Pronto', color: 'text-success', bg: 'bg-success/10', border: 'border-success/20', dot: 'bg-success' },
   silver: { label: 'Parcial', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', dot: 'bg-warning' },
-  bronze: { label: 'Básico', color: 'text-text-muted', bg: 'bg-white/[0.03]', border: 'border-border', dot: 'bg-text-muted' },
+  bronze: { label: 'Básico', color: 'text-text-muted', bg: 'bg-elevated-1', border: 'border-border', dot: 'bg-text-muted' },
 }
 
 // Cidades principais por estado (com codigos IBGE para CNPJa API)
@@ -311,7 +311,7 @@ export function PescaPanel() {
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className={cn('h-2 w-8 rounded-full transition-all duration-500', i <= wizardStep ? 'bg-red shadow-sm shadow-red/30' : 'bg-white/[0.06]')} />
+                  <div key={i} className={cn('h-2 w-8 rounded-full transition-all duration-500', i <= wizardStep ? 'bg-red shadow-sm shadow-red/30' : 'bg-elevated-3')} />
                 ))}
               </div>
               {completionPct === 100 && <span className="text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Pronto</span>}
@@ -321,7 +321,7 @@ export function PescaPanel() {
           {/* Step 1: Segmento — grid de cards */}
           <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 0 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : segments.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border')}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', segments.length > 0 ? 'bg-success text-white' : wizardStep === 0 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', segments.length > 0 ? 'bg-success text-white' : wizardStep === 0 ? 'bg-red text-white' : 'bg-elevated-3 text-text-muted')}>
                 {segments.length > 0 ? <CheckCircle className="h-4 w-4" /> : '1'}
               </div>
               <div className="flex-1">
@@ -340,7 +340,7 @@ export function PescaPanel() {
                     'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
                     segments.includes(seg.name)
                       ? 'bg-red/15 text-red border-red/40 shadow-md shadow-red/10 ring-1 ring-red/20'
-                      : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
+                      : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
                   )}
                 >
                   <span className="text-lg">{seg.slug === 'estetica' ? '💆' : seg.slug === 'odontologia' ? '🦷' : seg.slug === 'varejo' ? '🛒' : seg.slug === 'farmacia' ? '💊' : seg.slug === 'movelaria' ? '🛋' : seg.slug === 'servicos' ? '⚙' : seg.slug === 'alimentacao' ? '🍽' : seg.slug === 'saude' ? '🏥' : seg.slug === 'educacao' ? '📚' : seg.slug === 'tecnologia' ? '💻' : seg.slug === 'automotivo' ? '🚗' : seg.slug === 'petshop' ? '🐾' : seg.slug === 'fitness' ? '💪' : seg.slug === 'beleza' ? '💅' : seg.slug === 'imobiliario' ? '🏠' : seg.slug === 'construcao' ? '🔨' : seg.slug === 'moda' ? '👗' : seg.slug === 'decoracao' ? '🎨' : seg.slug === 'agronegocio' ? '🌾' : seg.slug === 'logistica' ? '📦' : '🏢'}</span>
@@ -353,7 +353,7 @@ export function PescaPanel() {
           {/* Step 2: Estado + Cidade — nome completo */}
           <div className={cn('rounded-xl border p-4 mb-3 transition-all', wizardStep === 1 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : states.length > 0 ? 'border-success/20 bg-success/[0.03]' : 'border-border opacity-60', segments.length === 0 && 'opacity-40 pointer-events-none')}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', states.length > 0 ? 'bg-success text-white' : wizardStep === 1 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', states.length > 0 ? 'bg-success text-white' : wizardStep === 1 ? 'bg-red text-white' : 'bg-elevated-3 text-text-muted')}>
                 {states.length > 0 ? <CheckCircle className="h-4 w-4" /> : '2'}
               </div>
               <div className="flex-1">
@@ -375,7 +375,7 @@ export function PescaPanel() {
                       'flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border',
                       states.includes(uf)
                         ? 'bg-red/15 text-red border-red/40 ring-1 ring-red/20'
-                        : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
+                        : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
                     )}
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 opacity-50" />
@@ -393,7 +393,7 @@ export function PescaPanel() {
               {showAllStates ? 'Mostrar menos' : `+${ALL_STATES.length - RECOMMENDED_STATES.length} outros estados`} <ChevronDown className={cn('h-3 w-3 transition-transform', showAllStates && 'rotate-180')} />
             </button>
             {showAllStates && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded-xl bg-white/[0.02] border border-border animate-[fade-in_0.2s_ease-out] mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded-xl bg-elevated-1 border border-border animate-[fade-in_0.2s_ease-out] mb-3">
                 {ALL_STATES.filter(s => !RECOMMENDED_STATES.includes(s.uf)).map(s => (
                   <button
                     key={s.uf}
@@ -403,7 +403,7 @@ export function PescaPanel() {
                       'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer border',
                       states.includes(s.uf)
                         ? 'bg-red/15 text-red border-red/30'
-                        : 'bg-white/[0.02] text-text-muted border-border hover:text-text-secondary',
+                        : 'bg-elevated-1 text-text-muted border-border hover:text-text-secondary',
                     )}
                   >
                     <span>{s.name}</span>
@@ -421,7 +421,7 @@ export function PescaPanel() {
                   onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
                   className={cn(
                     'w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer',
-                    cityDropdownOpen ? 'border-red/40 ring-1 ring-red/20 bg-red/[0.03]' : 'border-border bg-white/[0.04] hover:border-border-strong',
+                    cityDropdownOpen ? 'border-red/40 ring-1 ring-red/20 bg-red/[0.03]' : 'border-border bg-elevated-2 hover:border-border-strong',
                   )}
                 >
                   <MapPin className="h-3.5 w-3.5 text-text-muted shrink-0" />
@@ -434,7 +434,7 @@ export function PescaPanel() {
                           {c}
                           <button
                             onClick={e => { e.stopPropagation(); toggleCity(c) }}
-                            className="hover:text-white transition-colors"
+                            className="hover:text-text-primary transition-colors"
                           >
                             <AlertCircle className="h-2.5 w-2.5 rotate-45" />
                           </button>
@@ -453,7 +453,7 @@ export function PescaPanel() {
                         onClick={() => toggleCity(c)}
                         className={cn(
                           'w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer',
-                          cities.includes(c) ? 'bg-red/10 text-red' : 'text-text-secondary hover:bg-white/[0.04]',
+                          cities.includes(c) ? 'bg-red/10 text-red' : 'text-text-secondary hover:bg-elevated-2',
                         )}
                       >
                         <div className={cn('w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all', cities.includes(c) ? 'bg-red border-red' : 'border-border')}>
@@ -472,7 +472,7 @@ export function PescaPanel() {
           {/* Step 3: Porte — cards visuais */}
           <div className={cn('rounded-xl border p-4 mb-4 transition-all', wizardStep === 2 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : 'border-border', (segments.length === 0 || states.length === 0) && 'opacity-40 pointer-events-none')}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', wizardStep === 2 ? 'bg-red text-white' : 'bg-white/[0.06] text-text-muted')}>
+              <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all', wizardStep === 2 ? 'bg-red text-white' : 'bg-elevated-3 text-text-muted')}>
                 3
               </div>
               <div>
@@ -489,7 +489,7 @@ export function PescaPanel() {
                     'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
                     selectedPorte === porte.id
                       ? 'bg-red/15 text-red border-red/40 ring-1 ring-red/20'
-                      : 'bg-white/[0.02] text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
+                      : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
                   )}
                 >
                   <span className="text-lg">{porte.icon}</span>
@@ -498,7 +498,7 @@ export function PescaPanel() {
                 </button>
               ))}
             </div>
-            <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-white/[0.02] transition-colors border border-border group/mei">
+            <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-elevated-1 transition-colors border border-border group/mei">
               <input
                 type="checkbox"
                 checked={excludeMei}
@@ -510,7 +510,7 @@ export function PescaPanel() {
                 <span className="text-caption text-text-muted block">Microempreendedor individual (faturamento ate R$ 81k/ano)</span>
               </div>
               <div className="relative">
-                <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center text-text-muted hover:text-text-secondary transition-colors cursor-help" aria-label="O que e MEI?">
+                <div className="w-5 h-5 rounded-full bg-elevated-3 flex items-center justify-center text-text-muted hover:text-text-secondary transition-colors cursor-help" aria-label="O que e MEI?">
                   <span className="text-caption font-bold">?</span>
                 </div>
                 <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 rounded-lg bg-surface border border-border shadow-xl shadow-black/30 text-caption text-text-secondary opacity-0 invisible group-hover/mei:opacity-100 group-hover/mei:visible transition-all z-30 pointer-events-none">
@@ -540,7 +540,7 @@ export function PescaPanel() {
               'w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2.5',
               canStart
                 ? 'bg-red hover:bg-red-vivid text-white shadow-xl shadow-red/30 hover:shadow-red/40 hover:scale-[1.01]'
-                : 'bg-white/[0.04] text-text-muted border border-border cursor-not-allowed',
+                : 'bg-elevated-2 text-text-muted border border-border cursor-not-allowed',
             )}
           >
             {canStart ? (
@@ -607,7 +607,7 @@ export function PescaPanel() {
                 hasWarning ? 'border-warning/30 bg-warning/5'
                   : isActive ? 'border-red/30 bg-red/5'
                   : isCompleted ? 'border-success/20 bg-success/5'
-                  : 'border-border bg-white/[0.02]',
+                  : 'border-border bg-elevated-1',
               )}>
                 {hasWarning && <AlertCircle className="h-4 w-4 text-warning shrink-0" />}
                 {!hasWarning && isCompleted && <CheckCircle className="h-4 w-4 text-success shrink-0" />}
@@ -631,7 +631,7 @@ export function PescaPanel() {
           })}
         </div>
 
-        <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+        <div className="h-1.5 rounded-full bg-elevated-2 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-red to-red-vivid rounded-full transition-all duration-500"
             style={{ width: `${Math.max(5, ((currentStepIndex + 1) / PHASE_STEPS.length) * 100)}%` }}
@@ -672,21 +672,21 @@ export function PescaPanel() {
 
         {/* Resumo dos filtros usados */}
         {(segments.length > 0 || states.length > 0) && (
-          <div className="rounded-lg bg-white/[0.03] border border-border p-3 mb-4 space-y-1.5">
+          <div className="rounded-lg bg-elevated-1 border border-border p-3 mb-4 space-y-1.5">
             <p className="text-caption font-bold text-text-muted uppercase tracking-wider">Filtros usados</p>
             <div className="flex flex-wrap gap-1.5">
               {segments.map(s => (
                 <span key={s} className="text-caption font-medium bg-red/10 text-red px-2 py-0.5 rounded-full">{s}</span>
               ))}
               {states.map(s => (
-                <span key={s} className="text-caption font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">{s}</span>
+                <span key={s} className="text-caption font-medium bg-elevated-3 text-text-secondary px-2 py-0.5 rounded-full">{s}</span>
               ))}
               {selectedPorte !== 'qualquer' && (
-                <span className="text-caption font-medium bg-white/[0.06] text-text-secondary px-2 py-0.5 rounded-full">
+                <span className="text-caption font-medium bg-elevated-3 text-text-secondary px-2 py-0.5 rounded-full">
                   {PORTE_OPTIONS.find(p => p.id === selectedPorte)?.label || selectedPorte}
                 </span>
               )}
-              {excludeMei && <span className="text-caption font-medium bg-white/[0.06] text-text-muted px-2 py-0.5 rounded-full">Sem MEI</span>}
+              {excludeMei && <span className="text-caption font-medium bg-elevated-3 text-text-muted px-2 py-0.5 rounded-full">Sem MEI</span>}
             </div>
             {!isNoResults && error && (
               <p className="text-caption text-error/70 font-mono mt-1">{error}</p>
@@ -699,7 +699,7 @@ export function PescaPanel() {
             {isNoResults ? 'Mudar filtros' : 'Tentar novamente'}
           </Button>
           {!isNoResults && (
-            <Button onClick={() => { retryFromError() }} className="py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border px-4">
+            <Button onClick={() => { retryFromError() }} className="py-2.5 text-sm bg-elevated-2 hover:bg-elevated-hover text-text-secondary rounded-xl border border-border px-4">
               Mudar filtros
             </Button>
           )}
@@ -769,7 +769,7 @@ export function PescaPanel() {
         <div className="flex items-center gap-2 mb-2">
           <p className="text-xs font-medium text-text-secondary">Qualidade dos dados</p>
         </div>
-        <div className="flex h-3 rounded-full overflow-hidden bg-white/[0.03]">
+        <div className="flex h-3 rounded-full overflow-hidden bg-elevated-1">
           {qualityCounts.gold > 0 && <div className="bg-success transition-all" style={{ width: `${qualityCounts.gold / leads.length * 100}%` }} />}
           {qualityCounts.silver > 0 && <div className="bg-warning transition-all" style={{ width: `${qualityCounts.silver / leads.length * 100}%` }} />}
           {qualityCounts.bronze > 0 && <div className="bg-text-muted/30 transition-all" style={{ width: `${qualityCounts.bronze / leads.length * 100}%` }} />}
@@ -792,7 +792,7 @@ export function PescaPanel() {
               placeholder="Buscar por empresa, CNPJ, decisor, cidade..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-white/[0.03] border border-border rounded-lg text-xs text-text-primary placeholder:text-text-muted focus:border-red/50 focus:outline-none"
+              className="w-full pl-8 pr-3 py-2 bg-elevated-1 border border-border rounded-lg text-xs text-text-primary placeholder:text-text-muted focus:border-red/50 focus:outline-none"
             />
           </div>
 
@@ -811,7 +811,7 @@ export function PescaPanel() {
                   'px-2.5 py-1.5 rounded-lg text-label font-medium transition-all cursor-pointer border whitespace-nowrap',
                   dataFilter === f.key
                     ? 'bg-red/15 text-red border-red/30'
-                    : 'bg-white/[0.02] text-text-muted border-border hover:border-border-strong hover:text-text-secondary',
+                    : 'bg-elevated-1 text-text-muted border-border hover:border-border-strong hover:text-text-secondary',
                 )}
               >
                 {f.label} <span className="ml-0.5 opacity-60">{f.count}</span>
@@ -828,7 +828,7 @@ export function PescaPanel() {
         <div className="rounded-lg border border-border overflow-hidden" role="region" aria-label="Resultados da PESCA">
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
             <table className="w-full text-xs" aria-label="Leads extraidos">
-              <thead className="bg-white/[0.03] sticky top-0 z-10">
+              <thead className="bg-elevated-1 sticky top-0 z-10">
                 <tr>
                   <th className="w-8 px-2 py-2.5" />
                   <th className="text-left px-3 py-2.5 text-text-muted font-medium cursor-pointer hover:text-text-secondary select-none" onClick={() => handleSort('company')}>
@@ -850,7 +850,7 @@ export function PescaPanel() {
                   const quality = getLeadQuality(lead)
                   const qc = QUALITY_CONFIG[quality]
                   return (
-                    <tr key={i} className="hover:bg-white/[0.02] group">
+                    <tr key={i} className="hover:bg-elevated-1 group">
                       {/* Indicador de qualidade */}
                       <td className="px-2 py-2.5">
                         <span className={cn('w-2 h-2 rounded-full block mx-auto', qc.dot)} title={qc.label} />
@@ -936,7 +936,7 @@ export function PescaPanel() {
         </Button>
         <a
           href="#/leads"
-          className="flex-1 py-2.5 text-sm bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary rounded-xl border border-border flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 text-sm bg-elevated-2 hover:bg-elevated-hover text-text-secondary rounded-xl border border-border flex items-center justify-center gap-2"
         >
           Ver todos os Leads <ArrowRight className="h-3.5 w-3.5" />
         </a>

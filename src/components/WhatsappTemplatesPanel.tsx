@@ -20,7 +20,7 @@ export function WhatsappTemplatesPanel() {
       <CardTitle className="mb-4">Templates WhatsApp ({templates.length})</CardTitle>
       <div className="space-y-2">
         {templates.map((t) => (
-          <div key={t.name} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-border">
+          <div key={t.name} className="flex items-center justify-between p-3 rounded-xl bg-elevated-1 border border-border">
             <div>
               <p className="text-sm font-medium text-text-primary">{t.name}</p>
               <p className="text-label text-text-muted">{t.category} · {t.language}</p>

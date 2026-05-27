@@ -116,7 +116,7 @@ export function InstitucionalNav() {
                   'relative px-3 py-2 text-[12px] font-bold uppercase tracking-[0.12em] rounded-md transition-colors duration-200 cursor-pointer',
                   active === section.id
                     ? 'text-[#FF6666]'
-                    : 'text-text-secondary hover:text-white',
+                    : 'text-text-secondary hover:text-text-primary',
                 ].join(' ')}
               >
                 {section.label}
@@ -182,7 +182,7 @@ export function InstitucionalNav() {
                       'block w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-[0.1em] transition-colors cursor-pointer',
                       active === section.id
                         ? 'text-[#FF6666] bg-red/[0.12] border-l-2 border-red'
-                        : 'text-text-secondary hover:text-white hover:bg-white/[0.04]',
+                        : 'text-text-secondary hover:text-text-primary hover:bg-elevated-2',
                     ].join(' ')}
                   >
                     {section.label}

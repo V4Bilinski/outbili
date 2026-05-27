@@ -22,13 +22,13 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
           <TrendingUp className="h-4 w-4 text-success" />
           <h3 className="text-sm font-semibold font-heading">Projeção Competitiva</h3>
         </div>
-        <span className="text-caption px-2.5 py-1 rounded-full bg-white/[0.05] text-text-secondary">
+        <span className="text-caption px-2.5 py-1 rounded-full bg-elevated-2 text-text-secondary">
           {data.nichoAnalise.segmento}
         </span>
       </div>
 
       {/* Benchmark dimensional — tabela */}
-      <div className="rounded-xl bg-white/[0.02] border border-border overflow-hidden">
+      <div className="rounded-xl bg-elevated-1 border border-border overflow-hidden">
         <div className="grid grid-cols-4 gap-0 text-caption uppercase tracking-wider text-text-muted font-medium p-3 border-b border-border">
           <span>Dimensão</span>
           <span className="text-center">{lead.companyName?.slice(0, 15) || 'Lead'}</span>
@@ -36,7 +36,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
           <span className="text-center">Gap</span>
         </div>
         {data.nichoAnalise.benchmarkDigital.map((item, i) => (
-          <div key={i} className={cn('grid grid-cols-4 gap-0 items-center p-3', i % 2 === 0 ? 'bg-white/[0.01]' : '')}>
+          <div key={i} className={cn('grid grid-cols-4 gap-0 items-center p-3', i % 2 === 0 ? 'bg-elevated-1' : '')}>
             <span className="text-xs text-text-secondary">{item.dimensao}</span>
             <div className="text-center">
               <Badge variant={levelStyles[item.leadNivel]?.variant || 'default'} size="sm">{item.leadNivel}</Badge>
@@ -63,7 +63,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
           const styles = i === 0
             ? { border: 'border-success/30', bg: 'bg-success/[0.04]', labelColor: 'text-success', valueColor: 'text-success', label: 'CENÁRIO OTIMISTA' }
             : i === 1
-            ? { border: 'border-border', bg: 'bg-white/[0.02]', labelColor: 'text-text-muted', valueColor: 'text-text-muted', label: 'CENÁRIO ATUAL' }
+            ? { border: 'border-border', bg: 'bg-elevated-1', labelColor: 'text-text-muted', valueColor: 'text-text-muted', label: 'CENÁRIO ATUAL' }
             : { border: 'border-error/30', bg: 'bg-error/[0.04]', labelColor: 'text-error', valueColor: 'text-error', label: 'CENÁRIO DE RISCO' }
 
           return (
@@ -95,7 +95,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wider">Gaps para resolver</h4>
           {data.comparativoCompetitivo.gapsParaResolver.map((gap, i) => (
-            <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.02] border border-border">
+            <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-elevated-1 border border-border">
               <span className="text-sm text-text-secondary flex-1">{gap.dimensao}</span>
               <Badge variant="error" size="sm">{gap.de}</Badge>
               <ArrowUp className="h-3 w-3 text-text-muted" />

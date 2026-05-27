@@ -151,7 +151,7 @@ export function PipelineJourneyStepper({ lead, source, className }: PipelineJour
             onClick={() => handleSelectStage(col.value)}
             className={cn(
               'w-full flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer transition-colors text-left',
-              'text-text-secondary hover:bg-white/[0.05] hover:text-text-primary',
+              'text-text-secondary hover:bg-elevated-2 hover:text-text-primary',
             )}
           >
             <span
@@ -177,9 +177,9 @@ export function PipelineJourneyStepper({ lead, source, className }: PipelineJour
         aria-expanded={menuOpen}
         aria-label={`Fase atual: ${current.label}. Clique para mover.`}
         className={cn(
-          'group inline-flex items-center gap-2 rounded-lg border-l-[3px] bg-white/[0.04] px-3 py-1.5 cursor-pointer',
-          'transition-all duration-200 hover:bg-white/[0.08] focus:outline-none focus:ring-1 focus:ring-white/20',
-          menuOpen && 'bg-white/[0.08]',
+          'group inline-flex items-center gap-2 rounded-lg border-l-[3px] bg-elevated-2 px-3 py-1.5 cursor-pointer',
+          'transition-all duration-200 hover:bg-elevated-hover focus:outline-none focus:ring-1 focus:ring-white/20',
+          menuOpen && 'bg-elevated-hover',
           className,
         )}
         style={{ borderLeftColor: current.color }}

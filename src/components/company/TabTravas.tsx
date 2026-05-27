@@ -80,7 +80,7 @@ export function TabTravas({ lead }: { lead: Lead }) {
                 {/* Sinais detectados — chips */}
                 <div className="flex flex-wrap gap-1.5">
                   {trava.sinaisDetectados.map((sinal, j) => (
-                    <span key={j} className="text-caption px-2 py-0.5 rounded-full bg-white/[0.05] text-text-secondary">
+                    <span key={j} className="text-caption px-2 py-0.5 rounded-full bg-elevated-2 text-text-secondary">
                       {sinal}
                     </span>
                   ))}

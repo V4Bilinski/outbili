@@ -77,7 +77,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
                 <div key={t.label} className="flex items-center gap-2">
                   <span className="text-caption text-text-muted">{t.label}</span>
                   <span className={`text-xs font-mono font-bold ${t.textColor}`}>{t.count}</span>
-                  <div className="w-12 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="w-12 h-1.5 rounded-full bg-elevated-2 overflow-hidden">
                     <div className={`h-full rounded-full ${t.color} transition-all duration-700`} style={{ width: total > 0 ? `${(t.count / total) * 100}%` : '0%' }} />
                   </div>
                 </div>
@@ -98,7 +98,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
               </div>
             </div>
             {/* Tanque */}
-            <div className="relative h-3.5 rounded-lg overflow-hidden bg-white/[0.03] border border-white/[0.04]">
+            <div className="relative h-3.5 rounded-lg overflow-hidden bg-elevated-1 border border-border-strong">
               {/* Segmentos preenchendo da esquerda para a direita */}
               <div className="absolute inset-0 flex">
                 {hotCount > 0 && (
@@ -170,7 +170,7 @@ function KPICards({ leads }: { leads: Lead[] }) {
             </div>
 
             {/* Micro-barra de proporção dentro do card */}
-            <div className="w-full h-1 rounded-full bg-white/[0.04] mt-2.5 mb-2 overflow-hidden">
+            <div className="w-full h-1 rounded-full bg-elevated-2 mt-2.5 mb-2 overflow-hidden">
               <div className={`h-full rounded-full ${card.label === 'Quentes' ? 'bg-hot' : card.label === 'Mornos' ? 'bg-warm' : 'bg-success/60'} transition-all duration-700`} style={{ width: `${card.pct}%` }} />
             </div>
 
@@ -223,7 +223,7 @@ function NextActions({ leads }: { leads: Lead[] }) {
           return (
             <div
               key={lead.id}
-              className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
+              className="flex items-center justify-between px-5 py-3.5 hover:bg-elevated-1 transition-colors cursor-pointer group"
               onClick={() => navigate(`/leads/${lead.id}`)}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -325,7 +325,7 @@ function TrapDiagnostic({ leads }: { leads: Lead[] }) {
                   ? 'border-border/40 bg-transparent opacity-40 cursor-not-allowed'
                   : isBottleneck
                   ? 'border-red/60 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.3)] cursor-pointer hover:shadow-[0_0_28px_rgba(204,0,0,0.4)] hover:-translate-y-0.5'
-                  : 'border-border bg-white/[0.02] cursor-pointer hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+                  : 'border-border bg-elevated-1 cursor-pointer hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
               }`}
             >
               <div className={`w-full h-0.5 ${isBottleneck ? 'bg-red' : count > 0 ? 'bg-red/30' : 'bg-border/20'}`} />
@@ -398,13 +398,13 @@ function AssemblyLine({ pipeline }: { pipeline: ReturnType<typeof calculatePipel
                   isBottleneck
                     ? 'border-red/40 bg-red/[0.07] shadow-[0_0_16px_rgba(204,0,0,0.25)] hover:shadow-[0_0_20px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
                     : station.count > 0
-                    ? 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+                    ? 'border-border bg-elevated-1 hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
                     : 'border-border/40 bg-transparent opacity-50'
                 }`}
               >
                 <div className={`w-full h-1 rounded-t-xl ${isBottleneck ? 'bg-red' : station.count > 0 ? 'bg-red/20' : 'bg-border/10'}`} />
                 <div className="flex flex-col items-center justify-center p-4">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-lg mb-2 ${isBottleneck ? 'bg-red/20' : station.count > 0 ? 'bg-red/10' : 'bg-white/[0.02]'}`}>
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-lg mb-2 ${isBottleneck ? 'bg-red/20' : station.count > 0 ? 'bg-red/10' : 'bg-elevated-1'}`}>
                     <station.icon
                       className={`h-5 w-5 ${isBottleneck ? 'text-red' : station.count > 0 ? 'text-text-secondary' : 'text-text-muted'}`}
                     />
@@ -507,7 +507,7 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
             className={`group relative overflow-hidden p-4 rounded-xl border cursor-pointer text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red/60 ${
               s.highlight
                 ? 'border-red/40 bg-red/[0.07] shadow-[0_0_20px_rgba(204,0,0,0.2)] hover:shadow-[0_0_28px_rgba(204,0,0,0.35)] hover:-translate-y-0.5'
-                : 'border-border bg-white/[0.02] hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
+                : 'border-border bg-elevated-1 hover:border-red/40 hover:shadow-[0_0_12px_rgba(204,0,0,0.15)] hover:-translate-y-0.5'
             }`}
           >
             {s.highlight && (
@@ -559,7 +559,7 @@ function PersonalGreeting({ user, leads }: { user: { fullName?: string; profileI
         <p className="text-xs text-text-muted">{dataCap}</p>
         <h1 className="text-2xl font-bold font-heading">{saudacao}, {primeiroNome}.</h1>
       </div>
-      <div className="rounded-2xl border border-border bg-white/[0.02] p-4">
+      <div className="rounded-2xl border border-border bg-elevated-1 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-red/10 flex items-center justify-center shrink-0">
@@ -575,7 +575,7 @@ function PersonalGreeting({ user, leads }: { user: { fullName?: string; profileI
             <p className="text-caption text-text-muted mt-0.5">de 100</p>
           </div>
         </div>
-        <div className="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden">
+        <div className="mt-3 h-1.5 rounded-full bg-elevated-2 overflow-hidden">
           <div className={`h-full rounded-full ${barTone} transition-all duration-500`} style={{ width: `${health}%` }} />
         </div>
         {meus.length === 0 ? (
@@ -661,10 +661,10 @@ export function DashboardPage() {
               { step: '03', icon: Smartphone, title: 'Cadenciar', desc: 'Cadências WhatsApp via BilinskiZap com templates aprovados e merge tags. Cold direto no celular do decisor, não no email da recepção.', color: 'text-whatsapp' },
               { step: '04', icon: BarChart3, title: 'Fechar', desc: '5 tabs de inteligência prontas pré-reunião. Stage gates evitam estagnação. Win rate, velocity e LTP em tempo real.', color: 'text-success' },
             ].map((item) => (
-              <div key={item.step} className="group p-5 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 hover:-translate-y-1">
+              <div key={item.step} className="group p-5 rounded-2xl bg-elevated-1 border border-border hover:border-border-strong transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl font-bold font-mono text-text-muted/30">{item.step}</span>
-                  <div className={`p-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors`}>
+                  <div className={`p-2 rounded-xl bg-elevated-2 group-hover:bg-elevated-hover transition-colors`}>
                     <item.icon className={`h-4 w-4 ${item.color}`} />
                   </div>
                 </div>
@@ -697,11 +697,11 @@ export function DashboardPage() {
 
           <button
             onClick={() => setShowImport(true)}
-            className="group p-6 rounded-2xl bg-white/[0.02] border border-border hover:border-border-strong transition-all duration-300 text-left cursor-pointer"
+            className="group p-6 rounded-2xl bg-elevated-1 border border-border hover:border-border-strong transition-all duration-300 text-left cursor-pointer"
           >
             <div className="flex items-start justify-between">
               <div>
-                <div className="p-2.5 rounded-xl bg-white/[0.04] inline-flex mb-3">
+                <div className="p-2.5 rounded-xl bg-elevated-2 inline-flex mb-3">
                   <FileDown className="h-5 w-5 text-text-secondary" />
                 </div>
                 <h3 className="text-base font-semibold text-text-primary mb-1">Importar lista existente</h3>
@@ -722,7 +722,7 @@ export function DashboardPage() {
             { label: 'Campanhas BilinskiZap', value: '0', sub: 'Crie após qualificar leads' },
             { label: 'Win rate', value: '0%', sub: 'Aparece após o primeiro fechamento' },
           ].map((stat) => (
-            <div key={stat.label} className="p-4 rounded-2xl bg-white/[0.015] border border-border">
+            <div key={stat.label} className="p-4 rounded-2xl bg-elevated-1 border border-border">
               <p className="text-caption uppercase tracking-[0.12em] text-text-muted font-medium">{stat.label}</p>
               <p className="text-2xl font-bold font-mono text-text-muted/40 mt-1">{stat.value}</p>
               <p className="text-caption text-text-muted mt-0.5">{stat.sub}</p>
@@ -752,9 +752,9 @@ export function DashboardPage() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setMineOnly(false)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Todos</button>
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}>Todos</button>
               <button type="button" onClick={() => setMineOnly(true)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-white/5 text-text-muted hover:text-text-secondary'}`}>Meus</button>
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${mineOnly ? 'bg-red/15 text-red' : 'bg-elevated-2 text-text-muted hover:text-text-secondary'}`}>Meus</button>
             </div>
             <Button size="sm" variant="secondary" icon={<Search className="h-3.5 w-3.5" />} onClick={() => navigate('/search')}>
               Nova prospecção
