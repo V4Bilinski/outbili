@@ -29,7 +29,7 @@ import type { Lead } from '../types'
 // --- Filters ---
 function LeadFilters({
   segment, setSegment, temperature, setTemperature, status, setStatus,
-  trava, setTrava, tier, setTier,
+  trava, setTrava, tier, setTier, region, setRegion, regions,
   searchQuery, setSearchQuery, hasActiveFilters, onClearFilters,
 }: {
   segment: string; setSegment: (v: string) => void
@@ -37,6 +37,7 @@ function LeadFilters({
   status: string; setStatus: (v: string) => void
   trava: string; setTrava: (v: string) => void
   tier: string; setTier: (v: string) => void
+  region: string; setRegion: (v: string) => void; regions: string[]
   searchQuery: string; setSearchQuery: (v: string) => void
   hasActiveFilters: boolean; onClearFilters: () => void
 }) {
@@ -84,6 +85,10 @@ function LeadFilters({
         <select value={tier} onChange={(e) => setTier(e.target.value)} className={selectClass}>
           <option value="">Tier</option>
           {TIERS.map((t) => <option key={t.name} value={t.name}>{t.name} ({t.range})</option>)}
+        </select>
+        <select value={region} onChange={(e) => setRegion(e.target.value)} className={selectClass}>
+          <option value="">Região</option>
+          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
         {hasActiveFilters && (
           <button
@@ -202,6 +207,7 @@ export function LeadsPage() {
   })
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
   const [segment, setSegment] = useState('')
+  const [region, setRegion] = useState('')
   const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
   const [status, setStatus] = useState('')
   const [trava, setTrava] = useState(() => searchParams.get('trava') || '')
@@ -217,7 +223,9 @@ export function LeadsPage() {
     }).catch(() => {})
   }, [])
 
-  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!searchQuery || mineOnly
+  const regions = [...new Set((leads || []).map((l) => l.state).filter(Boolean) as string[])].sort()
+
+  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!region || !!searchQuery || mineOnly
 
   const clearFilters = () => {
     setSegment('')
@@ -225,6 +233,7 @@ export function LeadsPage() {
     setStatus('')
     setTrava('')
     setTier('')
+    setRegion('')
     if (searchParams.has('temperatura') || searchParams.has('trava') || searchParams.has('tier')) {
       setSearchParams({}, { replace: true })
     }
@@ -234,6 +243,7 @@ export function LeadsPage() {
 
   const filteredLeads = (leads || []).filter((l) => {
     if (mineOnly && l.assignedTo !== user?.profileId) return false
+    if (region && l.state !== region) return false
     if (segment && l.segment !== segment) return false
     if (temperature && l.temperature !== temperature) return false
     if (status && l.status !== status) return false
@@ -325,6 +335,7 @@ export function LeadsPage() {
           status={status} setStatus={setStatus}
           trava={trava} setTrava={setTrava}
           tier={tier} setTier={setTier}
+          region={region} setRegion={setRegion} regions={regions}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
         />
