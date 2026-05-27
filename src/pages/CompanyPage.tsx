@@ -22,6 +22,7 @@ import { cn } from '../lib/cn'
 import { TabReuniao } from '../components/company/TabReuniao'
 import { ActivityLog } from '../components/company/ActivityLog'
 import { TabSocios } from '../components/company/TabSocios'
+import { StakeholderPanel } from '../components/company/StakeholderPanel'
 import { TabTravas } from '../components/company/TabTravas'
 import { TabProjecaoCompetitiva } from '../components/company/TabProjecaoCompetitiva'
 import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
@@ -682,6 +683,9 @@ export function CompanyPage() {
                 </div>
               )}
             </div>
+
+            {/* Stakeholder (pessoa-chave) — vinculado e validado, junto aos dados cadastrais */}
+            <StakeholderPanel lead={lead} contacts={contacts} onAdd={() => setShowAddContact(true)} />
 
             {/* Dados cadastrais CNPJa */}
             {(lead.capitalSocial || lead.legalNature || lead.registrationStatus || lead.taxRegime || lead.simplesOptant !== undefined || lead.isHeadquarters !== undefined) && (
