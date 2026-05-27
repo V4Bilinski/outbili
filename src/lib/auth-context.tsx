@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { login as loginService, logout as logoutService, logActivity, type User } from '../services/authService'
+import { login as loginService, logout as logoutService, logActivity, changePassword as changePasswordService, type User } from '../services/authService'
 import { supabase } from './supabase'
 import { useLocation } from 'react-router-dom'
 
@@ -12,6 +12,7 @@ interface AuthContextType {
   needsPasswordReset: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  changePassword: (newPassword: string) => Promise<void>
   track: (action: string, details?: string) => void
 }
 
@@ -121,6 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsPasswordReset(false)
   }, [user])
 
+  const changePassword = useCallback(async (newPassword: string) => {
+    await changePasswordService('', newPassword)  // userId ignorado: Supabase Auth troca do session.user
+    setNeedsPasswordReset(false)
+  }, [])
+
   const track = useCallback((action: string, details?: string) => {
     if (!user) return
     logActivity({
@@ -141,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       needsPasswordReset,
       login,
       logout,
+      changePassword,
       track,
     }}>
       {children}

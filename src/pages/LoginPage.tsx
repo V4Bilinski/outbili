@@ -210,6 +210,12 @@ export function LoginPage() {
                 <><UserPlus className="h-4 w-4" /> Criar conta</>
               )}
             </button>
+
+            {mode === 'login' && (
+              <p className="text-micro text-text-muted text-center leading-snug">
+                Primeiro acesso? Entre com a senha temporária recebida do administrador. O sistema vai pedir para você criar a sua senha pessoal.
+              </p>
+            )}
           </form>
         </div>
 

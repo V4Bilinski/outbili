@@ -4,10 +4,14 @@ import { BottomNav } from './BottomNav'
 import { MobileHeader } from './MobileHeader'
 import { Toaster } from 'sonner'
 import { SidebarProvider, useSidebar } from '../../lib/sidebar-context'
+import { useAuth } from '../../lib/auth-context'
+import { PasswordResetModal } from '../onboarding/PasswordResetModal'
+import { WelcomeTour } from '../onboarding/WelcomeTour'
 import { cn } from '../../lib/cn'
 
 function LayoutInner() {
   const { collapsed } = useSidebar()
+  const { needsPasswordReset } = useAuth()
 
   return (
     <div className="min-h-screen bg-bg">
@@ -56,6 +60,8 @@ function LayoutInner() {
           },
         }}
       />
+      {/* Onboarding: troca de senha obrigatoria no 1o acesso, senao tour de boas-vindas */}
+      {needsPasswordReset ? <PasswordResetModal /> : <WelcomeTour />}
     </div>
   )
 }
