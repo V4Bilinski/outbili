@@ -434,7 +434,6 @@ export function CompanyPage() {
                 <MapPin className="h-3 w-3" />{lead.city}{lead.state ? `, ${lead.state}` : ''}
               </p>
             )}
-            <AssignLeadControl leadId={lead.id} assignedTo={lead.assignedTo} />
           </div>
           <div className="text-right shrink-0">
             <p className="text-xl md:text-2xl font-bold font-mono text-red leading-none">{score}</p>
@@ -502,28 +501,40 @@ export function CompanyPage() {
               )}
             </div>
 
-            {/* Fase atual do pipeline — componente independente, fora do card do WhatsApp */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-caption uppercase tracking-wider text-text-muted font-semibold hidden sm:inline">
-                Fase
-              </span>
-              <PipelineJourneyStepper lead={lead} source="company-page" />
+            {/* Responsável + Fase do pipeline — mesma linha do decisor */}
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <AssignLeadControl leadId={lead.id} assignedTo={lead.assignedTo} />
+              <div className="flex items-center gap-2">
+                <span className="text-caption uppercase tracking-wider text-text-muted font-semibold hidden sm:inline">
+                  Fase
+                </span>
+                <PipelineJourneyStepper lead={lead} source="company-page" />
+              </div>
             </div>
           </div>
         )}
         {!mainContact && (
-          <button
-            onClick={() => setShowAddContact(true)}
-            className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
-          >
-            <div className="w-9 h-9 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
-              <UserPlus className="h-4 w-4 text-warning" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <button
+              onClick={() => setShowAddContact(true)}
+              className="flex items-center gap-3 flex-1 min-w-0 p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
+                <UserPlus className="h-4 w-4 text-warning" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-warning">Adicionar decisor</p>
+                <p className="text-label text-text-muted">Adicione o decisor com WhatsApp para liberar a prospecção</p>
+              </div>
+            </button>
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <AssignLeadControl leadId={lead.id} assignedTo={lead.assignedTo} />
+              <div className="flex items-center gap-2">
+                <span className="text-caption uppercase tracking-wider text-text-muted font-semibold hidden sm:inline">Fase</span>
+                <PipelineJourneyStepper lead={lead} source="company-page" />
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-warning">Adicionar decisor</p>
-              <p className="text-label text-text-muted">Adicione o decisor com WhatsApp para liberar a prospecção</p>
-            </div>
-          </button>
+          </div>
         )}
 
         {/* Presença Digital — pills com ícones, re-extração e auditoria */}

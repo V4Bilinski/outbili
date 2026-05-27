@@ -12,7 +12,6 @@ import {
   getSociosByLead,
   requestEnrichment,
   getEnrichmentJobStatus,
-  runSocialEnrich,
   type Socio,
   type SocioTelefone,
   type EmpresaTelefone,
@@ -310,7 +309,6 @@ export function TabSocios({ lead }: Props) {
   const [redes, setRedes] = useState<RedeSocial[]>([])
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
-  const [searchingSocial, setSearchingSocial] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const pollRef = useRef<number | null>(null)
 
@@ -384,24 +382,6 @@ export function TabSocios({ lead }: Props) {
     }
   }
 
-  const buscarRedes = async () => {
-    setSearchingSocial(true)
-    setMsg(null)
-    try {
-      const r = await runSocialEnrich(lead.id)
-      if (!r.ok) {
-        setMsg(`Falha na busca de redes: ${r.error || 'erro desconhecido'}`)
-        return
-      }
-      setMsg(`Busca de redes sociais concluída. ${r.atribuidas} rede(s) atribuída(s) com match validado.`)
-      await carregar()
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Falha na busca de redes sociais.')
-    } finally {
-      setSearchingSocial(false)
-    }
-  }
-
   const totalWaPessoal = socios.reduce(
     (acc, s) => acc + s.telefones.filter((t) => t.whatsappPessoal).length,
     0,
@@ -423,15 +403,6 @@ export function TabSocios({ lead }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={searchingSocial}
-            icon={<Share2 className="h-3.5 w-3.5" />}
-            onClick={buscarRedes}
-          >
-            Buscar redes
-          </Button>
           <Button
             variant="primary"
             size="sm"
