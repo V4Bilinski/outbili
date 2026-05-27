@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth-context'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
-import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, Snowflake, Database, Filter, Brain, Info } from 'lucide-react'
+import { Flame, Search, FileDown, Eye, TrendingUp, ArrowUpRight, Sparkles, Target, BarChart3, Smartphone, ArrowRight, Zap, Send, Snowflake, Database, Filter, Brain, Info, Activity } from 'lucide-react'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency, formatCurrencyShort } from '../lib/utils'
@@ -531,6 +531,65 @@ function LTPPipeline({ pipeline }: { pipeline: ReturnType<typeof calculatePipeli
   )
 }
 
+// Saudação personalizada + Health Score da carteira pessoal (leads atribuídos ao usuário).
+// Health = média do score SPICED (0-5) dos leads avaliados do usuário, normalizada para 0-100.
+function PersonalGreeting({ user, leads }: { user: { fullName?: string; profileId?: string } | null; leads: Lead[] }) {
+  const now = new Date()
+  const hora = now.getHours()
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
+  const primeiroNome = (user?.fullName || '').trim().split(' ')[0] || 'por aqui'
+  const dataFmt = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+  const dataCap = dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1)
+
+  const meus = user?.profileId ? leads.filter((l) => l.assignedTo === user.profileId) : []
+  const avaliados = meus.filter((l) => (l.score || 0) > 0)
+  const health = avaliados.length
+    ? Math.round((avaliados.reduce((a, l) => a + (l.score || 0), 0) / avaliados.length) * 20)
+    : 0
+  const emRisco = meus.filter((l) => {
+    const dias = l.createdAt ? Math.floor((Date.now() - new Date(l.createdAt).getTime()) / 86400000) : 0
+    return dias >= 14 && l.status !== 'Fechado' && l.status !== 'Perdido'
+  }).length
+  const tone = health >= 70 ? 'text-success' : health >= 40 ? 'text-warning' : 'text-red'
+  const barTone = health >= 70 ? 'bg-success' : health >= 40 ? 'bg-warning' : 'bg-red'
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs text-text-muted">{dataCap}</p>
+        <h1 className="text-2xl font-bold font-heading">{saudacao}, {primeiroNome}.</h1>
+      </div>
+      <div className="rounded-2xl border border-border bg-white/[0.02] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-red/10 flex items-center justify-center shrink-0">
+              <Activity className="h-5 w-5 text-red" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-caption uppercase tracking-wider text-text-muted font-semibold">Health score da sua carteira</p>
+              <p className="text-xs text-text-muted">{meus.length} {meus.length === 1 ? 'lead atribuído a você' : 'leads atribuídos a você'}</p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className={`text-2xl font-bold font-mono leading-none ${tone}`}>{health}</p>
+            <p className="text-caption text-text-muted mt-0.5">de 100</p>
+          </div>
+        </div>
+        <div className="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className={`h-full rounded-full ${barTone} transition-all duration-500`} style={{ width: `${health}%` }} />
+        </div>
+        {meus.length === 0 ? (
+          <p className="text-xs text-text-muted mt-2">Nenhum lead atribuído a você ainda. Os leads que você prospectar aparecem aqui.</p>
+        ) : emRisco > 0 ? (
+          <p className="text-xs text-red mt-2">{emRisco} {emRisco === 1 ? 'lead parado' : 'leads parados'} há 14+ dias na sua carteira.</p>
+        ) : (
+          <p className="text-xs text-success mt-2">Carteira em dia, sem leads parados.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { data: leads, isLoading } = useLeads()
   const { user } = useAuth()
@@ -678,8 +737,13 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Saudação personalizada + health score da carteira do usuário */}
       <AnimateIn delay={0}>
+        <PersonalGreeting user={user} leads={allLeads} />
+      </AnimateIn>
+
+      {/* Header */}
+      <AnimateIn delay={40}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-heading gradient-text">Visão geral do pipeline</h1>
