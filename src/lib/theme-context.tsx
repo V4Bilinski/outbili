@@ -25,6 +25,9 @@ function applyTheme(theme: Theme) {
   const root = document.documentElement
   if (theme === 'light') root.setAttribute('data-theme', 'light')
   else root.removeAttribute('data-theme')
+  // Atualiza a cor da barra do navegador (mobile) conforme o tema
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#FFFFFF' : '#09090B')
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

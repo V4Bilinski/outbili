@@ -29,7 +29,7 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
         {collapsed ? (
           <img src="/outbili/v4-icon.png" alt="V4" className="h-9 w-9 object-contain transition-all duration-300" />
         ) : (
-          <img src="/outbili/logo-white.png" alt="V4 Bilinski&Co" className="h-12 w-auto object-contain transition-all duration-300" />
+          <img src={theme === 'light' ? '/outbili/logo-black.png' : '/outbili/logo-white.png'} alt="V4 Bilinski&Co" className="h-12 w-auto object-contain transition-all duration-300" />
         )}
       </div>
 

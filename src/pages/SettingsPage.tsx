@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
 import { useAuth } from '../lib/auth-context'
+import { useTheme } from '../lib/theme-context'
 import { updateUser, changePassword, verifyPassword } from '../services/authService'
 import { Mail, Shield, Clock, Eye, EyeOff, Loader2, AlertCircle, Save } from 'lucide-react'
 import { toast } from 'sonner'
@@ -211,7 +212,7 @@ export function SettingsPage() {
       <Card>
         <CardTitle className="mb-4">Sobre</CardTitle>
         <div className="flex items-center gap-4">
-          <img src="/outbili/logo-white.png" alt="V4 Bilinski" className="h-8" />
+          <img src={theme === 'light' ? '/outbili/logo-black.png' : '/outbili/logo-white.png'} alt="V4 Bilinski" className="h-8" />
           <div>
             <p className="text-sm font-semibold">OUTBILI v1.0</p>
             <p className="text-label text-text-muted">Inteligência comercial para prospecção outbound · V4 Bilinski &amp;Co</p>
