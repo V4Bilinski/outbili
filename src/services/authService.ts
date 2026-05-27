@@ -157,9 +157,13 @@ export function isAllowedSignupEmail(email: string): boolean {
   return ALLOWED_SIGNUP_DOMAINS.includes(domain)
 }
 
-// Cria conta via supabase.auth.signUp. O trigger on_auth_user_created popula app.profiles
-// JÁ ativo e no cargo escolhido (requested_role), com gate de domínio @v4company.com.
-// Caller deve chamar login() em seguida (signUp não loga automaticamente quando confirmação está OFF).
+// Cria conta via Edge Function `signup-user` (service_role + email_confirm=true).
+// Por que NÃO usamos supabase.auth.signUp aqui: o signUp do client dispara e-mail de
+// confirmação e o SMTP padrão do Supabase tem rate limit baixo (~2-4/h) → "email rate
+// limit exceeded" bloqueava a criação. A Edge Function cria o usuário JÁ confirmado, sem
+// enviar e-mail. O trigger handle_new_user popula app.profiles já ativo, no cargo escolhido
+// (sdr/closer/viewer; admin nunca via signup), com gate de domínio @v4company.com.
+// Caller deve chamar login() em seguida (o usuário já entra confirmado e ativo).
 export async function createUser(input: {
   email: string
   password: string
@@ -167,34 +171,24 @@ export async function createUser(input: {
   role: SignupRole
 }): Promise<User> {
   const email = input.email.toLowerCase().trim()
-  // Gate de domínio (1ª barreira; o trigger reforça no banco)
+  // Gate de domínio (1ª barreira; a Edge Function e o trigger reforçam no servidor)
   if (!isAllowedSignupEmail(email)) {
     throw new Error('Cadastro permitido apenas para e-mails @v4company.com')
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password: input.password,
-    options: {
-      // requested_role é lido pelo trigger handle_new_user para associar o cargo.
-      data: { full_name: input.fullName, requested_role: input.role },
-    },
+  const { data, error } = await supabase.functions.invoke('signup-user', {
+    body: { email, password: input.password, fullName: input.fullName, role: input.role },
   })
+  // error = falha de rede/relay (a função responde sempre 200 com { ok, error } nos casos de negócio)
   if (error) {
-    if (/already registered|user.*exists/i.test(error.message)) throw new Error('Email já cadastrado')
-    throw new Error(error.message)
+    throw new Error('Não foi possível criar a conta agora. Tente novamente em instantes.')
   }
-  if (!data.user) throw new Error('Falha ao criar conta')
-
-  // Garante full_name no profile (caso trigger não pegue do raw_user_meta_data).
-  // O role/is_active são definidos pelo trigger (fonte da verdade) — não sobrescrevemos aqui.
-  await supabase.from('profiles')
-    .update({ full_name: input.fullName })
-    .eq('user_id', data.user.id)
-    .then(() => {}, () => {})
+  if (!data?.ok) {
+    throw new Error(data?.error || 'Falha ao criar conta')
+  }
 
   return {
-    id: data.user.id,
+    id: data.userId ?? '',
     email,
     passwordHash: '',
     fullName: input.fullName,
