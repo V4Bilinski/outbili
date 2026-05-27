@@ -4,16 +4,16 @@ import { cn } from '../../lib/cn'
 import { useEffect, useRef, useState } from 'react'
 
 const allItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Home', locked: false },
-  { to: '/search', icon: Search, label: 'Busca', locked: false },
-  { to: '/leads', icon: Users, label: 'Leads', locked: false },
-  { to: '/pipeline', icon: Columns3, label: 'Pipeline', locked: false },
-  { to: '/inbox', icon: MessageSquare, label: 'Msgs', locked: false },
-  { to: '/reports', icon: BarChart3, label: 'Reports', locked: false },
+  { to: '/', icon: LayoutDashboard, label: 'Home', comingSoon: false },
+  { to: '/search', icon: Search, label: 'Busca', comingSoon: false },
+  { to: '/leads', icon: Users, label: 'Leads', comingSoon: false },
+  { to: '/pipeline', icon: Columns3, label: 'Pipeline', comingSoon: false },
+  { to: '/inbox', icon: MessageSquare, label: 'Msgs', comingSoon: true },
+  { to: '/reports', icon: BarChart3, label: 'Reports', comingSoon: false },
 ]
 
 export function BottomNav() {
-  const items = allItems.filter((item) => !item.locked).slice(0, 5)
+  const items = allItems.slice(0, 5)
   const location = useLocation()
   const navRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
@@ -45,23 +45,34 @@ export function BottomNav() {
       />
       <div ref={navRef} className="flex items-center justify-around h-16 px-2">
         {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            data-active={isActive(item.to)}
-            className={({ isActive: active }) =>
-              cn(
-                'flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-caption font-medium transition-all duration-250 min-w-[48px] min-h-[44px] justify-center',
-                active
-                  ? 'text-red bg-red/8'
-                  : 'text-text-muted active:text-text-secondary',
-              )
-            }
-          >
-            <item.icon className="h-5 w-5" />
-            <span>{item.label}</span>
-          </NavLink>
+          item.comingSoon ? (
+            <div
+              key={item.to}
+              title="Em breve"
+              className="flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-caption font-medium min-w-[48px] min-h-[44px] justify-center text-text-muted opacity-30 cursor-not-allowed select-none"
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </div>
+          ) : (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              data-active={isActive(item.to)}
+              className={({ isActive: active }) =>
+                cn(
+                  'flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl text-caption font-medium transition-all duration-250 min-w-[48px] min-h-[44px] justify-center',
+                  active
+                    ? 'text-red bg-red/8'
+                    : 'text-text-muted active:text-text-secondary',
+                )
+              }
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </NavLink>
+          )
         ))}
       </div>
       {/* Safe area spacer for notch devices */}

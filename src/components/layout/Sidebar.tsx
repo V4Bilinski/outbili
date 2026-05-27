@@ -10,8 +10,8 @@ const navItems = [
   { to: '/search', icon: Search, label: 'Pesquisa' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: Columns3, label: 'Pipeline' },
-  { to: '/inbox', icon: MessageSquare, label: 'Mensagens' },
-  { to: '/campaigns', icon: Smartphone, label: 'Campanhas' },
+  { to: '/inbox', icon: MessageSquare, label: 'Mensagens', comingSoon: true },
+  { to: '/campaigns', icon: Smartphone, label: 'Campanhas', comingSoon: true },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
 ]
 
@@ -37,20 +37,25 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
           <p className="text-caption uppercase tracking-[0.15em] text-text-muted font-medium px-3 mb-3 animate-[fade-in_0.2s_ease-out]">Menu</p>
         )}
         {navItems.map((item) => {
-          const disabled = false
+          const disabled = !!(item as { comingSoon?: boolean }).comingSoon
           if (disabled) {
             return (
               <div
                 key={item.to}
-                title={collapsed ? `${item.label} (indisponível)` : 'Em atualização. Disponível em breve.'}
+                title={collapsed ? `${item.label} (em breve)` : 'Em breve. Funcionalidade em desenvolvimento.'}
                 className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-not-allowed select-none',
-                  'text-white/20',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-not-allowed select-none opacity-40',
+                  'text-text-muted',
                   collapsed && 'justify-center px-2',
                 )}
               >
                 <item.icon className="h-[18px] w-[18px] shrink-0" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && (
+                  <span className="flex-1 flex items-center justify-between gap-2 min-w-0">
+                    <span className="truncate">{item.label}</span>
+                    <span className="text-[8px] font-semibold uppercase tracking-wide bg-white/10 text-text-muted px-1.5 py-0.5 rounded-full leading-none shrink-0">em breve</span>
+                  </span>
+                )}
               </div>
             )
           }
