@@ -201,6 +201,19 @@ export async function updateUser(id: string, data: Partial<User>): Promise<User>
   return rowToUser(byProfileId.data)
 }
 
+// Admin gerencia QUALQUER usuario (editar perfil / ativar / desativar) via RPC SECURITY DEFINER.
+// Necessario porque a RLS de app.profiles so permite UPDATE do proprio profile (user_id = auth.uid).
+// targetId aceita user_id (auth) ou profiles.id. So envia os campos informados.
+export async function adminUpdateUser(targetId: string, data: Partial<User>): Promise<void> {
+  const { error } = await supabase.rpc('admin_update_user', {
+    p_target_user_id: targetId,
+    p_full_name: data.fullName ?? null,
+    p_role: data.role ?? null,
+    p_is_active: data.isActive ?? null,
+  })
+  if (error) throw new Error(error.message)
+}
+
 // Troca senha do user logado (usa Supabase Auth — só funciona com sessão ativa do próprio user).
 // Ignora userId (kept pra compat) — Supabase Auth troca sempre do session.user.
 export async function changePassword(_userId: string, newPassword: string): Promise<void> {

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth-context'
-import { getAllUsers, getActivityLog, updateUser, type User, type ActivityLogEntry } from '../services/authService'
+import { getAllUsers, getActivityLog, adminUpdateUser, type User, type ActivityLogEntry } from '../services/authService'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
-import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight, Plug } from 'lucide-react'
+import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight, Plug, Pencil, X } from 'lucide-react'
 import { useReEnrichment } from '../hooks/useReEnrichment'
 import { IntegrationStatusBanner } from '../components/IntegrationStatusBanner'
 import { ConnectionsApiPanel } from '../components/ConnectionsApiPanel'
@@ -68,11 +68,37 @@ export function AdminPage() {
 
   const toggleUserActive = async (user: User) => {
     try {
-      await updateUser(user.id, { isActive: !user.isActive })
+      await adminUpdateUser(user.id, { isActive: !user.isActive })
       toast.success(`${user.fullName} ${user.isActive ? 'desativado' : 'ativado'}`)
       loadData()
     } catch (err: any) {
       toast.error(err.message)
+    }
+  }
+
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editRole, setEditRole] = useState('sdr')
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  const openEdit = (user: User) => {
+    setEditingUser(user)
+    setEditName(user.fullName || '')
+    setEditRole(user.role || 'sdr')
+  }
+  const saveEdit = async () => {
+    if (!editingUser) return
+    if (!editName.trim()) { toast.error('Informe o nome do usuário.'); return }
+    setSavingEdit(true)
+    try {
+      await adminUpdateUser(editingUser.id, { fullName: editName.trim(), role: editRole as User['role'] })
+      toast.success('Perfil atualizado.')
+      setEditingUser(null)
+      loadData()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -517,6 +543,14 @@ export function AdminPage() {
                   >
                     Ver ações
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={<Pencil className="h-3.5 w-3.5" />}
+                    onClick={() => openEdit(user)}
+                  >
+                    Editar
+                  </Button>
                   {user.role !== 'admin' && (
                     <Button
                       size="sm"
@@ -534,6 +568,51 @@ export function AdminPage() {
         </Card>
       )}
       </AnimateIn>
+
+      {/* Modal: editar perfil de usuario (admin) */}
+      {editingUser && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingUser(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-bold text-text-primary">Editar usuário</p>
+              <button type="button" onClick={() => setEditingUser(null)} className="text-text-muted hover:text-text-primary transition-colors"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-xs text-text-muted">{editingUser.email}</p>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-text-secondary">Nome</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nome completo"
+                  className="w-full text-sm bg-white/[0.04] border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-text-secondary">Papel</label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full text-sm bg-white/[0.04] border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-red/40"
+                >
+                  <option value="sdr">SDR</option>
+                  <option value="closer">Closer</option>
+                  <option value="admin">Administrador</option>
+                  <option value="viewer">Visualizador</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setEditingUser(null)} className="px-3 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-secondary transition-colors">Cancelar</button>
+              <button type="button" onClick={saveEdit} disabled={savingEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red text-white text-xs font-semibold hover:bg-red/90 transition-colors disabled:opacity-50">
+                {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
