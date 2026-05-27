@@ -18,6 +18,7 @@ export const PIPELINE_COLUMNS = [
   { value: 'Reunião', label: 'Reunião', color: 'var(--color-stage-meeting)' },
   { value: 'Proposta', label: 'Proposta', color: 'var(--color-stage-proposal)' },
   { value: 'Fechado', label: 'Fechado', color: 'var(--color-stage-closed)' },
+  { value: 'Perdido', label: 'Perdido', color: 'var(--color-stage-lost)' },
 ] as const
 
 export type PipelineStageValue = (typeof PIPELINE_COLUMNS)[number]['value']
@@ -81,6 +82,15 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
       { text: 'Contrato assinado ou aceite formal', required: true },
       { text: 'Pagamento confirmado ou faturado', required: true },
       { text: 'Onboarding iniciado', required: false },
+    ],
+  },
+  Perdido: {
+    emoji: '🚫',
+    title: 'Marcar como perdido',
+    checks: [
+      { text: 'Motivo da perda registrado (sem interesse, sem fit, sem resposta, escolheu concorrente)', required: true },
+      { text: 'Tentativas de contato esgotadas ou o lead declinou', required: true },
+      { text: 'Indicar se o lead pode ser reativado no futuro', required: false },
     ],
   },
 }

@@ -49,6 +49,7 @@
   --color-stage-meeting: #EC4899;
   --color-stage-proposal: #F97316;
   --color-stage-closed: #10B981;
+  --color-stage-lost: #6B7280;
 
   /* Source/provider colors — ZERO azul */
   --color-source-cnpja: #FF9F0A;

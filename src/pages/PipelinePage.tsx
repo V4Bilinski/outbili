@@ -96,7 +96,6 @@ export function PipelinePage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const allLeads = (leads || []).filter((l) => {
-    if (l.status === 'Perdido') return false
     if (mineOnly && l.assignedTo !== user?.profileId) return false
     if (segFilter && l.segment !== segFilter) return false
     if (tempFilter && l.temperature !== tempFilter) return false
@@ -122,6 +121,8 @@ export function PipelinePage() {
 
     if (to === 'Fechado') {
       toast.success(`🏆 ${lead.companyName}: negócio fechado.`, { duration: 5000 })
+    } else if (to === 'Perdido') {
+      toast(`🚫 ${lead.companyName} marcado como perdido.`, { duration: 4000 })
     } else {
       const emoji = to === 'Reunião' ? '📅' : to === 'Proposta' ? '📝' : '✅'
       toast.success(`${emoji} ${lead.companyName} → ${toLabel}`, { duration: 3000 })
