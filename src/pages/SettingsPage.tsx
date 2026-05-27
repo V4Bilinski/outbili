@@ -16,6 +16,7 @@ const inputClass = 'h-11 w-full rounded-xl bg-elevated-2 border border-border te
 export function SettingsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { theme } = useTheme()
 
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [savingName, setSavingName] = useState(false)
