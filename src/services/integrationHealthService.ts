@@ -1,6 +1,7 @@
 import { checkCredits } from './cnpjaService'
 import { getAssertivaLastKnown } from './assertivaService'
 import { isFirecrawlAvailable } from './firecrawlService'
+import { supabase } from '../lib/supabase'
 
 // Health-check das integracoes externas. Cada checagem resolve sempre (nunca
 // lanca): uma integracao fora vira estado, nao excecao.
@@ -131,11 +132,37 @@ function checkFirecrawl(): IntegrationStatus {
   }
 }
 
+// Health server-side real via Edge Function `integration-health`: sonda o Apify
+// de verdade (/users/me) e le o estado observado de Assertiva/Firecrawl no banco.
+// Substitui os checks client-side de apify/assertiva/firecrawl, que liam
+// `import.meta.env.VITE_*` ausentes no bundle (o token nunca deve ir ao client).
+// Os checks locais permanecem como fallback gracioso se a Edge Function falhar.
+async function fetchServerHealth(): Promise<Map<IntegrationId, IntegrationStatus> | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('integration-health', { method: 'GET' })
+    const list = (data as { integrations?: IntegrationStatus[] } | null)?.integrations
+    if (error || !Array.isArray(list)) return null
+    const map = new Map<IntegrationId, IntegrationStatus>()
+    for (const it of list) {
+      map.set(it.id, { id: it.id, label: it.label, state: it.state, detail: it.detail, core: it.core })
+    }
+    return map
+  } catch {
+    return null
+  }
+}
+
 export async function checkIntegrations(): Promise<IntegrationHealth> {
-  const [cnpja, apify, supabase] = await Promise.all([checkCnpja(), checkApify(), checkSupabase()])
-  const assertiva = checkAssertiva()
-  const firecrawl = checkFirecrawl()
-  const integrations = [cnpja, assertiva, apify, firecrawl, supabase]
+  const [cnpja, supabaseStatus, serverHealth] = await Promise.all([
+    checkCnpja(),
+    checkSupabase(),
+    fetchServerHealth(),
+  ])
+  // assertiva/apify/firecrawl vem do health server-side real; fallback local se indisponivel.
+  const assertiva = serverHealth?.get('assertiva') ?? checkAssertiva()
+  const apify = serverHealth?.get('apify') ?? (await checkApify())
+  const firecrawl = serverHealth?.get('firecrawl') ?? checkFirecrawl()
+  const integrations = [cnpja, assertiva, apify, firecrawl, supabaseStatus]
   return {
     checkedAt: Date.now(),
     integrations,
