@@ -98,12 +98,12 @@ export function PipelineJourneyStepper({ lead, source, className }: PipelineJour
     setPendingTo(toValue)
   }
 
-  const handleConfirm = (notes: string) => {
+  const handleConfirm = (notes: string, validatedItems: string[]) => {
     if (!pendingTo) return
     const toValue = pendingTo
     updateLead.mutate({ id: lead.id, data: { status: toValue } })
 
-    const description = buildStageChangeDescription(fromStatus, toValue, notes, source)
+    const description = buildStageChangeDescription(fromStatus, toValue, notes, source, validatedItems)
     createActivity({
       leadId: lead.id,
       type: 'status_change',

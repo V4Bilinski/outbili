@@ -95,18 +95,27 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
   },
 }
 
-// Monta description da Activity com origem embutida (para parse no histórico)
+// Monta description da Activity com origem embutida (para parse no histórico).
+// validatedItems: textos dos checks marcados (opcionais) que descrevem a validação da etapa.
 export function buildStageChangeDescription(
   fromStatus: string,
   toStatus: string,
   notes: string,
   source: StageChangeSource,
+  validatedItems: string[] = [],
 ): string {
   const fromLabel = getStageLabel(fromStatus)
   const toLabel = getStageLabel(toStatus)
   const sourceLabel = STAGE_SOURCE_LABEL[source]
   const base = `Movido de ${fromLabel} para ${toLabel} [via: ${sourceLabel}]`
-  return notes.trim() ? `${base}\n\n${notes.trim()}` : base
+  const blocks = [base]
+  if (validatedItems.length) {
+    blocks.push('Validado:\n' + validatedItems.map((t) => `• ${t}`).join('\n'))
+  }
+  if (notes.trim()) {
+    blocks.push(`Obs: ${notes.trim()}`)
+  }
+  return blocks.join('\n\n')
 }
 
 // Parse de origem a partir da description da Activity (retorna null se ausente)

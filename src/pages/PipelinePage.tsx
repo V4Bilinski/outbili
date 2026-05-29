@@ -117,13 +117,13 @@ export function PipelinePage() {
     return true
   })
 
-  const handleConfirmMove = (notes: string) => {
+  const handleConfirmMove = (notes: string, validatedItems: string[]) => {
     if (!pendingMove) return
     const { lead, from, to } = pendingMove
     updateLead.mutate({ id: lead.id, data: { status: to } })
 
     const toLabel = PIPELINE_COLUMNS.find((s) => s.value === to)?.label || to
-    const desc = buildStageChangeDescription(from, to, notes, 'pipeline-kanban')
+    const desc = buildStageChangeDescription(from, to, notes, 'pipeline-kanban', validatedItems)
     createActivity({ leadId: lead.id, type: 'status_change', description: desc, createdBy: user?.fullName || user?.email || 'Sistema' }).catch(() => {})
 
     if (to === 'Fechado') {

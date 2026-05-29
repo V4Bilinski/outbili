@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CheckCircle, AlertCircle, ArrowRight, X, Trophy } from 'lucide-react'
+import { CheckCircle, ArrowRight, X, Trophy } from 'lucide-react'
 import { useAuth } from '../../lib/auth-context'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/cn'
@@ -18,7 +18,7 @@ export interface StageGatePopupProps {
   fromStatus: string
   toStatus: string
   source: StageChangeSource
-  onConfirm: (notes: string) => void
+  onConfirm: (notes: string, validatedItems: string[]) => void
   onCancel: () => void
 }
 
@@ -27,9 +27,11 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
   const gate = STAGE_GATES[toStatus]
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState('')
-  const requiredCount = gate?.checks.filter(c => c.required).length || 0
-  const requiredChecked = gate?.checks.filter((c, i) => c.required && checked.has(i)).length || 0
-  const allRequiredDone = requiredChecked >= requiredCount
+  const totalChecks = gate?.checks.length || 0
+  const checkedCount = checked.size
+  // Textos dos checks marcados — viram a descrição da validação no registro de mudança.
+  const validatedItems = gate?.checks.filter((_, i) => checked.has(i)).map((c) => c.text) || []
+  const handleConfirm = () => onConfirm(notes, validatedItems)
   const fromLabel = getStageLabel(fromStatus)
   const toLabel = getStageLabel(toStatus)
   const toColor = getStageColor(toStatus)
@@ -122,7 +124,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
                   {isCelebration ? 'Checklist final' : 'Validar antes de mover'}
                 </p>
                 <span className="text-[10px] text-text-muted font-medium">
-                  {requiredChecked}/{requiredCount} obrigatórios
+                  {checkedCount}/{totalChecks} validados
                 </span>
               </div>
               <div className="space-y-1">
@@ -134,25 +136,19 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
                       'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border text-left cursor-pointer transition-all duration-200',
                       checked.has(idx)
                         ? 'bg-success/10 border-success/30'
-                        : check.required
-                          ? 'bg-elevated-1 border-border hover:border-red/30'
-                          : 'bg-elevated-1 border-border/50 hover:border-border opacity-70',
+                        : 'bg-elevated-1 border-border hover:border-border-strong',
                     )}
                   >
                     <div className={cn(
                       'w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300',
-                      checked.has(idx) ? 'bg-success border-success' : check.required ? 'border-red/40' : 'border-border',
+                      checked.has(idx) ? 'bg-success border-success' : 'border-border',
                     )}>
                       {checked.has(idx) && <CheckCircle className="h-2 w-2 text-white" />}
                     </div>
                     <span className={cn('text-[12px] leading-snug flex-1 transition-colors', checked.has(idx) ? 'text-text-primary' : 'text-text-secondary')}>
                       {check.text}
                     </span>
-                    {check.required ? (
-                      <span className="text-[10px] text-red/60 font-bold shrink-0" aria-label="Obrigatório">*</span>
-                    ) : (
-                      <span className="text-[9px] text-text-muted/50 shrink-0 uppercase tracking-wider">opcional</span>
-                    )}
+                    <span className="text-[9px] text-text-muted/50 shrink-0 uppercase tracking-wider">opcional</span>
                   </button>
                 ))}
               </div>
@@ -162,16 +158,16 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
             </div>
           )}
 
-          {/* Notes */}
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações (opcional)..." rows={2}
+          {/* Descrição da validação — texto livre que descreve a validação no registro de mudança */}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Descrição da validação (opcional)..." rows={2}
             className="w-full rounded-lg bg-elevated-1 border border-border text-[12px] text-text-primary placeholder:text-text-muted p-2.5 focus:border-red/30 focus:outline-none focus:ring-1 focus:ring-red/20 transition-colors resize-none" />
 
           {/* Actions */}
           <div className="flex gap-2.5">
             <Button variant="ghost" onClick={onCancel} className="flex-1" size="sm">Cancelar</Button>
-            <Button onClick={() => onConfirm(notes)} disabled={!allRequiredDone} className="flex-1" size="sm"
-              icon={isCelebration ? <Trophy className="h-3.5 w-3.5" /> : allRequiredDone ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}>
-              {isCelebration ? 'Fechar negócio!' : allRequiredDone ? 'Confirmar' : `${requiredCount - requiredChecked} obrigatório${requiredCount - requiredChecked > 1 ? 's' : ''}`}
+            <Button onClick={handleConfirm} className="flex-1" size="sm"
+              icon={isCelebration ? <Trophy className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}>
+              {isCelebration ? 'Fechar negócio!' : 'Confirmar'}
             </Button>
           </div>
 
