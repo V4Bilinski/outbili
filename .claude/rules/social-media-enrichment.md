@@ -20,7 +20,7 @@ Garantir que TODO lead enriquecido tenha Instagram, LinkedIn, TikTok, Facebook e
 Aplica-se a:
 - `enrichLead()` (enriquecimento completo — leads novos)
 - `reEnrichLead()` (re-enriquecimento — leads existentes)
-- `scripts/backfill-social.mjs` (backfill em massa)
+- Edge Function `social-enrich` (backfill em massa via fila `app.enrichment_jobs`)
 - Handler `handleReExtractSocial` no `CompanyPage` (re-extração manual por clique)
 
 ## Prioridade de Campos
@@ -113,14 +113,17 @@ Todas URLs passam por `normalizeSocialUrl()`:
 
 ## Backfill em Massa
 
-```bash
-node scripts/backfill-social.mjs              # leads sem IG+LI
-node scripts/backfill-social.mjs --dry-run    # simula
-node scripts/backfill-social.mjs --force      # todos leads
-node scripts/backfill-social.mjs --limit=50   # primeiros 50
-```
+O backfill agora roda **server-side** pela Edge Function `social-enrich`, enfileirada via
+`app.enrichment_jobs` (worker W3-08, `pg_cron`). Não há mais script client-side batendo no
+Airtable (o antigo `scripts/backfill-social.mjs` foi descontinuado no cutover Supabase W3/W4
+e reduzido a um stub que aborta com `exit(1)`).
 
-Rate limit: 1.1s/lead (respeitando Firecrawl free tier).
+Como acionar:
+- **Por lead:** `requestEnrichment(leadId)` (UI: re-enriquecer na ficha) → a cadeia do worker
+  inclui a etapa de redes sociais.
+- **Em lote:** `enqueueEnrichmentBatch(leadIds, 'high')` (usado pela PESCA) enfileira o
+  deep-enrichment, que encadeia o `social-enrich`.
+- **Automático:** o cron `enrichment-jobs-sweeper` reprocessa leads com run antigo (> 7 dias).
 
 ## Env Vars
 

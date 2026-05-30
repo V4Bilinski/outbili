@@ -40,8 +40,10 @@ metadata:
 - [x] UI: `AdminPage.tsx` (card SPICED, sem "Airtable" e sem em-dash) + `SearchPage.tsx` (toast).
 - [x] Comentários: `enrichmentService.ts` (3), `useSpicedRecalc.ts`, `useMassEnrichment.ts`, `SearchPage.tsx`, `types/index.ts`.
 
-### F4 — Scripts Airtable legados `[⏳ pendente]`
-- [ ] Migrar `scripts/backfill-social.mjs` e `scripts/recalc-spiced.mjs` para Supabase, ou mover para `scripts/legacy/` com aviso.
+### F4 — Scripts Airtable legados `[✅ implementado]`
+- [x] **3 scripts** tratados (o auditor só viu 2; o grep amplo achou o 3º): `recalc-spiced.mjs` e `backfill-social.mjs` (já abortavam com `exit(1)`) **e `enrich-leads.py`** (Python, **ativo sem guard**, com Base ID Airtable hardcoded — o mais perigoso).
+- [x] Todos reduzidos a stubs limpos: guard de saída + ponteiro para o equivalente Supabase (SPICED → painel Admin; social → Edge `social-enrich` via fila; enrich → re-enrich Admin / worker W3-08). **Zero `api.airtable.com` em `scripts/` e `src/`.**
+- [x] Regra `social-media-enrichment.md` atualizada (backfill server-side via fila, não mais `.mjs`).
 
 ### F3B — Re-arquitetura do worker (cadastral) `[⏳ pendente — ponto de não-retorno: DB + Edge]`
 - [ ] Estender `assertiva-enrich` (ou novo modo) para gravar `employees`/`foundingDate`/`yearsInMarket` (CNPJa).
