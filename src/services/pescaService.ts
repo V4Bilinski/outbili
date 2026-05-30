@@ -14,14 +14,31 @@ import { TIERS } from '../lib/constants'
 import { calculateSpicedScore, getTemperatureFromScore } from '../lib/utils'
 import { createLead, updateLead, getLead } from './leadService'
 import { createContact } from './contactService'
-import type { Lead, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
+import type { Lead, CnpjaOffice, CnpjaSearchParams, PescaFilters, PescaLead } from '../types'
 
 // --- Fase 1: Busca em massa via CNPJa API (GET /office) ---
 // CNPJa retorna dados completos: telefone (com tipo MOBILE/LANDLINE), email, socios, CNAE, endereco.
 
+// Over-fetch: buffer aplicado sobre o alvo de leads validos-intrinsecos para
+// compensar a deduplicacao vs. base (feita depois, em usePesca).
+const PESCA_DEDUP_BUFFER = 1.3
+// Teto rigido de consultas CNPJa por pesquisa (controle de custo de creditos).
+const PESCA_MAX_OFFICES_CAP = 450
+
+/**
+ * Verdade de validade de um office para a PESCA: precisa ter decisor identificavel
+ * (QSA) E ao menos um telefone. Mesmo criterio do descarte no loop de montagem abaixo.
+ */
+function officeHasDecisorAndPhone(office: CnpjaOffice): boolean {
+  const partners = extractPartners(office)
+  const decisor = findDecisor(partners.map(p => ({ nome: p.name, qualificacao: p.qualification })))
+  const hasPhone = !!office.phones?.[0]
+  return !!decisor?.nome && hasPhone
+}
+
 export async function searchViaCnpja(
   filters: PescaFilters,
-  targetCount: number = 150,
+  targetCount: number = 50,
   onProgress?: (found: number) => void,
   signal?: AbortSignal,
 ): Promise<PescaLead[]> {
@@ -45,9 +62,17 @@ export async function searchViaCnpja(
   if (filters.excludeMei) params['company.simei.optant.eq'] = false
   if (filters.headOnly) params['head.eq'] = true
 
+  // Mira N leads validos (+ buffer p/ dedup), nunca consultando alem do teto de custo.
+  const targetValidCount = Math.ceil(targetCount * PESCA_DEDUP_BUFFER)
+  const maxOffices = Math.min(targetCount * 4, PESCA_MAX_OFFICES_CAP)
+  const maxPages = Math.ceil(maxOffices / 10)
+
   const { offices } = await searchOfficesPaginated(params, {
     targetCount,
-    maxPages: 15,
+    targetValidCount,
+    isValid: officeHasDecisorAndPhone,
+    maxOffices,
+    maxPages,
     signal,
     onProgress,
   })

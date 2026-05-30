@@ -121,8 +121,8 @@ export function usePesca(): UsePescaReturn {
 
       const pescaLeads = await searchViaCnpja(
         filters,
-        150,
-        (found) => setProgress(p => ({ ...p, found, total: found })),
+        filters.targetCount,
+        (found) => setProgress(p => ({ ...p, found, total: filters.targetCount })),
         signal,
       )
 
@@ -154,7 +154,8 @@ export function usePesca(): UsePescaReturn {
       setPhase('deduplicating')
 
       const { cnpjs: existingCnpjs, phones: existingPhones } = await loadExistingDedup(signal)
-      const uniqueLeads = deduplicateLeads(pescaLeads, existingCnpjs, existingPhones)
+      // Trunca no alvo exato: o over-fetch traz leads validos com folga; entregamos N.
+      const uniqueLeads = deduplicateLeads(pescaLeads, existingCnpjs, existingPhones).slice(0, filters.targetCount)
 
       if (signal.aborted) return
       setProgress(p => ({ ...p, deduped: uniqueLeads.length }))

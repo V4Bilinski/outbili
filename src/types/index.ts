@@ -271,6 +271,7 @@ export interface PescaFilters {
   companySizes?: number[]   // 1=ME, 3=EPP, 5=DEMAIS
   headOnly?: boolean
   withPhone?: boolean
+  targetCount: number       // quantidade exata de leads qualificados a entregar (presets: 25/50/100/125/150)
 }
 
 export interface PescaLead {

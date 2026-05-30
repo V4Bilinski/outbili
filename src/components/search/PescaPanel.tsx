@@ -171,6 +171,17 @@ const PORTE_OPTIONS = [
   { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, sizes: [] as number[], icon: '🔍' },
 ]
 
+// Presets de quantidade de leads a extrair na PESCA (Passo 4).
+const LEAD_COUNT_OPTIONS = [25, 50, 100, 125, 150]
+const DEFAULT_LEAD_COUNT = 50
+
+// Estimativa honesta de tempo por alvo (busca + enriquecimento). Range com " a " (tom de voz).
+function estimatePescaTime(target: number): string {
+  const minMin = Math.max(1, Math.ceil(target / 20))
+  const maxMin = Math.max(2, Math.ceil(target / 10))
+  return `~${minMin} a ${maxMin} min`
+}
+
 export function PescaPanel() {
   const [segments, setSegments] = useState<string[]>([])
   const [states, setStates] = useState<string[]>([])
@@ -183,6 +194,7 @@ export function PescaPanel() {
   const [companySizes, setCompanySizes] = useState<number[]>([])
   const [excludeMei, setExcludeMei] = useState(true)
   const [showAllStates, setShowAllStates] = useState(false)
+  const [targetCount, setTargetCount] = useState(DEFAULT_LEAD_COUNT)
 
   // Estado do painel de resultados
   const [dataFilter, setDataFilter] = useState<DataFilter>('all')
@@ -245,6 +257,7 @@ export function PescaPanel() {
           }).filter((c): c is { name: string; ibgeCode: number } => c !== null)
         : undefined,
       companySizes: companySizes.length > 0 ? companySizes : undefined,
+      targetCount,
     }
 
     setDataFilter('all')
@@ -521,14 +534,47 @@ export function PescaPanel() {
             </label>
           </div>
 
+          {/* Step 4: Quantidade - presets de leads a extrair */}
+          <div className={cn('rounded-xl border p-4 mb-4 transition-all', wizardStep === 2 && states.length > 0 ? 'border-red/30 bg-red/[0.03] ring-1 ring-red/10' : 'border-border', (segments.length === 0 || states.length === 0) && 'opacity-40 pointer-events-none')}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-elevated-3 text-text-muted">
+                4
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-text-primary">Quantos leads?</p>
+                <p className="text-label text-text-muted">Quantidade exata de leads qualificados que vamos extrair</p>
+              </div>
+              <span className="text-caption font-bold text-red bg-red/10 px-2 py-0.5 rounded-full">{targetCount}</span>
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {LEAD_COUNT_OPTIONS.map(n => (
+                <button
+                  key={n}
+                  onClick={() => setTargetCount(n)}
+                  aria-pressed={targetCount === n}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 p-3 rounded-xl text-center transition-all cursor-pointer border',
+                    targetCount === n
+                      ? 'bg-red/15 text-red border-red/40 ring-1 ring-red/20 shadow-md shadow-red/10'
+                      : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
+                  )}
+                >
+                  <span className="text-base font-bold font-heading">{n}</span>
+                  <span className="text-micro opacity-60">leads</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Estimativa pre-busca */}
           {canStart && (
             <div className="text-center py-1.5 animate-[fade-in_0.3s_ease-out]">
               <p className="text-caption text-text-muted">
-                Estimativa: <span className="font-semibold text-text-secondary">~50-150 empresas</span> com telefone
+                Alvo: <span className="font-semibold text-text-secondary">{targetCount} leads qualificados</span>
                 {states.length === 1 ? ` em ${states[0]}` : states.length > 1 ? ` em ${states.length} estados` : ''}
-                {' · '}Tempo: ~2-4 min
+                {' · '}Tempo {estimatePescaTime(targetCount)}
               </p>
+              <p className="text-micro text-text-muted mt-0.5">Pode trazer menos se o segmento tiver poucas empresas com decisor e telefone</p>
             </div>
           )}
 
@@ -546,7 +592,7 @@ export function PescaPanel() {
             {canStart ? (
               <>
                 <ArrowRight className="h-4 w-4" />
-                Pesquisar {segments.length} segmento{segments.length > 1 ? 's' : ''} em {cities.length > 0 ? cities.slice(0, 2).join(', ') + (cities.length > 2 ? ` +${cities.length - 2}` : '') : states.length ? states.join(', ') : 'todos os estados'}
+                Pesquisar {targetCount} leads em {cities.length > 0 ? cities.slice(0, 2).join(', ') + (cities.length > 2 ? ` +${cities.length - 2}` : '') : states.length ? states.join(', ') : 'todos os estados'}
               </>
             ) : (
               <>
@@ -718,8 +764,14 @@ export function PescaPanel() {
               <CheckCircle className="h-6 w-6 text-success" />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-heading text-text-primary">{leads.length} leads extraidos</h2>
-              <p className="text-xs text-text-muted">{formatElapsed(elapsed)} de extração via APIs públicas</p>
+              <h2 className="text-lg font-bold font-heading text-text-primary">
+                {leads.length} leads extraidos
+                {leads.length < targetCount && <span className="text-text-muted font-normal text-sm"> de {targetCount} solicitados</span>}
+              </h2>
+              <p className="text-xs text-text-muted">
+                {formatElapsed(elapsed)} de extração via APIs públicas
+                {leads.length < targetCount ? ' · pool do segmento esgotado nesta região' : ''}
+              </p>
             </div>
           </div>
           <button onClick={reset} className="px-3 py-1.5 text-xs text-text-muted hover:text-text-secondary border border-border hover:border-border-strong rounded-lg cursor-pointer transition-all">

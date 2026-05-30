@@ -69,15 +69,31 @@ export async function searchOfficesPaginated(
     maxPages?: number
     signal?: AbortSignal
     onProgress?: (found: number) => void
+    // Over-fetch adaptativo (PESCA com quantidade exata):
+    // quando `targetValidCount` + `isValid` são fornecidos, a paginação continua
+    // até juntar N empresas VÁLIDAS (não apenas N brutas), respeitando `maxOffices`.
+    targetValidCount?: number
+    isValid?: (office: CnpjaOffice) => boolean
+    maxOffices?: number
   },
-): Promise<{ offices: CnpjaOffice[]; totalCount: number }> {
+): Promise<{ offices: CnpjaOffice[]; totalCount: number; validCount: number }> {
   const allOffices: CnpjaOffice[] = []
   const maxPages = options.maxPages ?? 15
+  const maxOffices = options.maxOffices ?? Infinity
+  const usesValidTarget = options.targetValidCount != null && typeof options.isValid === 'function'
+  let validCount = 0
   let currentToken: string | undefined
 
   for (let page = 0; page < maxPages; page++) {
     if (options.signal?.aborted) break
-    if (allOffices.length >= options.targetCount) break
+    // Teto rígido de consultas (controle de custo CNPJa). Checado ANTES do fetch
+    if (allOffices.length >= maxOffices) break
+    // Critério de parada: por válidos (over-fetch) ou por brutos (modo legado)
+    if (usesValidTarget) {
+      if (validCount >= (options.targetValidCount as number)) break
+    } else if (allOffices.length >= options.targetCount) {
+      break
+    }
 
     // CNPJa: token is mutually exclusive with other params
     const queryParams: Record<string, string | number | boolean> = { limit: 10 }
@@ -102,13 +118,17 @@ export async function searchOfficesPaginated(
 
     if (!result.records?.length) break
     allOffices.push(...result.records)
-    options.onProgress?.(allOffices.length)
+    if (usesValidTarget) {
+      validCount += result.records.filter(options.isValid as (o: CnpjaOffice) => boolean).length
+    }
+    // Em modo over-fetch o progresso reporta válidos (o que o usuário realmente recebe)
+    options.onProgress?.(usesValidTarget ? validCount : allOffices.length)
 
     currentToken = result.next
     if (!currentToken) break
   }
 
-  return { offices: allOffices, totalCount: allOffices.length }
+  return { offices: allOffices, totalCount: allOffices.length, validCount }
 }
 
 // --- Consulta creditos ---
