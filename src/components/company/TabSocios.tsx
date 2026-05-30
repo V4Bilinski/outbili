@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Users, Phone, ShieldAlert, RefreshCw, TrendingUp, Link2, Sparkles, Building2,
+  Users, Phone, ShieldAlert, ShieldCheck, RefreshCw, TrendingUp, Link2, Sparkles, Building2,
   AtSign, Briefcase, Globe, ExternalLink, Share2,
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
@@ -122,7 +122,17 @@ function WhatsAppRow({ tel }: { tel: SocioTelefone }) {
           ) : (
             <Badge variant="success" size="xs">liberado</Badge>
           )}
-          {tel.whatsappConfirmado && <Badge variant="success" size="xs">confirmado</Badge>}
+          {tel.whatsappVerified === true ? (
+            <Badge variant="success" size="xs" title={`WhatsApp comprovado ao vivo${tel.whatsappVerifiedAt ? ' em ' + new Date(tel.whatsappVerifiedAt).toLocaleDateString('pt-BR') : ''}`}>
+              <ShieldCheck className="h-2.5 w-2.5" /> validado ao vivo
+            </Badge>
+          ) : tel.whatsappVerified === false ? (
+            <Badge variant="warning" size="xs" title="Checado ao vivo: este número NÃO tem WhatsApp">
+              <ShieldAlert className="h-2.5 w-2.5" /> sem WhatsApp (checado)
+            </Badge>
+          ) : tel.whatsappConfirmado ? (
+            <Badge variant="outline" size="xs" title="Indicado pela Assertiva (não checado ao vivo)">indicado Assertiva</Badge>
+          ) : null}
           {tel.isHot && <Badge variant="hot" size="xs">ativo</Badge>}
           {tel.ultimoContato && (
             <span className="text-[10px] text-text-muted">{tel.ultimoContato}</span>

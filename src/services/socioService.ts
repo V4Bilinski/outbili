@@ -14,9 +14,13 @@ export interface SocioTelefone {
   e164: string
   /** Link de acesso direto ao WhatsApp (https://wa.me/<digitos>) */
   waLink: string
-  /** WhatsApp pessoal validado pela Assertiva (aplicativos.whatsApp) */
+  /** WhatsApp pessoal INFERIDO pela Assertiva (aplicativos.whatsApp) */
   whatsappPessoal: boolean
   whatsappConfirmado: boolean
+  /** WhatsApp COMPROVADO ao vivo (ator Apify). true=existe, false=não existe, null=nunca verificado. */
+  whatsappVerified: boolean | null
+  /** Quando a comprovação ao vivo rodou (ISO). */
+  whatsappVerifiedAt?: string
   isHot: boolean
   /** Número opt-out (Procon "não perturbe"). Quando true, evitar abordagem. */
   naoPerturbe: boolean
@@ -112,6 +116,8 @@ function mapTelefone(row: Record<string, unknown>): SocioTelefone {
     waLink: waLink(e164),
     whatsappPessoal: Boolean(row.whatsapp_pessoal),
     whatsappConfirmado: Boolean(row.whatsapp_confirmado),
+    whatsappVerified: row.whatsapp_verified === null || row.whatsapp_verified === undefined ? null : Boolean(row.whatsapp_verified),
+    whatsappVerifiedAt: (row.whatsapp_verified_at as string) || undefined,
     isHot: Boolean(row.is_hot),
     naoPerturbe: String(raw.naoPerturbe) === 'true',
     operadora: (raw.operadora as string) || undefined,
@@ -121,10 +127,15 @@ function mapTelefone(row: Record<string, unknown>): SocioTelefone {
   }
 }
 
-/** Ordena telefones: WhatsApp pessoal abordável primeiro; depois por ranking. */
+/** Ordena telefones: WhatsApp COMPROVADO ao vivo primeiro, depois inferido pela
+ *  Assertiva; número comprovadamente SEM WhatsApp afunda. Depois desempata por ranking. */
 function ordenarTelefones(a: SocioTelefone, b: SocioTelefone): number {
   const peso = (t: SocioTelefone) =>
-    (t.whatsappPessoal ? 2 : 0) + (t.naoPerturbe ? -3 : 0) + (t.isHot ? 1 : 0)
+    (t.whatsappVerified === true ? 10 : 0) +   // comprovado ao vivo = prioridade máxima
+    (t.whatsappVerified === false ? -10 : 0) + // comprovado SEM WhatsApp = afunda
+    (t.whatsappPessoal ? 2 : 0) +              // flag inferida Assertiva
+    (t.naoPerturbe ? -3 : 0) +
+    (t.isHot ? 1 : 0)
   return peso(b) - peso(a) || (a.ranking ?? 99) - (b.ranking ?? 99)
 }
 
