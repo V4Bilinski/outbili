@@ -255,7 +255,9 @@ html[data-theme="light"] {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #F4F4F5 0%, #A1A1AA 100%);
+  /* Usa tokens semânticos para responder ao tema: no dark fica claro (#F4F4F5 -> #A1A1AA),
+     no light fica escuro (#18181B -> #52525B). Antes era hardcoded claro e sumia no light. */
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
