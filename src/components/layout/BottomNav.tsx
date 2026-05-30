@@ -13,7 +13,9 @@ const allItems = [
 ]
 
 export function BottomNav() {
-  const items = allItems.slice(0, 5)
+  // Mostra apenas itens habilitados (descarta comingSoon) e limita a 5 slots no mobile.
+  // Garante que Relatorios apareca e nenhum slot seja gasto com item desabilitado.
+  const items = allItems.filter((i) => !i.comingSoon).slice(0, 5)
   const location = useLocation()
   const navRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })

@@ -1054,7 +1054,7 @@ export function SearchPage() {
                           Re-enriquecer
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => { enrichment.reset(); window.location.hash = '#/leads' }}>
+                      <Button variant="ghost" size="sm" onClick={() => { enrichment.reset(); window.location.hash = lastCreatedLead ? `#/leads/${lastCreatedLead.id}` : '#/leads' }}>
                         Ver lead completo <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
