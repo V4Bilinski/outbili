@@ -1,12 +1,9 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { reEnrichLead, leadNeedsReEnrich, type ReEnrichResult } from '../services/enrichmentService'
+import { leadNeedsReEnrich, type ReEnrichResult } from '../services/enrichmentService'
 import { getLeads } from '../services/leadService'
+import { enqueueEnrichmentBatch } from '../services/socioService'
 import type { Lead } from '../types'
-
-const STORAGE_KEY = 'outbili_reenrich_queue'
-const CONCURRENCY = 2
-const DELAY_BETWEEN_LEADS_MS = 1000
 
 export interface ReEnrichState {
   isRunning: boolean
@@ -19,16 +16,6 @@ export interface ReEnrichState {
   results: ReEnrichResult[]
 }
 
-function saveState(state: Pick<ReEnrichState, 'total' | 'completed' | 'failed' | 'skipped'>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch { /* quota exceeded */ }
-}
-
-function clearState() {
-  localStorage.removeItem(STORAGE_KEY)
-}
-
 export interface ReEnrichDiagnostics {
   totalLeads: number
   missingEmployees: number
@@ -38,33 +25,27 @@ export interface ReEnrichDiagnostics {
   alreadyComplete: number
 }
 
+const INITIAL_STATE: ReEnrichState = {
+  isRunning: false, total: 0, completed: 0, failed: 0, skipped: 0,
+  currentLead: '', etaSeconds: 0, results: [],
+}
+
 export function useReEnrichment() {
   const queryClient = useQueryClient()
-  const [state, setState] = useState<ReEnrichState>({
-    isRunning: false,
-    total: 0,
-    completed: 0,
-    failed: 0,
-    skipped: 0,
-    currentLead: '',
-    etaSeconds: 0,
-    results: [],
-  })
+  const [state, setState] = useState<ReEnrichState>(INITIAL_STATE)
   const [diagnostics, setDiagnostics] = useState<ReEnrichDiagnostics | null>(null)
   const [diagLoading, setDiagLoading] = useState(false)
-  const abortRef = useRef(false)
-  const startTimeRef = useRef(0)
 
-  // Update document title with progress
+  // Feedback no título da aba enquanto enfileira
   useEffect(() => {
     if (state.isRunning) {
-      document.title = `(${state.completed}/${state.total}) Re-enriquecendo...`
-    } else if (state.completed > 0 && !state.isRunning) {
-      document.title = `Re-enriquecimento concluido!`
-      const timer = setTimeout(() => { document.title = 'Outbili' }, 5000)
-      return () => clearTimeout(timer)
+      document.title = 'Enfileirando re-enriquecimento...'
+    } else if (state.completed > 0) {
+      document.title = 'Re-enriquecimento enfileirado'
+      const t = setTimeout(() => { document.title = 'Outbili' }, 5000)
+      return () => clearTimeout(t)
     }
-  }, [state.isRunning, state.completed, state.total])
+  }, [state.isRunning, state.completed])
 
   const loadDiagnostics = useCallback(async () => {
     setDiagLoading(true)
@@ -91,106 +72,50 @@ export function useReEnrichment() {
     }
   }, [])
 
+  // W3-08 + ADMIN-ENRICH-01 (F3B): em vez de processar no browser (fragil: trava se a aba
+  // fechar; lento), ENFILEIRA os leads elegiveis no worker server-side no modo 'cadastral'
+  // (leve: 1 consulta CNPJ Assertiva por lead, grava employees/idade/data de abertura).
+  // O worker (pg_cron, ~30s) processa em segundo plano. Robusto e escalavel.
   const startReEnrich = useCallback(async (mode: 'missing' | 'all') => {
-    abortRef.current = false
-    startTimeRef.current = Date.now()
-
-    setState(s => ({ ...s, isRunning: true, completed: 0, failed: 0, skipped: 0, results: [], currentLead: 'Carregando leads...' }))
+    setState({ ...INITIAL_STATE, isRunning: true, currentLead: 'Carregando leads...' })
 
     let allLeads: Lead[]
     try {
       allLeads = await getLeads()
     } catch {
-      setState(s => ({ ...s, isRunning: false, currentLead: 'Erro ao carregar leads' }))
+      setState({ ...INITIAL_STATE, currentLead: 'Erro ao carregar leads' })
       return
     }
 
-    const forceAll = mode === 'all'
-    const eligible = allLeads.filter(l => leadNeedsReEnrich(l, forceAll))
-
-    setState(s => ({ ...s, total: eligible.length, currentLead: `${eligible.length} leads para processar` }))
-
+    const eligible = allLeads.filter(l => leadNeedsReEnrich(l, mode === 'all'))
     if (eligible.length === 0) {
-      setState(s => ({ ...s, isRunning: false, currentLead: 'Nenhum lead precisa de re-enriquecimento' }))
+      setState({ ...INITIAL_STATE, currentLead: 'Nenhum lead precisa de re-enriquecimento' })
       return
     }
 
-    const results: ReEnrichResult[] = []
-    let completed = 0
-    let failed = 0
-    let skipped = 0
+    setState({ ...INITIAL_STATE, isRunning: true, total: eligible.length, currentLead: `Enfileirando ${eligible.length} leads no worker...` })
 
-    // Process leads with concurrency
-    const processLead = async (lead: Lead) => {
-      if (abortRef.current) return
+    const ids = eligible.map(l => l.id)
+    const r = await enqueueEnrichmentBatch(ids, 'high', 'cadastral')
 
-      setState(s => ({ ...s, currentLead: lead.companyName || lead.cnpj || lead.id }))
-
-      try {
-        const result = await reEnrichLead(lead.id, lead, { forceAll })
-        results.push(result)
-        if (result.skipped) skipped++
-        else completed++
-      } catch (err: any) {
-        failed++
-        results.push({ leadId: lead.id, updated: {}, source: 'cnpja', skipped: false, error: err.message })
-      }
-
-      const total = completed + failed + skipped
-      const elapsed = (Date.now() - startTimeRef.current) / 1000
-      const avgTime = total > 0 ? elapsed / total : 0
-      const remaining = eligible.length - total
-      const eta = Math.round(avgTime * remaining)
-
-      setState(s => ({
-        ...s,
-        completed,
-        failed,
-        skipped,
-        etaSeconds: eta,
-        results: [...results],
-      }))
-      saveState({ total: eligible.length, completed, failed, skipped })
-
-      // Delay between leads to respect rate limits
-      await new Promise(r => setTimeout(r, DELAY_BETWEEN_LEADS_MS))
+    if (!r.ok) {
+      setState({ ...INITIAL_STATE, total: eligible.length, currentLead: `Erro ao enfileirar: ${r.error || 'desconhecido'}` })
+      return
     }
 
-    // Concurrent processing pool
-    let index = 0
-    const next = async (): Promise<void> => {
-      while (index < eligible.length && !abortRef.current) {
-        const lead = eligible[index++]
-        await processLead(lead)
-      }
-    }
-
-    const workers = Array.from({ length: Math.min(CONCURRENCY, eligible.length) }, () => next())
-    await Promise.all(workers)
-
-    // Done
-    setState(s => ({
-      ...s,
-      isRunning: false,
-      currentLead: abortRef.current ? 'Abortado pelo usuario' : 'Concluido!',
-      results: [...results],
-    }))
-    clearState()
-
-    // Refresh all leads in cache
+    setState({
+      ...INITIAL_STATE,
+      total: eligible.length,
+      completed: r.enqueued,
+      currentLead: `${r.enqueued} leads enfileirados. O worker processa em segundo plano (alguns minutos). Atualize o diagnostico para acompanhar.`,
+    })
     queryClient.invalidateQueries({ queryKey: ['leads'] })
-
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Re-enriquecimento concluido', {
-        body: `${completed} atualizados, ${failed} erros, ${skipped} pulados`,
-        icon: '/favicon.ico',
-      })
-    }
   }, [queryClient])
 
   const abort = useCallback(() => {
-    abortRef.current = true
+    // Enfileiramento e instantaneo; o processamento e assincrono no worker.
+    // Nao ha o que abortar no client (jobs ja na fila seguem ate o worker drenar).
+    setState(INITIAL_STATE)
   }, [])
 
   return { state, diagnostics, diagLoading, loadDiagnostics, startReEnrich, abort }

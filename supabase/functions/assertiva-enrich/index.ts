@@ -907,7 +907,7 @@ serve(async (req: Request): Promise<Response> => {
       leadId?: string
       jobId?: string
       idFinalidade?: string
-      mode?: 'full' | 'presence'
+      mode?: 'full' | 'presence' | 'cadastral'
     }
 
     const cnpj = body.cnpj
@@ -956,6 +956,55 @@ serve(async (req: Request): Promise<Response> => {
       })
       return new Response(
         JSON.stringify({ digitalPresence: presence, warnings: warnings.length > 0 ? warnings : undefined }),
+        { status: 200, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // MODO CADASTRAL: só dados cadastrais da empresa (1 consulta CNPJ Assertiva, barato).
+    // Preenche employees / idade no mercado / data de abertura no lead, SEM a cascata de
+    // sócios. Usado pelo re-enriquecimento em lote do painel Admin (ADMIN-ENRICH-01 F3B).
+    // Isolado por design: bug aqui NÃO afeta os modos 'full'/'presence' que já rodam.
+    if (mode === 'cadastral') {
+      const cleanCnpj = cnpj.replace(/\D/g, '')
+      const rawCnpj = await assertivaGet(
+        token,
+        `/localize/v3/cnpj?cnpj=${cleanCnpj}&idFinalidade=${idFinalidade}`,
+        warnings,
+      )
+      const resp = ((rawCnpj as Record<string, unknown> | null)?.['resposta'] ?? rawCnpj) as Record<string, unknown>
+      const cad = (resp?.['dadosCadastrais'] ?? {}) as Record<string, unknown>
+
+      const patch: Record<string, unknown> = {}
+      const employees = Number(cad['quantidadeFuncionarios'])
+      if (Number.isFinite(employees) && employees > 0) patch.employees = employees
+      const idade = Number(cad['idadeEmpresa'])
+      if (Number.isFinite(idade) && idade > 0) patch.years_in_market = idade
+      // A Assertiva devolve data em DD/MM/YYYY. A coluna founding_date e `date`: gravar o
+      // formato BR cru faz o Postgres ler como MM/DD e CORROMPER a data (12/06 -> 06/dez).
+      // Converter para ISO YYYY-MM-DD; se o formato for desconhecido, NAO grava (nunca corromper).
+      const rawData = (cad['dataAbertura'] ?? cad['dataFundacao'] ?? cad['dataInicioAtividade']) as string | undefined
+      if (rawData) {
+        const br = rawData.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+        const iso = br ? `${br[3]}-${br[2]}-${br[1]}` : (/^\d{4}-\d{2}-\d{2}/.test(rawData) ? rawData.slice(0, 10) : undefined)
+        if (iso) patch.founding_date = iso
+      }
+
+      let updated = 0
+      if (Object.keys(patch).length > 0) {
+        const { error } = await supabase.schema('app').from('leads').update(patch).eq('id', leadId)
+        if (error) warnings.push(`cadastral: update falhou: ${error.message}`)
+        else updated = Object.keys(patch).length
+      } else {
+        warnings.push('cadastral: resposta Assertiva sem quantidadeFuncionarios/idadeEmpresa')
+      }
+
+      await finishJob(supabase, leadId, jobId, true, null, {
+        mode: 'cadastral',
+        camposAtualizados: updated,
+        warnings: warnings.length,
+      })
+      return new Response(
+        JSON.stringify({ mode: 'cadastral', updated: patch, warnings: warnings.length > 0 ? warnings : undefined }),
         { status: 200, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } },
       )
     }

@@ -255,11 +255,13 @@ export async function requestEnrichment(
 export async function enqueueEnrichmentBatch(
   leadRefs: string[],
   priority: EnrichmentPriority = 'high',
+  mode: 'full' | 'cadastral' = 'full',
 ): Promise<{ ok: boolean; enqueued: number; error?: string }> {
   if (!leadRefs || leadRefs.length === 0) return { ok: true, enqueued: 0 }
   const { data, error } = await supabase.rpc('enqueue_enrichment_batch', {
     p_lead_refs: leadRefs,
     p_priority: priority,
+    p_mode: mode,
   })
   if (error) return { ok: false, enqueued: 0, error: error.message }
   return { ok: true, enqueued: (data as number) ?? 0 }

@@ -45,10 +45,16 @@ metadata:
 - [x] Todos reduzidos a stubs limpos: guard de saída + ponteiro para o equivalente Supabase (SPICED → painel Admin; social → Edge `social-enrich` via fila; enrich → re-enrich Admin / worker W3-08). **Zero `api.airtable.com` em `scripts/` e `src/`.**
 - [x] Regra `social-media-enrichment.md` atualizada (backfill server-side via fila, não mais `.mjs`).
 
-### F3B — Re-arquitetura do worker (cadastral) `[⏳ pendente — ponto de não-retorno: DB + Edge]`
-- [ ] Estender `assertiva-enrich` (ou novo modo) para gravar `employees`/`foundingDate`/`yearsInMarket` (CNPJa).
-- [ ] AdminPage enfileira via `enqueueEnrichmentBatch` + UI de progresso por fila.
-- [ ] Migration + deploy de Edge Function (confirmar com operador antes de aplicar em produção).
+### F3B — Re-arquitetura do worker (cadastral) `[🟡 código pronto · infra pendente]`
+**Desenho final (isolado, SEM nova API CNPJa):** a Edge `assertiva-enrich` ganhou o modo `cadastral`
+que reusa o `rawCnpj` da Assertiva (já traz `dadosCadastrais.quantidadeFuncionarios` = employees e
+`idadeEmpresa` = yearsInMarket) e grava em `app.leads`. **Não toca** `full`/`presence`. Custo de API zero adicional.
+- [x] Edge: `if (mode === 'cadastral')` isolado (`assertiva-enrich/index.ts`).
+- [x] Migration: `enqueue_enrichment_batch` ganha `p_mode` opcional (default `full` = compat) — `supabase/migrations/20260530120000_admin_enrich_01_enqueue_mode.sql`.
+- [x] Frontend: `socioService.enqueueEnrichmentBatch(…, mode)` + `useReEnrichment` enfileira no worker + AdminPage (confirmação de enfileiramento).
+- [x] Build/lint local OK (exit 0; lint 196 ≤ baseline 197).
+- [x] Código preservado na branch git `feat/admin-enrich-f3b` (NÃO em produção — o frontend quebraria sem a migration aplicada).
+- [ ] **Infra (ponto de não-retorno, requer operador):** Supabase `org_id` + confirmação de custo do branch → apply migration + deploy Edge no branch → validar (atenção: secrets Assertiva/Vault podem não ser herdados pelo branch) → `merge_branch` p/ prod → **só então** merge `feat/admin-enrich-f3b` na `main` (deploy do frontend).
 
 ---
 
