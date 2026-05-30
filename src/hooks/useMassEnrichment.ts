@@ -235,7 +235,7 @@ export function useMassEnrichment() {
     const pending = loadPendingQueue()
     if (!pending || pending.length === 0) return
 
-    // Fetch full lead data from Airtable
+    // Fetch full lead data from Supabase
     const leads: Lead[] = []
     for (const item of pending) {
       try {

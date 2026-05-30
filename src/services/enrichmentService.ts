@@ -680,7 +680,7 @@ export async function enrichLead(
   }
   notify()
 
-  // --- Save enriched data to Airtable ---
+  // --- Save enriched data to Supabase ---
   const updateFields: Partial<Lead> = { ...merged }
   Object.assign(updateFields, spiced)
   // Score = media ponderada SPICED (S*25% + P*25% + I*20% + C*15% + D*15%) = escala 1 a 5
@@ -710,7 +710,7 @@ export async function enrichLead(
   updateFields.enrichmentSources = JSON.stringify(steps.filter(s => s.status === 'done').map(s => s.source))
   updateFields.enrichmentLog = JSON.stringify(enrichmentLog)
 
-  // Single batched Airtable write (all fields + SPICED + log)
+  // Single batched Supabase write (all fields + SPICED + log)
   try {
     await updateLead(leadId, updateFields)
   } catch {
@@ -999,7 +999,7 @@ export async function reEnrichLead(
     merged.enrichmentStatus = source === 'both' || source === 'assertiva' ? 'assertiva' : 'cnpja'
   }
 
-  // Persistir no Airtable
+  // Persistir no Supabase
   await updateLead(leadId, merged)
   await logEnrichmentStep(leadId, 're-enrich', 'done', `${Object.keys(merged).length} campos atualizados via ${source}`).catch(() => {})
 

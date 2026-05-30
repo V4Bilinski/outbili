@@ -89,7 +89,7 @@ export function useSpicedRecalc() {
           })
         )
 
-        // Rate limit: Airtable 5 req/s — batch de 5 com pause
+        // Throttle defensivo entre batches (protege o backend Supabase/Edge sob carga)
         if (i + batchSize < leads.length) {
           await new Promise(r => setTimeout(r, 1200))
         }

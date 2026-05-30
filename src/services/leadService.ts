@@ -5,6 +5,7 @@
 // (`airtable_record_id`), reaproveitado para leads novos via `generateRecordId()`.
 
 import { supabase, generateRecordId, throwIfError, isAirtableId } from '../lib/supabase'
+import { paginateRange } from '../lib/paginate'
 import type { Lead } from '../types'
 
 const TABLE = 'leads'
@@ -264,11 +265,18 @@ function applyAirtableFilter<T extends { eq: any }>(q: T, filter: string): T {
 // ---------- API publica ----------
 
 export async function getLeads(filter?: string): Promise<Lead[]> {
-  let q: any = supabase.from(TABLE).select(SELECT).is('deleted_at', null).order('company_name', { ascending: true })
-  if (filter) q = applyAirtableFilter(q, filter)
-  const { data, error } = await q
-  throwIfError(error, 'getLeads')
-  return (data || []).map(rowToLead)
+  // Paginado: sem .range() em loop, o PostgREST trunca em 1000 linhas silenciosamente.
+  // Tie-breaker `id` garante ordem total estavel entre paginas (company_name nao e unico).
+  const rows = await paginateRange(
+    async (from, to) => {
+      let q: any = supabase.from(TABLE).select(SELECT).is('deleted_at', null)
+        .order('company_name', { ascending: true }).order('id', { ascending: true })
+      if (filter) q = applyAirtableFilter(q, filter)
+      return await q.range(from, to)
+    },
+    (error) => throwIfError(error, 'getLeads'),
+  )
+  return rows.map(rowToLead)
 }
 
 export async function getLead(id: string): Promise<Lead> {
@@ -320,17 +328,25 @@ export async function deleteLead(id: string): Promise<void> {
 }
 
 export async function getLeadsByStatus(status: string): Promise<Lead[]> {
-  const { data, error } = await supabase.from(TABLE).select(SELECT)
-    .is('deleted_at', null).eq('status', status).order('company_name')
-  throwIfError(error, 'getLeadsByStatus')
-  return (data || []).map(rowToLead)
+  const rows = await paginateRange(
+    async (from, to) => await supabase.from(TABLE).select(SELECT)
+      .is('deleted_at', null).eq('status', status)
+      .order('company_name', { ascending: true }).order('id', { ascending: true })
+      .range(from, to),
+    (error) => throwIfError(error, 'getLeadsByStatus'),
+  )
+  return rows.map(rowToLead)
 }
 
 export async function getLeadsByTemperature(temperature: string): Promise<Lead[]> {
-  const { data, error } = await supabase.from(TABLE).select(SELECT)
-    .is('deleted_at', null).eq('temperatura', temperature).order('company_name')
-  throwIfError(error, 'getLeadsByTemperature')
-  return (data || []).map(rowToLead)
+  const rows = await paginateRange(
+    async (from, to) => await supabase.from(TABLE).select(SELECT)
+      .is('deleted_at', null).eq('temperatura', temperature)
+      .order('company_name', { ascending: true }).order('id', { ascending: true })
+      .range(from, to),
+    (error) => throwIfError(error, 'getLeadsByTemperature'),
+  )
+  return rows.map(rowToLead)
 }
 
 export async function getHotLeads(): Promise<Lead[]> {

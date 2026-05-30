@@ -550,14 +550,14 @@ export function SearchPage() {
       setDupOverride(false)
       setDupWarning(null)
 
-      // 2. Salvar lead no Airtable
+      // 2. Salvar lead no Supabase
       let lead: any
       try {
         lead = await createLead(leadData as any)
       } catch {
         const minimalData = { companyName: realCompanyName, cnpj: cnpjClean, score: spicedScore, temperature: getTemperatureFromScore(spicedScore), spicedS: spiced.spicedS, spicedP: spiced.spicedP, spicedI: spiced.spicedI, spicedC: spiced.spicedC, spicedD: spiced.spicedD }
         lead = await createLead(minimalData as any)
-        toast.warning('Salvo com dados básicos. Campos extras não suportados pelo Airtable.')
+        toast.warning('Salvo com dados básicos. Alguns campos extras não foram aceitos.')
       }
       setLastCreatedLead({ id: lead.id, data: leadData })
 

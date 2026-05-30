@@ -57,7 +57,7 @@ export interface Lead {
   capitalSocial?: number
   legalNature?: string
   registrationStatus?: 'Ativa' | 'Baixada' | 'Suspensa' | 'Inapta' | 'Nula'
-  foundingDate?: string           // ISO date (campo date no Airtable)
+  foundingDate?: string           // ISO date
   cnaePrimary?: string
   cnaeSecondary?: string          // texto separado por \n
   partners?: string               // JSON array: [{nome, qualificacao}] — migra para tabela Partners

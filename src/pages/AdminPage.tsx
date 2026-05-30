@@ -343,7 +343,7 @@ export function AdminPage() {
                   <CardTitle>Recalcular SPICED v2 em massa</CardTitle>
                 </div>
                 <p className="text-xs text-text-muted mb-4">
-                  Recalcula score e temperatura de todos os leads usando a nova formula SPICED v2 (CNPJa + Assertiva only). Nao consome creditos de API — usa apenas os dados ja existentes no Airtable.
+                  Recalcula score e temperatura de todos os leads usando a formula SPICED v2 (CNPJa + Assertiva). Nao consome creditos de API: usa apenas os dados que ja estao na base.
                 </p>
 
                 {!recalcProgress.isRunning && !recalcProgress.isDone && (
