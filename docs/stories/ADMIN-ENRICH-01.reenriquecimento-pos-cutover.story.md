@@ -66,4 +66,8 @@ que reusa o `rawCnpj` da Assertiva (já traz `dadosCadastrais.quantidadeFunciona
 Build (`tsc -b`+vite) exit 0 · teste de paginação exit 0 · lint sem novos erros (paridade 197=197) · pre-flight git por push · deploy via Actions + validação de bundle em produção.
 
 ## Change Log
-- 2026-05-30 — Auditoria adversarial (workflow, 6 agentes). F1+F2 implementados e validados (Bloco 1). F3B/F4 em sequência.
+- 2026-05-30 — Auditoria adversarial (workflow, 6 agentes). F1+F2 implementados e validados (Bloco 1).
+- 2026-05-30 — F4 (`d0eac87`): 3 scripts Airtable legados neutralizados (incl. enrich-leads.py ativo). Zero api.airtable.com em scripts/+src/.
+- 2026-05-30 — F3B (`17014d1`): modo `cadastral` isolado na Edge + migration `enqueue p_mode` + AdminPage enfileira no worker. Smoke pegou bug data DD/MM/YYYY (fix ISO). Caminho da fila validado.
+- 2026-05-30 — A+B (`09be4aa`): modo cadastral rico (faturamento/score/renda, custo API zero) + função SQL `recalc_lead_spiced` chamada pela Edge (SPICED contextualizado). Lição: reload schema cache PostgREST exige DDL, não só NOTIFY.
+- 2026-05-30 — UI Perfil Financeiro (`2d18ff3`): `FinancialPanel` na aba Resumo (CompanyPage). Tira do limbo score de crédito + renda do decisor; separa faturamento de capital. 8 métricas, grid 2/4 col, badge de faixa, estado vazio. Build/lint OK, bundle prod `index-Dhwn3Iiw.js` validado. (O commit anterior `4ba6f76` quebrou o main — import sem uso + Date.now no render — corrigido aqui.)
