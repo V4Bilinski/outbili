@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Users, Columns3, MessageSquare, Smartphone, BarChart3, Settings, Shield, LogOut, ChevronLeft, ChevronRight, X, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Search, Users, Columns3, MessageSquare, Smartphone, BarChart3, Settings, Shield, LogOut, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useSidebar } from '../../lib/sidebar-context'
 import { useAuth } from '../../lib/auth-context'
@@ -18,7 +18,7 @@ const navItems = [
 
 function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavClick?: () => void }) {
   const { user, isAdmin, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   return (
     <>
       {/* Logo */}
@@ -120,19 +120,6 @@ function SidebarContent({ collapsed, onNavClick }: { collapsed: boolean; onNavCl
             {!collapsed && <span>Administração</span>}
           </NavLink>
         )}
-
-        {/* Toggle tema claro/escuro */}
-        <button
-          onClick={toggleTheme}
-          title={collapsed ? (theme === 'dark' ? 'Modo claro' : 'Modo escuro') : undefined}
-          className={cn(
-            'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full text-text-secondary hover:text-text-primary hover:bg-elevated-2 cursor-pointer',
-            collapsed && 'justify-center px-2',
-          )}
-        >
-          {theme === 'dark' ? <Sun className="h-[18px] w-[18px] shrink-0" /> : <Moon className="h-[18px] w-[18px] shrink-0" />}
-          {!collapsed && <span>{theme === 'dark' ? 'Modo claro' : 'Modo escuro'}</span>}
-        </button>
 
         {/* User info + logout */}
         {user && (

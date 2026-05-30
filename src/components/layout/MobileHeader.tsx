@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react'
 import { useSidebar } from '../../lib/sidebar-context'
+import { ThemeToggle } from '../ui/ThemeToggle'
 
 export function MobileHeader() {
   const { toggleMobile } = useSidebar()
@@ -16,7 +17,7 @@ export function MobileHeader() {
         <img src="/outbili/v4-icon.png" alt="V4" className="h-6 w-6 object-contain rounded" />
         <span className="text-sm font-semibold text-text-primary">OUTBILI <span className="text-text-muted font-normal">· V4 Bilinski &amp;Co</span></span>
       </div>
-      <div className="w-9" />
+      <ThemeToggle />
     </header>
   )
 }
