@@ -66,9 +66,11 @@ src/
     SearchPage        # Pesquisa em massa + cadastro manual + upload
     CampaignsPage     # Cadências WhatsApp
     ReportsPage       # Relatórios
-    AdminPage         # Administração (3 tabs: Atividades, Usuários, Enriquecimento)
-    SettingsPage      # Configurações
-    LoginPage         # Autenticação (Users table + useAuth hook)
+    AdminPage         # Administração (4 tabs: Atividades, Usuários, Enriquecimento, Conexões)
+    SettingsPage      # Configurações (perfil + senha; links Glossário/Institucional)
+    LoginPage         # Autenticação (Supabase Auth + useAuth hook)
+    InstitucionalPage # Porta de entrada do não-logado (AuthGuard redireciona para cá)
+    GlossarioPage     # Glossário de termos (acessível via Configurações > Sobre)
   components/
     layout/           # MainLayout, Sidebar, BottomNav, MobileHeader
     ui/               # Button, Card, Badge, Skeleton, AccordionItem, etc.
@@ -306,23 +308,31 @@ Para tarefas que envolvam agentes, workflows ou padrões do framework AIOX, cons
 8. **Dashboard** — KPIs com micro-narrativas, temperatura com hints de ação, ações rápidas orientadas
 9. **Relatórios** — métricas com benchmarks, projeções com fórmulas explícitas, recomendações condicionais
 10. **Re-enriquecimento** — batch re-enrichment com diagnóstico (AdminPage > tab Enriquecimento)
-11. **Autenticação** — login com Users table, useAuth hook, proteção de rotas
-12. **Administração** — AdminPage com 3 tabs: Atividades, Usuários, Enriquecimento
+11. **Autenticação** — Supabase Auth, useAuth hook, proteção de rotas. O não-logado é redirecionado para `/institucional` (não direto para `/login`); o ciclo de entrada é `institucional → login → app`
+12. **Administração** — AdminPage com 4 tabs: Atividades, Usuários, Enriquecimento, Conexões
+13. **Onboarding** — no 1º acesso, troca de senha obrigatória (`PasswordResetModal`); senão, tour de boas-vindas (`WelcomeTour`). Disparado em `MainLayout`
 
 ---
 
 ## Navegação
 
-| Menu Desktop (Sidebar) | Menu Mobile (BottomNav) | Rota |
-|------------------------|------------------------|------|
-| Dashboard | Home | `/#/` |
-| Pesquisa | Busca | `/#/search` |
-| Leads | Leads | `/#/leads` |
-| Pipeline | Pipeline | `/#/pipeline` |
-| Mensagens | Msgs | `/#/inbox` |
-| Campanhas | — | `/#/campaigns` |
-| Relatórios | — | `/#/reports` |
-| Configurações | — | `/#/settings` |
+| Menu Desktop (Sidebar) | Menu Mobile (BottomNav) | Rota | Estado |
+|------------------------|------------------------|------|--------|
+| Dashboard | Home | `/#/` | ativo |
+| Pesquisa | Busca | `/#/search` | ativo |
+| Leads | Leads | `/#/leads` | ativo |
+| Pipeline | Pipeline | `/#/pipeline` | ativo |
+| Mensagens | — | `/#/inbox` | **`comingSoon` na nav** (rota e código ativos) |
+| Campanhas | — | `/#/campaigns` | **`comingSoon` na nav** (rota e código ativos) |
+| Relatórios | Reports | `/#/reports` | ativo (mobile incluído após fix 2026-05-30) |
+| Configurações | — | `/#/settings` | ativo (só desktop) |
+| Administração | — | `/#/admin` | ativo, **somente `role=admin`** |
+
+> **Telas sem entrada de menu:** `/#/institucional` (porta de entrada do não-logado) e `/#/glossario` são alcançáveis via `Configurações > Sobre`. `/#/leads/:id` (ficha) é alcançada por clique no lead.
+>
+> **Papéis:** o app só distingue `admin` vs não-admin (`isAdmin`). Não há papel "gestor" — BDR e gestor compartilham a mesma navegação. O modelo de role tem default divergente (`auth-context` assume `viewer`, `AdminPage` edita com `sdr`); pendência a reconciliar.
+>
+> **Pendência de navegação (2026-05-30):** Mensagens e Campanhas estão implementadas mas marcadas `comingSoon` na Sidebar/BottomNav. Decisão de produto pendente: liberar ou tratar como roadmap. Ver `docs/guides/VALIDACAO-FLUXOS-JORNADAS-2026-05-30.md`.
 
 ---
 
