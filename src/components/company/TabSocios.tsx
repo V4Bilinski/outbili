@@ -123,15 +123,17 @@ function WhatsAppRow({ tel }: { tel: SocioTelefone }) {
             <Badge variant="success" size="xs">liberado</Badge>
           )}
           {tel.whatsappVerified === true ? (
-            <Badge variant="success" size="xs" title={`WhatsApp comprovado ao vivo${tel.whatsappVerifiedAt ? ' em ' + new Date(tel.whatsappVerifiedAt).toLocaleDateString('pt-BR') : ''}`}>
-              <ShieldCheck className="h-2.5 w-2.5" /> validado ao vivo
-            </Badge>
+            <span title={`WhatsApp comprovado ao vivo${tel.whatsappVerifiedAt ? ' em ' + new Date(tel.whatsappVerifiedAt).toLocaleDateString('pt-BR') : ''}`} className="inline-flex">
+              <Badge variant="success" size="xs"><ShieldCheck className="h-2.5 w-2.5" /> validado ao vivo</Badge>
+            </span>
           ) : tel.whatsappVerified === false ? (
-            <Badge variant="warning" size="xs" title="Checado ao vivo: este número NÃO tem WhatsApp">
-              <ShieldAlert className="h-2.5 w-2.5" /> sem WhatsApp (checado)
-            </Badge>
+            <span title="Checado ao vivo: este número NÃO tem WhatsApp" className="inline-flex">
+              <Badge variant="warning" size="xs"><ShieldAlert className="h-2.5 w-2.5" /> sem WhatsApp (checado)</Badge>
+            </span>
           ) : tel.whatsappConfirmado ? (
-            <Badge variant="outline" size="xs" title="Indicado pela Assertiva (não checado ao vivo)">indicado Assertiva</Badge>
+            <span title="Indicado pela Assertiva (não checado ao vivo)" className="inline-flex">
+              <Badge variant="outline" size="xs">indicado Assertiva</Badge>
+            </span>
           ) : null}
           {tel.isHot && <Badge variant="hot" size="xs">ativo</Badge>}
           {tel.ultimoContato && (
