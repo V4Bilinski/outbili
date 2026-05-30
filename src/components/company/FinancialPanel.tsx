@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Card } from '../ui/Card'
 import { DollarSign, TrendingUp, Landmark, Gauge, UserRound, Users, CalendarClock, Building2, Sparkles } from 'lucide-react'
 import { formatCurrencyShort } from '../../lib/utils'
@@ -42,16 +41,9 @@ interface Metric {
   highlight?: boolean
 }
 
-export function FinancialPanel({ lead }: { lead: Lead }) {
-  const yearsInMarket = useMemo(() => {
-    if (lead.yearsInMarket != null) return lead.yearsInMarket
-    if (lead.foundingDate) {
-      const y = Math.floor((Date.now() - new Date(lead.foundingDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-      return Number.isFinite(y) && y >= 0 ? y : undefined
-    }
-    return undefined
-  }, [lead.yearsInMarket, lead.foundingDate])
-
+// yearsInMarket vem como prop ja calculado pelo CompanyPage (evita Date.now() no render,
+// que o eslint react bloqueia como funcao impura).
+export function FinancialPanel({ lead, yearsInMarket }: { lead: Lead; yearsInMarket?: number | null }) {
   const credit = lead.assertivaCreditScore != null ? creditBand(lead.assertivaCreditScore) : undefined
 
   const metrics: Metric[] = [

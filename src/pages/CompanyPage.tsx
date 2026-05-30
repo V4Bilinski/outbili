@@ -685,6 +685,9 @@ export function CompanyPage() {
               )}
             </div>
 
+            {/* Perfil financeiro — faturamento, capital, score de crédito, renda do decisor */}
+            <FinancialPanel lead={lead} yearsInMarket={yearsInMarket} />
+
             {/* Stakeholder (pessoa-chave) — vinculado e validado, junto aos dados cadastrais */}
             <StakeholderPanel lead={lead} contacts={contacts} onAdd={() => setShowAddContact(true)} />
 
