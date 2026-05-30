@@ -988,6 +988,19 @@ serve(async (req: Request): Promise<Response> => {
         const iso = br ? `${br[3]}-${br[2]}-${br[1]}` : (/^\d{4}-\d{2}-\d{2}/.test(rawData) ? rawData.slice(0, 10) : undefined)
         if (iso) patch.founding_date = iso
       }
+      // A (complemento ADMIN-ENRICH-01): a MESMA consulta CNPJ ja traz mais campos.
+      // Aproveita sem custo de API extra: faturamento presumido (gap gritante na base),
+      // score de credito e renda presumida. So grava numericos > 0 (nunca grava lixo).
+      const toPosNum = (v: unknown): number | undefined => {
+        const n = typeof v === 'object' && v !== null ? Number((v as Record<string, unknown>)['valor']) : Number(v)
+        return Number.isFinite(n) && n > 0 ? n : undefined
+      }
+      const faturamento = toPosNum(resp['faturamentoPresumido'] ?? cad['faturamentoPresumido'])
+      if (faturamento) patch.monthly_revenue = faturamento
+      const scoreCredito = toPosNum(resp['scoreCredito'] ?? cad['scoreCredito'])
+      if (scoreCredito) patch.assertiva_credit_score = Math.round(scoreCredito)
+      const renda = toPosNum(resp['rendaPresumida'] ?? cad['rendaPresumida'])
+      if (renda) patch.assertiva_income_estimate = Math.round(renda)
 
       let updated = 0
       if (Object.keys(patch).length > 0) {
@@ -995,7 +1008,15 @@ serve(async (req: Request): Promise<Response> => {
         if (error) warnings.push(`cadastral: update falhou: ${error.message}`)
         else updated = Object.keys(patch).length
       } else {
-        warnings.push('cadastral: resposta Assertiva sem quantidadeFuncionarios/idadeEmpresa')
+        warnings.push('cadastral: resposta Assertiva sem campos cadastrais uteis')
+      }
+
+      // B (complemento ADMIN-ENRICH-01): recalcula o SPICED do lead com os dados novos
+      // via funcao SQL canonica `app.recalc_lead_spiced` (espelha calculateSpicedDimensions
+      // / o recalc em massa do front). Non-blocking: falha aqui nao invalida o enriquecimento.
+      if (updated > 0) {
+        const { error: recalcErr } = await supabase.schema('app').rpc('recalc_lead_spiced', { p_lead_id: leadId })
+        if (recalcErr) warnings.push(`cadastral: recalc SPICED falhou: ${recalcErr.message}`)
       }
 
       await finishJob(supabase, leadId, jobId, true, null, {
