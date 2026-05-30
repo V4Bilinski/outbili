@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { SectionDivider } from '../components/ui/SectionLabel'
-import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, XCircle, Loader2, Zap, ArrowRight, Plug, Pencil, X } from 'lucide-react'
+import { Shield, Users, Activity, Eye, UserCheck, UserX, RefreshCw, Database, CheckCircle2, Loader2, Zap, ArrowRight, Plug, Pencil, X } from 'lucide-react'
 import { useReEnrichment } from '../hooks/useReEnrichment'
 import { IntegrationStatusBanner } from '../components/IntegrationStatusBanner'
 import { ConnectionsApiPanel } from '../components/ConnectionsApiPanel'
@@ -318,7 +318,7 @@ export function AdminPage() {
                     icon={<RefreshCw className="h-4 w-4" />}
                     disabled={reEnrichState.isRunning || diagnostics.totalLeads === 0}
                     onClick={() => {
-                      if (confirm(`Forcar re-enriquecimento de TODOS os ${diagnostics.totalLeads} leads? Isso consome creditos de API.`)) {
+                      if (confirm(`Forcar re-enriquecimento de TODOS os ${diagnostics.totalLeads} leads? Eles serao enfileirados no worker (processamento em segundo plano).`)) {
                         startReEnrich('all')
                       }
                     }}
@@ -442,71 +442,31 @@ export function AdminPage() {
             </Card>
           )}
 
-          {/* Progresso */}
+          {/* Progresso do enfileiramento (worker assincrono) */}
           {reEnrichState.isRunning && (
             <Card>
-              <div className="flex items-center justify-between mb-3">
-                <CardTitle>Processando...</CardTitle>
-                <Button size="sm" variant="danger" onClick={abort}>Parar</Button>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-4 w-4 text-red animate-spin" />
-                  <span className="text-sm text-text-primary truncate">{reEnrichState.currentLead}</span>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full h-2 bg-elevated-2 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-red to-red-vivid rounded-full transition-all duration-500"
-                    style={{ width: `${reEnrichState.total > 0 ? ((reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped) / reEnrichState.total) * 100 : 0}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-4 text-label text-text-muted">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-success" /> {reEnrichState.completed} atualizados
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <XCircle className="h-3 w-3 text-error" /> {reEnrichState.failed} erros
-                  </span>
-                  <span>{reEnrichState.skipped} pulados</span>
-                  <span className="ml-auto">
-                    {reEnrichState.completed + reEnrichState.failed + reEnrichState.skipped}/{reEnrichState.total}
-                    {reEnrichState.etaSeconds > 0 && ` · ETA ${Math.ceil(reEnrichState.etaSeconds / 60)} min`}
-                  </span>
-                </div>
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-4 w-4 text-red animate-spin shrink-0" />
+                <span className="text-sm text-text-primary truncate flex-1">{reEnrichState.currentLead}</span>
+                <Button size="sm" variant="danger" onClick={abort}>Cancelar</Button>
               </div>
             </Card>
           )}
 
-          {/* Resultado final */}
-          {!reEnrichState.isRunning && reEnrichState.results.length > 0 && (
+          {/* Confirmacao de enfileiramento — o worker processa em segundo plano */}
+          {!reEnrichState.isRunning && reEnrichState.completed > 0 && (
             <Card>
-              <CardTitle className="mb-3">Resultado do re-enriquecimento</CardTitle>
-              <div className="flex items-center gap-4 mb-3 text-sm">
-                <span className="text-success font-semibold">{reEnrichState.completed} atualizados</span>
-                <span className="text-error font-semibold">{reEnrichState.failed} erros</span>
-                <span className="text-text-muted">{reEnrichState.skipped} pulados</span>
-              </div>
-              <div className="max-h-60 overflow-y-auto space-y-1">
-                {reEnrichState.results.filter(r => !r.skipped).map((r) => (
-                  <div key={r.leadId} className="flex items-center gap-2 text-label py-1 border-b border-border/50">
-                    {r.error ? (
-                      <XCircle className="h-3 w-3 text-error shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="h-3 w-3 text-success shrink-0" />
-                    )}
-                    <span className="text-text-secondary font-mono truncate">{r.leadId.slice(0, 8)}</span>
-                    <span className="text-text-muted">
-                      {r.error || `${Object.keys(r.updated).length} campos via ${r.source}`}
-                    </span>
-                    {r.updated.employees && (
-                      <Badge variant="info" size="sm">{r.updated.employees} func</Badge>
-                    )}
-                    {r.updated.yearsInMarket !== undefined && (
-                      <Badge variant="default" size="sm">{r.updated.yearsInMarket} anos</Badge>
-                    )}
-                  </div>
-                ))}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-success/10 border border-success/20 shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text-primary">{reEnrichState.completed} leads enfileirados no worker</p>
+                  <p className="text-xs text-text-muted mt-0.5">{reEnrichState.currentLead}</p>
+                </div>
+                <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3.5 w-3.5" />} onClick={loadDiagnostics} disabled={diagLoading}>
+                  Atualizar diagnostico
+                </Button>
               </div>
             </Card>
           )}
