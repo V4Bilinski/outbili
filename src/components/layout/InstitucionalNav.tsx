@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
-import { Menu, X, LogIn } from 'lucide-react'
+import { Menu, X, LogIn, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../../lib/theme-context'
 
 const SECTIONS = [
   { id: 'hero', label: 'Início' },
@@ -21,6 +22,7 @@ const SECTIONS = [
  */
 export function InstitucionalNav() {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState('hero')
 
@@ -96,7 +98,7 @@ export function InstitucionalNav() {
             aria-label="Voltar ao topo"
           >
             <img
-              src="/outbili/logo-white.png"
+              src={theme === 'light' ? '/outbili/logo-black.png' : '/outbili/logo-white.png'}
               alt="V4 Bilinski &amp; Co"
               className="h-9 md:h-10 w-auto"
             />
@@ -138,8 +140,16 @@ export function InstitucionalNav() {
             ))}
           </nav>
 
-          {/* Right: CTA + mobile toggle */}
+          {/* Right: theme toggle + CTA + mobile toggle */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+              className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-surface/40 hover:bg-surface/70 text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <motion.button
               onClick={() => navigate('/login')}
               initial={{ opacity: 0, x: 8 }}
@@ -154,7 +164,7 @@ export function InstitucionalNav() {
 
             <button
               onClick={() => setOpen((v) => !v)}
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-red/30 bg-red/[0.10] hover:bg-red/[0.18] hover:border-red/50 text-white transition-all cursor-pointer"
+              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-red/30 bg-red/[0.10] hover:bg-red/[0.18] hover:border-red/50 text-red transition-all cursor-pointer"
               aria-label="Toggle menu"
               aria-expanded={open}
             >

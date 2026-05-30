@@ -6,6 +6,8 @@ import { Search, Database, Filter, Brain, Send, ArrowRight, Shield, Target, Chec
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { StaggerLetters } from '../components/animations/aiox'
 import { InstitucionalNav } from '../components/layout/InstitucionalNav'
+import { useTheme } from '../lib/theme-context'
+import { Beam, OrbBackground, Counter } from '../components/institucional/effects'
 
 // Section label pattern: pulsing dot + bold red label with glow
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -127,6 +129,7 @@ const BEST_PRACTICES = [
 export function InstitucionalPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { theme } = useTheme()
   const shouldReduceMotion = useReducedMotion()
 
   useEffect(() => {
@@ -141,6 +144,12 @@ export function InstitucionalPage() {
 
       {/* ===================== HERO ===================== */}
       <section id="hero" className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden scroll-mt-20">
+
+        {/* Beam de luz cônico no topo (efeito notio portado, vermelho da marca) */}
+        <Beam className="top-0" />
+
+        {/* Orbe ambiente difuso atrás da headline (efeito notio portado) */}
+        <OrbBackground className="top-[38%] left-1/2 -translate-x-1/2 w-[42rem] h-[42rem]" />
 
         {/* Radial gradient glow */}
         <div
@@ -189,7 +198,7 @@ export function InstitucionalPage() {
 
           {/* Logo */}
           <AnimateIn delay={0} duration={600}>
-            <img src="/outbili/logo-white.png" alt="V4 Bilinski &amp; Co" className="h-14 md:h-16 w-auto mx-auto mb-10 opacity-90" />
+            <img src={theme === 'light' ? '/outbili/logo-black.png' : '/outbili/logo-white.png'} alt="V4 Bilinski &amp; Co" className="h-14 md:h-16 w-auto mx-auto mb-10 opacity-90" />
           </AnimateIn>
 
           {/* Hero badge — padrão benchmark com glow pulsante */}
@@ -226,7 +235,7 @@ export function InstitucionalPage() {
 
           <AnimateIn delay={160} duration={600}>
             <h2
-              className="font-heading font-extrabold tracking-tight leading-none text-white mb-8 whitespace-nowrap"
+              className="font-heading font-extrabold tracking-tight leading-none text-text-primary mb-8 whitespace-nowrap"
               style={{ fontSize: 'clamp(1.25rem, 3.5vw, 2.5rem)' }}
             >
               Sem lista fria. Sem achismo. Sem trava.
@@ -254,7 +263,7 @@ export function InstitucionalPage() {
               </button>
               <button
                 onClick={() => navigate('/login')}
-                className="group flex items-center gap-2 px-8 py-4 rounded-xl bg-surface/40 backdrop-blur-sm border border-red/30 hover:border-red/60 text-white font-bold text-sm transition-all duration-300 shadow-[0_0_16px_rgba(230,51,41,0.12)] hover:shadow-[0_0_28px_rgba(230,51,41,0.3)] hover:-translate-y-0.5 hover:bg-surface/70 active:scale-[0.98] cursor-pointer min-w-[200px] justify-center"
+                className="group flex items-center gap-2 px-8 py-4 rounded-xl bg-surface/40 backdrop-blur-sm border border-red/30 hover:border-red/60 text-text-primary font-bold text-sm transition-all duration-300 shadow-[0_0_16px_rgba(230,51,41,0.12)] hover:shadow-[0_0_28px_rgba(230,51,41,0.3)] hover:-translate-y-0.5 hover:bg-surface/70 active:scale-[0.98] cursor-pointer min-w-[200px] justify-center"
               >
                 <UserPlus className="h-4 w-4 transition-transform group-hover:rotate-12" />
                 Criar acesso
@@ -265,16 +274,16 @@ export function InstitucionalPage() {
           {/* Floating stat cards at bottom of hero — animated stagger + hover glow */}
           <div className="flex flex-wrap justify-center gap-3">
             {[
-              { label: 'Etapas do funil', value: '5' },
-              { label: 'Travas destruídas', value: '8' },
-              { label: 'Níveis até o decisor', value: '3' },
+              { label: 'Etapas do funil', value: 5 },
+              { label: 'Travas destruídas', value: 8 },
+              { label: 'Níveis até o decisor', value: 3 },
             ].map((stat, i) => (
               <AnimateIn key={stat.label} delay={440 + i * 90} duration={600}>
                 <div
                   className="group flex items-center gap-3 border border-border rounded-xl px-5 py-3 bg-surface/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:border-red/50 hover:bg-surface/80 hover:shadow-[0_0_24px_rgba(230,51,41,0.25)] cursor-default"
                 >
                   <span className="font-mono text-xl font-bold text-red animate-pulse-glow group-hover:text-red-vivid transition-colors">
-                    {stat.value}
+                    <Counter value={stat.value} duration={1.6} />
                   </span>
                   <span className="text-[12px] text-text-secondary group-hover:text-text-primary transition-colors">
                     {stat.label}
@@ -304,7 +313,7 @@ export function InstitucionalPage() {
 
               <div className="relative">
                 <SectionLabel>O Problema</SectionLabel>
-                <h2 className="font-heading text-3xl md:text-4xl font-bold mb-8 text-white">
+                <h2 className="font-heading text-3xl md:text-4xl font-bold mb-8 text-text-primary">
                   Depender de um canal é uma trava.
                 </h2>
                 <div className="space-y-5 max-w-3xl">
@@ -366,7 +375,7 @@ export function InstitucionalPage() {
                           <step.icon className="h-5 w-5 text-red" />
                         </div>
                       </div>
-                      <p className="font-extrabold text-sm text-white">{step.name}</p>
+                      <p className="font-extrabold text-sm text-text-primary">{step.name}</p>
                       <p className="text-[12px] text-text-secondary group-hover:text-text-primary transition-colors leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
@@ -392,7 +401,7 @@ export function InstitucionalPage() {
                     </div>
                     <div>
                       <p className="font-mono text-label font-extrabold text-red/60 mb-1">{step.num}</p>
-                      <p className="font-extrabold text-sm text-white">{step.name}</p>
+                      <p className="font-extrabold text-sm text-text-primary">{step.name}</p>
                       <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
@@ -457,7 +466,7 @@ export function InstitucionalPage() {
                     {/* Name */}
                     <h3 className={[
                       'font-heading font-extrabold text-base tracking-tight',
-                      trap.highlight ? 'text-white' : 'text-text-primary group-hover:text-text-primary transition-colors',
+                      trap.highlight ? 'text-text-primary' : 'text-text-primary group-hover:text-text-primary transition-colors',
                     ].join(' ')}>
                       {trap.name}
                     </h3>
@@ -518,7 +527,7 @@ export function InstitucionalPage() {
                       <Database className="h-6 w-6 text-red" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-white text-lg">CNPJa API</h3>
+                      <h3 className="font-extrabold text-text-primary text-lg">CNPJa API</h3>
                       <span className="text-caption font-mono text-[#FF6666] uppercase tracking-wider font-bold">Fonte cadastral</span>
                     </div>
                   </div>
@@ -551,7 +560,7 @@ export function InstitucionalPage() {
                       <Target className="h-6 w-6 text-red" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-white text-lg">Assertiva Localize</h3>
+                      <h3 className="font-extrabold text-text-primary text-lg">Assertiva Localize</h3>
                       <span className="text-caption font-mono text-[#FF6666] uppercase tracking-wider font-bold">Enriquecimento em cascata</span>
                     </div>
                   </div>
@@ -590,7 +599,7 @@ export function InstitucionalPage() {
         <div className="relative max-w-5xl mx-auto px-6">
           <AnimateIn>
             <SectionLabel>Playbook</SectionLabel>
-            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
+            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-text-primary mb-4 tracking-tight">
               Cole o CNPJ. O resto é sistema.
             </h2>
             <p className="text-text-primary text-base md:text-lg max-w-2xl mb-12 leading-relaxed">
@@ -628,7 +637,7 @@ export function InstitucionalPage() {
                     </span>
 
                     {/* Title */}
-                    <h3 className="font-heading font-extrabold text-lg text-white tracking-tight">
+                    <h3 className="font-heading font-extrabold text-lg text-text-primary tracking-tight">
                       {step.title}
                     </h3>
 
@@ -660,7 +669,7 @@ export function InstitucionalPage() {
                   <div className="w-12 h-12 rounded-xl bg-red/15 ring-1 ring-red/30 flex items-center justify-center group-hover:bg-red/30 group-hover:ring-red/60 group-hover:scale-110 transition-all duration-300 shadow-[0_0_16px_rgba(230,51,41,0.2)]">
                     <practice.icon className="h-6 w-6 text-red" />
                   </div>
-                  <h3 className="font-heading font-extrabold text-base text-white tracking-tight">
+                  <h3 className="font-heading font-extrabold text-base text-text-primary tracking-tight">
                     {practice.title}
                   </h3>
                   <p className="text-sm text-text-secondary group-hover:text-text-primary transition-colors leading-relaxed">
@@ -679,7 +688,7 @@ export function InstitucionalPage() {
               <div className="absolute -bottom-12 right-1/4 w-64 h-28 bg-red/[0.08] blur-[50px] rounded-full pointer-events-none" />
 
               <div className="relative flex flex-col sm:flex-row items-center justify-between gap-5 p-6 md:p-8">
-                <p className="text-white text-sm md:text-base font-semibold text-center sm:text-left leading-relaxed lg:whitespace-nowrap">
+                <p className="text-text-primary text-sm md:text-base font-semibold text-center sm:text-left leading-relaxed lg:whitespace-nowrap">
                   Sem treinamento de semanas. Sem consultoria. Sem mistério.
                 </p>
                 <button
@@ -724,7 +733,7 @@ export function InstitucionalPage() {
                           </span>
                           <div className="flex-1 space-y-2">
                             {/* Rule title */}
-                            <h3 className="text-white font-heading font-extrabold text-lg md:text-xl tracking-tight">
+                            <h3 className="text-text-primary font-heading font-extrabold text-lg md:text-xl tracking-tight">
                               {item.rule}
                             </h3>
                             {/* Context explanation */}
@@ -787,7 +796,7 @@ export function InstitucionalPage() {
 
           <AnimateIn delay={80}>
             <blockquote
-              className="font-heading font-extrabold text-white leading-tight max-w-3xl mx-auto mb-6"
+              className="font-heading font-extrabold text-text-primary leading-tight max-w-3xl mx-auto mb-6"
               style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)' }}
             >
               "A maioria das empresas não tem problema de mercado. Tem problema de sistema de receita.
@@ -806,7 +815,7 @@ export function InstitucionalPage() {
               </button>
               <button
                 onClick={() => navigate('/login')}
-                className="group flex items-center gap-2 px-9 py-4 rounded-xl bg-surface/40 backdrop-blur-sm border border-red/30 hover:border-red/60 text-white font-bold text-sm transition-all duration-300 shadow-[0_0_16px_rgba(230,51,41,0.12)] hover:shadow-[0_0_28px_rgba(230,51,41,0.3)] hover:-translate-y-0.5 hover:bg-surface/70 active:scale-[0.98] cursor-pointer min-w-[240px] justify-center"
+                className="group flex items-center gap-2 px-9 py-4 rounded-xl bg-surface/40 backdrop-blur-sm border border-red/30 hover:border-red/60 text-text-primary font-bold text-sm transition-all duration-300 shadow-[0_0_16px_rgba(230,51,41,0.12)] hover:shadow-[0_0_28px_rgba(230,51,41,0.3)] hover:-translate-y-0.5 hover:bg-surface/70 active:scale-[0.98] cursor-pointer min-w-[240px] justify-center"
               >
                 <UserPlus className="h-4 w-4 transition-transform group-hover:rotate-12" />
                 Solicitar acesso
