@@ -29,6 +29,7 @@ import { TabPlaybookBDR } from '../components/company/TabPlaybookBDR'
 import { PipelineJourneyStepper } from '../components/pipeline/PipelineJourneyStepper'
 import { parseStageChangeSource } from '../components/pipeline/stageConfig'
 import { AssignLeadControl } from '../components/company/AssignLeadControl'
+import { FinancialPanel } from '../components/company/FinancialPanel'
 
 const ALL_TABS = [
   { id: 'resumo', label: 'Resumo', group: 'primary' },
