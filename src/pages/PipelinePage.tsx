@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useLeads, useUpdateLead } from '../hooks/useLeads'
 import { useAuth } from '../lib/auth-context'
 import { createActivity } from '../services/activityService'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AnimateIn } from '../components/ui/AnimateIn'
+import { AnimatedScore } from '../components/ui/AnimatedScore'
 import { Button } from '../components/ui/Button'
 import { Skeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -56,7 +58,7 @@ function PipelineCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => vo
       {/* Sinais: score (+trava) a esquerda, temperatura a direita */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5">
-          <span className={`text-[11px] font-bold font-mono tabular-nums leading-none px-1.5 py-1 rounded ${scoreColorClass}`}>{score.toFixed(1)}</span>
+          <AnimatedScore score={score} className={`text-[11px] font-bold font-mono tabular-nums leading-none px-1.5 py-1 rounded ${scoreColorClass}`} />
           {trapAbbrev && (
             <span className={`text-[11px] font-semibold tracking-tight leading-none px-1.5 py-1 rounded ${trapBadgeClass(trapAbbrev)}`}>{trapAbbrev}</span>
           )}
@@ -259,13 +261,22 @@ export function PipelinePage() {
                     'space-y-2 min-h-[140px] rounded-2xl p-2 transition-all duration-200',
                     isOver ? 'bg-red/5 border-2 border-dashed border-red/30' : 'border-2 border-dashed border-border/30',
                   )}>
-                    {colLeads.map((lead) => (
-                      <PipelineCard
-                        key={lead.id}
-                        lead={lead}
-                        onDragStart={() => { dragLeadId.current = lead.id }}
-                      />
-                    ))}
+                    <AnimatePresence initial={false}>
+                      {colLeads.map((lead) => (
+                        <motion.div
+                          key={lead.id}
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.96 }}
+                          transition={{ duration: 0.18, ease: 'easeOut' }}
+                        >
+                          <PipelineCard
+                            lead={lead}
+                            onDragStart={() => { dragLeadId.current = lead.id }}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                     {colLeads.length === 0 && (
                       <div className={cn(
                         'rounded-xl border border-dashed p-8 text-center transition-all',

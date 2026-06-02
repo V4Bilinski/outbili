@@ -1,5 +1,6 @@
 import type { Lead } from '../../types'
 import { calculateSpicedScore } from '../../lib/utils'
+import { AnimatedScore } from '../ui/AnimatedScore'
 import { UserCircle2 } from 'lucide-react'
 
 interface Props {
@@ -51,7 +52,7 @@ export function LeadCard({ lead, ownerName, onClick }: Props) {
       {/* Rodape: score SPICED (esquerda), responsavel (direita) */}
       <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`text-[11px] font-mono font-bold tabular-nums px-1.5 py-0.5 rounded ${scoreChip(score)}`}>{score.toFixed(1)}</span>
+          <AnimatedScore score={score} className={`text-[11px] font-mono font-bold tabular-nums px-1.5 py-0.5 rounded ${scoreChip(score)}`} />
           <span className="text-[10px] uppercase tracking-wider text-text-muted">SPICED</span>
           {enriched && <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" title="Dados completos" />}
         </div>

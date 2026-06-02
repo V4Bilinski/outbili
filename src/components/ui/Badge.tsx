@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '../../lib/cn'
 
 type BadgeVariant = 'default' | 'hot' | 'warm' | 'cold' | 'success' | 'warning' | 'error' | 'info' | 'outline'
@@ -7,6 +8,8 @@ interface BadgeProps {
   variant?: BadgeVariant
   pulse?: boolean
   size?: 'xs' | 'sm' | 'md'
+  /** Entrada com spring (escala) ao montar. Opt-in: nao afeta badges existentes. */
+  enter?: boolean
   className?: string
 }
 
@@ -22,18 +25,29 @@ const variantStyles: Record<BadgeVariant, string> = {
   outline: 'border border-border-strong text-text-secondary',
 }
 
-export function Badge({ children, variant = 'default', pulse = false, size = 'md', className }: BadgeProps) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full font-medium uppercase tracking-wide leading-none',
-        size === 'xs' ? 'px-1.5 py-0.5 text-[8px]' : size === 'sm' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-[3px] text-[10px]',
-        variantStyles[variant],
-        pulse && 'animate-[pulse-glow_2s_ease-in-out_infinite]',
-        className,
-      )}
-    >
-      {children}
-    </span>
+export function Badge({ children, variant = 'default', pulse = false, size = 'md', enter = false, className }: BadgeProps) {
+  const reduce = useReducedMotion()
+  const classes = cn(
+    'inline-flex items-center gap-1 rounded-full font-medium uppercase tracking-wide leading-none',
+    size === 'xs' ? 'px-1.5 py-0.5 text-[8px]' : size === 'sm' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-[3px] text-[10px]',
+    variantStyles[variant],
+    pulse && 'animate-[pulse-glow_2s_ease-in-out_infinite]',
+    className,
   )
+
+  // Entrada spring apenas quando solicitado e sem reduced-motion. Default: span estatico (sem regressao).
+  if (enter && !reduce) {
+    return (
+      <motion.span
+        className={classes}
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      >
+        {children}
+      </motion.span>
+    )
+  }
+
+  return <span className={classes}>{children}</span>
 }
