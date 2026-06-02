@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useLeads } from '../hooks/useLeads'
+import { useColumns } from '../hooks/useColumns'
+import { cn } from '../lib/cn'
 import { useAuth } from '../lib/auth-context'
 import { LeadCard } from '../components/leads/LeadCard'
 import { listAssignableProfiles } from '../services/leadService'
@@ -111,86 +114,184 @@ function getTrapAbbrev(trap?: string): string | null {
   return match ? match[1] : null
 }
 
-// --- Table view ---
-function LeadTable({ leads }: { leads: Lead[] }) {
-  const navigate = useNavigate()
-  const barColor = (score: number) => {
-    if (score >= 3.7) return 'bg-red'
-    if (score >= 2.5) return 'bg-warning'
-    return 'bg-cold'
-  }
+// Threshold a partir do qual a lista passa a ser virtualizada.
+// Abaixo disso (listas filtradas), o render normal e mantido (comportamento testado, com animacoes de entrada).
+const VIRTUALIZE_THRESHOLD = 60
 
+function barColor(score: number): string {
+  if (score >= 3.7) return 'bg-red'
+  if (score >= 2.5) return 'bg-warning'
+  return 'bg-cold'
+}
+
+const TABLE_HEAD = (
+  <thead>
+    <tr className="border-b border-border">
+      <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider w-10">#</th>
+      <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Nome</th>
+      <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
+      <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Score</th>
+      <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Status</th>
+      <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Temperatura</th>
+    </tr>
+  </thead>
+)
+
+const MOBILE_HINT = (
+  <p className="text-caption text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
+    <ChevronRight className="h-3 w-3" /> Toque para abrir a ficha completa
+  </p>
+)
+
+// Linha da tabela. `animate` aplica a entrada por-index (so no modo nao-virtualizado; na
+// virtualizacao re-dispararia a cada scroll). `rowRef` recebe o measureElement do virtualizer.
+function LeadTableRow({ lead, index, animate, rowRef }: {
+  lead: Lead; index: number; animate: boolean; rowRef?: (el: HTMLTableRowElement | null) => void
+}) {
+  const navigate = useNavigate()
+  const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
+  const tempColors: Record<string, string> = { Quente: 'bg-red text-white', Morno: 'bg-warning text-black', Frio: 'bg-cold text-white' }
+  const statusInfo = LEAD_STATUSES.find((s) => s.value === lead.status)
   return (
-    <div className="overflow-x-auto">
-      {/* Indicador mobile para colunas ocultas */}
-      <p className="text-caption text-text-muted px-4 py-1.5 border-b border-border/30 flex items-center gap-1 md:hidden">
-        <ChevronRight className="h-3 w-3" /> Toque para abrir a ficha completa
-      </p>
+    <tr
+      ref={rowRef}
+      data-index={index}
+      onClick={() => navigate(`/leads/${lead.id}`)}
+      className={cn('border-b border-border/30 hover:bg-elevated-2 transition-all duration-300 cursor-pointer group', animate && 'animate-[fade-in_0.4s_ease-out_both]')}
+      style={animate ? { animationDelay: `${Math.min(index, 20) * 30}ms` } : undefined}
+    >
+      <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-bold text-text-primary group-hover:text-text-primary transition-colors">{lead.companyName}</span>
+          {lead.sourceHtmlReport === 'cadastro_manual' && (
+            <span
+              title="Cadastrado manualmente com enriquecimento automático (CNPJá + Assertiva)"
+              className="text-[9px] font-semibold uppercase tracking-wide bg-amber-400/10 border border-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded cursor-help leading-none"
+            >
+              Manual
+            </span>
+          )}
+          {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
+          {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse leading-none">Processando...</span>}
+        </div>
+        <p className="text-label text-text-muted mt-0.5">
+          {lead.segment || 'Segmento pendente'}
+          {lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
+          {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
+        </p>
+      </td>
+      <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs font-semibold text-text-primary">{lead.tier}</span></td>
+      <td className="py-4 px-4">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-16 h-2 rounded-full bg-elevated-2 overflow-hidden">
+            <div className={cn('h-full rounded-full', barColor(score), animate && 'animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]')} style={{ width: `${(score / 5) * 100}%`, ...(animate ? { animationDelay: `${Math.min(index, 20) * 30 + 200}ms` } : {}) }} />
+          </div>
+          <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
+        </div>
+      </td>
+      <td className="py-4 px-4 text-center hidden md:table-cell">
+        {statusInfo && (
+          <Badge variant={lead.status === 'Fechado' ? 'success' : lead.status === 'Perdido' ? 'error' : 'default'} size="xs">
+            {statusInfo.label}
+          </Badge>
+        )}
+      </td>
+      <td className="py-4 px-4 text-center">
+        <span className={`inline-block text-[9px] font-medium px-1.5 py-[3px] rounded-full uppercase tracking-wide leading-none ${tempColors[lead.temperature] || tempColors.Frio}`}>
+          {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
+        </span>
+      </td>
+    </tr>
+  )
+}
+
+// --- Table view (virtualiza acima do threshold) ---
+function LeadTable({ leads }: { leads: Lead[] }) {
+  if (leads.length <= VIRTUALIZE_THRESHOLD) {
+    return (
+      <div className="overflow-x-auto">
+        {MOBILE_HINT}
+        <table className="w-full">
+          {TABLE_HEAD}
+          <tbody>
+            {leads.map((lead, index) => <LeadTableRow key={lead.id} lead={lead} index={index} animate />)}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+  return <VirtualLeadTable leads={leads} />
+}
+
+// Tabela virtualizada por janela (spacer rows top/bottom). Score/markup identicos a versao normal.
+function VirtualLeadTable({ leads }: { leads: Lead[] }) {
+  const [scrollMargin, setScrollMargin] = useState(0)
+  const measureRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) setScrollMargin(node.offsetTop)
+  }, [])
+  const virt = useWindowVirtualizer({
+    count: leads.length,
+    estimateSize: () => 73,
+    overscan: 12,
+    scrollMargin,
+  })
+  const items = virt.getVirtualItems()
+  const paddingTop = items.length ? Math.max(0, items[0].start - scrollMargin) : 0
+  const paddingBottom = items.length ? Math.max(0, virt.getTotalSize() - (items[items.length - 1].end - scrollMargin)) : 0
+  return (
+    <div ref={measureRef} className="overflow-x-auto">
+      {MOBILE_HINT}
       <table className="w-full">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider w-10">#</th>
-            <th className="text-left py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Nome</th>
-            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Tier</th>
-            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Score</th>
-            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider hidden md:table-cell">Status</th>
-            <th className="text-center py-3 px-4 text-label font-medium text-text-muted uppercase tracking-wider">Temperatura</th>
-          </tr>
-        </thead>
+        {TABLE_HEAD}
         <tbody>
-          {leads.map((lead, index) => {
-            const score = lead.score || calculateSpicedScore(lead.spicedS || 0, lead.spicedP || 0, lead.spicedI || 0, lead.spicedC || 0, lead.spicedD || 0)
-            const tempColors: Record<string, string> = { Quente: 'bg-red text-white', Morno: 'bg-warning text-black', Frio: 'bg-cold text-white' }
-            const statusInfo = LEAD_STATUSES.find((s) => s.value === lead.status)
-            return (
-              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="border-b border-border/30 hover:bg-elevated-2 transition-all duration-300 cursor-pointer group animate-[fade-in_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}>
-                <td className="py-4 px-4 text-sm text-text-muted font-mono">{index + 1}</td>
-                <td className="py-4 px-4">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-text-primary group-hover:text-text-primary transition-colors">{lead.companyName}</span>
-                    {lead.sourceHtmlReport === 'cadastro_manual' && (
-                      <span
-                        title="Cadastrado manualmente com enriquecimento automático (CNPJá + Assertiva)"
-                        className="text-[9px] font-semibold uppercase tracking-wide bg-amber-400/10 border border-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded cursor-help leading-none"
-                      >
-                        Manual
-                      </span>
-                    )}
-                    {lead.enrichmentStatus === 'complete' && <span className="text-[9px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded leading-none">Enriquecido</span>}
-                    {(lead.enrichmentStatus === 'cnpja' || lead.enrichmentStatus === 'cnpja_n8n' || lead.enrichmentStatus === 'assertiva') && <span className="text-[9px] font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded animate-pulse leading-none">Processando...</span>}
-                  </div>
-                  <p className="text-label text-text-muted mt-0.5">
-                    {lead.segment || 'Segmento pendente'}
-                    {lead.city ? ` · ${lead.city}${lead.state ? `, ${lead.state}` : ''}` : ''}
-                    {lead.monthlyRevenue ? ` · ${formatCurrencyShort(lead.monthlyRevenue)}/mês` : ''}
-                  </p>
-                </td>
-                <td className="py-4 px-4 text-center hidden md:table-cell"><span className="text-xs font-semibold text-text-primary">{lead.tier}</span></td>
-                <td className="py-4 px-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-16 h-2 rounded-full bg-elevated-2 overflow-hidden">
-                      <div className={`h-full rounded-full ${barColor(score)} animate-[bar-grow_0.8s_cubic-bezier(0.4,0,0.2,1)_both]`} style={{ width: `${(score / 5) * 100}%`, animationDelay: `${Math.min(index, 20) * 30 + 200}ms` }} />
-                    </div>
-                    <span className="text-sm font-mono font-bold text-text-primary w-7 text-right">{score}</span>
-                  </div>
-                </td>
-                <td className="py-4 px-4 text-center hidden md:table-cell">
-                  {statusInfo && (
-                    <Badge variant={lead.status === 'Fechado' ? 'success' : lead.status === 'Perdido' ? 'error' : 'default'} size="xs">
-                      {statusInfo.label}
-                    </Badge>
-                  )}
-                </td>
-                <td className="py-4 px-4 text-center">
-                  <span className={`inline-block text-[9px] font-medium px-1.5 py-[3px] rounded-full uppercase tracking-wide leading-none ${tempColors[lead.temperature] || tempColors.Frio}`}>
-                    {lead.temperature === 'Quente' ? 'Quente' : lead.temperature === 'Morno' ? 'Morno' : 'Frio'}
-                  </span>
-                </td>
-              </tr>
-            )
-          })}
+          {paddingTop > 0 && <tr aria-hidden><td colSpan={6} style={{ height: paddingTop }} /></tr>}
+          {items.map((vi) => (
+            <LeadTableRow key={leads[vi.index].id} lead={leads[vi.index]} index={vi.index} animate={false} rowRef={virt.measureElement} />
+          ))}
+          {paddingBottom > 0 && <tr aria-hidden><td colSpan={6} style={{ height: paddingBottom }} /></tr>}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+// Grid de cards virtualizado por janela. Agrupa leads em linhas conforme o numero de colunas do breakpoint.
+function VirtualCardGrid({ leads, profilesMap, onOpen }: {
+  leads: Lead[]; profilesMap: Record<string, string>; onOpen: (id: string) => void
+}) {
+  const cols = useColumns()
+  const [scrollMargin, setScrollMargin] = useState(0)
+  const measureRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) setScrollMargin(node.offsetTop)
+  }, [])
+  const rowCount = Math.ceil(leads.length / cols)
+  const virt = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => 132,
+    overscan: 4,
+    scrollMargin,
+  })
+  return (
+    <div ref={measureRef} style={{ height: virt.getTotalSize(), position: 'relative', width: '100%' }}>
+      {virt.getVirtualItems().map((vrow) => {
+        const start = vrow.index * cols
+        const rowLeads = leads.slice(start, start + cols)
+        return (
+          <div
+            key={vrow.key}
+            data-index={vrow.index}
+            ref={virt.measureElement}
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${vrow.start - scrollMargin}px)` }}
+          >
+            <div className="grid gap-3 pb-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+              {rowLeads.map((lead) => (
+                <LeadCard key={lead.id} lead={lead} ownerName={lead.assignedTo ? profilesMap[lead.assignedTo] : null} onClick={() => onOpen(lead.id)} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -360,16 +461,22 @@ export function LeadsPage() {
           />
         </AnimateIn>
       ) : viewMode === 'cards' ? (
-        <div className="animate-[fade-in_0.4s_ease-out] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredLeads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              ownerName={lead.assignedTo ? profilesMap[lead.assignedTo] : null}
-              onClick={() => navigate(`/leads/${lead.id}`)}
-            />
-          ))}
-        </div>
+        filteredLeads.length <= VIRTUALIZE_THRESHOLD ? (
+          <div className="animate-[fade-in_0.4s_ease-out] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filteredLeads.map((lead) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                ownerName={lead.assignedTo ? profilesMap[lead.assignedTo] : null}
+                onClick={() => navigate(`/leads/${lead.id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="animate-[fade-in_0.4s_ease-out]">
+            <VirtualCardGrid leads={filteredLeads} profilesMap={profilesMap} onOpen={(id) => navigate(`/leads/${id}`)} />
+          </div>
+        )
       ) : (
         <div className="animate-[fade-in_0.4s_ease-out]">
           <Card className="p-0 overflow-hidden">
