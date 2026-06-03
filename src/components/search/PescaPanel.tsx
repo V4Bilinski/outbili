@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { Card, CardTitle } from '../ui/Card'
 import { Button } from '../ui/Button'
-import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, SortAsc, SortDesc, Copy, ExternalLink, MapPin } from 'lucide-react'
+import { Fish, Loader2, CheckCircle, AlertCircle, ChevronDown, ArrowRight, Phone, Building2, User, DollarSign, Search, SortAsc, SortDesc, Copy, ExternalLink, MapPin, Store, Building, Landmark, Sparkles, Stethoscope, ShoppingCart, Pill, Sofa, Settings, Utensils, Hospital, BookOpen, Laptop, Car, PawPrint, Dumbbell, Home, Hammer, Shirt, Palette, Wheat, Package } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { SEGMENTS } from '../../lib/constants'
 import { usePesca } from '../../hooks/usePesca'
@@ -163,13 +164,37 @@ const STATE_CITIES: Record<string, Array<{ name: string; ibge: number }>> = {
   RR: [{ name: 'Boa Vista', ibge: 1400100 }],
 }
 
-const PORTE_OPTIONS = [
-  { id: 'micro', label: 'Micro', desc: 'Ate R$ 100k', min: 0, max: 100000, sizes: [1], icon: '🏪' },
-  { id: 'pequena', label: 'Pequena', desc: 'R$ 100k - 500k', min: 100000, max: 500000, sizes: [1, 3], icon: '🏢' },
-  { id: 'media', label: 'Media', desc: 'R$ 500k - 2M', min: 500000, max: 2000000, sizes: [3, 5], icon: '🏗' },
-  { id: 'grande', label: 'Grande', desc: 'Acima de R$ 2M', min: 2000000, max: 10000000, sizes: [5], icon: '🏛' },
-  { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, sizes: [] as number[], icon: '🔍' },
+const PORTE_OPTIONS: Array<{ id: string; label: string; desc: string; min: number; max: number; sizes: number[]; icon: LucideIcon }> = [
+  { id: 'micro', label: 'Micro', desc: 'Ate R$ 100k', min: 0, max: 100000, sizes: [1], icon: Store },
+  { id: 'pequena', label: 'Pequena', desc: 'R$ 100k - 500k', min: 100000, max: 500000, sizes: [1, 3], icon: Building2 },
+  { id: 'media', label: 'Media', desc: 'R$ 500k - 2M', min: 500000, max: 2000000, sizes: [3, 5], icon: Building },
+  { id: 'grande', label: 'Grande', desc: 'Acima de R$ 2M', min: 2000000, max: 10000000, sizes: [5], icon: Landmark },
+  { id: 'qualquer', label: 'Qualquer', desc: 'Todos os portes', min: 0, max: 10000000, sizes: [] as number[], icon: Search },
 ]
+
+// Icone por slug de segmento. Substitui o ternario gigante de emojis por um mapa legivel.
+const SEGMENT_ICONS: Record<string, LucideIcon> = {
+  estetica: Sparkles,
+  odontologia: Stethoscope,
+  varejo: ShoppingCart,
+  farmacia: Pill,
+  movelaria: Sofa,
+  servicos: Settings,
+  alimentacao: Utensils,
+  saude: Hospital,
+  educacao: BookOpen,
+  tecnologia: Laptop,
+  automotivo: Car,
+  petshop: PawPrint,
+  fitness: Dumbbell,
+  beleza: Sparkles,
+  imobiliario: Home,
+  construcao: Hammer,
+  moda: Shirt,
+  decoracao: Palette,
+  agronegocio: Wheat,
+  logistica: Package,
+}
 
 // Presets de quantidade de leads a extrair na PESCA (Passo 4).
 const LEAD_COUNT_OPTIONS = [25, 50, 100, 125, 150]
@@ -344,22 +369,25 @@ export function PescaPanel() {
               {segments.length > 0 && <span className="text-caption font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{segments.length} selecionado{segments.length > 1 ? 's' : ''}</span>}
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {SEGMENTS.map(seg => (
-                <button
-                  key={seg.slug}
-                  onClick={() => toggleSegment(seg.name)}
-                  aria-pressed={segments.includes(seg.name)}
-                  className={cn(
-                    'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
-                    segments.includes(seg.name)
-                      ? 'bg-red/15 text-red border-red/40 shadow-md shadow-red/10 ring-1 ring-red/20'
-                      : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
-                  )}
-                >
-                  <span className="text-lg">{seg.slug === 'estetica' ? '💆' : seg.slug === 'odontologia' ? '🦷' : seg.slug === 'varejo' ? '🛒' : seg.slug === 'farmacia' ? '💊' : seg.slug === 'movelaria' ? '🛋' : seg.slug === 'servicos' ? '⚙' : seg.slug === 'alimentacao' ? '🍽' : seg.slug === 'saude' ? '🏥' : seg.slug === 'educacao' ? '📚' : seg.slug === 'tecnologia' ? '💻' : seg.slug === 'automotivo' ? '🚗' : seg.slug === 'petshop' ? '🐾' : seg.slug === 'fitness' ? '💪' : seg.slug === 'beleza' ? '💅' : seg.slug === 'imobiliario' ? '🏠' : seg.slug === 'construcao' ? '🔨' : seg.slug === 'moda' ? '👗' : seg.slug === 'decoracao' ? '🎨' : seg.slug === 'agronegocio' ? '🌾' : seg.slug === 'logistica' ? '📦' : '🏢'}</span>
-                  <span className="text-label font-medium leading-tight">{seg.name}</span>
-                </button>
-              ))}
+              {SEGMENTS.map(seg => {
+                const SegIcon = SEGMENT_ICONS[seg.slug] || Building2
+                return (
+                  <button
+                    key={seg.slug}
+                    onClick={() => toggleSegment(seg.name)}
+                    aria-pressed={segments.includes(seg.name)}
+                    className={cn(
+                      'flex flex-col items-center gap-1 p-3 rounded-xl text-center transition-all cursor-pointer border',
+                      segments.includes(seg.name)
+                        ? 'bg-red/15 text-red border-red/40 shadow-md shadow-red/10 ring-1 ring-red/20'
+                        : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:bg-red/[0.03] hover:text-text-secondary',
+                    )}
+                  >
+                    <SegIcon className="size-5" />
+                    <span className="text-label font-medium leading-tight">{seg.name}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -505,7 +533,7 @@ export function PescaPanel() {
                       : 'bg-elevated-1 text-text-muted border-border hover:border-red/20 hover:text-text-secondary',
                   )}
                 >
-                  <span className="text-lg">{porte.icon}</span>
+                  <porte.icon className="size-5" />
                   <span className="text-label font-semibold">{porte.label}</span>
                   <span className="text-micro opacity-60">{porte.desc}</span>
                 </button>

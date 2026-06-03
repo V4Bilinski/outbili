@@ -1,5 +1,5 @@
 import { Badge } from '../ui/Badge'
-import { TrendingUp, ArrowUp, ChevronRight } from 'lucide-react'
+import { TrendingUp, ArrowUp, ChevronRight, Check } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import type { Lead } from '../../types'
 import { generateProjecaoCompetitiva } from '../../services/strategicAnalysisService'
@@ -46,7 +46,7 @@ export function TabProjecaoCompetitiva({ lead }: { lead: Lead }) {
             </div>
             <div className="text-center">
               {item.gap === '✓' ? (
-                <span className="text-xs text-success">✓</span>
+                <Check className="h-3.5 w-3.5 text-success mx-auto" />
               ) : item.gap === '↑' ? (
                 <ArrowUp className="h-3.5 w-3.5 text-warning mx-auto" />
               ) : (

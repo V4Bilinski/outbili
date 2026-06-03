@@ -4,14 +4,16 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import type { Lead, Contact } from '../../types'
-import { Phone, Mail, Plus, Trash2, UserPlus } from 'lucide-react'
+import { Phone, Mail, Plus, Trash2, UserPlus, User, Handshake, Megaphone, AlertTriangle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { WhatsAppIcon } from '../ui/WhatsAppIcon'
 import { cn } from '../../lib/cn'
 
 function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete: () => void; index: number }) {
   const typeLabel: Record<string, string> = { decisor: 'Decisor', stakeholder: 'Stakeholder', influenciador: 'Influenciador' }
   const typeVariant: Record<string, 'error' | 'warning' | 'info'> = { decisor: 'error', stakeholder: 'warning', influenciador: 'info' }
-  const typeIcon: Record<string, string> = { decisor: '👤', stakeholder: '🤝', influenciador: '📣' }
+  const typeIcon: Record<string, LucideIcon> = { decisor: User, stakeholder: Handshake, influenciador: Megaphone }
+  const TypeIcon = typeIcon[contact.contactType] || User
 
   const whatsappLink = contact.whatsapp
     ? `https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`
@@ -25,10 +27,10 @@ function ContactCard({ contact, onDelete, index }: { contact: Contact; onDelete:
       {/* Contact header */}
       <div className="flex items-center gap-3 p-4 pb-3">
         <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0',
-          contact.contactType === 'decisor' ? 'bg-red/10' : contact.contactType === 'stakeholder' ? 'bg-warning/10' : 'bg-info/10',
+          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+          contact.contactType === 'decisor' ? 'bg-red/10 text-red' : contact.contactType === 'stakeholder' ? 'bg-warning/10 text-warning' : 'bg-info/10 text-info',
         )}>
-          {typeIcon[contact.contactType] || '👤'}
+          <TypeIcon className="size-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -151,7 +153,7 @@ export function TabContatos({ lead }: { lead: Lead }) {
       {/* Alert: no decisor */}
       {contactCount > 0 && !hasDecisor && (
         <div className="flex items-center gap-2.5 p-3 rounded-xl bg-warning/6 border border-warning/15 text-xs text-warning">
-          <span>⚠</span>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>Nenhum contato marcado como <strong>decisor</strong>. Identifique quem aprova a compra.</span>
         </div>
       )}

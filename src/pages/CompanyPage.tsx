@@ -3,7 +3,7 @@ import { useLead, useDeleteLead } from '../hooks/useLeads'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CopyButton } from '../components/ui/CopyButton'
-import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight, Search, CheckCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, UserPlus, Trash2, MoreVertical, ChevronRight, Search, CheckCircle, AlertTriangle, Check, X } from 'lucide-react'
 import type { Lead, Contact, Activity } from '../types'
 import { WhatsAppIcon } from '../components/ui/WhatsAppIcon'
 import { Button } from '../components/ui/Button'
@@ -654,7 +654,7 @@ export function CompanyPage() {
                 onClick={() => setShowAddContact(true)}
                 className="flex items-center gap-2.5 w-full p-3 rounded-xl bg-warning/6 border border-warning/15 border-dashed cursor-pointer hover:bg-warning/10 transition-colors text-left"
               >
-                <span className="text-warning">⚠</span>
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-warning">Sem decisor cadastrado</p>
                   <p className="text-label text-text-muted">Toque para adicionar nome e WhatsApp do decisor</p>
@@ -880,7 +880,9 @@ export function CompanyPage() {
                 <div className="space-y-2">
                   {eligibility.map((item, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-elevated-1">
-                      <span className={cn('text-lg', item.value ? 'text-success' : 'text-error')}>{item.value ? '✅' : '❌'}</span>
+                      {item.value
+                        ? <Check className="h-5 w-5 text-success shrink-0" />
+                        : <X className="h-5 w-5 text-error shrink-0" />}
                       <span className="text-sm text-text-secondary">{item.label}</span>
                     </div>
                   ))}

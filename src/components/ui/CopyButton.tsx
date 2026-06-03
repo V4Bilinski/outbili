@@ -38,7 +38,9 @@ export function CopyButton({ text, className, label = 'Copiar' }: CopyButtonProp
       )}
       <span className="relative inline-flex items-center gap-1.5">
         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        {copied ? 'Copiado ✓' : label}
+        {copied ? (
+          <span className="inline-flex items-center gap-1">Copiado <Check className="h-3 w-3" /></span>
+        ) : label}
       </span>
     </button>
   )

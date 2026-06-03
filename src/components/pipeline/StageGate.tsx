@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CheckCircle, ArrowRight, X, Trophy } from 'lucide-react'
+import { CheckCircle, ArrowRight, X, Trophy, ClipboardList } from 'lucide-react'
 import { useAuth } from '../../lib/auth-context'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/cn'
@@ -25,6 +25,7 @@ export interface StageGatePopupProps {
 export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, onCancel }: StageGatePopupProps) {
   const { user } = useAuth()
   const gate = STAGE_GATES[toStatus]
+  const GateIcon = gate?.icon || ClipboardList
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState('')
   const totalChecks = gate?.checks.length || 0
@@ -87,7 +88,7 @@ export function StageGatePopup({ lead, fromStatus, toStatus, source, onConfirm, 
           {/* Header — título proeminente */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="text-lg leading-none shrink-0">{gate?.emoji || '📋'}</span>
+              <GateIcon className="size-5 shrink-0 text-text-secondary" />
               <div className="min-w-0">
                 <p className="text-base font-bold text-text-primary font-heading leading-tight">
                   {gate?.title || `Mover para ${toLabel}`}

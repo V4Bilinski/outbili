@@ -131,19 +131,19 @@ function KPICards({ leads }: { leads: Lead[] }) {
       <div className="grid grid-cols-3 gap-3">
         {[
           {
-            label: 'Quentes', emoji: '🔥', value: hotCount, pct: hotPct, icon: Flame,
+            label: 'Quentes', value: hotCount, pct: hotPct, icon: Flame,
             color: 'text-hot', borderColor: 'border-hot/20', bgAccent: 'bg-hot/[0.06]',
             hint: hotCount > 0 ? 'Prontos para primeiro toque ou agendamento direto.' : 'Sem leads quentes. Re-qualifique mornos para subir score.',
             action: () => navigate('/leads?temperatura=Quente'),
           },
           {
-            label: 'Mornos', emoji: '🟡', value: warmCount, pct: warmPct, icon: TrendingUp,
+            label: 'Mornos', value: warmCount, pct: warmPct, icon: TrendingUp,
             color: 'text-warm', borderColor: 'border-warm/20', bgAccent: 'bg-warm/[0.04]',
             hint: warmCount > 0 ? 'Em qualificação. Aprofunde discovery ou descarte sem fit.' : 'Sem leads mornos. Importe lista ou inicie nova prospecção.',
             action: () => navigate('/leads?temperatura=Morno'),
           },
           {
-            label: 'Frios', emoji: '❄️', value: coldCount, pct: coldPct, icon: Snowflake,
+            label: 'Frios', value: coldCount, pct: coldPct, icon: Snowflake,
             color: 'text-success', borderColor: 'border-success/20', bgAccent: 'bg-success/[0.04]',
             hint: coldCount > 0 ? 'Em cadência de aquecimento ou descarte por falta de fit.' : 'Pipeline limpo de leads frios.',
             action: () => navigate('/leads?temperatura=Frio'),

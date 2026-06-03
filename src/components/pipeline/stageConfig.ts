@@ -1,6 +1,9 @@
 // Configuração compartilhada das fases do pipeline.
 // Mantido em arquivo próprio (sem JSX) para satisfazer react-refresh/only-export-components.
 
+import { Phone, MessageCircle, Handshake, ClipboardList, Trophy, Ban } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+
 export type StageChangeSource = 'pipeline-kanban' | 'company-page' | 'leads-page' | 'cadastro-manual' | 'upload-manual'
 
 export const STAGE_SOURCE_LABEL: Record<StageChangeSource, string> = {
@@ -38,9 +41,9 @@ export function getStageColor(status?: string): string {
 
 export interface GateCheck { text: string; required: boolean }
 
-export const STAGE_GATES: Record<string, { emoji: string; title: string; checks: GateCheck[] }> = {
+export const STAGE_GATES: Record<string, { icon: LucideIcon; title: string; checks: GateCheck[] }> = {
   Contactado: {
-    emoji: '📞',
+    icon: Phone,
     title: 'Registrar primeiro contato',
     checks: [
       { text: 'Primeiro contato realizado via WhatsApp, email ou LinkedIn', required: true },
@@ -49,7 +52,7 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
     ],
   },
   Respondeu: {
-    emoji: '💬',
+    icon: MessageCircle,
     title: 'Lead respondeu',
     checks: [
       { text: 'Resposta recebida do decisor', required: true },
@@ -58,7 +61,7 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
     ],
   },
   'Reunião': {
-    emoji: '🤝',
+    icon: Handshake,
     title: 'Reunião agendada',
     checks: [
       { text: 'Data e horário da reunião confirmados', required: true },
@@ -67,7 +70,7 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
     ],
   },
   Proposta: {
-    emoji: '📋',
+    icon: ClipboardList,
     title: 'Proposta enviada',
     checks: [
       { text: 'Proposta comercial elaborada e enviada', required: true },
@@ -76,7 +79,7 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
     ],
   },
   Fechado: {
-    emoji: '🏆',
+    icon: Trophy,
     title: 'Negócio fechado!',
     checks: [
       { text: 'Contrato assinado ou aceite formal', required: true },
@@ -85,7 +88,7 @@ export const STAGE_GATES: Record<string, { emoji: string; title: string; checks:
     ],
   },
   Perdido: {
-    emoji: '🚫',
+    icon: Ban,
     title: 'Marcar como perdido',
     checks: [
       { text: 'Motivo da perda registrado (sem interesse, sem fit, sem resposta, escolheu concorrente)', required: true },

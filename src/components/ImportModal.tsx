@@ -3,28 +3,29 @@ import { parseFile, ACCEPTED_FORMATS, FORMAT_LABELS, type ParseResult } from '..
 import { useCreateLead } from '../hooks/useLeads'
 import { Button } from './ui/Button'
 import { cn } from '../lib/cn'
-import { Upload, X, CheckCircle, AlertTriangle, ArrowRight, Scan, Sparkles, Zap } from 'lucide-react'
+import { Upload, X, CheckCircle, AlertTriangle, ArrowRight, Scan, Sparkles, Zap, Building2, ClipboardList, Phone, Mail, Globe, MapPin, Map, Tag, User, Briefcase, Camera, AtSign, Home, StickyNote } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Lead } from '../types'
 
 type Step = 'upload' | 'reading' | 'preview' | 'importing' | 'done' | 'enriching'
 
 // Fields that can be detected
-const DETECTABLE_FIELDS = [
-  { key: 'companyName', label: 'Empresa', icon: '🏢' },
-  { key: 'cnpj', label: 'CNPJ', icon: '📋' },
-  { key: 'phone', label: 'Telefone', icon: '📞' },
-  { key: 'email', label: 'E-mail', icon: '📧' },
-  { key: 'website', label: 'Website', icon: '🌐' },
-  { key: 'city', label: 'Cidade', icon: '📍' },
-  { key: 'state', label: 'Estado', icon: '🗺' },
-  { key: 'segment', label: 'Segmento', icon: '🏷' },
-  { key: 'contactName', label: 'Contato', icon: '👤' },
-  { key: 'contactRole', label: 'Cargo', icon: '💼' },
-  { key: 'instagram', label: 'Instagram', icon: '📸' },
-  { key: 'linkedin', label: 'LinkedIn', icon: '💡' },
-  { key: 'address', label: 'Endereço', icon: '🏠' },
-  { key: 'notes', label: 'Observações', icon: '📝' },
+const DETECTABLE_FIELDS: Array<{ key: string; label: string; icon: LucideIcon }> = [
+  { key: 'companyName', label: 'Empresa', icon: Building2 },
+  { key: 'cnpj', label: 'CNPJ', icon: ClipboardList },
+  { key: 'phone', label: 'Telefone', icon: Phone },
+  { key: 'email', label: 'E-mail', icon: Mail },
+  { key: 'website', label: 'Website', icon: Globe },
+  { key: 'city', label: 'Cidade', icon: MapPin },
+  { key: 'state', label: 'Estado', icon: Map },
+  { key: 'segment', label: 'Segmento', icon: Tag },
+  { key: 'contactName', label: 'Contato', icon: User },
+  { key: 'contactRole', label: 'Cargo', icon: Briefcase },
+  { key: 'instagram', label: 'Instagram', icon: Camera },
+  { key: 'linkedin', label: 'LinkedIn', icon: AtSign },
+  { key: 'address', label: 'Endereço', icon: Home },
+  { key: 'notes', label: 'Observações', icon: StickyNote },
 ]
 
 const READING_MESSAGES = [
@@ -125,7 +126,7 @@ function ReadingAnimation({ fileName, onComplete, parseResult }: {
                     : 'bg-elevated-1 border-border/50 opacity-30',
                 )}
               >
-                <span className="text-sm">{field.icon}</span>
+                <field.icon className="h-3.5 w-3.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className={cn('text-xs font-medium transition-colors', isDetected ? 'text-success' : 'text-text-muted')}>
                     {field.label}
@@ -325,12 +326,12 @@ export function ImportModal({ open, onClose, onEnrichRequest }: ImportModalProps
               <div className="flex flex-wrap gap-1.5">
                 {DETECTABLE_FIELDS.filter((f) => parseResult.companies.some((c: any) => c[f.key])).map((field) => (
                   <span key={field.key} className="inline-flex items-center gap-1 text-caption font-medium text-success bg-success/8 border border-success/15 px-2 py-1 rounded-lg">
-                    {field.icon} {field.label}
+                    <field.icon className="h-3 w-3 shrink-0" /> {field.label}
                   </span>
                 ))}
                 {DETECTABLE_FIELDS.filter((f) => !parseResult.companies.some((c: any) => c[f.key])).slice(0, 4).map((field) => (
                   <span key={field.key} className="inline-flex items-center gap-1 text-caption text-text-muted bg-elevated-1 border border-border px-2 py-1 rounded-lg opacity-40">
-                    {field.icon} {field.label}
+                    <field.icon className="h-3 w-3 shrink-0" /> {field.label}
                   </span>
                 ))}
               </div>
