@@ -10,12 +10,11 @@ interface Props {
   onAssigned?: (profileId: string | null) => void
 }
 
-// FASE 1 multi-usuario: controle de Responsavel pelo lead.
-// admin: select completo (atribui/redistribui/devolve ao pool).
-// SDR: ve o dono; se o lead estiver sem dono, pode "Pegar para mim" (self-claim).
-// A RPC assign_lead valida a autorizacao no banco e registra no historico.
+// Sistema multi-usuario, handoff livre: qualquer usuario autenticado pode reatribuir
+// o lead (pegar para si, delegar a outro responsavel ou devolver ao pool). A RPC
+// assign_lead valida a autorizacao no banco e registra a mudanca no historico (audit).
 export function AssignLeadControl({ leadId, assignedTo, onAssigned }: Props) {
-  const { isAdmin, user } = useAuth()
+  const { user } = useAuth()
   const [profiles, setProfiles] = useState<AssignableProfile[]>([])
   const [owner, setOwner] = useState<string | null>(assignedTo ?? null)
   const [saving, setSaving] = useState(false)
@@ -23,7 +22,6 @@ export function AssignLeadControl({ leadId, assignedTo, onAssigned }: Props) {
   useEffect(() => { setOwner(assignedTo ?? null) }, [assignedTo])
   useEffect(() => { listAssignableProfiles().then(setProfiles).catch(() => {}) }, [])
 
-  const ownerName = profiles.find((p) => p.id === owner)?.fullName
   const isMine = !!owner && owner === user?.profileId
 
   const change = async (profileId: string | null) => {
@@ -45,32 +43,17 @@ export function AssignLeadControl({ leadId, assignedTo, onAssigned }: Props) {
     <div className="flex items-center gap-1.5 text-xs text-text-muted">
       <UserCircle2 className="h-3.5 w-3.5 shrink-0" />
       <span className="shrink-0">Responsável:</span>
-      {isAdmin ? (
-        <select
-          value={owner ?? ''}
-          disabled={saving}
-          onChange={(e) => change(e.target.value || null)}
-          className="bg-elevated-2 border border-border rounded-md px-1.5 py-0.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-red/40 disabled:opacity-50 max-w-[180px]"
-        >
-          <option value="">Sem dono (pool)</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>{p.fullName}</option>
-          ))}
-        </select>
-      ) : owner ? (
-        <span className={`font-medium ${isMine ? 'text-red' : 'text-text-secondary'}`}>
-          {isMine ? 'Você' : (ownerName || 'Outro usuário')}
-        </span>
-      ) : (
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => change(user?.profileId ?? null)}
-          className="font-medium text-red hover:text-red/80 transition-colors disabled:opacity-50"
-        >
-          Pegar para mim
-        </button>
-      )}
+      <select
+        value={owner ?? ''}
+        disabled={saving}
+        onChange={(e) => change(e.target.value || null)}
+        className={`bg-elevated-2 border border-border rounded-md px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-red/40 disabled:opacity-50 max-w-[180px] ${isMine ? 'text-red font-medium' : 'text-text-secondary'}`}
+      >
+        <option value="">Sem dono (pool)</option>
+        {profiles.map((p) => (
+          <option key={p.id} value={p.id}>{p.fullName}</option>
+        ))}
+      </select>
       {saving && <Loader2 className="h-3 w-3 animate-spin" />}
     </div>
   )
