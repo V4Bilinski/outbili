@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useLeads } from '../hooks/useLeads'
 import { useColumns } from '../hooks/useColumns'
+import { useLeadsFilters } from '../hooks/useLeadsFilters'
 import { cn } from '../lib/cn'
 import { useAuth } from '../lib/auth-context'
 import { LeadCard } from '../components/leads/LeadCard'
@@ -301,19 +302,22 @@ export function LeadsPage() {
   const { data: leads, isLoading } = useLeads()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [mineOnly, setMineOnly] = useState(false)
+  // Filtros persistidos na sessao de trabalho (sobrevivem a ida/volta da ficha e ao refresh).
+  const {
+    segment, setSegment,
+    region, setRegion,
+    temperature, setTemperature,
+    status, setStatus,
+    trava, setTrava,
+    tier, setTier,
+    searchQuery, setSearchQuery,
+    mineOnly, setMineOnly,
+    hasActiveFilters, clearFilters,
+  } = useLeadsFilters()
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
     try { return (localStorage.getItem('outbili-leads-view') as 'list' | 'cards') || 'list' } catch { return 'list' }
   })
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
-  const [segment, setSegment] = useState('')
-  const [region, setRegion] = useState('')
-  const [temperature, setTemperature] = useState(() => searchParams.get('temperatura') || '')
-  const [status, setStatus] = useState('')
-  const [trava, setTrava] = useState(() => searchParams.get('trava') || '')
-  const [tier, setTier] = useState(() => searchParams.get('tier') || '')
-  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => { try { localStorage.setItem('outbili-leads-view', viewMode) } catch { /* ignore */ } }, [viewMode])
   useEffect(() => {
@@ -325,22 +329,6 @@ export function LeadsPage() {
   }, [])
 
   const regions = [...new Set((leads || []).map((l) => l.state).filter(Boolean) as string[])].sort()
-
-  const hasActiveFilters = !!segment || !!temperature || !!status || !!trava || !!tier || !!region || !!searchQuery || mineOnly
-
-  const clearFilters = () => {
-    setSegment('')
-    setTemperature('')
-    setStatus('')
-    setTrava('')
-    setTier('')
-    setRegion('')
-    if (searchParams.has('temperatura') || searchParams.has('trava') || searchParams.has('tier')) {
-      setSearchParams({}, { replace: true })
-    }
-    setSearchQuery('')
-    setMineOnly(false)
-  }
 
   const filteredLeads = (leads || []).filter((l) => {
     if (mineOnly && l.assignedTo !== user?.profileId) return false
